@@ -1,0 +1,5 @@
+# Test artifacts / generated screenshots (keep root screenshot.png)
+test/*.png
+test/__pycache__/
+*.pyc
+.DS_Store
