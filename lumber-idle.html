@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Timber Tycoon — Idle Lumber Empire</title>
 <style>
+
 :root{
   --bg:#17241a; --panel:#3a281a; --panel2:#4a3423; --panel3:#2c1f14;
   --wood:#8b5a2b; --wood-l:#c08a4f; --cream:#f6e7c8; --muted:#c9b28c; --dim:#8f7a5c;
   --green:#7cc04f; --green-d:#3f7a2a; --leaf:#2f5b2a; --red:#e0574f; --amber:#f0a83a; --gold:#f5c84c; --line:#6b4a2b;
+  --sky-day:#87b8d8; --sky-dusk:#c47a5a;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -22,17 +24,21 @@ body{
 }
 button{font:inherit;color:inherit}
 .hidden{display:none!important}
+.version-badge{font-size:11px;font-weight:700;color:var(--dim);background:rgba(0,0,0,.25);padding:2px 7px;border-radius:6px;letter-spacing:.5px;border:1px solid rgba(255,255,255,.06)}
 /* ---------- header ---------- */
 header{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 16px;
   background:linear-gradient(180deg,#2a3d22,#1f2f1b);border-bottom:3px solid var(--wood);box-shadow:0 4px 14px rgba(0,0,0,.4)}
-.logo{font-size:22px;font-weight:800;letter-spacing:.5px;white-space:nowrap;text-shadow:0 2px 0 #000}
+.logo{font-size:22px;font-weight:800;letter-spacing:.5px;white-space:nowrap;text-shadow:0 2px 0 #000;display:flex;align-items:center;gap:8px}
 .logo span{color:var(--gold)}
+.logo .ic{width:28px;height:28px;display:inline-block;vertical-align:middle}
 .stats{display:flex;flex-wrap:wrap;gap:8px;flex:1}
-.stat{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:5px 10px;min-width:110px}
-.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:5px 10px;min-width:110px;transition:border-color .2s}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:4px}
 .stat .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
 .stat .v.gold{color:var(--gold)}
-.hbtns{display:flex;gap:6px}
+.stat .v.tick{animation:coinTick .35s ease-out}
+@keyframes coinTick{0%{transform:scale(1.15);color:#fff}100%{transform:scale(1)}}
+.hbtns{display:flex;gap:6px;align-items:center}
 /* ---------- buttons ---------- */
 .btn{cursor:pointer;border:none;border-radius:9px;padding:7px 12px;font-weight:700;
   background:linear-gradient(180deg,#86c457,#5a9a37);color:#132010;box-shadow:0 3px 0 #2e5a1d,0 4px 8px rgba(0,0,0,.3);transition:transform .05s,filter .15s}
@@ -43,14 +49,27 @@ header{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:
 .btn.red{background:linear-gradient(180deg,#e87a6f,#b9443c);color:#2a0b08;box-shadow:0 3px 0 #6e231d}
 .btn.small{padding:4px 8px;font-size:12px;border-radius:7px}
 .btn.gold{background:linear-gradient(180deg,#ffe07a,#e0a92a);color:#3a2604;box-shadow:0 3px 0 #8a6210}
+.btn.mute{min-width:36px;padding:4px 8px}
+/* ---------- scene ---------- */
+.scene-wrap{padding:0 14px;max-width:1700px;margin:10px auto 0}
+.scene-panel{position:relative;border-radius:14px;overflow:hidden;border:3px solid var(--line);
+  box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.08);
+  background:#1a2a1c;width:100%;height:clamp(130px,22vw,220px)}
+#scene{display:block;width:100%;height:100%;cursor:crosshair}
+.scene-label{position:absolute;top:8px;left:12px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(246,231,200,.85);text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;z-index:2;
+  background:rgba(0,0,0,.35);padding:3px 8px;border-radius:6px}
 /* ---------- layout ---------- */
 main{display:grid;grid-template-columns:minmax(260px,330px) minmax(380px,1fr) minmax(320px,410px);gap:14px;padding:14px;max-width:1700px;margin:0 auto}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
 .panel{position:relative;border-radius:14px;padding:12px;border:2px solid var(--line);
   background:
-    repeating-linear-gradient(92deg,rgba(255,255,255,.018) 0 2px,transparent 2px 9px),
+    repeating-linear-gradient(92deg,rgba(255,255,255,.025) 0 2px,transparent 2px 11px),
+    repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 8px),
     linear-gradient(180deg,var(--panel2),var(--panel));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 18px rgba(0,0,0,.35)}
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 18px rgba(0,0,0,.35);
+  transition:box-shadow .2s,transform .15s}
+.panel:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 22px rgba(0,0,0,.42)}
 .panel h2{margin:0 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);display:flex;align-items:center;gap:8px;justify-content:space-between}
 .panel h2 .sub{font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:500}
 .seg{display:inline-flex;background:rgba(0,0,0,.3);border-radius:8px;padding:2px}
@@ -58,39 +77,53 @@ main{display:grid;grid-template-columns:minmax(260px,330px) minmax(380px,1fr) mi
 .seg button.on{background:var(--wood-l);color:#24150a}
 /* ---------- chop ---------- */
 .chopwrap{text-align:center;overflow:hidden}
-#chopBtn{width:170px;height:170px;border-radius:50%;cursor:pointer;font-size:84px;line-height:1;border:6px solid #6b4a2b;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+.chopwrap.shake-panel{animation:panelShake .2s}
+@keyframes panelShake{0%,100%{transform:translate(0)}25%{transform:translate(-3px,1px)}50%{transform:translate(3px,-1px)}75%{transform:translate(-2px,0)}}
+.chop-stage{position:relative;display:inline-block;margin:4px 0}
+#chopBtn{position:relative;width:170px;height:170px;border-radius:50%;cursor:pointer;font-size:84px;line-height:1;border:6px solid #6b4a2b;user-select:none;-webkit-user-select:none;touch-action:manipulation;
   background:radial-gradient(circle at 50% 45%,#d9a86a 0 18%,#b07a42 19% 30%,#cf9c5f 31% 42%,#a36d38 43% 55%,#c4914f 56% 68%,#8a5a2c 69%);
-  box-shadow:0 8px 0 #3c2814,0 12px 24px rgba(0,0,0,.5),inset 0 0 18px rgba(0,0,0,.35);transition:transform .06s}
+  box-shadow:0 8px 0 #3c2814,0 12px 24px rgba(0,0,0,.5),inset 0 0 18px rgba(0,0,0,.35);transition:transform .06s;overflow:visible}
 #chopBtn:active{transform:translateY(5px) scale(.97);box-shadow:0 3px 0 #3c2814,0 6px 14px rgba(0,0,0,.5)}
-#chopBtn .tree{display:inline-block;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+#chopBtn .tree{display:inline-block;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5));position:relative;z-index:1}
 #chopBtn.shake .tree{animation:shake .18s}
 @keyframes shake{0%{transform:rotate(0)}30%{transform:rotate(-9deg)}70%{transform:rotate(6deg)}100%{transform:rotate(0)}}
+.axe-svg{position:absolute;width:70px;height:70px;right:-8px;top:20px;transform-origin:20% 80%;pointer-events:none;z-index:2;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+#chopBtn.swing .axe-svg{animation:axeSwing .28s ease-out}
+@keyframes axeSwing{0%{transform:rotate(-25deg)}40%{transform:rotate(55deg)}100%{transform:rotate(-25deg)}}
+.chip-burst{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:3}
+.chip-p{position:absolute;width:8px;height:5px;border-radius:2px;background:#c08a4f;left:50%;top:50%;animation:chipFly .5s ease-out forwards}
+@keyframes chipFly{to{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot))}}
 .choplbl{margin-top:12px;font-weight:800;font-size:18px}
 .chopsub{font-size:12px;color:var(--muted)}
 .float{position:absolute;pointer-events:none;font-weight:800;color:var(--gold);text-shadow:0 2px 0 #000,0 0 6px rgba(0,0,0,.6);animation:floatUp 1s ease-out forwards;z-index:5;white-space:nowrap}
 @keyframes floatUp{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
 /* ---------- cards ---------- */
 .list{display:flex;flex-direction:column;gap:8px}
-.card{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:8px;padding:8px;border-radius:10px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06)}
-.card .ic{font-size:28px;text-align:center}
+.card{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:8px;padding:8px;border-radius:10px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);transition:border-color .2s,transform .15s,background .2s}
+.card:hover{background:rgba(0,0,0,.3);transform:translateY(-1px)}
+.card .ic{font-size:28px;text-align:center;display:flex;align-items:center;justify-content:center}
+.card .ic svg,.bhead .ic svg,.stat .k svg{width:28px;height:28px;display:block}
 .card .nm{font-weight:700;font-size:14px}
 .card .nm .cnt{color:var(--gold);margin-left:4px}
 .card .ds{font-size:12px;color:var(--muted)}
 .card.locked{opacity:.55;filter:grayscale(.6)}
-.card.afford{border-color:rgba(124,192,79,.45)}
+.card.afford{border-color:rgba(124,192,79,.45);box-shadow:0 0 0 1px rgba(124,192,79,.15)}
 .buy{min-width:96px;text-align:center;line-height:1.15}
 .buy small{display:block;font-size:11px;font-weight:600;opacity:.85}
+.pbar{height:4px;background:rgba(0,0,0,.35);border-radius:3px;margin-top:4px;overflow:hidden}
+.pbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--wood),var(--gold));border-radius:3px;transition:width .3s}
 /* ---------- tabs ---------- */
 .tabs{display:flex;gap:4px;margin:-2px -2px 10px;flex-wrap:wrap}
-.tabs button{flex:1;border:none;cursor:pointer;padding:8px 6px;border-radius:9px;background:rgba(0,0,0,.28);color:var(--muted);font-weight:700;font-size:13px;position:relative}
+.tabs button{flex:1;border:none;cursor:pointer;padding:8px 6px;border-radius:9px;background:rgba(0,0,0,.28);color:var(--muted);font-weight:700;font-size:13px;position:relative;transition:background .15s}
 .tabs button.on{background:var(--wood-l);color:#24150a}
 .tabs button .dot{position:absolute;top:4px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
 /* ---------- buildings ---------- */
-.bcard{padding:9px;border-radius:11px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06)}
+.bcard{padding:9px;border-radius:11px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);transition:border-color .2s,transform .15s}
+.bcard:hover{background:rgba(0,0,0,.3)}
 .bcard.starved{border-color:rgba(224,87,79,.7);box-shadow:0 0 0 1px rgba(224,87,79,.35) inset}
 .bcard.off{opacity:.7}
 .bhead{display:flex;align-items:center;gap:8px}
-.bhead .ic{font-size:26px}
+.bhead .ic{font-size:26px;display:flex}
 .bhead .nm{font-weight:700;flex:1}
 .bhead .lv{color:var(--gold);font-weight:800}
 .recipe{font-size:12px;color:var(--muted);margin:4px 0}
@@ -104,7 +137,6 @@ main{display:grid;grid-template-columns:minmax(260px,330px) minmax(380px,1fr) mi
 .chip.off{background:rgba(255,255,255,.08);color:var(--dim)}
 .brow{display:flex;gap:8px;align-items:center;margin-top:8px}
 .brow .btn.buy{flex:1}
-/* switch */
 .sw{position:relative;display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--muted);user-select:none}
 .sw input{display:none}
 .sw .tr{width:34px;height:18px;border-radius:12px;background:#5a4a3a;position:relative;transition:background .15s}
@@ -120,12 +152,12 @@ main{display:grid;grid-template-columns:minmax(260px,330px) minmax(380px,1fr) mi
 .flow{background:rgba(0,0,0,.28);border-radius:8px;padding:4px 8px;font-size:13px;display:flex;justify-content:space-between;gap:6px;font-variant-numeric:tabular-nums;border:1px solid transparent}
 .flow b{font-weight:700}
 .flow.short{border-color:rgba(224,87,79,.6);color:#ffb3ad}
-.node{border-radius:10px;padding:6px 8px;text-align:center;background:linear-gradient(180deg,#5b7f3a,#3f5f27);border:2px solid #8fbf5a;box-shadow:0 3px 0 #253a17}
+.node{border-radius:10px;padding:6px 8px;text-align:center;background:linear-gradient(180deg,#5b7f3a,#3f5f27);border:2px solid #8fbf5a;box-shadow:0 3px 0 #253a17;transition:filter .3s}
 .node .t{font-weight:800;font-size:13px}
 .node .u{font-size:11px;opacity:.9}
 .node .bar{margin-top:4px;height:6px}
 .node.starved{background:linear-gradient(180deg,#7d3a2b,#5a2519);border-color:#ff7a6a;animation:pulse 1.4s infinite}
-.node.off{background:linear-gradient(180deg,#4d4338,#3a3229);border-color:#6b5d4d}
+.node.off{background:linear-gradient(180deg,#4d4338,#3a3229);border-color:#6b5d4d;filter:grayscale(.5)}
 @keyframes pulse{50%{box-shadow:0 3px 0 #3a120c,0 0 14px rgba(255,90,70,.55)}}
 .chainhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;background:rgba(0,0,0,.25);border-radius:10px;padding:8px 10px;font-size:13px}
 .chainhead b{color:var(--gold)}
@@ -137,16 +169,20 @@ main{display:grid;grid-template-columns:minmax(260px,330px) minmax(380px,1fr) mi
 .mkt th:first-child,.mkt td:first-child{text-align:left}
 .mkt td{padding:6px 5px;text-align:right;border-top:1px solid rgba(255,255,255,.06)}
 .mkt td.nm{font-weight:700;white-space:nowrap}
+.mkt td.nm .ric{display:inline-flex;vertical-align:middle;margin-right:4px}
+.mkt td.nm .ric svg{width:18px;height:18px}
 .pos{color:var(--green)} .neg{color:#ff8a80} .muted{color:var(--dim)}
 .price{color:var(--gold)}
 .price.boost{color:#7dfcff;text-shadow:0 0 6px rgba(125,252,255,.5)}
 /* ---------- events ---------- */
 #events{display:flex;flex-direction:column;gap:6px;padding:0 14px;max-width:1700px;margin:10px auto 0}
-.event{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,rgba(245,200,76,.25),rgba(245,200,76,.08));border:1px solid rgba(245,200,76,.55);font-size:14px}
+.event{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,rgba(245,200,76,.25),rgba(245,200,76,.08));border:1px solid rgba(245,200,76,.55);font-size:14px;animation:eventIn .35s ease-out}
 .event.bad{background:linear-gradient(90deg,rgba(224,87,79,.25),rgba(224,87,79,.06));border-color:rgba(224,87,79,.6)}
+.event .ev-ill{width:36px;height:36px;flex-shrink:0}
 .event .tm{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+@keyframes eventIn{from{opacity:0;transform:translateY(-8px)}}
 /* ---------- misc ---------- */
-.tree-list .card.cur{border-color:var(--gold)}
+.tree-list .card.cur{border-color:var(--gold);box-shadow:0 0 12px rgba(245,200,76,.25)}
 .prestige-box{text-align:center;padding:12px;border-radius:12px;background:rgba(0,0,0,.25);margin-bottom:10px}
 .prestige-box .big{font-size:34px;font-weight:900;color:var(--green)}
 .kv{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:13px}
@@ -161,10 +197,14 @@ main{display:grid;grid-template-columns:minmax(260px,330px) minmax(380px,1fr) mi
 .modal .mbtns{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .gainlist{display:grid;grid-template-columns:1fr auto;gap:3px 12px;background:rgba(0,0,0,.25);border-radius:10px;padding:8px 12px;margin-top:8px;font-variant-numeric:tabular-nums}
 footer{text-align:center;color:var(--dim);font-size:12px;padding:6px 0 18px}
+#fxLayer{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.confetti{position:absolute;width:8px;height:10px;border-radius:2px;animation:confFall 1.8s ease-out forwards}
+@keyframes confFall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(120px) rotate(360deg)}}
 /* ---------- responsive ---------- */
 @media (max-width:1180px){
   main{grid-template-columns:minmax(250px,320px) 1fr}
   #colRight{grid-column:1 / -1}
+  .scene-panel{height:clamp(120px,20vw,200px)}
 }
 @media (max-width:760px){
   main{grid-template-columns:1fr;padding:10px;gap:10px}
@@ -173,32 +213,53 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:6px 0 18px}
   .stat{min-width:0;flex:1 1 30%;padding:4px 8px}
   .stat .v{font-size:15px}
   #chopBtn{width:140px;height:140px;font-size:68px}
+  .axe-svg{width:56px;height:56px}
   .crow{grid-template-columns:1fr 18px minmax(110px,1.2fr) 18px 1fr}
   .flow{font-size:12px;padding:3px 5px}
   .mkt .hm{display:none}
+  .scene-wrap{padding:0 10px}
+  .scene-panel{height:clamp(110px,28vw,160px)}
 }
+
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">🌲 Timber <span>Tycoon</span></div>
+  <div class="logo"><span class="ic" id="logoIcon"></span> Timber <span>Tycoon</span> <span class="version-badge" id="verBadge">v1.1</span></div>
   <div class="stats">
-    <div class="stat"><div class="k">🪙 Coins</div><div class="v gold" id="hCoins">0</div></div>
+    <div class="stat"><div class="k" id="kCoins">Coins</div><div class="v gold" id="hCoins">0</div></div>
     <div class="stat"><div class="k">Income</div><div class="v" id="hIncome">0/s</div></div>
-    <div class="stat"><div class="k">🪵 Logs</div><div class="v" id="hLogs">0/s</div></div>
-    <div class="stat"><div class="k">🌱 Seeds</div><div class="v" id="hSeeds">0</div></div>
+    <div class="stat"><div class="k" id="kLogs">Logs</div><div class="v" id="hLogs">0/s</div></div>
+    <div class="stat"><div class="k" id="kSeeds">Seeds</div><div class="v" id="hSeeds">0</div></div>
   </div>
   <div class="hbtns">
+    <button class="btn wood small mute" id="muteBtn" title="Toggle sound">🔇</button>
     <button class="btn wood small" id="saveBtn" title="Save game">💾 Save</button>
     <button class="btn red small" id="resetBtn" title="Wipe save">⟲ Reset</button>
   </div>
 </header>
 <div id="events"></div>
+<div class="scene-wrap">
+  <div class="scene-panel">
+    <div class="scene-label">🌲 Your Empire</div>
+    <canvas id="scene" width="1600" height="420"></canvas>
+  </div>
+</div>
 <main>
   <div class="col" id="colLeft">
     <div class="panel chopwrap" id="chopPanel">
       <h2>🪓 The Forest <span class="sub" id="forestName">Pine Forest</span></h2>
-      <button id="chopBtn" aria-label="Chop"><span class="tree" id="chopTree">🌲</span></button>
+      <div class="chop-stage">
+        <button id="chopBtn" aria-label="Chop">
+          <span class="tree" id="chopTree">🌲</span>
+          <svg class="axe-svg" viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-25 20 50)">
+            <rect x="28" y="18" width="6" height="36" rx="2" fill="#6b3a1a"/>
+            <path d="M18 8 L42 14 L40 28 L16 22 Z" fill="#c0c8d0" stroke="#5a6570" stroke-width="1"/>
+            <path d="M18 8 L30 12 L28 20 L16 16 Z" fill="#e8eef2"/>
+          </g></svg>
+          <div class="chip-burst" id="chipBurst"></div>
+        </button>
+      </div>
       <div class="choplbl">Chop!</div>
       <div class="chopsub" id="chopSub">+1 log per chop</div>
     </div>
@@ -247,54 +308,90 @@ footer{text-align:center;color:var(--dim);font-size:12px;padding:6px 0 18px}
     </div>
   </div>
 </main>
-<footer>Timber Tycoon · autosaves every 10s · progress continues offline (up to 8h)</footer>
+<footer>Timber Tycoon <span id="footerVer">v1.1</span> · autosaves every 10s · progress continues offline (up to 8h)</footer>
 <div id="toasts"></div>
 <div id="modalRoot"></div>
+<div id="fxLayer"></div>
 
 <script>
+
 (function(){
 'use strict';
+const VERSION='1.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
 
+/* ===================== SVG ICONS ===================== */
+const ICONS={
+  logs:(c)=>`<svg viewBox="0 0 32 32"><ellipse cx="16" cy="24" rx="10" ry="4" fill="#5a3a1a"/><rect x="6" y="8" width="20" height="16" rx="3" fill="${c||'#8b5a2b'}"/><ellipse cx="16" cy="8" rx="10" ry="4" fill="#c08a4f"/><ellipse cx="16" cy="8" rx="4" ry="1.5" fill="#6b4226"/><line x1="8" y1="12" x2="24" y2="12" stroke="#6b4226" stroke-width=".8" opacity=".4"/><line x1="8" y1="16" x2="24" y2="16" stroke="#6b4226" stroke-width=".8" opacity=".4"/></svg>`,
+  planks:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="6" rx="1" fill="#c08a4f" stroke="#8b5a2b"/><rect x="4" y="13" width="24" height="6" rx="1" fill="#b07a42" stroke="#8b5a2b"/><rect x="4" y="20" width="24" height="6" rx="1" fill="#a36d38" stroke="#8b5a2b"/></svg>`,
+  chips:()=>`<svg viewBox="0 0 32 32"><ellipse cx="10" cy="18" rx="5" ry="3" fill="#c08a4f" transform="rotate(-20 10 18)"/><ellipse cx="18" cy="14" rx="4" ry="2.5" fill="#a36d38" transform="rotate(15 18 14)"/><ellipse cx="22" cy="20" rx="5" ry="3" fill="#8b5a2b" transform="rotate(-10 22 20)"/><ellipse cx="14" cy="22" rx="3.5" ry="2" fill="#d4a574"/></svg>`,
+  charcoal:()=>`<svg viewBox="0 0 32 32"><circle cx="12" cy="18" r="6" fill="#2a2a2a"/><circle cx="20" cy="14" r="5" fill="#3a3a3a"/><circle cx="18" cy="22" r="4.5" fill="#1a1a1a"/><circle cx="14" cy="12" r="2" fill="#4a4a4a" opacity=".6"/></svg>`,
+  chairs:()=>`<svg viewBox="0 0 32 32"><rect x="8" y="10" width="16" height="3" rx="1" fill="#8b5a2b"/><rect x="9" y="13" width="3" height="12" fill="#6b4226"/><rect x="20" y="13" width="3" height="12" fill="#6b4226"/><rect x="9" y="20" width="14" height="3" fill="#a36d38"/><rect x="8" y="4" width="3" height="9" fill="#6b4226"/><rect x="21" y="4" width="3" height="9" fill="#6b4226"/></svg>`,
+  pellets:()=>`<svg viewBox="0 0 32 32"><ellipse cx="10" cy="16" rx="3" ry="5" fill="#6b4226"/><ellipse cx="16" cy="14" rx="3" ry="5" fill="#8b5a2b"/><ellipse cx="22" cy="17" rx="3" ry="5" fill="#5a3a1a"/><ellipse cx="13" cy="22" rx="2.5" ry="4" fill="#a36d38"/></svg>`,
+  paper:()=>`<svg viewBox="0 0 32 32"><rect x="8" y="4" width="16" height="22" rx="1" fill="#f5f0e0" stroke="#c9b28c"/><line x1="11" y1="9" x2="21" y2="9" stroke="#c9b28c" stroke-width="1"/><line x1="11" y1="13" x2="21" y2="13" stroke="#c9b28c" stroke-width="1"/><line x1="11" y1="17" x2="18" y2="17" stroke="#c9b28c" stroke-width="1"/></svg>`,
+  furniture:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="14" width="24" height="10" rx="1" fill="#8b5a2b"/><rect x="6" y="8" width="8" height="6" fill="#a36d38"/><rect x="18" y="10" width="10" height="4" fill="#c08a4f"/><rect x="6" y="24" width="3" height="4" fill="#5a3a1a"/><rect x="23" y="24" width="3" height="4" fill="#5a3a1a"/></svg>`,
+  coins:()=>`<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#f5c84c" stroke="#c08a20" stroke-width="2"/><circle cx="16" cy="16" r="8" fill="none" stroke="#e0a92a" stroke-width="1.5"/><text x="16" y="20" text-anchor="middle" font-size="10" font-weight="bold" fill="#8a6210">$</text></svg>`,
+  seeds:()=>`<svg viewBox="0 0 32 32"><ellipse cx="16" cy="22" rx="4" ry="6" fill="#5a8a2a"/><path d="M16 16 Q12 8 16 4 Q20 8 16 16" fill="#7cc04f"/><path d="M16 14 Q8 10 6 14 Q12 16 16 14" fill="#5a9a37"/><path d="M16 14 Q24 10 26 14 Q20 16 16 14" fill="#5a9a37"/></svg>`,
+  lumberjack:()=>`<svg viewBox="0 0 32 32"><circle cx="16" cy="8" r="5" fill="#e8c4a0"/><rect x="11" y="12" width="10" height="10" rx="2" fill="#3a6aaa"/><rect x="12" y="22" width="3" height="8" fill="#4a3423"/><rect x="17" y="22" width="3" height="8" fill="#4a3423"/><rect x="22" y="10" width="3" height="12" fill="#6b3a1a"/><rect x="20" y="8" width="8" height="4" fill="#c0c8d0"/></svg>`,
+  chainsaw:()=>`<svg viewBox="0 0 32 32"><circle cx="16" cy="8" r="4" fill="#e8c4a0"/><rect x="12" y="11" width="8" height="9" fill="#ffaa00"/><rect x="13" y="20" width="2.5" height="8" fill="#4a3423"/><rect x="16.5" y="20" width="2.5" height="8" fill="#4a3423"/><rect x="20" y="14" width="10" height="3" fill="#888"/><circle cx="28" cy="15.5" r="2" fill="#aaa"/></svg>`,
+  truck:()=>`<svg viewBox="0 0 32 32"><rect x="2" y="14" width="18" height="8" rx="1" fill="#c45a2a"/><rect x="18" y="10" width="10" height="12" rx="1" fill="#e07040"/><circle cx="8" cy="24" r="3" fill="#333"/><circle cx="24" cy="24" r="3" fill="#333"/><rect x="4" y="12" width="14" height="3" fill="#8b5a2b"/></svg>`,
+  harvester:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="12" width="20" height="10" rx="1" fill="#5a8a2a"/><rect x="18" y="6" width="10" height="10" fill="#7aa84a"/><circle cx="10" cy="24" r="4" fill="#333"/><circle cx="24" cy="24" r="3" fill="#333"/><rect x="2" y="16" width="6" height="4" fill="#888"/></svg>`,
+  drone:()=>`<svg viewBox="0 0 32 32"><rect x="12" y="14" width="8" height="5" rx="1" fill="#4a6a8a"/><line x1="4" y1="12" x2="12" y2="16" stroke="#aaa" stroke-width="1.5"/><line x1="28" y1="12" x2="20" y2="16" stroke="#aaa" stroke-width="1.5"/><circle cx="4" cy="12" r="3" fill="#7dfcff" opacity=".7"/><circle cx="28" cy="12" r="3" fill="#7dfcff" opacity=".7"/><circle cx="16" cy="16" r="2" fill="#f5c84c"/></svg>`,
+  heli:()=>`<svg viewBox="0 0 32 32"><ellipse cx="16" cy="18" rx="8" ry="5" fill="#4a6a4a"/><rect x="22" y="16" width="8" height="3" fill="#5a7a5a"/><line x1="2" y1="12" x2="30" y2="12" stroke="#888" stroke-width="2"/><circle cx="16" cy="12" r="2" fill="#666"/><rect x="14" y="22" width="2" height="6" fill="#555"/><rect x="10" y="27" width="10" height="2" fill="#555"/></svg>`,
+  sawmill:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="14" width="24" height="12" fill="#8b5a2b"/><polygon points="4,14 16,4 28,14" fill="#a36d38"/><circle cx="16" cy="20" r="5" fill="#c0c8d0" stroke="#666"/><circle cx="16" cy="20" r="1.5" fill="#444"/><line x1="16" y1="15" x2="16" y2="25" stroke="#888"/><line x1="11" y1="20" x2="21" y2="20" stroke="#888"/></svg>`,
+  chipper:()=>`<svg viewBox="0 0 32 32"><rect x="6" y="12" width="20" height="14" rx="2" fill="#5a6a7a"/><circle cx="16" cy="19" r="6" fill="#333"/><circle cx="16" cy="19" r="3" fill="#f0a83a"/><rect x="2" y="16" width="6" height="4" fill="#888"/></svg>`,
+  kiln:()=>`<svg viewBox="0 0 32 32"><rect x="8" y="10" width="16" height="16" fill="#6a4a3a"/><rect x="12" y="4" width="8" height="8" fill="#5a3a2a"/><rect x="14" y="2" width="4" height="4" fill="#4a2a1a"/><ellipse cx="16" cy="20" rx="4" ry="3" fill="#f0a83a" opacity=".8"/><circle cx="14" cy="6" r="1.5" fill="#888" opacity=".5"/></svg>`,
+  carpentry:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="16" width="24" height="10" fill="#8b5a2b"/><polygon points="4,16 16,6 28,16" fill="#c08a4f"/><rect x="12" y="18" width="8" height="8" fill="#5a3a1a"/><rect x="20" y="10" width="3" height="8" fill="#6b3a1a"/></svg>`,
+  pellet:()=>`<svg viewBox="0 0 32 32"><rect x="6" y="10" width="20" height="16" rx="2" fill="#5a5a6a"/><rect x="10" y="6" width="12" height="6" fill="#4a4a5a"/><circle cx="16" cy="18" r="4" fill="#8b5a2b"/><rect x="4" y="20" width="4" height="3" fill="#888"/></svg>`,
+  paper_b:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="12" width="24" height="14" fill="#7a8a9a"/><rect x="8" y="4" width="6" height="10" fill="#5a6a7a"/><rect x="18" y="6" width="6" height="8" fill="#5a6a7a"/><rect x="10" y="16" width="12" height="6" fill="#f5f0e0"/></svg>`,
+  furniture_b:()=>`<svg viewBox="0 0 32 32"><rect x="2" y="10" width="28" height="16" fill="#6a7a8a"/><rect x="6" y="4" width="8" height="8" fill="#5a6a7a"/><rect x="18" y="4" width="8" height="8" fill="#5a6a7a"/><rect x="8" y="14" width="16" height="8" fill="#8b5a2b"/></svg>`,
+  tree:(hue)=>`<svg viewBox="0 0 32 32"><rect x="14" y="20" width="4" height="10" fill="#6b4226"/><polygon points="16,2 6,16 26,16" fill="${hue||'#2f5b2a'}"/><polygon points="16,8 8,20 24,20" fill="${hue||'#3f7a2a'}"/></svg>`,
+};
+function svgIcon(id, size){
+  const fn=ICONS[id]; if(!fn) return '';
+  const s=fn(); return size?s.replace('viewBox','width="'+size+'" height="'+size+'" viewBox'):s;
+}
+function iconHtml(id, size){return `<span class="ric" style="display:inline-flex;width:${size||28}px;height:${size||28}px">${svgIcon(id,size||28)}</span>`;}
+
 /* ===================== DATA ===================== */
 const RES=[
-  {id:'logs',name:'Logs',icon:'🪵',price:1},
-  {id:'planks',name:'Planks',icon:'🟫',price:4},
-  {id:'chips',name:'Wood Chips',icon:'🍂',price:2},
-  {id:'charcoal',name:'Charcoal',icon:'⚫',price:9},
-  {id:'chairs',name:'Chairs',icon:'🪑',price:60},
-  {id:'pellets',name:'Pellets',icon:'🟤',price:10},
-  {id:'paper',name:'Paper',icon:'📜',price:20},
-  {id:'furniture',name:'Furniture Sets',icon:'🛋️',price:700},
+  {id:'logs',name:'Logs',icon:'🪵',svg:'logs',price:1},
+  {id:'planks',name:'Planks',icon:'🟫',svg:'planks',price:4},
+  {id:'chips',name:'Wood Chips',icon:'🍂',svg:'chips',price:2},
+  {id:'charcoal',name:'Charcoal',icon:'⚫',svg:'charcoal',price:9},
+  {id:'chairs',name:'Chairs',icon:'🪑',svg:'chairs',price:60},
+  {id:'pellets',name:'Pellets',icon:'🟤',svg:'pellets',price:10},
+  {id:'paper',name:'Paper',icon:'📜',svg:'paper',price:20},
+  {id:'furniture',name:'Furniture Sets',icon:'🛋️',svg:'furniture',price:700},
 ];
 const RMAP={}; RES.forEach(r=>RMAP[r.id]=r);
 const COLLECTORS=[
-  {id:'lumberjack',name:'Lumberjack',icon:'🧔',rate:1,cost:20,desc:'Flannel, beard, axe.'},
-  {id:'chainsaw',name:'Chainsaw Crew',icon:'👷',rate:5,cost:160,desc:'Loud and efficient.'},
-  {id:'truck',name:'Logging Truck',icon:'🚛',rate:25,cost:2200,desc:'Hauls whole trunks.'},
-  {id:'harvester',name:'Harvester Machine',icon:'🚜',rate:120,cost:35000,desc:'Fells, strips & cuts.'},
-  {id:'drone',name:'Forest Drone Fleet',icon:'🛸',rate:650,cost:6e5,desc:'Laser-precise felling.'},
-  {id:'heli',name:'Sky-Crane Helicopter',icon:'🚁',rate:4000,cost:1.2e7,desc:'Lifts logs from anywhere.'},
+  {id:'lumberjack',name:'Lumberjack',icon:'🧔',svg:'lumberjack',rate:1,cost:20,desc:'Flannel, beard, axe.'},
+  {id:'chainsaw',name:'Chainsaw Crew',icon:'👷',svg:'chainsaw',rate:5,cost:160,desc:'Loud and efficient.'},
+  {id:'truck',name:'Logging Truck',icon:'🚛',svg:'truck',rate:25,cost:2200,desc:'Hauls whole trunks.'},
+  {id:'harvester',name:'Harvester Machine',icon:'🚜',svg:'harvester',rate:120,cost:35000,desc:'Fells, strips & cuts.'},
+  {id:'drone',name:'Forest Drone Fleet',icon:'🛸',svg:'drone',rate:650,cost:6e5,desc:'Laser-precise felling.'},
+  {id:'heli',name:'Sky-Crane Helicopter',icon:'🚁',svg:'heli',rate:4000,cost:1.2e7,desc:'Lifts logs from anywhere.'},
 ];
 const COL_SCALE=1.15;
 const BUILDINGS=[
-  {id:'sawmill',name:'Sawmill',icon:'🪚',inp:{logs:4},out:{planks:2},cost:100,scale:1.19,desc:'Saws logs into planks.'},
-  {id:'chipper',name:'Wood Chipper',icon:'🌀',inp:{logs:6},out:{chips:6},cost:1000,scale:1.19,desc:'Shreds logs into chips.'},
-  {id:'kiln',name:'Charcoal Kiln',icon:'🔥',inp:{logs:10},out:{charcoal:3},cost:5000,scale:1.2,desc:'Slow-burns logs into charcoal.'},
-  {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',inp:{planks:6},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
-  {id:'pellet',name:'Pellet Press',icon:'⚙️',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
-  {id:'paper',name:'Paper Mill',icon:'🏭',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
-  {id:'furniture',name:'Furniture Factory',icon:'🏗️',inp:{chairs:8,planks:20},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
+  {id:'sawmill',name:'Sawmill',icon:'🪚',svg:'sawmill',inp:{logs:4},out:{planks:2},cost:100,scale:1.19,desc:'Saws logs into planks.'},
+  {id:'chipper',name:'Wood Chipper',icon:'🌀',svg:'chipper',inp:{logs:6},out:{chips:6},cost:1000,scale:1.19,desc:'Shreds logs into chips.'},
+  {id:'kiln',name:'Charcoal Kiln',icon:'🔥',svg:'kiln',inp:{logs:10},out:{charcoal:3},cost:5000,scale:1.2,desc:'Slow-burns logs into charcoal.'},
+  {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',svg:'carpentry',inp:{planks:6},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
+  {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
+  {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
+  {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{chairs:8,planks:20},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
 ];
 const BMAP={}; BUILDINGS.forEach(b=>BMAP[b.id]=b);
 const TREES=[
-  {name:'Pine',icon:'🌲',mult:1,cost:0,flt:''},
-  {name:'Oak',icon:'🌳',mult:1.5,cost:25000,flt:''},
-  {name:'Maple',icon:'🍁',mult:2,cost:6e5,flt:''},
-  {name:'Mahogany',icon:'🌳',mult:3,cost:1.5e7,flt:'hue-rotate(-50deg) saturate(1.6) brightness(.8)'},
-  {name:'Ebony',icon:'🌲',mult:5,cost:4e8,flt:'brightness(.35) contrast(1.3)'},
+  {name:'Pine',icon:'🌲',mult:1,cost:0,flt:'',color:'#2f5b2a',color2:'#3f7a2a'},
+  {name:'Oak',icon:'🌳',mult:1.5,cost:25000,flt:'',color:'#2a5a20',color2:'#4a8a30'},
+  {name:'Maple',icon:'🍁',mult:2,cost:6e5,flt:'',color:'#8a4a20',color2:'#c06030'},
+  {name:'Mahogany',icon:'🌳',mult:3,cost:1.5e7,flt:'hue-rotate(-50deg) saturate(1.6) brightness(.8)',color:'#5a2010',color2:'#8a3020'},
+  {name:'Ebony',icon:'🌲',mult:5,cost:4e8,flt:'brightness(.35) contrast(1.3)',color:'#1a1a1a',color2:'#2a2a2a'},
 ];
 const bl=id=>S.buildings[id].lvl, cn=id=>S.collectors[id];
 const UPGRADES=[
@@ -333,9 +430,9 @@ const EMAP={}; EVENTS.forEach(e=>EMAP[e.id]=e);
 
 /* ===================== STATE ===================== */
 function freshState(keep){
-  const s={v:1,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
+  const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
     seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
-    events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now()};
+    events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true};
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -343,16 +440,27 @@ function freshState(keep){
   return s;
 }
 let S=freshState();
-let M=null; // modifiers
+let M=null;
 const bstat={}; BUILDINGS.forEach(b=>bstat[b.id]={f:0,lim:null,speed:0});
 const rates={}; RES.forEach(r=>rates[r.id]={p:0,c:0,s:0,d:0});
 let coinRate=0, chopRateEma=0;
 let offlineAcc=null;
+let dispCoins=0, lastDispCoins=-1;
+let prevBldSig='', prevTree=-1;
 
+function migrateSave(o){
+  // v1.0 -> v1.1: add missing fields
+  if(o.version===undefined) o.version='1.0';
+  if(o.muted===undefined) o.muted=true;
+  o.version=VERSION;
+  return o;
+}
 function merge(base,obj){
   for(const k in obj){
-    if(obj[k]&&typeof obj[k]==='object'&&!Array.isArray(obj[k])&&base[k]&&typeof base[k]==='object'&&!Array.isArray(base[k])) merge(base[k],obj[k]);
-    else if(k in base) base[k]=obj[k];
+    if(obj[k]&&typeof obj[k]==='object'&&!Array.isArray(obj[k])&&base[k]&&typeof base[k]==='object'&&!Array.isArray(base[k])){
+      merge(base[k],obj[k]);
+      for(const k2 in obj[k]) if(!(k2 in base[k])) base[k][k2]=obj[k][k2];
+    } else if(k in base) base[k]=obj[k];
   }
   return base;
 }
@@ -380,9 +488,7 @@ function tick(dt,offline){
   M=computeMods();
   S.time+=dt; S.playTime+=dt;
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
-  // 1. collectors
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
-  // 2. buildings: proportional allocation of shared inputs
   const demand={}; RES.forEach(r=>demand[r.id]=0);
   const active=[];
   for(const b of BUILDINGS){
@@ -403,7 +509,6 @@ function tick(dt,offline){
     bstat[b.id]={f,lim,speed:sp};
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];}
-  // 3. auto-sell surplus, keeping a buffer for downstream demand
   let earned=0;
   for(const r of RES){
     if(!S.autosell[r.id]) continue;
@@ -412,7 +517,6 @@ function tick(dt,offline){
     if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*price(r.id);}
   }
   if(earned>0) earn(earned);
-  // 4. rate tracking
   if(!offline){
     const a=Math.min(1,dt/1.5);
     for(const r of RES){const R=rates[r.id],F=fl[r.id];
@@ -423,7 +527,6 @@ function tick(dt,offline){
     for(const r of RES){offlineAcc.p[r.id]+=fl[r.id].p;offlineAcc.s[r.id]+=fl[r.id].s;}
     for(const r of RES) rates[r.id].d=demand[r.id]/dt;
   }
-  // 5. events
   S.events=S.events.filter(e=>e.ends>S.time);
   if(offline){ if(S.nextEvent<S.time) S.nextEvent=S.time+60; }
   else if(S.time>=S.nextEvent){ triggerEvent(); S.nextEvent=S.time+90+Math.random()*90; }
@@ -439,6 +542,7 @@ function triggerEvent(forceId){
   toast(`<b>${e.name}</b><br>${e.desc}${e.dur?` for ${e.dur}s`:''}. ${extra}`);
   M=computeMods();
   renderEvents(true);
+  sfx('event');
 }
 function simulate(sec,step){
   step=step||0.1; let t=sec;
@@ -459,52 +563,54 @@ function qty(base,scale,owned){if(buyMult==='max') return Math.max(1,maxAfford(b
 function buyCollector(id,n){
   const c=COLLECTORS.find(x=>x.id===id);n=n||qty(c.cost,COL_SCALE,S.collectors[id]);
   const cost=bulkCost(c.cost,COL_SCALE,S.collectors[id],n);
-  if(S.coins+1e-9<cost) return false; S.coins-=cost; S.collectors[id]+=n; M=computeMods(); return true;
+  if(S.coins+1e-9<cost) return false; S.coins-=cost; S.collectors[id]+=n; M=computeMods(); sfx('buy'); return true;
 }
 function buyBuilding(id,n){
   const b=BMAP[id];n=n||qty(b.cost,b.scale,S.buildings[id].lvl);
   const cost=bulkCost(b.cost,b.scale,S.buildings[id].lvl,n);
   if(S.coins+1e-9<cost) return false; const first=S.buildings[id].lvl===0;
   S.coins-=cost; S.buildings[id].lvl+=n; M=computeMods();
-  if(first){toast(`${b.icon} <b>${b.name}</b> built! ${recipeStr(b)}`); if(!S.autosell) S.autosell={};}
+  if(first){toast(`${b.icon} <b>${b.name}</b> built! ${recipeStr(b)}`); confettiBurst(); sfx('unlock');}
+  else sfx('buy');
   return true;
 }
 function buyUpgrade(id){
   const u=UPGRADES.find(x=>x.id===id); if(!u||S.upgrades[id]||S.coins<u.cost) return false;
-  S.coins-=u.cost; S.upgrades[id]=true; M=computeMods(); toast(`${u.icon} <b>${u.name}</b>: ${u.desc}`); return true;
+  S.coins-=u.cost; S.upgrades[id]=true; M=computeMods(); toast(`${u.icon} <b>${u.name}</b>: ${u.desc}`); sfx('buy'); return true;
 }
 function buyTree(){
   const nx=TREES[S.tree+1]; if(!nx||S.coins<nx.cost) return false;
-  S.coins-=nx.cost; S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); return true;
+  S.coins-=nx.cost; S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
 }
 function chop(){
-  const n=chopPower(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; return n;
+  const n=chopPower(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
 }
 function sellAll(id){
-  const n=S.res[id]; if(n<=0) return 0; const v=n*price(id); S.res[id]=0; earn(v); return v;
+  const n=S.res[id]; if(n<=0) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
 }
 function seedsFor(earned){return earned<1e7?0:Math.floor(3*Math.sqrt(earned/1e7));}
 function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell)};
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted};
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);
+  confettiBurst(); sfx('unlock');
   return true;
 }
 
 /* ===================== SAVE / LOAD ===================== */
 function save(silent){
-  S.lastSave=Date.now();
+  S.lastSave=Date.now(); S.version=VERSION;
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}
   if(!silent) toast('💾 Game saved.');
 }
 function load(){
   let raw=null; try{raw=localStorage.getItem(SAVE_KEY);}catch(e){}
   if(!raw) return null;
-  try{const o=JSON.parse(raw); S=merge(freshState(),o); return S;}catch(e){console.warn('Bad save, starting fresh');return null;}
+  try{const o=migrateSave(JSON.parse(raw)); S=merge(freshState(),o); return S;}catch(e){console.warn('Bad save, starting fresh');return null;}
 }
 function hardReset(){
   try{localStorage.removeItem(SAVE_KEY);}catch(e){}
@@ -523,7 +629,7 @@ function fmt(n,dec){
     else{const v=n/Math.pow(1000,e); s=v.toFixed(v<10?2:v<100?1:0)+SUF[e];} }
   return (neg?'-':'')+s;
 }
-function fr(n){ // rate
+function fr(n){
   if(n<0.005) return '0'; if(n<10) return n.toFixed(n<1?2:1); return fmt(n);
 }
 function fmtTime(s){s=Math.floor(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}h ${m}m`:m?`${m}m ${x}s`:`${x}s`;}
@@ -531,6 +637,51 @@ function recipeStr(b){
   const i=Object.entries(b.inp).map(([k,v])=>`${v} ${RMAP[k].icon}`).join(' + ');
   const o=Object.entries(b.out).map(([k,v])=>`${v} ${RMAP[k].icon}`).join(' + ');
   return `${i} → ${o} /s per level`;
+}
+
+/* ===================== AUDIO ===================== */
+let audioCtx=null;
+function sfx(type){
+  if(S.muted) return;
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const t=audioCtx.currentTime;
+    const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    if(type==='chop'){o.frequency.value=180;o.type='triangle';g.gain.setValueAtTime(0.08,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12);o.start(t);o.stop(t+0.12);}
+    else if(type==='buy'){o.frequency.value=440;o.type='sine';g.gain.setValueAtTime(0.06,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15);o.start(t);o.stop(t+0.15);}
+    else if(type==='coin'){o.frequency.value=880;o.type='sine';g.gain.setValueAtTime(0.05,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);o.start(t);o.stop(t+0.2);}
+    else if(type==='unlock'){o.frequency.setValueAtTime(523,t);o.frequency.setValueAtTime(659,t+0.1);o.frequency.setValueAtTime(784,t+0.2);o.type='sine';g.gain.setValueAtTime(0.07,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.4);o.start(t);o.stop(t+0.4);}
+    else if(type==='event'){o.frequency.value=330;o.type='square';g.gain.setValueAtTime(0.04,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.25);o.start(t);o.stop(t+0.25);}
+  }catch(e){}
+}
+function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
+function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊';}
+
+/* ===================== FX ===================== */
+function confettiBurst(){
+  const L=$('fxLayer'); if(!L) return;
+  const colors=['#7cc04f','#f5c84c','#c08a4f','#e0574f','#87b8d8','#f0a83a'];
+  for(let i=0;i<36;i++){
+    const d=document.createElement('div'); d.className='confetti';
+    d.style.left=(40+Math.random()*20)+'%'; d.style.top=(20+Math.random()*30)+'%';
+    d.style.background=colors[i%colors.length];
+    d.style.animationDelay=(Math.random()*0.3)+'s';
+    d.style.transform=`rotate(${Math.random()*360}deg)`;
+    L.appendChild(d); setTimeout(()=>d.remove(),2000);
+  }
+}
+function woodChips(){
+  const burst=$('chipBurst'); if(!burst) return;
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div'); p.className='chip-p';
+    const ang=Math.random()*Math.PI*2, dist=30+Math.random()*50;
+    p.style.setProperty('--dx',Math.cos(ang)*dist+'px');
+    p.style.setProperty('--dy',Math.sin(ang)*dist+'px');
+    p.style.setProperty('--rot',(Math.random()*180)+'deg');
+    p.style.background=['#c08a4f','#8b5a2b','#a36d38','#d4a574'][i%4];
+    burst.appendChild(p); setTimeout(()=>p.remove(),500);
+  }
 }
 
 /* ===================== UI HELPERS ===================== */
@@ -556,6 +707,8 @@ function floatText(x,y,text,parent){
 }
 function costBtnHtml(label,cost){return `${label}<small>🪙 ${fmt(cost)}</small>`;}
 
+
+
 /* ===================== RENDER: COLLECTORS ===================== */
 const colEls={};
 function colVisible(c,i){return S.collectors[c.id]>0||S.totalEarned>=c.cost*0.3||i===0;}
@@ -568,9 +721,9 @@ function buildCollectors(){
       d.innerHTML=`<div class="ic">❔</div><div><div class="nm">???</div><div class="ds">Earn 🪙 ${fmt(c.cost*0.3)} total to reveal</div></div><div></div>`;
       L.appendChild(d); return; }
     const d=document.createElement('div');d.className='card';
-    d.innerHTML=`<div class="ic">${c.icon}</div><div><div class="nm">${c.name}<span class="cnt"></span></div><div class="ds"></div></div><button class="btn buy"></button>`;
+    d.innerHTML=`<div class="ic">${iconHtml(c.svg,28)}</div><div><div class="nm">${c.name}<span class="cnt"></span></div><div class="ds"></div><div class="pbar"><i></i></div></div><button class="btn buy"></button>`;
     const btn=d.querySelector('button'); btn.onclick=()=>{buyCollector(c.id);render();};
-    colEls[c.id]={d,cnt:d.querySelector('.cnt'),ds:d.querySelector('.ds'),btn};
+    colEls[c.id]={d,cnt:d.querySelector('.cnt'),ds:d.querySelector('.ds'),btn,pbar:d.querySelector('.pbar>i')};
     L.appendChild(d);
   });
 }
@@ -582,6 +735,7 @@ function updateCollectors(){
     e.ds.textContent=`+${fr(r)} 🪵/s each`+(own?` · ${fr(r*own)}/s total`:` · ${c.desc}`);
     e.btn.innerHTML=costBtnHtml(own?`Hire${n>1?' ×'+n:''}`:`Hire${n>1?' ×'+n:''}`,cost);
     e.btn.disabled=S.coins+1e-9<cost; e.d.classList.toggle('afford',!e.btn.disabled);
+    if(e.pbar) e.pbar.style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
   }
 }
 
@@ -596,14 +750,15 @@ function buildBuildings(){
       d.innerHTML=`<div class="ic">❔</div><div><div class="nm">Unknown building</div><div class="ds">Earn 🪙 ${fmt(b.cost*0.25)} total to reveal</div></div><div></div>`;
       L.appendChild(d); return; }
     const d=document.createElement('div');d.className='bcard';
-    d.innerHTML=`<div class="bhead"><span class="ic">${b.icon}</span><span class="nm">${b.name}</span><span class="lv"></span></div>
+    d.innerHTML=`<div class="bhead"><span class="ic">${iconHtml(b.svg,28)}</span><span class="nm">${b.name}</span><span class="lv"></span></div>
       <div class="recipe">${b.desc} <b>${recipeStr(b)}</b></div>
       <div class="bstatus"><div class="bar"><i></i></div><span class="chip"></span></div>
       <div class="recipe now"></div>
-      <div class="brow"><label class="sw" title="Toggle building on/off"><input type="checkbox"><span class="tr"></span><span class="swl">On</span></label><button class="btn buy"></button></div>`;
+      <div class="brow"><label class="sw" title="Toggle building on/off"><input type="checkbox"><span class="tr"></span><span class="swl">On</span></label><button class="btn buy"></button></div>
+      <div class="pbar"><i></i></div>`;
     const btn=d.querySelector('button.buy'); btn.onclick=()=>{buyBuilding(b.id);render();};
     const cb=d.querySelector('input'); cb.onchange=()=>{S.buildings[b.id].on=cb.checked;render();};
-    bEls[b.id]={d,lv:d.querySelector('.lv'),bar:d.querySelector('.bar'),bi:d.querySelector('.bar>i'),chip:d.querySelector('.chip'),now:d.querySelector('.now'),btn,cb,swl:d.querySelector('.swl'),st:d.querySelector('.bstatus')};
+    bEls[b.id]={d,lv:d.querySelector('.lv'),bar:d.querySelector('.bar'),bi:d.querySelector('.bar>i'),chip:d.querySelector('.chip'),now:d.querySelector('.now'),btn,cb,swl:d.querySelector('.swl'),st:d.querySelector('.bstatus'),pbar:d.querySelector('.pbar>i')};
     L.appendChild(d);
   });
 }
@@ -634,6 +789,7 @@ function updateBuildings(){
     e.cb.checked=st.on; e.cb.disabled=!st.lvl; e.swl.textContent=st.on?'On':'Off';
     e.btn.innerHTML=costBtnHtml(st.lvl?`Upgrade${n>1?' +'+n:''}`:'Build',cost);
     e.btn.disabled=S.coins+1e-9<cost;
+    if(e.pbar) e.pbar.style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
   }
 }
 
@@ -688,7 +844,7 @@ function buildMarket(){
   const T=$('mktBody'); T.innerHTML=''; mktEls={};
   for(const r of RES){ if(!resVisible(r)) continue;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="nm">${r.icon} ${r.name}</td><td class="st"></td><td class="hm pr pos"></td><td class="hm us"></td><td class="price"></td>
+    tr.innerHTML=`<td class="nm"><span class="ric">${svgIcon(r.svg,18)}</span> ${r.name}</td><td class="st"></td><td class="hm pr pos"></td><td class="hm us"></td><td class="price"></td>
       <td><label class="sw" title="Auto-sell surplus"><input type="checkbox"><span class="tr"></span></label></td><td><button class="btn wood small">Sell</button></td>`;
     const cb=tr.querySelector('input'); cb.onchange=()=>{S.autosell[r.id]=cb.checked;};
     const btn=tr.querySelector('button'); btn.onclick=ev=>{const v=sellAll(r.id); if(v>0){const rc=btn.getBoundingClientRect();floatText(rc.left+rc.width/2+scrollX,rc.top+scrollY-4,'+🪙'+fmt(v));} render();};
@@ -708,7 +864,7 @@ function updateMarket(){
     e.cb.checked=!!S.autosell[id]; e.btn.disabled=S.res[id]<1;
   }
 }
-function baseUpgPrice(id){ // price multiplier without events, to highlight boosted prices
+function baseUpgPrice(id){
   const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1};
   RES.forEach(r=>m.price[r.id]=1); COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1);
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
@@ -723,13 +879,14 @@ function updateUpgrades(){
   if(sig!==upgSig){upgSig=sig; const L=$('upgList'); L.innerHTML='';
     if(!av.length) L.innerHTML='<div class="hint">No upgrades available right now — keep growing! Upgrades appear as you expand.</div>';
     for(const u of av){const d=document.createElement('div');d.className='card';d.dataset.id=u.id;
-      d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name}</div><div class="ds">${u.desc}</div></div><button class="btn buy">${costBtnHtml('Buy',u.cost)}</button>`;
+      d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name}</div><div class="ds">${u.desc}</div><div class="pbar"><i></i></div></div><button class="btn buy">${costBtnHtml('Buy',u.cost)}</button>`;
       d.querySelector('button').onclick=()=>{buyUpgrade(u.id);render();};L.appendChild(d);}
     const owned=UPGRADES.filter(u=>S.upgrades[u.id]);
     $('upgOwned').textContent=owned.length?`Owned (${owned.length}/${UPGRADES.length}): `+owned.map(u=>u.icon+' '+u.name).join(', '):'';
   }
   let any=false;
-  $('upgList').querySelectorAll('.card').forEach(d=>{const u=UPGRADES.find(x=>x.id===d.dataset.id);const b=d.querySelector('button');b.disabled=S.coins<u.cost;d.classList.toggle('afford',!b.disabled);if(!b.disabled)any=true;});
+  $('upgList').querySelectorAll('.card').forEach(d=>{const u=UPGRADES.find(x=>x.id===d.dataset.id);const b=d.querySelector('button');b.disabled=S.coins<u.cost;d.classList.toggle('afford',!b.disabled);if(!b.disabled)any=true;
+    const pb=d.querySelector('.pbar>i'); if(pb) pb.style.width=Math.min(100,S.coins/u.cost*100).toFixed(0)+'%';});
   $('upgDot').classList.toggle('hidden',!any||curTab==='upg');
 }
 let treeSig='';
@@ -757,27 +914,359 @@ function updateCompany(){
   if(curTab==='co'){
     const rows=[['Seeds',`${S.seeds} 🌱 (+${S.seeds*10}%)`],['Earned this run','🪙 '+fmt(S.totalEarned)],['Lifetime earnings','🪙 '+fmt(S.lifetimeEarned)],
       ['Logs per second',fr(logRate())],['Chops (run / lifetime)',`${fmt(S.clicks)} / ${fmt(S.lifetimeClicks)}`],['Replants',S.prestiges],
-      ['Current wood',TREES[S.tree].name],['Play time',fmtTime(S.playTime)]];
+      ['Current wood',TREES[S.tree].name],['Play time',fmtTime(S.playTime)],['Version',S.version||VERSION]];
     $('statsKv').innerHTML=rows.map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join('');
   }
 }
 let evSig='';
 function renderEvents(force){
   const E=$('events'); const sig=S.events.map(e=>e.id).join();
-  if(force||sig!==evSig){evSig=sig;E.innerHTML=S.events.map(e=>{const d=EMAP[e.id];return `<div class="event${d.bad?' bad':''}" data-id="${e.id}"><span>${d.name}</span><span>${d.desc}</span><span class="tm"></span></div>`;}).join('');}
+  if(force||sig!==evSig){evSig=sig;E.innerHTML=S.events.map(e=>{const d=EMAP[e.id];
+    return `<div class="event${d.bad?' bad':''}" data-id="${e.id}"><span class="ev-ill">${eventIll(e.id)}</span><span><b>${d.name}</b><br>${d.desc}</span><span class="tm"></span></div>`;}).join('');}
   E.querySelectorAll('.event').forEach(x=>{const e=S.events.find(y=>y.id===x.dataset.id);if(e)x.querySelector('.tm').textContent=Math.ceil(e.ends-S.time)+'s';});
+}
+function eventIll(id){
+  const map={hotel:'🪑',storm:'⛈️',termites:'🐜',boom:'📈',acorn:'🌰',print:'🗞️',cold:'❄️'};
+  return `<svg viewBox="0 0 36 36" width="36" height="36"><circle cx="18" cy="18" r="16" fill="rgba(0,0,0,.25)"/><text x="18" y="24" text-anchor="middle" font-size="18">${map[id]||'⭐'}</text></svg>`;
+}
+
+/* ===================== SCENE CANVAS ===================== */
+const scene={
+  canvas:null, ctx:null, w:1600, h:420, t:0, lastRAF:0, visible:true,
+  clouds:[], birds:[], trees:[], fallers:[], particles:[], flows:[],
+  jacks:[], vehicles:[], smoke:[], bladeAngle:0
+};
+function initScene(){
+  scene.canvas=$('scene'); if(!scene.canvas) return;
+  scene.ctx=scene.canvas.getContext('2d');
+  resizeScene();
+  window.addEventListener('resize',resizeScene);
+  // seed clouds
+  for(let i=0;i<5;i++) scene.clouds.push({x:Math.random()*scene.w,y:20+Math.random()*60,s:0.6+Math.random()*0.8,sp:8+Math.random()*12});
+  for(let i=0;i<4;i++) scene.birds.push({x:Math.random()*scene.w,y:40+Math.random()*80,sp:30+Math.random()*40,phase:Math.random()*Math.PI*2,dir:Math.random()<.5?1:-1});
+  document.addEventListener('visibilitychange',()=>{scene.visible=!document.hidden; if(scene.visible){scene.lastRAF=performance.now(); requestAnimationFrame(sceneLoop);}});
+  requestAnimationFrame(sceneLoop);
+}
+function resizeScene(){
+  const wrap=scene.canvas.parentElement;
+  const rw=wrap.clientWidth, rh=wrap.clientHeight;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  scene.w=Math.max(400,rw); scene.h=Math.max(120,rh);
+  scene.canvas.width=scene.w*dpr; scene.canvas.height=scene.h*dpr;
+  scene.canvas.style.width=scene.w+'px'; scene.canvas.style.height=scene.h+'px';
+  scene.ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function sceneLoop(now){
+  if(!scene.visible) return;
+  const dt=Math.min(0.05,(now-(scene.lastRAF||now))/1000); scene.lastRAF=now;
+  scene.t+=dt;
+  drawScene(dt);
+  requestAnimationFrame(sceneLoop);
+}
+function dayFactor(){
+  // gentle day/dusk over ~4 min; stay mostly bright for cozy feel
+  const cycle=((S.playTime||0)%240)/240;
+  return 0.72+0.28*Math.sin(cycle*Math.PI*2);
+}
+function drawScene(dt){
+  const ctx=scene.ctx, W=scene.w, H=scene.h; if(!ctx) return;
+  const df=dayFactor();
+  // sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H*0.7);
+  const dayTop=[0x5a,0x9a,0xc8], nightTop=[0x1a,0x1e,0x3a], dusk=[0xc4,0x7a,0x5a];
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  // blend day/night
+  const top=[lerp(nightTop[0],dayTop[0],df)|0, lerp(nightTop[1],dayTop[1],df)|0, lerp(nightTop[2],dayTop[2],df)|0];
+  const bot=[lerp(0x3a,0xb8,df)|0, lerp(0x4a,0xd0,df)|0, lerp(0x5a,0xe0,df)|0];
+  sky.addColorStop(0,`rgb(${top})`); sky.addColorStop(1,`rgb(${bot[0]},${bot[1]},${bot[2]})`);
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  // sun / moon
+  const sx=W*0.82, sy=H*0.18;
+  if(df>0.4){ctx.beginPath();ctx.arc(sx,sy,18+df*6,0,Math.PI*2);ctx.fillStyle=`rgba(255,230,120,${0.5+df*0.5})`;ctx.fill();}
+  else{ctx.beginPath();ctx.arc(sx*0.3,sy,12,0,Math.PI*2);ctx.fillStyle='rgba(220,220,240,.7)';ctx.fill();}
+  // clouds
+  for(const c of scene.clouds){
+    c.x+=c.sp*dt; if(c.x>W+80) c.x=-80;
+    drawCloud(ctx,c.x,c.y,c.s,0.35+df*0.35);
+  }
+  // birds
+  for(const b of scene.birds){
+    b.x+=b.sp*b.dir*dt; b.phase+=dt*8;
+    if(b.x>W+20) b.x=-20; if(b.x<-20) b.x=W+20;
+    drawBird(ctx,b.x,b.y+Math.sin(b.phase)*4,b.phase);
+  }
+  // ground
+  const groundY=H*0.62;
+  const ggrad=ctx.createLinearGradient(0,groundY,0,H);
+  ggrad.addColorStop(0,'#3a6a2a'); ggrad.addColorStop(0.4,'#2f5b2a'); ggrad.addColorStop(1,'#1e3a18');
+  ctx.fillStyle=ggrad; ctx.fillRect(0,groundY,W,H-groundY);
+  // dirt path
+  ctx.fillStyle='rgba(90,60,30,.35)';
+  ctx.beginPath(); ctx.moveTo(W*0.35,groundY); ctx.quadraticCurveTo(W*0.5,H*0.85,W*0.95,H*0.75); ctx.lineTo(W,H); ctx.lineTo(W*0.3,H); ctx.closePath(); ctx.fill();
+
+  // update & draw forest (left 55%)
+  syncSceneEntities();
+  const tree=TREES[S.tree]||TREES[0];
+  for(const tr of scene.trees){
+    if(tr.falling){
+      tr.fallAng=(tr.fallAng||0)+dt*2.5;
+      if(tr.fallAng>1.2){tr.falling=false;tr.fallAng=0;tr.yOff=0; /* respawn */}
+    }
+    drawTree(ctx,tr.x,groundY+2,tr.scale,tree.color,tree.color2,tr.fallAng||0);
+  }
+  // occasional fall
+  if(Math.random()<dt*0.15*Math.min(1,logRate()/10) && scene.trees.length){
+    const t=scene.trees[Math.floor(Math.random()*scene.trees.length)];
+    if(!t.falling) t.falling=true;
+  }
+  // lumberjacks
+  for(const j of scene.jacks){
+    j.phase=(j.phase||0)+dt*4;
+    drawLumberjack(ctx,j.x,groundY,j.phase);
+  }
+  // vehicles
+  for(const v of scene.vehicles){
+    v.x+=v.sp*dt;
+    if(v.x>W*0.55) v.x=-40;
+    if(v.kind==='truck') drawTruck(ctx,v.x,groundY+4);
+    else if(v.kind==='harvester') drawHarvester(ctx,v.x,groundY+2);
+    else if(v.kind==='drone'){v.y=groundY-40-Math.sin(scene.t*2+v.x)*8; drawDrone(ctx,v.x,v.y);}
+    else if(v.kind==='heli'){v.y=groundY-70-Math.sin(scene.t*1.5)*10; drawHeli(ctx,v.x,v.y,scene.t*10);}
+  }
+
+  // factory zone (right 45%)
+  const factories=BUILDINGS.filter(b=>S.buildings[b.id].lvl>0);
+  const fStart=W*0.52;
+  factories.forEach((b,i)=>{
+    const n=factories.length;
+    const bw=Math.min(90, (W*0.45-20)/Math.max(n,1));
+    const bx=fStart+i*(bw+8)+10;
+    const by=groundY-10;
+    const st=S.buildings[b.id];
+    const bs=bstat[b.id];
+    const starved=st.on&&bs.f<0.985&&st.lvl>0;
+    const off=!st.on;
+    const scale=0.7+Math.min(0.5,st.lvl*0.03);
+    drawBuilding(ctx,b.id,bx,by,bw*scale,starved,off,scene.t,st.lvl);
+    // smoke for kiln/paper
+    if((b.id==='kiln'||b.id==='paper')&&st.on&&!starved&&Math.random()<dt*3){
+      scene.smoke.push({x:bx+bw*0.3,y:by-40*scale,life:1,vx:(Math.random()-0.5)*10,vy:-20-Math.random()*15});
+    }
+  });
+  // smoke update
+  scene.smoke=scene.smoke.filter(s=>{s.life-=dt*0.5;s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy*=0.98;
+    if(s.life<=0) return false;
+    ctx.beginPath();ctx.arc(s.x,s.y,4+(1-s.life)*8,0,Math.PI*2);
+    ctx.fillStyle=`rgba(180,180,180,${s.life*0.4})`;ctx.fill(); return true;});
+
+  // conveyor flows between buildings
+  updateFlows(dt,factories,fStart,groundY,W);
+  drawFlows(ctx);
+
+  // ground detail grass tufts
+  ctx.fillStyle='rgba(60,120,40,.5)';
+  for(let i=0;i<20;i++){
+    const gx=(i*97+30)%(W*0.5), gy=groundY+8+(i%5)*3;
+    ctx.fillRect(gx,gy,2,5);
+  }
+}
+function syncSceneEntities(){
+  // trees: based on collector count + base
+  const totalCol=COLLECTORS.reduce((s,c)=>s+S.collectors[c.id],0);
+  const want=Math.min(18,4+Math.floor(Math.sqrt(totalCol+1)*2));
+  while(scene.trees.length<want){
+    scene.trees.push({x:30+Math.random()*scene.w*0.45,scale:0.5+Math.random()*0.7,falling:false,fallAng:0});
+  }
+  while(scene.trees.length>want) scene.trees.pop();
+  // jacks
+  const jn=Math.min(6,S.collectors.lumberjack||0);
+  while(scene.jacks.length<jn) scene.jacks.push({x:40+Math.random()*scene.w*0.4,phase:Math.random()*6});
+  while(scene.jacks.length>jn) scene.jacks.pop();
+  // vehicles
+  const wantV=[];
+  if(S.collectors.truck>0) wantV.push({kind:'truck',sp:40});
+  if(S.collectors.harvester>0) wantV.push({kind:'harvester',sp:25});
+  if(S.collectors.drone>0){wantV.push({kind:'drone',sp:55}); if(S.collectors.drone>3) wantV.push({kind:'drone',sp:45});}
+  if(S.collectors.heli>0) wantV.push({kind:'heli',sp:35});
+  // sync kinds
+  if(scene.vehicles.length!==wantV.length || scene.vehicles.some((v,i)=>v.kind!==wantV[i].kind)){
+    scene.vehicles=wantV.map((v,i)=>({...v,x:Math.random()*scene.w*0.4,y:0}));
+  }
+}
+function drawCloud(ctx,x,y,s,a){
+  ctx.fillStyle=`rgba(255,255,255,${a})`;
+  ctx.beginPath(); ctx.arc(x,y,16*s,0,Math.PI*2); ctx.arc(x+18*s,y-4*s,20*s,0,Math.PI*2);
+  ctx.arc(x+36*s,y,14*s,0,Math.PI*2); ctx.arc(x+14*s,y+6*s,14*s,0,Math.PI*2); ctx.fill();
+}
+function drawBird(ctx,x,y,ph){
+  ctx.strokeStyle='rgba(30,30,40,.7)'; ctx.lineWidth=1.5; ctx.beginPath();
+  const w=Math.sin(ph)*4;
+  ctx.moveTo(x-6,y+w); ctx.quadraticCurveTo(x,y-3,x+6,y+w); ctx.stroke();
+}
+function drawTree(ctx,x,baseY,sc,c1,c2,fallAng){
+  ctx.save(); ctx.translate(x,baseY);
+  if(fallAng) ctx.rotate(Math.min(fallAng,1.2)*0.9);
+  ctx.fillStyle='#5a3820'; ctx.fillRect(-3.5*sc,-22*sc,7*sc,24*sc);
+  ctx.fillStyle=c1; ctx.beginPath(); ctx.moveTo(0,-62*sc); ctx.lineTo(-20*sc,-20*sc); ctx.lineTo(20*sc,-20*sc); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=c2; ctx.beginPath(); ctx.moveTo(0,-48*sc); ctx.lineTo(-16*sc,-12*sc); ctx.lineTo(16*sc,-12*sc); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=c1; ctx.beginPath(); ctx.moveTo(0,-36*sc); ctx.lineTo(-12*sc,-4*sc); ctx.lineTo(12*sc,-4*sc); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawLumberjack(ctx,x,baseY,ph){
+  ctx.save(); ctx.translate(x,baseY);
+  // body
+  ctx.fillStyle='#e8c4a0'; ctx.beginPath(); ctx.arc(0,-28,5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#3a6aaa'; ctx.fillRect(-5,-24,10,12);
+  ctx.fillStyle='#4a3423'; ctx.fillRect(-4,-12,3,12); ctx.fillRect(1,-12,3,12);
+  // axe swing
+  ctx.save(); ctx.translate(6,-18); ctx.rotate(-0.5+Math.sin(ph)*0.8);
+  ctx.fillStyle='#6b3a1a'; ctx.fillRect(0,0,3,14);
+  ctx.fillStyle='#c0c8d0'; ctx.fillRect(-2,-4,8,5);
+  ctx.restore();
+  ctx.restore();
+}
+function drawTruck(ctx,x,y){
+  ctx.fillStyle='#c45a2a'; ctx.fillRect(x,y-16,36,12);
+  ctx.fillStyle='#e07040'; ctx.fillRect(x+28,y-24,16,20);
+  ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(x+10,y-2,5,0,Math.PI*2); ctx.arc(x+36,y-2,5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#8b5a2b'; ctx.fillRect(x+4,y-20,22,5);
+}
+function drawHarvester(ctx,x,y){
+  ctx.fillStyle='#5a8a2a'; ctx.fillRect(x,y-18,40,14);
+  ctx.fillStyle='#7aa84a'; ctx.fillRect(x+28,y-28,16,14);
+  ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(x+12,y-2,6,0,Math.PI*2); ctx.arc(x+38,y-2,5,0,Math.PI*2); ctx.fill();
+}
+function drawDrone(ctx,x,y){
+  ctx.fillStyle='#4a6a8a'; ctx.fillRect(x-6,y-3,12,6);
+  ctx.strokeStyle='#7dfcff'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(x-6,y); ctx.lineTo(x-16,y-6); ctx.moveTo(x+6,y); ctx.lineTo(x+16,y-6); ctx.stroke();
+  ctx.fillStyle='rgba(125,252,255,.5)'; ctx.beginPath(); ctx.arc(x-16,y-6,4,0,Math.PI*2); ctx.arc(x+16,y-6,4,0,Math.PI*2); ctx.fill();
+}
+function drawHeli(ctx,x,y,ang){
+  ctx.fillStyle='#4a6a4a'; ctx.beginPath(); ctx.ellipse(x,y,16,8,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#888'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-22,y-8); ctx.lineTo(x+22,y-8); ctx.stroke();
+  ctx.save(); ctx.translate(x,y-8); ctx.rotate(ang); ctx.strokeStyle='#aaa'; ctx.beginPath(); ctx.moveTo(-20,0); ctx.lineTo(20,0); ctx.stroke(); ctx.restore();
+  ctx.fillStyle='#555'; ctx.fillRect(x-1,y+6,2,8); ctx.fillRect(x-8,y+12,16,2);
+}
+function drawBuilding(ctx,id,x,y,w,starved,off,t,lvl){
+  ctx.save();
+  if(off||starved) ctx.globalAlpha=starved?0.5:0.4;
+  const h=w*0.75;
+  const colors={sawmill:'#9a6534',chipper:'#5a7a8a',kiln:'#7a4a30',carpentry:'#b07840',pellet:'#555568',paper:'#6a8a9a',furniture:'#5a7a6a'};
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,.2)'; ctx.fillRect(x+3,y-2,w,4);
+  // base body
+  ctx.fillStyle=colors[id]||'#8b5a2b';
+  ctx.fillRect(x,y-h,w,h);
+  // brick lines
+  ctx.strokeStyle='rgba(0,0,0,.12)'; ctx.lineWidth=1;
+  for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(x,y-h*i/3);ctx.lineTo(x+w,y-h*i/3);ctx.stroke();}
+  // roof
+  ctx.fillStyle=id==='kiln'?'#3a2a1a':'#4a3020';
+  ctx.beginPath(); ctx.moveTo(x-3,y-h); ctx.lineTo(x+w/2,y-h-h*0.4); ctx.lineTo(x+w+3,y-h); ctx.closePath(); ctx.fill();
+  // door
+  ctx.fillStyle='#3a2818'; ctx.fillRect(x+w*0.4,y-h*0.35,w*0.2,h*0.35);
+  // window
+  ctx.fillStyle=off?'#222':(starved?'#a04030':'#ffe08a');
+  ctx.fillRect(x+w*0.12,y-h*0.65,w*0.22,h*0.22);
+  ctx.fillRect(x+w*0.66,y-h*0.65,w*0.22,h*0.22);
+  if(!off&&!starved){ctx.fillStyle='rgba(255,230,120,.35)'; ctx.beginPath(); ctx.arc(x+w*0.23,y-h*0.54,w*0.12,0,Math.PI*2); ctx.fill();}
+  // sawmill blade
+  if(id==='sawmill'&&!off&&!starved){
+    ctx.save(); ctx.translate(x+w/2,y-h*0.28); ctx.rotate(t*7);
+    ctx.fillStyle='#d0d8e0'; ctx.beginPath(); ctx.arc(0,0,w*0.2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#666'; ctx.lineWidth=1.5;
+    for(let i=0;i<4;i++){ctx.rotate(Math.PI/4); ctx.beginPath(); ctx.moveTo(0,-w*0.2); ctx.lineTo(0,w*0.2); ctx.stroke();}
+    ctx.fillStyle='#444'; ctx.beginPath(); ctx.arc(0,0,3,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  // chipper teeth
+  if(id==='chipper'&&!off&&!starved){
+    ctx.save(); ctx.translate(x+w/2,y-h*0.35); ctx.rotate(t*8);
+    ctx.fillStyle='#f0a83a'; ctx.beginPath(); ctx.arc(0,0,w*0.14,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  // chimney
+  if(id==='kiln'||id==='paper'){
+    ctx.fillStyle='#3a2a1a'; ctx.fillRect(x+w*0.72,y-h-h*0.45,w*0.14,h*0.45);
+    ctx.fillStyle='#2a1a10'; ctx.fillRect(x+w*0.70,y-h-h*0.48,w*0.18,4);
+  }
+  // conveyor strip under factory
+  if(!off){ctx.fillStyle='#555'; ctx.fillRect(x-4,y+2,w+8,4); ctx.fillStyle='#777';
+    for(let i=0;i<4;i++) ctx.fillRect(x+i*(w/4)+(t*30% (w/4)),y+2,w/8,4);}
+  // level badge
+  ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(x+2,y-14,22,11);
+  ctx.fillStyle='#f5c84c'; ctx.font='bold 8px system-ui'; ctx.fillText('L'+lvl,x+4,y-5);
+  if(starved){ctx.fillStyle='#e0574f'; ctx.font='bold 11px system-ui'; ctx.fillText('⚠',x+w-16,y-h-6);}
+  ctx.restore();
+}
+function updateFlows(dt,factories,fStart,groundY,W){
+  // spawn flow particles based on production rates
+  if(!factories.length){scene.flows=[]; return;}
+  for(let i=0;i<factories.length;i++){
+    const b=factories[i]; const bs=bstat[b.id];
+    if(!S.buildings[b.id].on||bs.f<0.05) continue;
+    const rate=bs.speed*bs.f;
+    if(Math.random()<dt*Math.min(4,rate*0.5+0.3)){
+      const n=factories.length;
+      const bw=Math.min(90,(W*0.45-20)/Math.max(n,1));
+      const bx=fStart+i*(bw+8)+10;
+      const outKey=Object.keys(b.out)[0];
+      scene.flows.push({x:bx+bw*0.5,y:groundY-20,tx:bx+bw+20,ty:groundY-30,life:1,res:outKey,spd:60+rate*10});
+    }
+  }
+  // cap
+  if(scene.flows.length>60) scene.flows.splice(0,scene.flows.length-60);
+  scene.flows=scene.flows.filter(f=>{
+    f.life-=dt*0.7;
+    const dx=f.tx-f.x, dy=f.ty-f.y;
+    const dist=Math.hypot(dx,dy)||1;
+    f.x+=dx/dist*f.spd*dt; f.y+=dy/dist*f.spd*dt;
+    return f.life>0;
+  });
+}
+function drawFlows(ctx){
+  const cols={logs:'#8b5a2b',planks:'#c08a4f',chips:'#a36d38',charcoal:'#2a2a2a',chairs:'#8b5a2b',pellets:'#6b4226',paper:'#f5f0e0',furniture:'#a36d38'};
+  for(const f of scene.flows){
+    ctx.globalAlpha=Math.min(1,f.life*1.5);
+    ctx.fillStyle=cols[f.res]||'#c08a4f';
+    ctx.fillRect(f.x-3,f.y-2,6,4);
+    ctx.globalAlpha=1;
+  }
 }
 
 /* ===================== MAIN RENDER ===================== */
 let cSig='',bS='';
+let chopRateDisplay=0;
+let curTab='bld';
 function render(){
   if(!M) M=computeMods();
-  $('hCoins').textContent=fmt(S.coins);
+  // coin tick animation
+  const target=S.coins;
+  if(Math.abs(dispCoins-target)>0.5){
+    dispCoins+=(target-dispCoins)*0.25;
+    if(Math.abs(dispCoins-target)<1) dispCoins=target;
+  } else dispCoins=target;
+  const coinEl=$('hCoins');
+  const shown=fmt(dispCoins);
+  if(coinEl.textContent!==shown){
+    coinEl.textContent=shown;
+    if(target>lastDispCoins+0.5){coinEl.classList.remove('tick');void coinEl.offsetWidth;coinEl.classList.add('tick');}
+    lastDispCoins=target;
+  }
   $('hIncome').textContent='🪙 '+fr(coinRate)+'/s';
   $('hLogs').textContent='+'+fr(logRate()+chopRateDisplay*chopPower())+'/s';
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const t=TREES[S.tree]; $('chopTree').textContent=t.icon; $('chopTree').style.filter=t.flt; $('forestName').textContent=t.name+' Forest';
   $('chopSub').textContent=`+${fmt(chopPower(),chopPower()<10?1:0)} log${chopPower()===1?'':'s'} per chop`;
+  // unlock celebration
+  const bldSig=BUILDINGS.map(b=>S.buildings[b.id].lvl>0?1:0).join('');
+  if(prevBldSig && bldSig!==prevBldSig && bldSig>prevBldSig) {/* already toasted in buy */}
+  prevBldSig=bldSig;
+  if(prevTree>=0 && S.tree>prevTree) {/* already toasted */}
+  prevTree=S.tree;
+
   const s1=colSig(); if(s1!==cSig){cSig=s1;buildCollectors();}
   const s2=bSig(); if(s2!==bS){bS=s2;buildBuildings();}
   updateCollectors(); updateBuildings(); updateChain(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); renderEvents();
@@ -785,15 +1274,21 @@ function render(){
 function rebuildAll(){cSig='';bS='';chainSig='';mktSig='';upgSig='';treeSig='';evSig='';M=computeMods();render();}
 
 /* ===================== INPUT ===================== */
-let chopRateDisplay=0;
-let curTab='bld';
 function setupUI(){
+  // header icons
+  $('kCoins').innerHTML=iconHtml('coins',14)+' Coins';
+  $('kLogs').innerHTML=iconHtml('logs',14)+' Logs';
+  $('kSeeds').innerHTML=iconHtml('seeds',14)+' Seeds';
+  $('logoIcon').innerHTML=svgIcon('tree',28);
+
   const cb=$('chopBtn');
   cb.addEventListener('click',ev=>{
     const n=chop(); const p=$('chopPanel').getBoundingClientRect();
     const x=(ev.clientX||p.left+p.width/2)-p.left+(Math.random()*30-15), y=(ev.clientY||p.top+120)-p.top-10;
     floatText(x,y,'+'+fmt(n,n<10?1:0)+' 🪵',$('chopPanel'));
-    cb.classList.remove('shake');void cb.offsetWidth;cb.classList.add('shake');
+    cb.classList.remove('shake','swing');void cb.offsetWidth;cb.classList.add('shake','swing');
+    $('chopPanel').classList.remove('shake-panel');void $('chopPanel').offsetWidth;$('chopPanel').classList.add('shake-panel');
+    woodChips();
     render();
   });
   $('multSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -803,18 +1298,20 @@ function setupUI(){
     $('tabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
     ['bld','upg','forest','co'].forEach(t=>$('tab-'+t).classList.toggle('hidden',t!==curTab));render();});
   $('saveBtn').onclick=()=>save();
+  $('muteBtn').onclick=()=>toggleMute();
   $('resetBtn').onclick=()=>confirmModal('Reset everything?','This permanently wipes your save, including Seeds. This cannot be undone.','Wipe save',hardReset);
   $('prestigeBtn').onclick=()=>{const g=pendingSeeds(); if(g<1) return;
     confirmModal('🌱 Replant the Forest?',`You will sell the company and start over with <b>+${g} Seeds</b> (total ${S.seeds+g}, giving <b>+${(S.seeds+g)*10}%</b> production).<br><br>Coins, stock, collectors, buildings, upgrades and trees reset.`,'Replant',doPrestige);};
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
+  updateMuteBtn();
 }
 
 /* ===================== LOOP ===================== */
 let lastNow=Date.now(), lastSaveAt=Date.now();
 function loop(){
   const now=Date.now(); let dt=(now-lastNow)/1000; lastNow=now;
-  if(dt>15){ // tab was throttled / asleep — catch up like offline
+  if(dt>15){
     const r=simulateOffline(Math.min(dt,OFFLINE_CAP)); if(r.coins>0) toast(`⏱️ Caught up ${fmtTime(dt)}: +🪙${fmt(r.coins)}`);
   } else if(dt>0){ while(dt>0){const d=Math.min(dt,0.25);tick(d,false);dt-=d;} }
   chopRateEma*=0.9; chopRateDisplay+=(chopRateEma-chopRateDisplay)*0.2;
@@ -833,10 +1330,10 @@ function init(){
   const loaded=load();
   M=computeMods();
   setupUI();
+  initScene();
   if(loaded){
     const elapsed=(Date.now()-S.lastSave)/1000;
     if(elapsed>10){const sec=Math.min(elapsed,OFFLINE_CAP);const r=simulateOffline(sec);welcomeBack(elapsed,r);}
-    // seed rate display from current state
     tick(0.1,false);
   }
   rebuildAll();
@@ -847,9 +1344,10 @@ function init(){
 // test / debug hook
 window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,buyCollector,buyBuilding,buyUpgrade,buyTree,sellAll,doPrestige,hardReset,save,load,
   pendingSeeds,logRate:()=>{M=computeMods();return logRate();},price:id=>{M=computeMods();return price(id);},bstat,rates,get coinRate(){return coinRate;},
-  triggerEvent,render,rebuildAll,COLLECTORS,BUILDINGS,UPGRADES,TREES,bulkCost,COL_SCALE,setBuyMult:m=>{buyMult=m;}};
+  triggerEvent,render,rebuildAll,COLLECTORS,BUILDINGS,UPGRADES,TREES,bulkCost,COL_SCALE,setBuyMult:m=>{buyMult=m;},VERSION,migrateSave};
 init();
 })();
+
 </script>
 </body>
 </html>
