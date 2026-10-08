@@ -20,7 +20,7 @@ with sync_playwright() as p:
     pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(800)
     S=pg.evaluate('TT.S')
-    ok(S['version']=='1.2','save migrated to 1.2')
+    ok(S['version']==pg.evaluate('TT.VERSION'),'save migrated to current version')
     ok(S['collectors']['lumberjack']==30 and S['tree']==1,'old progress kept')
     got=sorted(k for k in S['ach'])
     print('unlocked from old save:',got)

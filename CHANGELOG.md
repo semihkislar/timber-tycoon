@@ -5,6 +5,33 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3] — 2026-10-08
+
+### Added
+- **Building milestones** ⭐: at levels 10, 25, 50, 100, 200 and 400 every building doubles its speed (×2 per star, stacking)
+- Milestone row on each building card: lit stars, a gold progress bar to the next milestone, and the current speed multiplier
+- Milestone celebration: toast, card glow pulse, confetti and a spinning gold star with "×2 speed!" over the building in the scene
+- **Yard workers** 👷 (Lumber Inc. style): hard-hat workers in colour-coded vests walk a dirt yard in front of the factory row, carrying logs from a new log pile at the forest edge, planks from the Sawmill, chips from the Chipper and chairs from the Carpentry to the buildings that need them, then walk back empty
+- Each building has 1 yard worker plus 1 per milestone (max 5); they slow down when the building is starved and nap ("z") when it is switched off
+- Log pile at the forest edge grows with your log stock; delivery pops when cargo is dropped off
+- Scene level badges show milestone stars (e.g. `L45 ★★`)
+- 3 new trophies: Milestone!, Star Factory (10 stars) and Centurion (any building Lv 100) — 32 in total
+- Company stats show milestone stars
+- `test/v13.py` covering milestones, yard workers, v1.2 save migration and mobile
+
+### Changed
+- Version bumped to `v1.3`; release screenshots show the Buildings tab with milestones
+
+### Fixed / Compatibility
+- v1.2 saves load cleanly; milestones come from existing building levels, so older empires get their stars (and the new trophies) straight away
+
+### Next ideas
+- Research tree / skill points spent on specialisations
+- Daily contracts (deliver X chairs in Y minutes for a reward)
+- Seasonal visuals (autumn/winter forest) and weather in the scene
+- Market cart / delivery truck carrying finished goods off-screen
+- Managers that auto-upgrade a building to its next milestone
+
 ## [1.2] — 2026-10-07
 
 ### Added
@@ -63,6 +90,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Random timed events, offline progress (capped at 8h), autosave every 10s
 - `window.TT` test/debug hook; Playwright functional & balance tests
 
+[1.3]: ./releases/timber-tycoon-v1.3.html
 [1.2]: ./releases/timber-tycoon-v1.2.html
 [1.1]: ./releases/timber-tycoon-v1.1.html
 [1.0]: ./releases/timber-tycoon-v1.0.html
