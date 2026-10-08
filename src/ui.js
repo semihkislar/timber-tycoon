@@ -21,25 +21,28 @@ const SHEETS={
   ach:{title:'Trophies',icon:'ach'},
   co:{title:'Replant & Stats',icon:'co'},
   set:{title:'Settings',icon:'set'},
+  ord:{title:'Client Orders',icon:'ord'},
+  prem:{title:'Premium Factory Area',icon:'prem'},
 };
 function openSheet(name,arg){
   const prev=curSheet;
   if(prev==='ach'&&name!=='ach') achFresh={};
   curSheet=name; sheetBld=name==='bld'?arg:null;
   Object.keys(SHEETS).forEach(k=>$('pane-'+k).classList.toggle('hidden',k!==name));
-  const sh=$('sheet'); sh.classList.add('open'); sh.setAttribute('aria-hidden','false');
+  const sh=$('sheet'); sh.classList.add('open'); document.body.classList.add('sheet-on'); sh.setAttribute('aria-hidden','false');
   if(name==='bld'){ const b=BMAP[arg]; $('shTitle').textContent=b.name; $('shIc').innerHTML=svgIcon(b.svg,30); }
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
-  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig='';
+  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; premSig='';
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
+  if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
 }
 function closeSheet(){
   if(curSheet==='ach') achFresh={};
   curSheet=null; sheetBld=null;
-  const sh=$('sheet'); sh.classList.remove('open'); sh.setAttribute('aria-hidden','true');
+  const sh=$('sheet'); sh.classList.remove('open'); document.body.classList.remove('sheet-on'); sh.setAttribute('aria-hidden','true');
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.remove('on'));
 }
 function sheetTop(){const sh=$('sheet'); if(!sh.classList.contains('open')) return window.innerHeight; const b=parseFloat(getComputedStyle(sh).bottom)||0; return window.innerHeight-b-sh.offsetHeight;}
@@ -86,11 +89,12 @@ function updateCollectors(){
 }
 
 /* ===================== RENDER: BUILDING SHEET ===================== */
-function bVisible(b,i){if(i===undefined) i=BUILDINGS.indexOf(b); return S.buildings[b.id].lvl>0||S.totalEarned>=b.cost*0.25||i===0;}
+function bVisible(b,i){if(b.premium) return S.premium.lvl>0; if(i===undefined) i=BUILDINGS.indexOf(b); return S.buildings[b.id].lvl>0||S.totalEarned>=b.cost*0.25||i===0;}
 function statusOf(b){
   const st=S.buildings[b.id],bs=bstat[b.id];
   if(!st.lvl) return {cls:'off',txt:'Not built',f:0};
   if(!st.on) return {cls:'off',txt:'⏸ Off',f:0};
+  if(bs.full&&bs.f<0.985) return {cls:'bad',txt:`⛔ Storage FULL: ${RMAP[bs.full].name}`,f:bs.f};
   if(bs.f<0.985) return {cls:'bad',txt:`⚠ Starved: ${RMAP[bs.lim]?RMAP[bs.lim].name:'input'}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};
 }
@@ -131,6 +135,7 @@ function updateBuildingSheet(){
   const bb=$('bpBuy'); const bh=costBtnHtml(st.lvl?`⬆ Upgrade${n>1?' +'+n:''}`:'🔨 Build',cost); if(bb._h!==bh){bb.innerHTML=bh;bb._h=bh;}
   bb.disabled=S.coins+1e-9<cost;
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
+  updateStorageBlock(b);
 }
 function cycleBuilding(d){
   if(!sheetBld) return; let i=BUILDINGS.findIndex(b=>b.id===sheetBld);

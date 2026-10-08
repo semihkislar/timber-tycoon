@@ -52,8 +52,8 @@ const DOCKB=[30.45,20.0], DOCK_R=1.0;
 function dockTruckLegs(){
   const A=[DOCKB[0]+DOCK_R,DOCKB[1]+DOCK_R];
   return [
-    {pa:densePath([[A[0],-18],[A[0],A[1]-3.6]]),vmax:3.6,hold:(v)=>scene.dockTrucks.some(o=>o!==v&&(o.li===1||o.li===2||o.li===3||(o.li===4&&o.s<2.2)))},
-    {pa:densePath([[A[0],A[1]-3.6],[A[0],A[1]]]),vmax:2.2},
+    {pa:densePath([[A[0],-18],[A[0],A[1]-3.6]]),vmax:3.6,lane:true,hold:(v)=>scene.dockTrucks.some(o=>o!==v&&(o.li===1||o.li===2||o.li===3||(o.li===4&&o.s<2.2)))},
+    {pa:densePath([[A[0],A[1]-3.6],[A[0],A[1]]]),vmax:2.2,lane:true},
     {pa:densePath(arcPts(t=>{const th=t*Math.PI/2;return [A[0]-DOCK_R*(1-Math.cos(th)),A[1]-DOCK_R*Math.sin(th)];},12)),rev:true,vmax:1.1},
     {pa:densePath([[DOCKB[0],DOCKB[1]],[DOCKB[0]+.001,DOCKB[1]]]),vmax:.5,hold:(v,dt)=>{v.doors=Math.min(1,(v.doors||0)+dt*1.6);return v.load<1||v.doors<1;}},
     {pa:densePath([...arcPts(t=>{const th=(1-t)*Math.PI/2;return [DOCKB[0]+DOCK_R*Math.cos(th),DOCKB[1]+DOCK_R*(1-Math.sin(th))];},12),[A[0],60]]),vmax:3.8}
@@ -115,9 +115,9 @@ function stepPlanter(p,dt){
 }
 function syncEntities(){
   // yard workers (v1.3 system, walking the iso lane)
-  const ysig=BUILDINGS.map(b=>b.id+workersFor(b.id)).join(',')+'|'+(S.buildings.chipper.lvl>0)+(S.buildings.sawmill.lvl>0);
+  const ysig=MAIN_BLD.map(b=>b.id+workersFor(b.id)).join(',')+'|'+(S.buildings.chipper.lvl>0)+(S.buildings.sawmill.lvl>0);
   if(ysig!==yardSigV){yardSigV=ysig; const old=scene.workers; scene.workers=[];
-    for(const b of BUILDINGS){const n=workersFor(b.id);for(let k=0;k<n;k++){
+    for(const b of MAIN_BLD){const n=workersFor(b.id);for(let k=0;k<n;k++){
       const prev=old.find(o=>o.bid===b.id&&o.k===k);
       const w=prev||{bid:b.id,k,res:inputResOf(b,k),p:Math.random()*2,off:(Math.random()*2-1)*1.05,sp:.9+Math.random()*.3,ph:Math.random()*6,idle:false,look:mkLook(b.id.length*97+k*13+b.cost%97,{role:'worker',vest:VEST[b.id]})};
       w.path=workerRoute(w); scene.workers.push(w);}}
@@ -141,7 +141,7 @@ function syncEntities(){
   const nd=Math.min(5,S.collectors.drone); while(scene.drones.length<nd) scene.drones.push({k:scene.drones.length,ph:Math.random()*6}); scene.drones.length=nd;
   const nc=Math.min(2,S.collectors.heli); while(scene.helis.length<nc) scene.helis.push({k:scene.helis.length,ph:scene.helis.length*7}); scene.helis.length=nc;
   // forklifts: carry finished goods (or raw logs early on) down the lane to the dock
-  const built=BUILDINGS.filter(b=>S.buildings[b.id].lvl>0);
+  const built=MAIN_BLD.filter(b=>S.buildings[b.id].lvl>0);
   const nf=built.length?Math.min(4,Math.ceil(built.length*.6)):(totCol()>0?1:0);
   const fsig=nf+'|'+built.map(b=>b.id).join(',');
   if(scene._fsig!==fsig){scene._fsig=fsig;scene.forklifts=[];
@@ -193,7 +193,7 @@ function updateEntities(dt){
   for(const tk of scene.dockTrucks){
     const wasLi=tk.li; if(tk.li===3) tk.load=Math.min(1,tk.load+dt*(selling?.2:0));
     if(tk.li===4) tk.doors=Math.max(0,tk.doors-dt*2);
-    stepVeh(tk,dt);
+    stepVeh(tk,dt,laneLimit(tk));
     if(wasLi===3&&tk.li===4&&tk.acc>0){const p=P(DOCKB[0],DOCKB[1],50);scene.floats.push({x:p[0],y:p[1],text:'+'+fmt(tk.acc),coin:true,t:0,dur:1.6,big:true});}
     if(wasLi===2&&tk.li===3&&scene.dockTrucks.length<3) scene.dockTrucks.push(mkDockTruck(false));
   }

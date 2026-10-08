@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const VERSION='2.1';
+const VERSION='2.2';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -48,6 +48,12 @@ const RES=[
   {id:'pellets',name:'Pellets',icon:'🟤',svg:'pellets',price:10},
   {id:'paper',name:'Paper',icon:'📜',svg:'paper',price:20},
   {id:'furniture',name:'Furniture Sets',icon:'🛋️',svg:'furniture',price:700},
+  // v2.2 premium goods (made in the Premium Factory Area)
+  {id:'giftbox',name:'Grill Gift Boxes',icon:'🎁',svg:'giftbox',price:230,premium:true},
+  {id:'flooring',name:'Artisan Flooring',icon:'🪵',svg:'flooring',price:180,premium:true},
+  {id:'stationery',name:'Premium Stationery',icon:'✒️',svg:'stationery',price:380,premium:true},
+  {id:'cabinets',name:'Designer Cabinets',icon:'🗄️',svg:'cabinets',price:380,premium:true},
+  {id:'luxfurn',name:'Luxury Furniture',icon:'👑',svg:'luxfurn',price:1900,premium:true},
 ];
 const RMAP={}; RES.forEach(r=>RMAP[r.id]=r);
 const COLLECTORS=[
@@ -67,7 +73,14 @@ const BUILDINGS=[
   {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
   {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
   {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{chairs:8,planks:20},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
+  // v2.2 premium workshops (need the Premium Area; spd = base throughput multiplier)
+  {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{charcoal:5,pellets:5},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs charcoal & pellets into grill gift boxes.'},
+  {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{planks:12,charcoal:3},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Planks + a charcoal-oil finish become artisan hardwood flooring.'},
+  {id:'stationer',name:'Stationery House',icon:'✒️',svg:'stationery',inp:{paper:8},out:{stationery:1},cost:1.2e7,scale:1.22,premium:true,spd:5,desc:'Binds fine paper into premium stationery.'},
+  {id:'cabinetry',name:'Cabinet Studio',icon:'🗄️',svg:'cabinets',inp:{chairs:2,planks:10},out:{cabinets:1},cost:4e7,scale:1.22,premium:true,spd:5,desc:'Turns chairs & planks into designer cabinets.'},
+  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,planks:20},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
 ];
+const MAIN_BLD=BUILDINGS.filter(b=>!b.premium), PREM_BLD=BUILDINGS.filter(b=>b.premium);
 const BMAP={}; BUILDINGS.forEach(b=>BMAP[b.id]=b);
 // v1.3 building milestones: each reached level doubles that building's speed and hires a yard worker
 const MILESTONES=[10,25,50,100,200,400];
@@ -117,6 +130,8 @@ const EVENTS=[
   // golden-log rewards (never rolled randomly)
   {id:'frenzy',name:'✨ Timber Frenzy',desc:'Collectors & chopping 5×!',dur:20,golden:true,req:()=>false,apply:m=>{m.colAll*=5;m.chop*=5}},
   {id:'goldrush',name:'✨ Gold Rush',desc:'All prices 3×!',dur:20,golden:true,req:()=>false,apply:m=>m.priceAll*=3},
+  // client-order reward (never rolled randomly)
+  {id:'viprush',name:'🎩 VIP Rush',desc:'A delighted client spread the word: all prices 2×!',dur:45,golden:true,req:()=>false,apply:m=>m.priceAll*=2},
 ];
 const EMAP={}; EVENTS.forEach(e=>EMAP[e.id]=e);
 const ACH_BONUS=0.02;
@@ -142,7 +157,7 @@ const ACH=[
   {id:'rate10k',t:'silver',e:'🌊',n:'Log Flood',d:'Reach 10K logs/s',p:()=>[logRate(),1e4]},
   {id:'rate1m',t:'gold',e:'🌋',n:'Deforestation Inc.',d:'Reach 1M logs/s',p:()=>[logRate(),1e6]},
   {id:'saw10',t:'bronze',e:'🪚',n:'Sawdust Everywhere',d:'Sawmill level 10',p:()=>[S.buildings.sawmill.lvl,10]},
-  {id:'allbld',t:'silver',e:'🏭',n:'Full Chain',d:'Build all 7 buildings',p:()=>[nBuilt(),BUILDINGS.length]},
+  {id:'allbld',t:'silver',e:'🏭',n:'Full Chain',d:'Build all 7 buildings',p:()=>[MAIN_BLD.filter(b=>S.buildings[b.id].lvl>0).length,MAIN_BLD.length]},
   {id:'furn',t:'silver',e:'🛋️',n:'Interior Design',d:'Build a Furniture Factory',p:()=>[S.buildings.furniture.lvl,1]},
   {id:'lvl250',t:'gold',e:'🏗️',n:'Industrial Giant',d:'250 total building levels',p:()=>[totLvl(),250]},
   {id:'sat5',t:'silver',e:'⚙️',n:'Well Oiled',d:'5 buildings at 100% at once',p:()=>[nSat(),5]},
@@ -159,13 +174,17 @@ const ACH=[
   {id:'ms1',t:'bronze',e:'⭐',n:'Milestone!',d:'Reach a building milestone (Lv 10)',p:()=>[totStars(),1]},
   {id:'ms10',t:'silver',e:'🌟',n:'Star Factory',d:'Earn 10 milestone stars',p:()=>[totStars(),10]},
   {id:'lvl100',t:'gold',e:'💯',n:'Centurion',d:'Get any building to Lv 100',p:()=>[maxLvl(),100]},
+  {id:'order1',t:'bronze',e:'📋',n:'Order Up!',d:'Complete a client order',p:()=>[(S.orders&&S.orders.done)||0,1]},
+  {id:'order10',t:'silver',e:'🤝',n:'Trusted Supplier',d:'Complete 10 client orders',p:()=>[(S.orders&&S.orders.done)||0,10]},
+  {id:'premium',t:'gold',e:'🏛️',n:'Haute Bois',d:'Open the Premium Factory Area',p:()=>[(S.premium&&S.premium.lvl)>0?1:0,1]},
 ];
 
 /* ===================== STATE ===================== */
 function freshState(keep){
   const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
     seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
-    events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0};
+    events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
+    storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]}};
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -190,6 +209,10 @@ function migrateSave(o){
   if(typeof o.golden!=='number') o.golden=0;
   // v1.2 -> v1.3: milestones are derived from building levels; nothing to add
   // v1.3 -> v2.0: visual-only overhaul (isometric scene); camera/view state is not saved
+  // v2.1 -> v2.2: storage levels, premium area and client orders (new fields; new buildings/resources come from freshState)
+  if(!o.storage||typeof o.storage!=='object') o.storage={};
+  if(!o.premium||typeof o.premium!=='object') o.premium={lvl:0};
+  if(!o.orders||typeof o.orders!=='object') o.orders={offer:null,active:null,next:(o.time||0)+60,done:0,failed:0,hist:[]};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -211,6 +234,7 @@ function computeMods(){
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
+  if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
   m.ach=1+ACH_BONUS*achCount();
   m.rep=(1+0.1*S.seeds)*m.ach;
   return m;
@@ -218,7 +242,7 @@ function computeMods(){
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRate(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
-function bSpeed(id){const l=S.buildings[id].lvl;return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep;}
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
@@ -240,15 +264,24 @@ function tick(dt,offline){
   const frac={};
   for(const k in demand) frac[k]=demand[k]>0?Math.min(1,S.res[k]/demand[k]):1;
   const pend={};
+  // v2.2 storage: each building's output stockpile has a capacity; when it's full the building pauses
+  const caps=stockCaps(), want={}, pre=[];
   for(const [b,sp] of active){
     let f=1,lim=null;
     for(const k in b.inp) if(frac[k]<f-1e-9){f=frac[k];lim=k;}
+    pre.push([b,sp,f,lim]); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f;
+  }
+  const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
+  for(const [b,sp,f0,lim] of pre){
+    let f=f0,full=null;
+    for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
     for(const k in b.inp){const a=b.inp[k]*sp*dt*f;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
     for(const k in b.out){const a=b.out[k]*sp*dt*f;pend[k]=(pend[k]||0)+a;}
     if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+b.out.planks*sp*dt*f;}
-    bstat[b.id]={f,lim,speed:sp};
+    bstat[b.id]={f,lim:full?null:lim,speed:sp,full};
   }
-  for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];}
+  for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
+  orderCollect(demand,dt,offline,pend);
   let earned=0;
   for(const r of RES){
     if(!S.autosell[r.id]) continue;
@@ -267,6 +300,7 @@ function tick(dt,offline){
     for(const r of RES){offlineAcc.p[r.id]+=fl[r.id].p;offlineAcc.s[r.id]+=fl[r.id].s;}
     for(const r of RES) rates[r.id].d=demand[r.id]/dt;
   }
+  orderTick(dt,offline);
   S.events=S.events.filter(e=>e.ends>S.time);
   if(offline){ if(S.nextEvent<S.time) S.nextEvent=S.time+60; }
   else if(S.time>=S.nextEvent){ triggerEvent(); S.nextEvent=S.time+90+Math.random()*90; }
@@ -308,6 +342,7 @@ function buyCollector(id,n){
 function buyBuilding(id,n){
   const b=BMAP[id];n=n||qty(b.cost,b.scale,S.buildings[id].lvl);
   const cost=bulkCost(b.cost,b.scale,S.buildings[id].lvl,n);
+  if(b.premium&&!(S.premium&&S.premium.lvl>0)) return false;
   if(S.coins+1e-9<cost) return false; const first=S.buildings[id].lvl===0;
   const ms0=msCount(S.buildings[id].lvl);
   S.coins-=cost; S.buildings[id].lvl+=n; M=computeMods();
@@ -336,7 +371,8 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,ach:Object.assign({},S.ach),golden:S.golden};
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,ach:Object.assign({},S.ach),golden:S.golden,
+    orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)}};
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);

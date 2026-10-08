@@ -61,7 +61,9 @@ function drawGround(ctx,x0,y0,x1,y1){
     ctx.fillStyle='rgba(255,255,255,.72)';for(let u=13;u<56;u+=2){const a=P(u/2,u/2);if(a[1]<y0-20||a[1]>y1+20)continue;ctx.fillRect(a[0]-2,a[1]+4,4,13);}
   }
   // concrete pads for every lot + yard + dock
+  drawPremGround(ctx,x0,y0,x1,y1);
   for(const L of [...Object.values(LOTS),YARD,DOCK]){
+    if(L.prem) continue;
     const {ci,cj}=L; const e=2.15;
     const pts=[P(ci-e,cj-e),P(ci+e,cj-e),P(ci+e,cj+e),P(ci-e,cj+e)];
     const bb=[pts[3][0],pts[0][1],pts[1][0],pts[2][1]]; if(bb[2]<x0-10||bb[0]>x1+10||bb[3]<y0-10||bb[1]>y1+10) continue;

@@ -6,6 +6,7 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
   for(let t=0;t<totalSec;t++){
     if(t<clickUntil) for(let i=0;i<clickPerSec;i++) T.chop();
     T.simulate(1,0.25);
+    if(T.S.orders&&T.S.orders.offer&&window.BOT_ORDERS!==false) T.acceptOrder();
     const S=T.S;
     // purchases loop
     for(let guard=0;guard<20;guard++){
@@ -21,6 +22,10 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         const sp=st.lvl?T.bstat[b.id].speed/st.lvl:1;
         cands.push({k:'b:'+b.id,cost,gain:Math.max(0,Math.min(1,ok))*val*sp+ (ok<0.3?0:0),do:()=>T.buyBuilding(b.id,1)});}
       for(const u of T.UPGRADES){ if(S.upgrades[u.id]||!u.req()) continue; cands.push({k:'u:'+u.id,cost:u.cost,gain:Math.max(T.coinRate,1)*0.25,do:()=>T.buyUpgrade(u.id)});}
+      // v2.2: premium area (unlock + showroom levels) and stock-area upgrades (+10% speed each)
+      if(T.premCost&&window.BOT_PREM!==false&&S.premium.lvl<5){const pc=T.premCost(); if(pc<S.totalEarned*3) cands.push({k:'p:area'+(S.premium.lvl+1),cost:pc,gain:S.premium.lvl?Math.max(T.coinRate,1)*0.1:Math.max(T.coinRate,1)*0.3,do:()=>T.buyPremium()});}
+      if(T.buyStorage&&window.BOT_STORAGE!==false) for(const b of T.BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||T.stoLvl(b.id)>=8) continue; let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);
+        cands.push({k:'s:'+b.id+T.stoLvl(b.id),cost:T.stoCost(b.id),gain:Math.max(0,val)*T.bstat[b.id].speed*0.1*Math.min(1,T.bstat[b.id].f||0),do:()=>T.buyStorage(b.id)});}
       const nt=T.TREES[S.tree+1]; if(nt) cands.push({k:'t:'+nt.name,cost:nt.cost,gain:Math.max(T.coinRate,1)*(nt.mult/T.TREES[S.tree].mult-1),do:()=>T.buyTree()});
       cands.forEach(c=>c.r=c.gain/c.cost);
       cands.sort((a,b)=>b.r-a.r);
@@ -32,10 +37,11 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
       if(!pick.do()) break;
       mark(pick.k,t);
     }
+    if(T.S.orders&&T.S.orders.done&&!seen['order#'+T.S.orders.done]) mark('order#'+T.S.orders.done+' done (missed '+T.S.orders.failed+')',t);
     if(T.pendingSeeds()>=1) mark('prestige>=1 seed',t);
     if([60,120,300,600,900,1200,1800,2700,3600].includes(t+1)) snaps.push({t:t+1,coins:Math.round(S.coins),earned:Math.round(S.totalEarned),income:Math.round(T.coinRate),logs:Math.round(T.logRate()),seeds:T.pendingSeeds(),
       cols:Object.entries(S.collectors).filter(x=>x[1]).map(x=>x[0]+':'+x[1]).join(' '),blds:Object.entries(S.buildings).filter(x=>x[1].lvl).map(x=>x[0]+':'+x[1].lvl+'@'+Math.round(T.bstat[x[0]].f*100)+'%').join(' '),
-      upg:Object.keys(S.upgrades).length,tree:S.tree});
+      upg:Object.keys(S.upgrades).length,tree:S.tree,prem:S.premium?S.premium.lvl:0,orders:S.orders?S.orders.done+'/'+(S.orders.done+S.orders.failed):''});
   }
   return {log,snaps};
 };

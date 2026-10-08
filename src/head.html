@@ -214,6 +214,41 @@ button{font:inherit;color:inherit}
 @keyframes confFall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(140px) rotate(360deg)}}
 .float{position:absolute;pointer-events:none;font-weight:800;color:var(--gold);text-shadow:0 2px 0 #000;animation:floatUp 1s ease-out forwards;z-index:5;white-space:nowrap}
 @keyframes floatUp{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
+/* ---------- v2.2: order card, orders & premium panes, stock area ---------- */
+#orderCard{position:fixed;z-index:40;left:12px;top:calc(var(--tb) + 40px + env(safe-area-inset-top));width:290px;background:linear-gradient(160deg,#fff8e6,#f7e3c0);color:var(--ink);
+  border:2.5px solid #e8b13a;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 0 4px rgba(245,200,76,.25);padding:10px 11px;cursor:pointer;font-size:13px}
+#orderCard.hidden{display:none}
+#orderCard.pop{animation:ocIn .55s cubic-bezier(.2,1.4,.4,1),ocGlow 1.6s ease-in-out .55s 3}
+@keyframes ocIn{0%{opacity:0;transform:translateX(-40px) scale(.85) rotate(-3deg)}100%{opacity:1;transform:none}}
+@keyframes ocGlow{0%,100%{box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 0 4px rgba(245,200,76,.25)}50%{box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 0 9px rgba(245,200,76,.55)}}
+.oc-h{display:flex;align-items:center;gap:8px}
+.oc-e{font-size:24px;width:38px;height:38px;border-radius:12px;background:#2a1d14;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 2px #f5c84c;flex:none}
+.oc-e.big{width:46px;height:46px;font-size:28px}
+.oc-t{display:flex;flex-direction:column;line-height:1.15}.oc-t small{font-size:10px;font-weight:900;letter-spacing:.6px;color:#b06a00}.oc-t b{font-size:14.5px}
+.oc-b{display:flex;align-items:center;gap:8px;margin:7px 0 4px;line-height:1.3}
+.oc-ic{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;background:#fffaf0;border:1.5px solid var(--line);border-radius:9px;flex:none}
+.oc-r{font-size:12.5px;color:var(--ink2)}.oc-r b{color:#b06a00}
+.oc-btns{display:flex;gap:6px;justify-content:flex-end;margin-top:7px}.oc-btns .gold{flex:1}
+.oc-exp{height:4px;border-radius:2px;background:#ead6b2;margin-top:7px;overflow:hidden}.oc-exp i{display:block;height:100%;background:linear-gradient(90deg,#e8a020,#ffd760);width:100%}
+#orderCard.active{display:flex;align-items:center;gap:7px;width:236px;padding:6px 8px;border-width:2px}
+#orderCard.active .oc-e{width:30px;height:30px;font-size:18px}
+#orderCard.active .oc-ic{width:26px;height:26px}
+.oc-pr{flex:1;min-width:0}.oc-l{display:flex;justify-content:space-between;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+.oc-bar{height:7px;border-radius:4px;background:#ead6b2;overflow:hidden;margin-top:3px}.oc-bar i{display:block;height:100%;background:linear-gradient(90deg,#4fa633,#8fdc63);transition:width .3s}
+#orderCard.late{border-color:#e8473c;animation:ocLate 1s ease-in-out infinite}
+@keyframes ocLate{50%{box-shadow:0 0 0 5px rgba(232,71,60,.35),0 10px 26px rgba(0,0,0,.35)}}
+.ord-card{background:#fffaf0;border:1.5px solid var(--line);border-radius:14px;padding:10px}
+.ord-card.prem{background:linear-gradient(160deg,#fffaf0,#fff1c4);border-color:#e8b13a}
+.hrow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:6px;padding:6px 8px;border-radius:10px;background:#fffaf0;border:1.5px solid var(--line);font-size:12.5px}
+.hrow small{display:block;color:var(--ink2);font-size:10.5px}.hrow.ok b{color:#2f7020}.hrow.no b{color:#b8352c}.hrow.no{opacity:.75}
+.prem-hero{display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;background:linear-gradient(135deg,#2a1d14,#4a2c1c);color:#fff3d6;border:2px solid #d8a930;margin-bottom:8px}
+.prem-hero .legend{color:#e8d6b4}.prem-hero b{color:#ffd760}
+.ph-ic svg{width:46px;height:46px}.ph-t{font-weight:900;font-size:16px;color:#ffd760}
+.prem-card{border-color:#e0c27a;background:linear-gradient(160deg,#fffaf0,#fbf0d6)}.prem-card .ic{background:#2a1d14}
+.stor{margin-top:12px;padding:9px;border-radius:12px;background:#fffaf0;border:1.5px solid var(--line)}
+.stor-h{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}.stor-h .lv{color:#c47f12;font-weight:800}.stor-h .sw{margin-left:auto}
+@media (max-width:720px){#orderCard{left:50%;transform:translateX(-50%);width:min(320px,92vw);top:auto;bottom:calc(var(--bb) + 12px + env(safe-area-inset-bottom))}body.sheet-on #orderCard{display:none}#orderCard.pop{animation:ocInM .55s cubic-bezier(.2,1.4,.4,1),ocGlow 1.6s ease-in-out .55s 3}#orderCard.active{width:min(250px,80vw)}
+  @keyframes ocInM{0%{opacity:0;transform:translate(-50%,40px) scale(.85)}100%{opacity:1;transform:translateX(-50%)}}}
 /* ---------- responsive ---------- */
 @media (max-width:720px){
   :root{--tb:48px;--bb:70px}
@@ -251,6 +286,7 @@ button{font:inherit;color:inherit}
 <nav id="bottombar">
   <button class="bb" data-s="crew" id="bbCrew"><span class="dot hidden" id="crewDot"></span><span class="bi"></span><span class="l">Crew</span></button>
   <button class="bb" data-s="market" id="bbMarket"><span class="bi"></span><span class="l">Market</span></button>
+  <button class="bb" data-s="ord" id="bbOrd"><span class="dot hidden" id="ordDot"></span><span class="bi"></span><span class="l">Orders</span></button>
   <button class="bb" data-s="upg" id="bbUpg"><span class="dot hidden" id="upgDot"></span><span class="bi"></span><span class="l">Upgrades</span></button>
   <button class="bb" data-s="ach" id="bbAch"><span class="dot hidden" id="achDot"></span><span class="bi"></span><span class="l">Trophies</span></button>
   <button class="bb" data-s="co" id="bbCo"><span class="dot hidden" id="coDot"></span><span class="bi"></span><span class="l">Replant</span></button>
@@ -271,6 +307,13 @@ button{font:inherit;color:inherit}
           <label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
         <button class="btn buy big" id="bpBuy"></button>
         <div class="pbar"><i id="bpPbar"></i></div>
+        <div class="stor hidden" id="bpStor">
+          <div class="stor-h"><b>📦 Stock area</b><span class="lv" id="bpStLv"></span><span class="chip" id="bpStChip"></span>
+            <label class="sw" title="Turn auto-sell off for this building's output to stockpile it (for orders)"><input type="checkbox" id="bpStKeep"><span class="tr"></span><span id="bpStKeepL">Keep stock</span></label></div>
+          <div class="bar" id="bpStBar"><i id="bpStBi"></i></div>
+          <div class="legend" id="bpStTx"></div>
+          <button class="btn wood" id="bpStBuy" style="width:100%;margin-top:6px"></button>
+        </div>
       </div>
     </div>
     <div class="pane" id="pane-crew">
@@ -284,6 +327,8 @@ button{font:inherit;color:inherit}
       <table class="mkt"><thead><tr><th>Item</th><th>Stock</th><th class="hm">Made/s</th><th class="hm">Used/s</th><th>Price</th><th>Auto</th><th></th></tr></thead><tbody id="mktBody"></tbody></table>
       <div class="legend">Trucks at the shipping dock haul your goods away. Auto-sell sells surplus only and always keeps a ~2s buffer for downstream buildings.</div>
     </div>
+    <div class="pane" id="pane-ord"><div id="ordBody"></div></div>
+    <div class="pane" id="pane-prem"><div id="premBody"></div></div>
     <div class="pane" id="pane-upg"><div class="list" id="upgList"></div><div class="legend" id="upgOwned"></div></div>
     <div class="pane" id="pane-ach">
       <div class="trophy-head"><span id="achHeadMedal"></span><div style="flex:1"><div class="big" id="achCount">0 / 0</div><div class="legend" style="margin-top:3px" id="achBonus">Each trophy: +2% to all production, forever.</div><div class="pbar"><i id="achBar"></i></div></div></div>
@@ -311,6 +356,7 @@ button{font:inherit;color:inherit}
     </div>
   </div>
 </section>
+<div id="orderCard" class="hidden"></div>
 <div id="toasts"></div>
 <div id="modalRoot"></div>
 <div id="fxLayer"></div>

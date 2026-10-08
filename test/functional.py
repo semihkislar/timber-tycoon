@@ -49,11 +49,11 @@ with sync_playwright() as p:
     v=pg.evaluate('TT.sellAll("planks")'); ok(v>0 and pg.evaluate('TT.S.res.planks')==0,'manual sell all planks')
     pg.evaluate('TT.S.autosell.planks=true')
     # on/off from the sheet
-    pg.locator('#pane-bld label.sw').click(); pg.evaluate('TT.simulate(2)')
+    pg.locator('#pane-bld label.sw:not(:has(#bpStKeep))').click(); pg.evaluate('TT.simulate(2)')
     ok(pg.evaluate('TT.S.buildings.sawmill.on')==False and pg.evaluate('TT.bstat.sawmill.f')==0,'sawmill toggled off in sheet')
     pg.wait_for_timeout(200)
     ok(any(w['bid']=='sawmill' and w['idle'] for w in pg.evaluate('TT.scene.workers.map(w=>({bid:w.bid,idle:!!w.idle}))')) or True,'workers idle when off')
-    pg.locator('#pane-bld label.sw').click(); ok(pg.evaluate('TT.S.buildings.sawmill.on')==True,'sawmill toggled on')
+    pg.locator('#pane-bld label.sw:not(:has(#bpStKeep))').click(); ok(pg.evaluate('TT.S.buildings.sawmill.on')==True,'sawmill toggled on')
     # upgrade from the sheet
     pg.evaluate('TT.S.coins+=400'); pg.wait_for_timeout(250); pg.click('#bpBuy')
     ok(pg.evaluate('TT.S.buildings.sawmill.lvl')==2,'upgrade via sheet button')

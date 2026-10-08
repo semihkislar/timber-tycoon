@@ -5,6 +5,75 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.2] — 2026-10-08
+
+Three new systems: a **Premium Factory Area**, **premium client orders** and **upgradable stock areas**.
+
+### Added
+- **Premium Factory Area**: a fenced compound east of the main yard, between the factory and the highway.
+  - Its plot shows from 500K earned and opens for **2M coins**. While locked it shows a "COMING SOON" board.
+  - **Showroom levels 2–5** cost 2M × 12^level; each one adds **+25 % to premium prices**.
+  - Look: dark walnut buildings with gold cornices, lit glass storefronts with goods inside, kind-specific roof details,
+    lamps, planters, and a "TIMBER CO. RESERVE" gate arch.
+  - It has its own **RESERVE dock** where black-and-gold premium trucks reverse in, load and leave by their own lane.
+    A premium forklift and staff work inside.
+  - Main-factory goods visibly travel in on an **elevated overhead conveyor**. A lift tower carries them over the
+    carpentry line and they come down to a receiving table.
+- **5 luxury workshops** fed only by main-factory products:
+
+  | Workshop | Inputs | Output (price) |
+  |---|---|---|
+  | Gift Box Atelier | charcoal + pellets | Grill Gift Boxes (230) |
+  | Parquet Workshop | planks + charcoal | Artisan Flooring (180) |
+  | Stationery House | paper | Premium Stationery (380) |
+  | Cabinet Studio | chairs + planks | Designer Cabinets (380) |
+  | Luxury Showroom | furniture + planks | Luxury Furniture (1,900) |
+
+  They share the main buildings' levels, milestones and stars, and have a Premium sheet that lists them.
+- **Client orders**:
+  - Clients start calling once you've earned 250 coins and the Sawmill runs, then every 3–5 minutes.
+  - Each offer arrives with an **animated order card**, a red dot on the new **Orders** bottom-bar button, and a client
+    **limo that drives up to the premium gate**. The client steps out under a "New order!" bubble.
+  - An offer can be accepted or declined within 75 s. You then get **3, 4 or 5 minutes** to deliver.
+  - The amount scales with your current output: 25–40 % of what you make over that time.
+  - An accepted order is a priority contract. It takes the surplus plus **at least 70 %** of the item's output, and any
+    stockpiled stock goes in right away. "Deliver from storage" also hands over the downstream buffer.
+  - **Reward**: the larger of 1.8× the goods' sale value or 25 % of your income over the time limit, ×1.25 for premium
+    goods. There's a chance of a bonus: **VIP Rush** (all prices ×2 for 45 s) or **+1 Seed** (premium orders, after 10M earned).
+  - Orders use main-factory goods early and mostly premium goods once you have them.
+  - Delivery celebration: confetti, toast, coin burst, and the client leaving happy. A missed order counts in the order
+    book but has no penalty.
+  - The Orders panel shows the live offer or progress, an order book (completed / missed / history) and a shortcut to
+    the Premium area.
+- **Stock areas**: every building now has visible stockpiles on its lot (premium ones in front of the workshop).
+  - The **input pallet** empties when the building is short of inputs, and the **output rack** fills with crates of the
+    real product.
+  - Higher levels add racking (Lv 2), a canopy (Lv 4) and gold trim (Lv 6).
+  - **Capacity** is the building's output for 60 s × 2^level, pooled per product.
+  - When the output stockpile is full, the building **pauses**. A red "⛔ FULL" pill shows over it, a "FULL" sign on
+    the rack, and "Storage FULL" in its sheet.
+  - **Upgrades (Lv 1–8)** are in the building sheet. Each costs base cost × 5 × 5^level and doubles capacity, and each
+    level adds **+5 % loading speed**.
+  - A **Keep stock** toggle turns auto-sell off for that product so stock builds up for orders.
+- 3 new trophies: *Order Up!*, *Trusted Supplier*, *Haute Bois*.
+- New `test/v22.py` (51 checks). `test/bot.js` now buys the premium area and stock upgrades and accepts orders.
+  Screenshots `screenshot-premium.png`, `screenshot-order.png` and `screenshot-storage.png`.
+
+### Changed
+- The desktop camera framing is wider so the premium compound fits. On mobile, opening the Premium sheet pans to it.
+- On mobile the order card sits above the bottom bar, so toasts never cover it, and it hides while a sheet is open.
+- Shortage badges: a mild shortage (≥70 % running) is now a small calm amber "!". The bouncing red alert is only for
+  real starvation.
+- Dock trucks, premium trucks and the client limo keep a gap from each other in the shared highway lane.
+- Balance: with default settings (auto-sell on) the early game never hits FULL. Orders, the premium area and storage
+  together make the 30-minute bot run about 2–5× faster than v2.1, depending on which orders come up.
+
+### Compatibility
+- v2.1 saves (and older ones) migrate automatically. New fields start empty: premium area locked, stock areas Lv 0,
+  no orders yet, premium workshops at 0, auto-sell on for premium goods.
+- Offline progress: stockpiles fill to their caps and stop. No new clients call while you're away, but an accepted order
+  keeps collecting and can complete (VIP Rush isn't granted offline) or expire.
+
 ## [2.1] — 2026-10-08
 
 Feedback addressed: *"the trucks are really bad"* and *"I want realistic people in the forest"*.
@@ -182,6 +251,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 - Random timed events, offline progress (capped at 8h), autosave every 10s
 - `window.TT` test/debug hook; Playwright functional & balance tests
 
+[2.2]: ./releases/timber-tycoon-v2.2.html
 [2.1]: ./releases/timber-tycoon-v2.1.html
 [2.0]: ./releases/timber-tycoon-v2.0.html
 [1.3]: ./releases/timber-tycoon-v1.3.html

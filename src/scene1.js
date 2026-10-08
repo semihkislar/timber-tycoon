@@ -101,18 +101,28 @@ const ROWC=[9,14,19,24];
 function mkLot(id,c,side){return side==='L'?{id,ci:c-3,cj:c+3,side,face:'I'}:{id,ci:c+3,cj:c-3,side,face:'J'};}
 const LOTS={sawmill:mkLot('sawmill',9,'L'),chipper:mkLot('chipper',9,'R'),kiln:mkLot('kiln',14,'L'),carpentry:mkLot('carpentry',14,'R'),
   pellet:mkLot('pellet',19,'L'),paper:mkLot('paper',19,'R'),furniture:mkLot('furniture',24,'L')};
+// v2.2 premium factory area: a fenced compound east of the yard, between the factory and the highway
+const PREM={i0:21,i1:29,j0:0,j1:9};
+function mkPLot(id,ci,cj,bs0){return {id,ci,cj,side:'P',face:'I',prem:true,bs0:bs0||1.8};}
+Object.assign(LOTS,{atelier:mkPLot('atelier',22.65,1.7),stationer:mkPLot('stationer',22.65,4.45),parquet:mkPLot('parquet',22.65,7.2),
+  cabinetry:mkPLot('cabinetry',26.35,1.6),showroom:mkPLot('showroom',26.35,4.8,2.3)});
+const PDOCK={id:'pdock',ci:28.25,cj:7.55};
+const PCONV=[[15.9,13.6],[21.6,13.6],[21.6,9.35]];   // overhead conveyor from the lane into the premium area
+const PRECV=[21.75,8.62];                             // receiving table inside the gate
 const YARD={id:'yard',ci:4,cj:4,face:'I'}, DOCK={id:'dock',ci:27,cj:21,side:'R',face:'J'};
 const LOGPICK=[6.35,6.35];
 const ROAD_I=30.9;           // asphalt road centre line (runs along j)
 const DIRT_J=8;              // dirt log road centre (runs along i)
-const RCOL={logs:'#9a6234',planks:'#e0b071',chips:'#d2a35e',charcoal:'#3a3634',chairs:'#b0703c',pellets:'#8a5a34',paper:'#f6f3ea',furniture:'#d0764e'};
-const OUT_OF={sawmill:'planks',chipper:'chips',kiln:'charcoal',carpentry:'chairs',pellet:'pellets',paper:'paper',furniture:'furniture'};
+const RCOL={logs:'#9a6234',planks:'#e0b071',chips:'#d2a35e',charcoal:'#3a3634',chairs:'#b0703c',pellets:'#8a5a34',paper:'#f6f3ea',furniture:'#d0764e',
+  giftbox:'#2a2a30',flooring:'#8a5428',stationery:'#1f3a5a',cabinets:'#4a2c1c',luxfurn:'#6a1f3a'};
+const OUT_OF={sawmill:'planks',chipper:'chips',kiln:'charcoal',carpentry:'chairs',pellet:'pellets',paper:'paper',furniture:'furniture',
+  atelier:'giftbox',parquet:'flooring',stationer:'stationery',cabinetry:'cabinets',showroom:'luxfurn'};
 const SRC_OF={planks:'sawmill',chips:'chipper',chairs:'carpentry'};
 const VEST={sawmill:'#e8742a',chipper:'#3aa0d8',kiln:'#d84a3a',carpentry:'#e8c43a',pellet:'#9a6ad8',paper:'#4ac0a0',furniture:'#e85a9a'};
 function msOf(id){return msCount(S.buildings[id].lvl);}
 function lotBox(L){
   const ms=L.id==='dock'||L.id==='yard'?0:msOf(L.id);
-  let bs=Math.min(3.5,2.8+0.14*ms); if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); if(L.id==='dock') bs=3.0;
+  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); if(L.id==='dock') bs=3.0;
   const hb=bs/2; return {i0:L.ci-hb,i1:L.ci+hb,j0:L.cj-hb,j1:L.cj+hb,bs,ms};
 }
 function doorOf(L){const b=lotBox(L);return L.face==='I'?[b.i1+.38,b.j0+b.bs*.28]:[b.i0+b.bs*.28,b.j1+.38];}
@@ -129,6 +139,7 @@ function inFactory(u,v){const i=(u+v)/2,j=(u-v)/2;return yardTile(Math.floor(i),
 function zoneAt(i,j){
   if(i>=30&&i<32) return 'road';
   if(j>=7&&j<9&&i<6.2) return 'dirt';
+  if(i>=PREM.i0&&i<PREM.i1&&j>=PREM.j0&&j<PREM.j1) return 'prem';
   const u=i+j,v=i-j;
   if(inFactory(u,v)) return 'yard';
   return 'grass';

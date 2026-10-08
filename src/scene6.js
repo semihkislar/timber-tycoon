@@ -10,7 +10,7 @@ function fitCamera(instant){
   const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h;
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
-  const bx0=portrait?-340:-480, bx1=portrait?356:440, by0=portrait?-66:-62, by1=portrait?900:826;
+  const bx0=portrait?-340:-480, bx1=portrait?356:880, by0=portrait?-66:-62, by1=portrait?900:826;
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -59,8 +59,10 @@ function updateHover(x,y){const h=hitTest(x,y);const on=h.type!=='none'||(golden
 function hitTest(sx,sy){
   const [wx,wy]=s2w(sx,sy);
   let best=null;
-  for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
+  for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.prem&&!S.premium.lvl) continue;if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
   if(best) return {type:best.id==='yard'?'yard':best.id==='dock'?'dock':'bld',id:best.id};
+  {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
+    if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
   const [gi,gj]=toGrid(wx,wy);
   for(const d of [0,.7,1.4,2.1]) if(isForestPt(gi+d,gj+d)) return {type:'forest',i:gi,j:gj};
   return {type:'none'};
@@ -75,6 +77,7 @@ function sceneTap(sx,sy){
     openSheet('bld',h.id);
   } else if(h.type==='yard') openSheet('crew');
   else if(h.type==='dock') openSheet('market');
+  else if(h.type==='prem') openSheet('prem');
   else if(h.type==='forest') forestChop(sx,sy);
   else closeSheet();
 }
@@ -122,7 +125,7 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  syncEntities(); updateEntities(dt); updateGolden(dt);
+  syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -136,7 +139,7 @@ function drawScene(dt){
   drawChunks(ctx,vx0,vy0,vx1,vy1,scene.firstFrame);
   const inView=(x,y,m)=>x>vx0-m&&x<vx1+m&&y>vy0-m&&y<vy1+m*2;
   // decals: conveyors, dynamic shadows
-  const lots=BUILDINGS.map(b=>LOTS[b.id]);
+  const lots=MAIN_BLD.map(b=>LOTS[b.id]);
   for(const L of lots) drawConveyor(ctx,L);
   const objs=[];
   for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!t.stump&&!t.down&&!t.fall) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
@@ -171,6 +174,8 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
+  premDraw(ctx,objs,inView);
+  for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
   scene.objCount=objs.length;
@@ -222,7 +227,7 @@ function coinAt(ctx,x,y,r,kind){
 function drawOverlays(ctx){
   const z=scene.cam.z, t=scene.t;
   const showTags=z>.33;
-  for(const b of BUILDINGS){const L=LOTS[b.id],st=S.buildings[b.id];if(!L.top) continue;
+  for(const b of BUILDINGS){const L=LOTS[b.id],st=S.buildings[b.id];if(!L.top) continue;if(b.premium&&!S.premium.lvl) continue;
     const [sx,sy]=w2s(L.top[0],L.top[1]);
     if(sx<-80||sx>scene.w+80||sy<-60||sy>scene.h+120) continue;
     if(!st.lvl){
@@ -237,14 +242,17 @@ function drawOverlays(ctx){
     const bs=bstat[b.id], starved=st.on&&bs.f<0.985, ms=msCount(st.lvl);
     if(showTags){
       const hov=scene.hover===b.id||sheetBld===b.id;
-      const fp=P(L.ci+(L.face==='I'?1.95:.2),L.cj+(L.face==='I'?.2:1.95),0); const [px,py]=w2s(fp[0],fp[1]);
+      const fp=L.prem?P(L.ci-.2,L.cj-.2,L.id==='showroom'?62:44):P(L.ci+(L.face==='I'?1.95:.2),L.cj+(L.face==='I'?.2:1.95),0); let [px,py]=w2s(fp[0],fp[1]); if(L.prem) px-=30*Math.max(.8,Math.min(1.4,scene.cam.z)); // v2.2: premium tags float above the roof so they never cover a name board
       const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'');
       pill(ctx,px,py+2,txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
     }
-    if(starved){const by=sy-8+Math.sin(t*5)*3;ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,12,0,TAU);ctx.fill();
-      ctx.fillStyle='#e8473c';ctx.beginPath();ctx.arc(sx,by,12,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(sx-5,by+9);ctx.lineTo(sx+5,by+9);ctx.lineTo(sx,by+16);ctx.closePath();ctx.fill();
-      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sx,by,12,0,TAU);ctx.stroke();
-      ctx.fillStyle='#fff';ctx.font='900 15px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',sx,by+1);
+    if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
+    else if(starved){
+      // v2.2: mild shortages (>=70% running) get a small calm amber badge; real starvation keeps the bouncing red alert
+      const bad=bs.f<.7, R=bad?12:8.5, by=sy-8+(bad?Math.sin(t*5)*3:0);ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,R,0,TAU);ctx.fill();
+      ctx.fillStyle=bad?'#e8473c':'#e3a32a';ctx.beginPath();ctx.arc(sx,by,R,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(sx-R*.42,by+R*.75);ctx.lineTo(sx+R*.42,by+R*.75);ctx.lineTo(sx,by+R*1.33);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sx,by,R,0,TAU);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font=`900 ${bad?15:11}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',sx,by+1);
     } else if(!st.on){ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle='rgba(40,40,70,.7)';ctx.lineWidth=3;ctx.textAlign='center';ctx.textBaseline='middle';
       for(let k=0;k<3;k++){const ph=(t*.6+k/3)%1;ctx.globalAlpha=Math.sin(ph*Math.PI);ctx.font=`900 ${11+ph*8}px system-ui`;ctx.strokeText('z',sx+ph*16-4,sy-ph*26);ctx.fillText('z',sx+ph*16-4,sy-ph*26);}ctx.globalAlpha=1;}
     if(scene.msFlash&&scene.msFlash.id===b.id){const k=scene.msFlash.t/1.6, y2=sy-20-(1-k)*30;ctx.save();ctx.globalAlpha=Math.min(1,k*2);ctx.translate(sx,y2);ctx.rotate((1-k)*6);
@@ -256,6 +264,7 @@ function drawOverlays(ctx){
     for(const [L,txt,id] of [[YARD,'Log Yard','yard'],[DOCK,'Shipping','dock']]){if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const hov=scene.hover===id;
       pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
   }
+  premOverlays(ctx,showTags);
   // floating numbers
   for(const f of scene.floats){const k=f.t/f.dur;const [sx,sy]=w2s(f.x,f.y);const y=sy-k*(f.big?60:44);ctx.globalAlpha=k<.7?1:1-(k-.7)/.3;
     const fs=f.big?20:f.timber?17:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;
