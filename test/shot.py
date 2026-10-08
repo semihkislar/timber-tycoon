@@ -1,4 +1,5 @@
 # screenshots: early / mid-game desktop / mobile / building sheet / v2.1 zoomed forest crew + trucks / v2.2 premium, order, storage
+# v2.3: night, winter, autumn, rain (every shot pins the world clock + weather so results are deterministic)
 import sys
 from playwright.sync_api import sync_playwright
 URL='file:///workspace/lumber-idle/lumber-idle.html'
@@ -17,13 +18,29 @@ with sync_playwright() as p:
         ('screenshot-premium.png', {'width':1280,'height':800}, 3000, '@premium'),
         ('screenshot-order.png', {'width':1280,'height':800}, 3000, '@order'),
         ('screenshot-storage.png', {'width':1280,'height':800}, 2400, '@storage'),
+        ('screenshot-night.png', {'width':1280,'height':800}, 2400, '@night'),
+        ('screenshot-winter.png', {'width':1280,'height':800}, 2400, '@winter'),
+        ('screenshot-autumn.png', {'width':1280,'height':800}, 2400, '@autumn'),
+        ('screenshot-rain.png', {'width':1280,'height':800}, 2400, '@rain'),
+        ('screenshot-mobile-night.png', {'width':430,'height':900}, 1100, '@mnight'),
     ]
+    D=420
+    # (clock seconds, weather) per shot; default = spring, late morning, fair
+    WORLD={'@night':(D*.93,'clear'),'@mnight':(D*.95,'snow',9),'@winter':(D*9+D*.46,'snow'),'@autumn':(D*6+D*.715,'wind'),'@rain':(D*1+D*.56,'rain')}
+    def world(pg,sheet):
+        c,w=WORLD.get(sheet,(D*.45,'clear'))[:2]; extra=WORLD.get(sheet,(0,0,0))[2] if len(WORLD.get(sheet,()))>2 else 0
+        pg.evaluate(f"(()=>{{TT.setClock({c+extra*D});TT.setWeather('{w}',900);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']=1;TT.scene.wet={1 if w=='rain' else 0};if('{sheet}' in {{'@night':1,'@winter':1,'@autumn':1,'@rain':1,'@mnight':1}}){{TT.S.orders.active=null;TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;TT.scene.orderEv=null;}}}})()")
     FOCUS={
       # zoom on the top forest work zone, centred on the axe/saw crew there
       '@forest':'''(()=>{const fp=TT.forestPeople().filter(q=>q.i+q.j<3&&q.type!=='crew');let i=-1,j=2;if(fp.length){i=fp.reduce((a,q)=>a+q.i,0)/fp.length;j=fp.reduce((a,q)=>a+q.j,0)/fp.length;}
         const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=2.7;const p=TT.P(i,j);c.x=c.tx=p[0];c.y=c.ty=p[1]+10;})()''',
       # zoom on the shipping dock + road with a truck loading at the bay and the next one queued
       '@trucks':'''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=2.1;const p=TT.P(28.6,18.6);c.x=c.tx=p[0];c.y=c.ty=p[1];})()''',
+      '@night':'''(()=>{const c=TT.cam;c.z=c.tz=Math.min(c.maxZ,c.fitZ*1.45);const p=TT.P(20,17,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()''',
+      '@winter':'''(()=>{TT.fitCamera(true);})()''',
+      '@autumn':'''(()=>{const c=TT.cam;c.z=c.tz=Math.min(c.maxZ,c.fitZ*1.3);const p=TT.P(10,10,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()''',
+      '@rain':'''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.8;const p=TT.P(16.5,16.5,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()''',
+      '@mnight':'''(()=>{TT.fitCamera(true);})()''',
     }
     # v2.2: make sure every luxury workshop exists for the premium close-up
     PREM_SETUP='''(()=>{const c0=TT.S.coins;TT.S.coins=1e30;if(!TT.S.premium.lvl)TT.buyPremium();while(TT.S.premium.lvl<3)TT.buyPremium();for(const b of TT.PREM_BLD) if(TT.S.buildings[b.id].lvl<3) TT.buyBuilding(b.id,3-TT.S.buildings[b.id].lvl);
@@ -35,17 +52,20 @@ with sync_playwright() as p:
     FOCUS['@premium']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.75;const p=TT.P(25.2,5.6,14);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
     FOCUS['@order']='''(()=>{const c=TT.cam;c.z=c.tz=Math.min(c.maxZ,c.fitZ*1.55);const p=TT.P(25.5,4.2,10);c.x=c.tx=p[0]-60;c.y=c.ty=p[1]+30;})()'''
     FOCUS['@storage']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.9;const L=TT.LOTS.kiln;const p=TT.P(L.ci-.2,L.cj+.6,10);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
+    import os
+    ONLY=[x for x in os.environ.get('ONLY','').split(',') if x]
     for name,vp,sec,sheet in jobs:
+        if ONLY and not any(o in name for o in ONLY): continue
         ctx=b.new_context(viewport=vp, device_scale_factor=1); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         pg.goto(URL); pg.wait_for_timeout(300); pg.add_script_tag(path='/workspace/lumber-idle/test/bot.js')
         pg.evaluate(f'runBot({sec},3,{min(300,sec)})')
-        pg.evaluate('TT.S.events=[]; TT.S.nextEvent=TT.S.time+999; TT.checkAch(true); TT.fitCamera(true)')
+        pg.evaluate('TT.S.events=[]; TT.S.nextEvent=TT.S.time+999; TT.checkAch(true); TT.fitCamera(true)'); world(pg,sheet)
         pg.wait_for_timeout(2600)
         pg.evaluate(CLEAN)
         if sec<100: pg.evaluate('for(let i=0;i<4;i++) TT.chop()')
         else: pg.evaluate('TT.spawnGolden()')
-        if sheet in ('@premium','@order'): pg.evaluate(PREM_SETUP); pg.wait_for_timeout(1500)
+        if sheet in ('@premium','@order','@night','@winter','@autumn','@rain'): pg.evaluate(PREM_SETUP); pg.wait_for_timeout(1500)
         if sheet=='@order':
             pg.evaluate("TT.S.orders.active=null;TT.S.orders.offer=null;TT.scene.client=null;TT.offerOrder('luxfurn')")
             for k in range(120):
@@ -66,7 +86,7 @@ with sync_playwright() as p:
         elif sheet:
             pt=pg.evaluate(f'TT.lotScreen("{sheet}")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(900)
         else: pg.wait_for_timeout(700)
-        pg.evaluate(CLEAN)
+        pg.evaluate(CLEAN); world(pg,sheet); pg.wait_for_timeout(1200 if sheet in WORLD else 50); pg.evaluate(CLEAN)
         pg.screenshot(path=OUT+name)
         print(name, pg.evaluate('JSON.stringify({c:Math.round(TT.S.coins),tree:TT.S.tree,sheet:TT.curSheet,b:Object.fromEntries(Object.entries(TT.S.buildings).map(([k,v])=>[k,v.lvl]))})'))
         ctx.close()

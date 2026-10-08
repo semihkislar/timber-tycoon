@@ -172,8 +172,8 @@ function updateEntities(dt){
     if(tr.shake>0) tr.shake=Math.max(0,tr.shake-dt*2.8);
     if(tr.fall>0){tr.fall+=dt/1.35;if(tr.fall>=1){tr.fall=0;tr.down=1;const c=trunkMid(tr);const p=P(c[0],c[1]);for(let k=0;k<16;k++) emitP(p[0]+(Math.random()-.5)*40,p[1],'dust');}}
     else if(tr.down){ if(!tr.claim){tr.down=0;tr.stump=40;} }
-    else if(tr.stump>0){tr.stump-=dt;if(tr.stump<=0){tr.stump=0;tr.grow=.14;}}
-    else if(tr.grow<1){tr.grow=Math.min(1,tr.grow+dt*.055);}
+    else if(tr.stump>0){tr.stump-=dt*(seasonIdx()===0?2.2:1);if(tr.stump<=0){tr.stump=0;tr.grow=.14;}}   // v2.3: spring regrowth
+    else if(tr.grow<1){tr.grow=Math.min(1,tr.grow+dt*(seasonIdx()===0?.1:.055));}
   }
   for(const h of scene.harvesters){h.ph+=dt;const dir=Math.cos(h.ph*.25)>=0?1:-1;const y=dir>0?Math.PI/2:-Math.PI/2;h.yaw=h.yaw===undefined?y:angLerp(h.yaw,y,Math.min(1,dt*2.5));}
   for(const d of scene.drones) d.ph+=dt;

@@ -24,7 +24,7 @@ function box(ctx,i0,j0,i1,j1,z0,z1,col,o){
   const a=P(i1,j0,z0),b=P(i1,j1,z0),c=P(i0,j1,z0),at=P(i1,j0,z1),bt=P(i1,j1,z1),ct=P(i0,j1,z1),dt=P(i0,j0,z1);
   fillP(ctx,[b,c,ct,bt],o.left||shade(col,.9));
   fillP(ctx,[a,b,bt,at],o.right||shade(col,.7));
-  if(o.top!==false) fillP(ctx,[dt,at,bt,ct],o.top||shade(col,1.1));
+  if(o.top!==false) fillP(ctx,[dt,at,bt,ct],SEAS===3&&z1>=9&&!o.nosnow?SNOW:(o.top||shade(col,1.1)));
   if(o.edge!==false){ctx.strokeStyle=o.edgeCol||EDGE;ctx.lineWidth=o.lw||1;ctx.beginPath();
     ctx.moveTo(c[0],c[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(a[0],a[1]);ctx.lineTo(at[0],at[1]);if(o.top!==false){ctx.lineTo(dt[0],dt[1]);ctx.lineTo(ct[0],ct[1]);}else ctx.moveTo(ct[0],ct[1]);ctx.lineTo(c[0],c[1]);
     ctx.moveTo(b[0],b[1]);ctx.lineTo(bt[0],bt[1]);ctx.stroke();
@@ -35,6 +35,8 @@ function boxHit(i0,j0,i1,j1,z1){return [P(i0,j0,z1),P(i1,j0,z1),P(i1,j0,0),P(i1,
 function fq(face,K,a0,a1,z0,z1){return face==='I'?[P(K,a0,z0),P(K,a1,z0),P(K,a1,z1),P(K,a0,z1)]:[P(a0,K,z0),P(a1,K,z0),P(a1,K,z1),P(a0,K,z1)];}
 function fxf(ctx,face,K,a,z){const o=face==='I'?P(K,a,z):P(a,K,z);if(face==='I') ctx.transform(1,-.5,0,1,o[0],o[1]);else ctx.transform(1,.5,0,1,o[0],o[1]);}
 function win(ctx,face,K,a,w,z,h,lit,frame){
+  const D=scene.dn; if(D&&D.night>.35) lit=true;   // v2.3: every window is lit after dusk
+  if(D&&D.lights>.03&&lit) scene.lq.push(fq(face,K,a+w*.14,a+w*.86,z+h*.14,z+h*.86));
   fillP(ctx,fq(face,K,a,a+w,z,z+h),frame||'#f4ead8');
   const g=lit?'#ffd98a':'#8fc3dc';
   fillP(ctx,fq(face,K,a+w*.14,a+w*.86,z+h*.14,z+h*.86),g);
@@ -42,7 +44,7 @@ function win(ctx,face,K,a,w,z,h,lit,frame){
   else fillP(ctx,fq(face,K,a+w*.48,a+w*.52,z+h*.14,z+h*.86),frame||'#f4ead8');
 }
 function gable(ctx,i0,j0,i1,j1,z,rise,axis,roof,wall,ov){
-  ov=ov===undefined?.2:ov;
+  ov=ov===undefined?.2:ov; if(SEAS===3) roof=SNOW;
   if(axis==='i'){const jm=(j0+j1)/2,I0=i0-ov,I1=i1+ov,J0=j0-ov,J1=j1+ov;
     const r0=P(I0,jm,z+rise),r1=P(I1,jm,z+rise);
     fillP(ctx,[r0,r1,P(I1,J0,z-3),P(I0,J0,z-3)],shade(roof,1.15),EDGE);
@@ -65,16 +67,17 @@ function gable(ctx,i0,j0,i1,j1,z,rise,axis,roof,wall,ov){
 }
 /* sawtooth roof: teeth step along `axis`, glass faces toward + of that axis */
 function sawtooth(ctx,i0,j0,i1,j1,z,rise,n,axis,roof,wall){
+  if(SEAS===3) roof=SNOW; const lit=scene.dn&&scene.dn.lights>.03;
   for(let k=0;k<n;k++){
     if(axis==='i'){const a=i0+(i1-i0)*k/n,b=i0+(i1-i0)*(k+1)/n;
       fillP(ctx,[P(a,j0,z),P(b,j0,z+rise),P(b,j1,z+rise),P(a,j1,z)],shade(roof,1.05),EDGE);
       fillP(ctx,[P(a,j1,z),P(b,j1,z),P(b,j1,z+rise)],shade(wall,.88),EDGE);
-      fillP(ctx,[P(b,j0,z),P(b,j1,z),P(b,j1,z+rise),P(b,j0,z+rise)],'#7fb6cf',EDGE);
+      fillP(ctx,[P(b,j0,z),P(b,j1,z),P(b,j1,z+rise),P(b,j0,z+rise)],lit&&scene.dn.night>.35?'#ffd98a':'#7fb6cf',EDGE);if(lit) scene.lq.push([P(b,j0,z),P(b,j1,z),P(b,j1,z+rise),P(b,j0,z+rise)]);
       fillP(ctx,[P(b,j0+(j1-j0)*.1,z+rise*.25),P(b,j0+(j1-j0)*.45,z+rise*.25),P(b,j0+(j1-j0)*.45,z+rise*.8),P(b,j0+(j1-j0)*.1,z+rise*.8)],'rgba(255,255,255,.3)');
     } else {const a=j0+(j1-j0)*k/n,b=j0+(j1-j0)*(k+1)/n;
       fillP(ctx,[P(i0,a,z),P(i0,b,z+rise),P(i1,b,z+rise),P(i1,a,z)],shade(roof,1.05),EDGE);
       fillP(ctx,[P(i1,a,z),P(i1,b,z),P(i1,b,z+rise)],shade(wall,.7),EDGE);
-      fillP(ctx,[P(i0,b,z),P(i1,b,z),P(i1,b,z+rise),P(i0,b,z+rise)],'#8cc4dc',EDGE);
+      fillP(ctx,[P(i0,b,z),P(i1,b,z),P(i1,b,z+rise),P(i0,b,z+rise)],lit&&scene.dn.night>.35?'#ffd98a':'#8cc4dc',EDGE);if(lit) scene.lq.push([P(i0,b,z),P(i1,b,z),P(i1,b,z+rise),P(i0,b,z+rise)]);
       fillP(ctx,[P(i0+(i1-i0)*.1,b,z+rise*.25),P(i0+(i1-i0)*.45,b,z+rise*.25),P(i0+(i1-i0)*.45,b,z+rise*.8),P(i0+(i1-i0)*.1,b,z+rise*.8)],'rgba(255,255,255,.3)');
     }
   }

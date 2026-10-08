@@ -125,12 +125,13 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
 function drawScene(dt){
   const ctx=scene.ctx, dpr=scene.dpr, W=scene.w, H=scene.h, c=scene.cam, z=c.z;
+  scene.dn=dayState(); scene.lq.length=0;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(!scene.bg){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#bfe3a8');g.addColorStop(1,'#5f9a48');scene.bg=g;}
   ctx.fillStyle=scene.bg; ctx.fillRect(0,0,W,H);
@@ -138,6 +139,7 @@ function drawScene(dt){
   const vx0=c.x-W/2/z,vx1=c.x+W/2/z,vy0=c.y-H/2/z,vy1=c.y+H/2/z;
   drawChunks(ctx,vx0,vy0,vx1,vy1,scene.firstFrame);
   const inView=(x,y,m)=>x>vx0-m&&x<vx1+m&&y>vy0-m&&y<vy1+m*2;
+  drawPuddles(ctx,inView);
   // decals: conveyors, dynamic shadows
   const lots=MAIN_BLD.map(b=>LOTS[b.id]);
   for(const L of lots) drawConveyor(ctx,L);
@@ -203,8 +205,11 @@ function drawScene(dt){
     ctx.save();ctx.translate(a.x,a.y);ctx.scale(1.25,1.25);ctx.rotate(ang);ctx.globalAlpha=Math.min(1,(1-k2)*3);
     ctx.fillStyle='#7a4a22';ctx.fillRect(-1.5,-22,3,24);ctx.fillStyle='#c9d2da';ctx.beginPath();ctx.moveTo(1,-22);ctx.lineTo(11,-26);ctx.lineTo(12,-14);ctx.lineTo(1,-16);ctx.closePath();ctx.fill();
     ctx.strokeStyle='#5a6470';ctx.lineWidth=.8;ctx.stroke();ctx.restore();}
+  // v2.3: time-of-day light map (multiplied over the world), then sky & weather
+  drawLighting(ctx);
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawSky(ctx); drawWeather(ctx,dt);
   drawOverlays(ctx);
   drawGolden(ctx,dt);
 }

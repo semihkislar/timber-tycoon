@@ -3,15 +3,18 @@
 const CHUNK=512;
 const GRASS=['#8cc761','#88c35d','#90cb65','#85c05a'], FOREST_FLOOR=['#74b052','#70ab4e','#78b455','#6ca84b'];
 function drawGround(ctx,x0,y0,x1,y1){
-  ctx.fillStyle='#89c45e';ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  const GR=GRASS_S[SEAS]||GRASS, FF=FLOOR_S[SEAS]||FOREST_FLOOR;
+  ctx.fillStyle=SEAS===3?'#e6edf1':SEAS===2?'#b0b462':'#89c45e';ctx.fillRect(x0,y0,x1-x0,y1-y0);
   const u0=Math.floor(y0/HH)-2,u1=Math.ceil(y1/HH)+1,v0=Math.floor(x0/HW)-2,v1=Math.ceil(x1/HW)+2;
   for(let u=u0;u<=u1;u++) for(let v=v0;v<=v1;v++){
     if((u+v)&1) continue; const i=(u+v)/2,j=(u-v)/2;
     const z=zoneAt(i+.5,j+.5); if(z!=='grass') continue;
-    const h=hash2(i,j); const pal=isForestPt(i+.5,j+.5)?FOREST_FLOOR:GRASS;
+    const h=hash2(i,j); const pal=isForestPt(i+.5,j+.5)?FF:GR;
     let c=pal[Math.floor(h*4)]; if((i+j)&1) c=shade(c,1.03);
     fillP(ctx,[P(i,j),P(i+1,j),P(i+1,j+1),P(i,j+1)],c);
-    if(h>0.55){const [x,y]=P(i+.3+h*.4,j+.5);ctx.strokeStyle='rgba(50,100,30,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x-3,y-3);ctx.lineTo(x,y+1);ctx.lineTo(x+3,y-4);ctx.moveTo(x+5,y-2);ctx.lineTo(x+6,y+1);ctx.stroke();}
+    if(SEAS===2&&h>.4){const [x,y]=P(i+.2+h*.6,j+.3+hash2(j,i)*.5);ell(ctx,x,y,2.2,1.2,AUT[Math.floor(h*10)%4][2]);ell(ctx,x+6,y+2,1.8,1,AUT[Math.floor(h*7)%4][1]);}
+    if(SEAS===0&&h>.82){const [x,y]=P(i+.3+h*.4,j+.4);ell(ctx,x,y,1.6,1.2,'#ffb8cc');ell(ctx,x+4,y+1.5,1.4,1,'#fff4f8');}
+    if(h>0.55&&SEAS!==3){const [x,y]=P(i+.3+h*.4,j+.5);ctx.strokeStyle=SEAS===2?'rgba(120,100,30,.35)':'rgba(50,100,30,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x-3,y-3);ctx.lineTo(x,y+1);ctx.lineTo(x+3,y-4);ctx.moveTo(x+5,y-2);ctx.lineTo(x+6,y+1);ctx.stroke();}
   }
   // faint tile grid over grass
   ctx.strokeStyle='rgba(40,80,20,.07)';ctx.lineWidth=1;ctx.beginPath();
@@ -29,13 +32,14 @@ function drawGround(ctx,x0,y0,x1,y1){
     }
     // lip (side faces) first, below front edges
     for(const [i,j] of tiles){
-      if(!yardTile(i+1,j)) fillP(ctx,[P(i+1,j),P(i+1,j+1),P(i+1,j+1,-5),P(i+1,j,-5)],'#a98a5c');
-      if(!yardTile(i,j+1)) fillP(ctx,[P(i,j+1),P(i+1,j+1),P(i+1,j+1,-5),P(i,j+1,-5)],'#c2a274');
+      if(!yardTile(i+1,j)) fillP(ctx,[P(i+1,j),P(i+1,j+1),P(i+1,j+1,-5),P(i+1,j,-5)],SEAS===3?'#b4bfc8':'#a98a5c');
+      if(!yardTile(i,j+1)) fillP(ctx,[P(i,j+1),P(i+1,j+1),P(i+1,j+1,-5),P(i,j+1,-5)],SEAS===3?'#cdd5db':'#c2a274');
     }
     for(const [i,j] of tiles){
       const h=hash2(i+50,j+50), lane=laneTile(i,j);
       let c=lane?(((i+j)&1)?'#d3cdbf':'#cbc4b4'):(((i+j)&1)?'#dcc598':'#d6be8f');
       if(!lane&&h>.86) c='#d1b886';
+      if(SEAS===3) c=lane?(((i+j)&1)?'#dfe2e4':'#d8dcdf'):(h>.55?'#eef2f5':((i+j)&1)?'#e4e9ed':'#dde3e8');
       fillP(ctx,[P(i,j),P(i+1,j),P(i+1,j+1),P(i,j+1)],c);
       if(lane){ // paver joints
         ctx.strokeStyle='rgba(120,110,95,.22)';ctx.lineWidth=1;ctx.beginPath();
@@ -95,8 +99,10 @@ function drawGround(ctx,x0,y0,x1,y1){
   for(const d of scene.deco){
     const [x,y]=P(d.i,d.j); if(x<x0-20||x>x1+20||y<y0-20||y>y1+20) continue;
     if(d.t==='rock'){ell(ctx,x+2,y+2,6*d.s,3*d.s,'rgba(30,40,10,.2)');ell(ctx,x,y,5.5*d.s,3.6*d.s,'#9a9890');ell(ctx,x-1.2*d.s,y-1.2*d.s,3.4*d.s,2*d.s,'#c4c2ba');}
-    else if(d.t==='bush'){ell(ctx,x+3,y+2,10*d.s,4.5*d.s,'rgba(30,50,10,.22)');ell(ctx,x-4*d.s,y-3*d.s,6*d.s,5*d.s,'#4f9a3a');ell(ctx,x+4*d.s,y-3*d.s,6*d.s,5*d.s,'#468f34');ell(ctx,x,y-6*d.s,6.5*d.s,5.5*d.s,'#5aa843');ell(ctx,x-2*d.s,y-8*d.s,3*d.s,2.4*d.s,'#7cc45e');}
-    else if(d.t==='flowers'){for(let k=0;k<4;k++){const fx=x+(hash2(k,d.i*9)-.5)*18,fy=y+(hash2(d.j*9,k)-.5)*8;ell(ctx,fx,fy-1,1.8,1.4,d.c);ell(ctx,fx,fy-1,.7,.6,'#e8a020');}}
+    else if(d.t==='bush'){const B=SEAS===3?['#5f7a5a','#566f52','#f4f8fa','#ffffff']:SEAS===2?['#b0702c','#9c5e24','#d08a36','#e8b050']:['#4f9a3a','#468f34','#5aa843','#7cc45e'];
+      ell(ctx,x+3,y+2,10*d.s,4.5*d.s,'rgba(30,50,10,.22)');ell(ctx,x-4*d.s,y-3*d.s,6*d.s,5*d.s,B[0]);ell(ctx,x+4*d.s,y-3*d.s,6*d.s,5*d.s,B[1]);ell(ctx,x,y-6*d.s,6.5*d.s,5.5*d.s,B[2]);ell(ctx,x-2*d.s,y-8*d.s,3*d.s,2.4*d.s,B[3]);
+      if(SEAS===0){ell(ctx,x-3*d.s,y-7*d.s,1.4,1.2,'#ffc2d6');ell(ctx,x+3*d.s,y-5*d.s,1.4,1.2,'#fff');ell(ctx,x+1*d.s,y-9*d.s,1.4,1.2,'#ffc2d6');}}
+    else if(d.t==='flowers'){if(SEAS===3) continue; for(let k=0;k<4;k++){const fx=x+(hash2(k,d.i*9)-.5)*18,fy=y+(hash2(d.j*9,k)-.5)*8;ell(ctx,fx,fy-1,1.8,1.4,d.c);ell(ctx,fx,fy-1,.7,.6,'#e8a020');}}
   }
   for(const s of scene.stumps||[]){const [x,y]=P(s.i,s.j); if(x<x0-20||x>x1+20||y<y0-20||y>y1+20) continue; ell(ctx,x+2,y+1.5,6,2.8,'rgba(30,40,10,.22)');ctx.fillStyle='#7a5230';ctx.fillRect(x-4,y-5,8,5);ell(ctx,x,y,4,2,'#7a5230');ell(ctx,x,y-5,4,2,'#e2be86');ell(ctx,x,y-5,1.6,.8,'#c99a5e');}
   // tire tracks in the harvest clearing
@@ -121,7 +127,7 @@ function getChunk(cx,cy,cs,allowRender){
   return c;
 }
 function drawChunks(ctx,vx0,vy0,vx1,vy1,force){
-  if(scene.chunkTier!==S.tree){scene.chunks.clear();scene.chunkTier=S.tree;force=true;}
+  if(scene.chunkTier!==S.tree*10+SEAS){scene.chunks.clear();scene.chunkTier=S.tree*10+SEAS;force=true;}
   const cs=chunkScale(); let budget=force?99:2;
   for(let cy=Math.floor(vy0/CHUNK);cy<=Math.floor(vy1/CHUNK);cy++) for(let cx=Math.floor(vx0/CHUNK);cx<=Math.floor(vx1/CHUNK);cx++){
     let c=getChunk(cx,cy,cs,false);
@@ -142,9 +148,10 @@ const TREE_PAL=[
   {k:'round',c:['#6a2a22','#8e3d2a','#b8603e']},
   {k:'cone',c:['#20242f','#30374a','#56607e']},
 ];
+const CHERRY={k:'round',cherry:true,c:['#c86a8e','#e891b2','#ffc4d8']};
 function treeShadow(ctx,x,y,s){ctx.fillStyle='rgba(30,50,10,.2)';ctx.beginPath();ctx.ellipse(x+5*s,y+1,13*s,6*s,0,0,TAU);ctx.fill();}
 function drawTree(ctx,x,y,t,tier){
-  const pal=TREE_PAL[tier]||TREE_PAL[0]; const s=t.s*(t.grow===undefined?1:t.grow);
+  let pal=TREE_PAL[tier]||TREE_PAL[0]; if(SEAS===0&&t.var<.17) pal=CHERRY; const s=t.s*(t.grow===undefined?1:t.grow);
   if(t.stump>0){ // stump
     ell(ctx,x,y,4.5,2.4,'#7a4a24'); ctx.fillStyle='#8a5a2c';ctx.fillRect(x-4.5,y-4,9,4); ell(ctx,x,y-4,4.5,2.4,'#e0b67a'); ell(ctx,x,y-4,2,1,'#b8864a'); return;
   }
@@ -154,9 +161,10 @@ function drawTree(ctx,x,y,t,tier){
   if(t.down){ctx.translate(fd*3,-2);ctx.scale(1,.58);ctx.rotate(fd*1.5);}
   else if(t.fall>0){const f=t.fall,a=Math.min(1.5,f*f*1.5);ctx.translate(0,-3.5*t.s*f);ctx.scale(1,1-.42*f*f);ctx.rotate(a*fd);}
   if(t.shake>0){ctx.rotate(Math.sin(t.shake*40)*0.06*t.shake);}
+  else if(t.dyn&&scene.wxv&&scene.wxv.wind>.05){ctx.rotate(Math.sin(scene.t*2.3+t.var*9)*.045*scene.wxv.wind);}
   ctx.scale(s,s);
   if(t.down){ctx.fillStyle='#7a4a26';ctx.fillRect(-2.6,-40,5.2,40);ctx.fillStyle='#5e3618';ctx.fillRect(.8,-40,1.8,40);ctx.fillStyle='#e0b67a';ctx.fillRect(-2.6,-1,5.2,1.6);ctx.globalAlpha=Math.max(0,1-(t.buck||0)*1.1);if(ctx.globalAlpha<=0.01){ctx.restore();return;}}
-  const v=t.var; const c0=pal.c[0],c1=pal.c[1],c2=pal.c[2];
+  const v=t.var; const TC=treeColors(pal,t,tier); const c0=TC[0],c1=TC[1],c2=TC[2]; const snowy=SEAS===3;
   ctx.fillStyle='#7a4a26';ctx.fillRect(-2.2,-10,4.4,10);ctx.fillStyle='#5e3618';ctx.fillRect(.6,-10,1.6,10);
   if(pal.k==='cone'){
     const H=[[-44,13],[-32,16],[-20,18.5]];
@@ -164,13 +172,19 @@ function drawTree(ctx,x,y,t,tier){
       ctx.fillStyle=c1;ctx.beginPath();ctx.moveTo(0,top);ctx.lineTo(-w,base);ctx.quadraticCurveTo(0,base+4,w,base);ctx.closePath();ctx.fill();
       ctx.fillStyle=c0;ctx.beginPath();ctx.moveTo(0,top);ctx.lineTo(w,base);ctx.quadraticCurveTo(w*.5,base+3,1,base+3.5);ctx.closePath();ctx.fill();
       ctx.fillStyle=c2;ctx.beginPath();ctx.moveTo(0,top+2);ctx.lineTo(-w*.55,base-4);ctx.lineTo(-w*.2,base-3);ctx.closePath();ctx.fill();
+      if(snowy){const sb=top+(base-top)*.5;ctx.fillStyle='#f4f8fb';ctx.beginPath();ctx.moveTo(0,top-.5);ctx.lineTo(-w*.52,sb);ctx.quadraticCurveTo(-w*.25,sb-2.5,0,sb+1);ctx.quadraticCurveTo(w*.25,sb-1,w*.5,sb+.5);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#d8e3ea';ctx.beginPath();ctx.moveTo(0,top-.5);ctx.lineTo(w*.5,sb+.5);ctx.quadraticCurveTo(w*.25,sb-1,0,sb+1);ctx.closePath();ctx.fill();}
+      else if(SEAS===0&&v>.5){ctx.fillStyle='#a6dc6a';ctx.fillRect(-w*.5,base-3,2.4,2);ctx.fillRect(w*.3,base-2.5,2.4,2);}
     }
   } else {
     const blobs=[[0,-24,13],[-8,-18,9],[8,-18,9.5],[-5,-31,8.5],[5,-30,8]];
     for(const [bx,by,r] of blobs){ell(ctx,bx+1.5,by+1.5,r,r*.92,c0);}
     for(const [bx,by,r] of blobs){ell(ctx,bx,by,r*.9,r*.82,c1);}
     ell(ctx,-4,-30,6,5,c2); ell(ctx,-9,-21,4,3.4,c2); ell(ctx,3,-35,3.5,2.6,shade(c2,1.15));
-    if(tier===2){ctx.fillStyle='#f7c95a';for(let k=0;k<4;k++){ctx.fillRect(-8+k*5+v*3,-26+((k*7)%10),1.8,1.8);}}
+    if(snowy){ell(ctx,-4,-33,7.5,3.4,'#f4f8fb');ell(ctx,5,-33,5.5,2.6,'#eef3f7');ell(ctx,-9,-24,4.5,2.2,'#f4f8fb');ell(ctx,8,-23,4.5,2.1,'#e4ecf1');}
+    else if(pal.cherry){for(let k=0;k<9;k++){ell(ctx,-11+((k*7.3+v*40)%22),-37+((k*5.1)%22),1.5,1.3,k%3?'#fff4f8':'#ffd8e6');}}
+    else if(SEAS===0&&v<.62){const BC=v<.3?'#ffb6cc':'#fff2f6';for(let k=0;k<7;k++){ell(ctx,-10+((k*7.3+v*20)%20),-36+((k*5.1)%20),1.7,1.5,BC);}}
+    if(tier===2&&SEAS<2){ctx.fillStyle='#f7c95a';for(let k=0;k<4;k++){ctx.fillRect(-8+k*5+v*3,-26+((k*7)%10),1.8,1.8);}}
   }
   ctx.restore();
 }

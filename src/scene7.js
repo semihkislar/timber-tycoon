@@ -120,7 +120,8 @@ function limo(ctx,i,j,yaw,o){
 /* ---------- premium buildings ---------- */
 function glassFace(ctx,face,K,a0,a1,z0,z1,interior){
   fillP(ctx,fq(face,K,a0,a1,z0,z1),'#1d2a33');
-  const g=interior||'#7fb8d0'; fillP(ctx,fq(face,K,a0+.02,a1-.02,z0+1,z1-1),g);
+  const D=scene.dn, lit=D&&D.night>.35; const g=lit?'#ffe2a0':(interior||'#7fb8d0'); fillP(ctx,fq(face,K,a0+.02,a1-.02,z0+1,z1-1),g);
+  if(D&&D.lights>.03) scene.lq.push(fq(face,K,a0+.02,a1-.02,z0+1,z1-1));
   // reflection streaks
   const w=a1-a0; fillP(ctx,[...fq(face,K,a0+w*.12,a0+w*.3,z0+1,z1-1)].map((p,k)=>k===2||k===3?[p[0]+4,p[1]]:p),'rgba(255,255,255,.22)');
   fillP(ctx,fq(face,K,a0+w*.36,a0+w*.42,z0+1,z1-1),'rgba(255,255,255,.14)');

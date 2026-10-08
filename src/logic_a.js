@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const VERSION='2.2';
+const VERSION='2.3';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -126,7 +126,7 @@ const EVENTS=[
   {id:'boom',name:'📈 Lumber Boom',desc:'All prices 2×!',dur:30,apply:m=>m.priceAll*=2},
   {id:'acorn',name:'🌰 Golden Acorn',desc:'Chopping power 10×!',dur:20,apply:m=>m.chop*=10},
   {id:'print',name:'🗞️ Election Print Rush',desc:'Paper sells 3×!',dur:45,req:()=>bl('paper')>0,apply:m=>m.price.paper*=3},
-  {id:'cold',name:'❄️ Cold Snap',desc:'Charcoal & Pellets sell 3×!',dur:45,req:()=>bl('kiln')>0||bl('pellet')>0,apply:m=>{m.price.charcoal*=3;m.price.pellets*=3}},
+  {id:'cold',name:'❄️ Cold Snap',desc:'Charcoal & Pellets sell 3×!',dur:45,req:()=>(bl('kiln')>0||bl('pellet')>0)&&(!S.wx||seasonIdx()!==1),apply:m=>{m.price.charcoal*=3;m.price.pellets*=3}},
   // golden-log rewards (never rolled randomly)
   {id:'frenzy',name:'✨ Timber Frenzy',desc:'Collectors & chopping 5×!',dur:20,golden:true,req:()=>false,apply:m=>{m.colAll*=5;m.chop*=5}},
   {id:'goldrush',name:'✨ Gold Rush',desc:'All prices 3×!',dur:20,golden:true,req:()=>false,apply:m=>m.priceAll*=3},
@@ -184,7 +184,8 @@ function freshState(keep){
   const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
     seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
-    storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]}};
+    storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
+    wx:{clock:126,w:'clear',ends:0,next:201}};
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -213,6 +214,8 @@ function migrateSave(o){
   if(!o.storage||typeof o.storage!=='object') o.storage={};
   if(!o.premium||typeof o.premium!=='object') o.premium={lvl:0};
   if(!o.orders||typeof o.orders!=='object') o.orders={offer:null,active:null,next:(o.time||0)+60,done:0,failed:0,hist:[]};
+  // v2.2 -> v2.3: world clock / season / weather (starts at 07:12, day 1 of spring)
+  if(!o.wx||typeof o.wx!=='object'||typeof o.wx.clock!=='number') o.wx={clock:126,w:'clear',ends:0,next:201};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -234,6 +237,7 @@ function computeMods(){
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
+  if(S.wx) applyWorldMods(m);
   if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
   m.ach=1+ACH_BONUS*achCount();
   m.rep=(1+0.1*S.seeds)*m.ach;
@@ -250,7 +254,7 @@ function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 /* ===================== SIMULATION ===================== */
 function tick(dt,offline){
   M=computeMods();
-  S.time+=dt; S.playTime+=dt;
+  S.time+=dt; S.playTime+=dt; wxTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
   const demand={}; RES.forEach(r=>demand[r.id]=0);
@@ -371,7 +375,7 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,ach:Object.assign({},S.ach),golden:S.golden,
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)}};
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;

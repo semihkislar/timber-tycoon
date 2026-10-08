@@ -21,7 +21,7 @@ with sync_playwright() as p:
     old=pg.evaluate('JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=pg.evaluate('TT.S')
-    ok(S['version']=='2.2','v2.1 save migrated to 2.2')
+    ok(S['version']>='2.2','v2.1 save migrated to 2.2+')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['buildings']['kiln']['lvl']==6 and S['golden']==4 and S['autosell']['planks']==False,'collectors, buildings, golden, autosell kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.02,'coins kept')
     ok(S['premium']['lvl']==0 and S['storage']=={} and S['orders']['done']==0 and S['orders']['offer'] is None,'new v2.2 fields initialised (premium locked, storage Lv0, no orders)')

@@ -5,6 +5,39 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.3] — 2026-10-08
+
+The world now lives: a **day/night cycle**, **four seasons** and **weather**, each with gameplay effects.
+
+### Added
+- **Day/night cycle** (7 min per in-game day). A half-resolution light map is multiplied over the iso scene:
+  warm morning, white midday, golden hour, orange dusk and a moonlit blue night that stays readable (≈55 % of daytime brightness).
+  After dusk every window lights up, street lamps and the premium area's gold lamps cast light pools, building door lamps,
+  the kiln furnace and the campfire flicker, trucks/vans/forklifts drive with headlight beams and red taillights (brighter when braking),
+  the premium showroom glass glows, and a starry sky band with a moon appears at the top of the screen.
+- **Seasons** (3 in-game days each, a full year is 84 min), with ground, trees and roofs redrawn per season:
+  spring cherry-blossom trees, blossoming bushes and petals drifting; lush summer; autumn golden larches, orange/red
+  broadleaves, yellowed grass, fallen leaves and leaves blowing across the screen; winter snow on the ground, roofs,
+  box tops, bushes and snow-capped trees.
+- **Weather events** rolled per season: rain (streaks, splashes, puddles with ripples that dry slowly, overcast tint, headlights on),
+  snowfall (winter only), sunny spells (soft sunbeams) and wind (wind streaks, swaying trees, more leaves). Weather is announced with a toast.
+- **Gameplay effects**: spring collectors +10 % and stumps regrow ~2× faster; summer buildings +8 %; autumn chairs, furniture,
+  cabinets & luxury furniture +25 %; winter charcoal & pellets +35 %, gift boxes +20 %. Rain collectors & chopping −15 %,
+  sunny +15 %, snowfall collectors −10 % but charcoal & pellets +15 %, wind kiln +20 %.
+- **Season · weather · clock widget** in the top HUD (day/night dial, season & day, weather with its current effect, clock);
+  tap it for a season calendar with all effects and the time until the next season.
+- `test/v23.py` (43 checks) and new screenshots: `screenshot-night.png`, `screenshot-winter.png`, `screenshot-autumn.png`,
+  `screenshot-rain.png`, `screenshot-mobile-night.png`.
+
+### Changed
+- The Cold Snap event no longer rolls in summer.
+- `test/shot.py` pins the world clock and weather for every shot so screenshots are deterministic; `test/balance.py` accepts a `URL` override.
+- Balance: the bot reaches ≈ +13 % lifetime earnings after 1 h compared with v2.2 (seasonal boosts outweigh rain/snow), so progression stays in range.
+
+### Compatibility
+- v2.2 saves migrate automatically: the world clock starts at 07:12 on day 1 of spring with fair weather; everything else is kept.
+- The calendar keeps running through Replant and while offline.
+
 ## [2.2] — 2026-10-08
 
 Three new systems: a **Premium Factory Area**, **premium client orders** and **upgradable stock areas**.
@@ -251,6 +284,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 - Random timed events, offline progress (capped at 8h), autosave every 10s
 - `window.TT` test/debug hook; Playwright functional & balance tests
 
+[2.3]: ./releases/timber-tycoon-v2.3.html
 [2.2]: ./releases/timber-tycoon-v2.2.html
 [2.1]: ./releases/timber-tycoon-v2.1.html
 [2.0]: ./releases/timber-tycoon-v2.0.html

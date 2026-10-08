@@ -49,6 +49,29 @@ button{font:inherit;color:inherit}
 .scene-label.golden{background:rgba(150,105,10,.92);color:#fff8c8;animation:glabel 1s ease-in-out infinite}
 @keyframes glabel{50%{box-shadow:0 0 14px rgba(255,213,74,.95)}}
 #events{display:flex;gap:6px;flex-wrap:wrap}
+/* v2.3 season / weather / clock widget */
+.wx{display:flex;align-items:center;gap:6px;pointer-events:auto;cursor:pointer;background:var(--hud);border:1.5px solid rgba(255,220,160,.25);border-radius:999px;
+  padding:2px 10px 2px 3px;height:30px;box-shadow:0 2px 6px rgba(0,0,0,.25);color:#fff6e0;white-space:nowrap;transition:background .6s}
+.wx.night{background:rgba(22,28,58,.82);border-color:rgba(170,190,255,.35)}
+.wx.bad{border-color:rgba(160,200,255,.55)}
+.wx-dial{position:relative;width:24px;height:24px;border-radius:50%;overflow:hidden;flex:none;background:linear-gradient(180deg,#8ccdf2 0 50%,#2a3a68 50% 100%);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+.wx-dial i{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a,0deg))}
+.wx-dial i::before{content:'';position:absolute;left:-4px;top:-13px;width:8px;height:8px;border-radius:50%;background:#ffd34a;box-shadow:0 0 5px #ffd34a}
+.wx-dial i::after{content:'';position:absolute;left:-3.5px;top:6px;width:7px;height:7px;border-radius:50%;background:#eef2ff;box-shadow:0 0 4px #c8d4ff}
+.wx-s{font-size:15px}
+.wx-t{display:flex;flex-direction:column;line-height:1.05}
+.wx-t b{font-size:11.5px;font-weight:800}
+.wx-t small{font-size:10px;opacity:.92;font-weight:600}
+.wx-t small .good{color:#c9f59e}.wx-t small .bad{color:#bcd6ff}
+.wx-clk{font-weight:800;font-size:12px;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.25);padding:2px 6px;border-radius:999px}
+#wxPop{position:fixed;z-index:26;left:10px;top:calc(var(--tb) + 40px + env(safe-area-inset-top));width:min(300px,92vw);background:linear-gradient(160deg,#fff8e6,#f3e0bd);color:var(--ink);
+  border:2px solid #d9a441;border-radius:14px;padding:9px 11px;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px}
+#wxPop.hidden{display:none}
+#wxPop .wx-row{display:flex;flex-direction:column;margin-bottom:6px}#wxPop .wx-row span{color:#6b4c2a}
+#wxPop .wx-seasons{display:flex;gap:4px;margin:4px 0 6px}#wxPop .wx-seasons div{flex:1;text-align:center;background:rgba(0,0,0,.06);border-radius:8px;padding:3px 0;opacity:.6}
+#wxPop .wx-seasons div.on{opacity:1;background:#fff;box-shadow:0 0 0 2px #e8a020}#wxPop .wx-seasons i{font-style:normal;font-size:16px;display:block}
+#wxPop .wx-foot{font-size:10.5px;color:#8a6a40}
+@media (max-width:720px){.wx-t small{max-width:112px;overflow:hidden;text-overflow:ellipsis}.wx{gap:4px;padding-right:6px}.wx-clk{font-size:11px;padding:2px 4px}.wx-s{display:none}}
 .event{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:rgba(120,84,10,.88);border:1.5px solid #ffd76a;
   font-size:12px;font-weight:700;color:#fff6d6;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:eventIn .35s ease-out}
 .event.bad{background:rgba(130,36,30,.9);border-color:#ff8a80}
@@ -282,7 +305,10 @@ button{font:inherit;color:inherit}
   </div>
   <button class="tb-btn" id="muteBtn" title="Toggle sound">🔇</button>
 </header>
-<div id="subbar"><div class="scene-label" id="sceneLabel">🌲 Pine Forest</div><div id="events"></div></div>
+<div id="subbar"><div class="scene-label" id="sceneLabel">🌲 Pine Forest</div>
+  <div id="wxChip" class="wx" title="Season, weather and time of day (tap for details)"><span class="wx-dial" id="wxDial"><i id="wxSun"></i></span><span class="wx-s" id="wxS">🌸</span><span class="wx-t"><b id="wxT1">Spring · Day 1</b><small id="wxT2">⛅ Fair</small></span><span class="wx-clk" id="wxClk">07:10</span></div>
+  <div id="events"></div></div>
+<div id="wxPop" class="hidden"></div>
 <nav id="bottombar">
   <button class="bb" data-s="crew" id="bbCrew"><span class="dot hidden" id="crewDot"></span><span class="bi"></span><span class="l">Crew</span></button>
   <button class="bb" data-s="market" id="bbMarket"><span class="bi"></span><span class="l">Market</span></button>
@@ -363,7 +389,7 @@ button{font:inherit;color:inherit}
 <script>
 (function(){
 'use strict';
-const VERSION='2.2';
+const VERSION='2.3';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -489,7 +515,7 @@ const EVENTS=[
   {id:'boom',name:'📈 Lumber Boom',desc:'All prices 2×!',dur:30,apply:m=>m.priceAll*=2},
   {id:'acorn',name:'🌰 Golden Acorn',desc:'Chopping power 10×!',dur:20,apply:m=>m.chop*=10},
   {id:'print',name:'🗞️ Election Print Rush',desc:'Paper sells 3×!',dur:45,req:()=>bl('paper')>0,apply:m=>m.price.paper*=3},
-  {id:'cold',name:'❄️ Cold Snap',desc:'Charcoal & Pellets sell 3×!',dur:45,req:()=>bl('kiln')>0||bl('pellet')>0,apply:m=>{m.price.charcoal*=3;m.price.pellets*=3}},
+  {id:'cold',name:'❄️ Cold Snap',desc:'Charcoal & Pellets sell 3×!',dur:45,req:()=>(bl('kiln')>0||bl('pellet')>0)&&(!S.wx||seasonIdx()!==1),apply:m=>{m.price.charcoal*=3;m.price.pellets*=3}},
   // golden-log rewards (never rolled randomly)
   {id:'frenzy',name:'✨ Timber Frenzy',desc:'Collectors & chopping 5×!',dur:20,golden:true,req:()=>false,apply:m=>{m.colAll*=5;m.chop*=5}},
   {id:'goldrush',name:'✨ Gold Rush',desc:'All prices 3×!',dur:20,golden:true,req:()=>false,apply:m=>m.priceAll*=3},
@@ -547,7 +573,8 @@ function freshState(keep){
   const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
     seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
-    storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]}};
+    storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
+    wx:{clock:126,w:'clear',ends:0,next:201}};
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -576,6 +603,8 @@ function migrateSave(o){
   if(!o.storage||typeof o.storage!=='object') o.storage={};
   if(!o.premium||typeof o.premium!=='object') o.premium={lvl:0};
   if(!o.orders||typeof o.orders!=='object') o.orders={offer:null,active:null,next:(o.time||0)+60,done:0,failed:0,hist:[]};
+  // v2.2 -> v2.3: world clock / season / weather (starts at 07:12, day 1 of spring)
+  if(!o.wx||typeof o.wx!=='object'||typeof o.wx.clock!=='number') o.wx={clock:126,w:'clear',ends:0,next:201};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -597,6 +626,7 @@ function computeMods(){
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
+  if(S.wx) applyWorldMods(m);
   if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
   m.ach=1+ACH_BONUS*achCount();
   m.rep=(1+0.1*S.seeds)*m.ach;
@@ -613,7 +643,7 @@ function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 /* ===================== SIMULATION ===================== */
 function tick(dt,offline){
   M=computeMods();
-  S.time+=dt; S.playTime+=dt;
+  S.time+=dt; S.playTime+=dt; wxTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
   const demand={}; RES.forEach(r=>demand[r.id]=0);
@@ -734,7 +764,7 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,ach:Object.assign({},S.ach),golden:S.golden,
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)}};
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
@@ -1333,6 +1363,75 @@ function setupPremiumUI(){
   $('bpStKeep').onchange=()=>{if(!sheetBld) return; const b=BMAP[sheetBld]; for(const k in b.out) S.autosell[k]=!$('bpStKeep').checked; mktSig=''; render();};
 }
 
+/* ===================== v2.3 DAY / NIGHT, SEASONS & WEATHER (logic + HUD widget) ===================== */
+const DAY_LEN=420;            // seconds per in-game day (7 min)
+const SEASON_DAYS=3;          // in-game days per season (21 min); a full year is 84 min
+const WX_START=DAY_LEN*.3;    // new games (and migrated saves) begin at ~07:12 on day 1 of spring
+const SEASONS=[
+  {id:'spring',n:'Spring',e:'🌸',fx:'Trees regrow fast: collectors +10%',apply:m=>{m.colAll*=1.10;}},
+  {id:'summer',n:'Summer',e:'🌻',fx:'Long days: buildings +8%',apply:m=>{m.bldAll*=1.08;}},
+  {id:'autumn',n:'Autumn',e:'🍂',fx:'Furniture season: chairs, furniture & cabinets +25%',apply:m=>{for(const k of ['chairs','furniture','cabinets','luxfurn']) m.price[k]*=1.25;}},
+  {id:'winter',n:'Winter',e:'❄️',fx:'Heating season: charcoal & pellets +35%, gift boxes +20%',apply:m=>{m.price.charcoal*=1.35;m.price.pellets*=1.35;m.price.giftbox*=1.2;}},
+];
+const WEATHER={
+  clear:{n:'Fair',e:'⛅',fx:'No weather effect'},
+  sunny:{n:'Sunny',e:'☀️',fx:'Collectors & chopping +15%',apply:m=>{m.colAll*=1.15;m.chop*=1.15;}},
+  rain:{n:'Rain',e:'🌧️',fx:'Collectors & chopping −15%',bad:true,apply:m=>{m.colAll*=.85;m.chop*=.85;}},
+  snow:{n:'Snowfall',e:'🌨️',fx:'Collectors −10%, charcoal & pellets +15%',bad:true,apply:m=>{m.colAll*=.9;m.price.charcoal*=1.15;m.price.pellets*=1.15;}},
+  wind:{n:'Windy',e:'💨',fx:'Kilns draw hotter: kiln +20%',apply:m=>{m.bld.kiln*=1.2;}},
+};
+const WX_TABLE={spring:[['rain',.35],['sunny',.3],['wind',.15]],summer:[['sunny',.5],['rain',.15],['wind',.1]],
+  autumn:[['rain',.35],['wind',.3],['sunny',.1]],winter:[['snow',.55],['wind',.15],['sunny',.08]]};
+function freshWx(){return {clock:WX_START,w:'clear',ends:0,next:WX_START+75};}
+function wxClock(){return (S.wx&&S.wx.clock)||0;}
+function dayPhase(c){c=c===undefined?wxClock():c;return (c%DAY_LEN)/DAY_LEN;}
+function dayNum(c){c=c===undefined?wxClock():c;return Math.floor(c/DAY_LEN);}
+function seasonIdx(c){return Math.floor(dayNum(c)/SEASON_DAYS)%4;}
+function season(c){return SEASONS[seasonIdx(c)];}
+function weatherId(){return (S.wx&&WEATHER[S.wx.w])?S.wx.w:'clear';}
+function clockStr(c){const h=dayPhase(c)*24;const hh=Math.floor(h),mm=Math.floor((h-hh)*60/10)*10;return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');}
+function isNight(c){const p=dayPhase(c);return p<.2||p>.81;}
+function applyWorldMods(m){season().apply(m);const w=WEATHER[weatherId()];if(w.apply) w.apply(m);}
+function setWeather(id,dur){const W=S.wx;W.w=id;W.ends=W.clock+(dur||90+Math.random()*80);if(id==='clear'){W.next=W.clock+(dur||60);W.ends=0;}M=computeMods();wxSig='';}
+function wxTick(dt,offline){
+  const W=S.wx; if(!W) return; const s0=seasonIdx(W.clock); W.clock+=dt;
+  const s1=seasonIdx(W.clock);
+  if(s1!==s0){ // a new season always opens with fair weather
+    if(W.w!=='clear'){W.w='clear';W.ends=0;W.next=W.clock+40;}
+    if(!offline){const s=SEASONS[s1];toast(`${s.e} <b>${s.n} has arrived!</b> ${s.fx}`,5200,'ms-toast');}
+    wxSig='';
+  }
+  if(W.w!=='clear'){if(W.clock>=W.ends){W.w='clear';W.ends=0;W.next=W.clock+50+Math.random()*80;wxSig='';}}
+  else if(W.clock>=W.next){
+    const tab=WX_TABLE[SEASONS[s1].id];let r=Math.random(),pick=null;for(const [id,p] of tab){if(r<p){pick=id;break;}r-=p;}
+    if(pick){W.w=pick;W.ends=W.clock+80+Math.random()*90;if(!offline){const w=WEATHER[pick];toast(`${w.e} <b>${w.n}</b> · ${w.fx}`,3800);}}
+    else W.next=W.clock+60+Math.random()*70;
+    wxSig='';
+  }
+}
+/* ---------- HUD widget (season · weather · clock) ---------- */
+let wxSig='', wxOpen=false;
+function updateWx(){
+  const el=$('wxChip'); if(!el) return; const s=season(),w=WEATHER[weatherId()],c=wxClock();
+  const sig=s.id+'|'+weatherId()+'|'+dayNum(c)+'|'+wxOpen;
+  const ph=dayPhase(c), night=isNight(c);
+  $('wxClk').textContent=clockStr(c);
+  $('wxSun').style.setProperty('--a',(ph*360-180)+'deg'); el.classList.toggle('night',night);
+  if(sig===wxSig) return; wxSig=sig;
+  $('wxS').textContent=s.e; $('wxT1').textContent=`${s.n} · Day ${dayNum(c)%SEASON_DAYS+1}`;
+  $('wxT2').innerHTML=`${w.e} ${w.n}${weatherId()==='clear'?'':' · <span class="'+(w.bad?'bad':'good')+'">'+w.fx+'</span>'}`;
+  el.classList.toggle('bad',!!w.bad);
+  const pop=$('wxPop'); pop.classList.toggle('hidden',!wxOpen);
+  if(wxOpen){const r=el.getBoundingClientRect();pop.style.top=(r.bottom+6)+'px';pop.style.left=Math.max(8,Math.min(r.left,window.innerWidth-pop.offsetWidth-8))+'px';}
+  if(wxOpen){const left=(SEASON_DAYS-dayNum(c)%SEASON_DAYS)*DAY_LEN-(c%DAY_LEN);
+    pop.innerHTML=`<div class="wx-row"><b>${s.e} ${s.n}</b><span>${s.fx}</span></div>
+      <div class="wx-row"><b>${w.e} ${w.n}</b><span>${w.fx}</span></div>
+      <div class="wx-seasons">${SEASONS.map((x,k)=>`<div class="${k===seasonIdx(c)?'on':''}"><i>${x.e}</i><small>${x.n}</small></div>`).join('')}</div>
+      <div class="wx-foot">${SEASONS[(seasonIdx(c)+1)%4].n} in ${fmtTime(left)} · a day lasts ${fmtTime(DAY_LEN)}, a season ${SEASON_DAYS} days</div>`;}
+}
+function setupWx(){const el=$('wxChip'); if(el) el.onclick=e=>{e.stopPropagation();wxOpen=!wxOpen;wxSig='';updateWx();};
+  document.addEventListener('pointerdown',e=>{if(wxOpen&&!e.target.closest('#wxChip,#wxPop')){wxOpen=false;wxSig='';updateWx();}});}
+
 /* =====================================================================
    ISOMETRIC FACTORY SCENE (v2.0)
    World grid (i,j); P(i,j,z) projects to "world pixels": x=(i-j)*32, y=(i+j)*16-z.
@@ -1358,7 +1457,7 @@ function box(ctx,i0,j0,i1,j1,z0,z1,col,o){
   const a=P(i1,j0,z0),b=P(i1,j1,z0),c=P(i0,j1,z0),at=P(i1,j0,z1),bt=P(i1,j1,z1),ct=P(i0,j1,z1),dt=P(i0,j0,z1);
   fillP(ctx,[b,c,ct,bt],o.left||shade(col,.9));
   fillP(ctx,[a,b,bt,at],o.right||shade(col,.7));
-  if(o.top!==false) fillP(ctx,[dt,at,bt,ct],o.top||shade(col,1.1));
+  if(o.top!==false) fillP(ctx,[dt,at,bt,ct],SEAS===3&&z1>=9&&!o.nosnow?SNOW:(o.top||shade(col,1.1)));
   if(o.edge!==false){ctx.strokeStyle=o.edgeCol||EDGE;ctx.lineWidth=o.lw||1;ctx.beginPath();
     ctx.moveTo(c[0],c[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(a[0],a[1]);ctx.lineTo(at[0],at[1]);if(o.top!==false){ctx.lineTo(dt[0],dt[1]);ctx.lineTo(ct[0],ct[1]);}else ctx.moveTo(ct[0],ct[1]);ctx.lineTo(c[0],c[1]);
     ctx.moveTo(b[0],b[1]);ctx.lineTo(bt[0],bt[1]);ctx.stroke();
@@ -1369,6 +1468,8 @@ function boxHit(i0,j0,i1,j1,z1){return [P(i0,j0,z1),P(i1,j0,z1),P(i1,j0,0),P(i1,
 function fq(face,K,a0,a1,z0,z1){return face==='I'?[P(K,a0,z0),P(K,a1,z0),P(K,a1,z1),P(K,a0,z1)]:[P(a0,K,z0),P(a1,K,z0),P(a1,K,z1),P(a0,K,z1)];}
 function fxf(ctx,face,K,a,z){const o=face==='I'?P(K,a,z):P(a,K,z);if(face==='I') ctx.transform(1,-.5,0,1,o[0],o[1]);else ctx.transform(1,.5,0,1,o[0],o[1]);}
 function win(ctx,face,K,a,w,z,h,lit,frame){
+  const D=scene.dn; if(D&&D.night>.35) lit=true;   // v2.3: every window is lit after dusk
+  if(D&&D.lights>.03&&lit) scene.lq.push(fq(face,K,a+w*.14,a+w*.86,z+h*.14,z+h*.86));
   fillP(ctx,fq(face,K,a,a+w,z,z+h),frame||'#f4ead8');
   const g=lit?'#ffd98a':'#8fc3dc';
   fillP(ctx,fq(face,K,a+w*.14,a+w*.86,z+h*.14,z+h*.86),g);
@@ -1376,7 +1477,7 @@ function win(ctx,face,K,a,w,z,h,lit,frame){
   else fillP(ctx,fq(face,K,a+w*.48,a+w*.52,z+h*.14,z+h*.86),frame||'#f4ead8');
 }
 function gable(ctx,i0,j0,i1,j1,z,rise,axis,roof,wall,ov){
-  ov=ov===undefined?.2:ov;
+  ov=ov===undefined?.2:ov; if(SEAS===3) roof=SNOW;
   if(axis==='i'){const jm=(j0+j1)/2,I0=i0-ov,I1=i1+ov,J0=j0-ov,J1=j1+ov;
     const r0=P(I0,jm,z+rise),r1=P(I1,jm,z+rise);
     fillP(ctx,[r0,r1,P(I1,J0,z-3),P(I0,J0,z-3)],shade(roof,1.15),EDGE);
@@ -1399,16 +1500,17 @@ function gable(ctx,i0,j0,i1,j1,z,rise,axis,roof,wall,ov){
 }
 /* sawtooth roof: teeth step along `axis`, glass faces toward + of that axis */
 function sawtooth(ctx,i0,j0,i1,j1,z,rise,n,axis,roof,wall){
+  if(SEAS===3) roof=SNOW; const lit=scene.dn&&scene.dn.lights>.03;
   for(let k=0;k<n;k++){
     if(axis==='i'){const a=i0+(i1-i0)*k/n,b=i0+(i1-i0)*(k+1)/n;
       fillP(ctx,[P(a,j0,z),P(b,j0,z+rise),P(b,j1,z+rise),P(a,j1,z)],shade(roof,1.05),EDGE);
       fillP(ctx,[P(a,j1,z),P(b,j1,z),P(b,j1,z+rise)],shade(wall,.88),EDGE);
-      fillP(ctx,[P(b,j0,z),P(b,j1,z),P(b,j1,z+rise),P(b,j0,z+rise)],'#7fb6cf',EDGE);
+      fillP(ctx,[P(b,j0,z),P(b,j1,z),P(b,j1,z+rise),P(b,j0,z+rise)],lit&&scene.dn.night>.35?'#ffd98a':'#7fb6cf',EDGE);if(lit) scene.lq.push([P(b,j0,z),P(b,j1,z),P(b,j1,z+rise),P(b,j0,z+rise)]);
       fillP(ctx,[P(b,j0+(j1-j0)*.1,z+rise*.25),P(b,j0+(j1-j0)*.45,z+rise*.25),P(b,j0+(j1-j0)*.45,z+rise*.8),P(b,j0+(j1-j0)*.1,z+rise*.8)],'rgba(255,255,255,.3)');
     } else {const a=j0+(j1-j0)*k/n,b=j0+(j1-j0)*(k+1)/n;
       fillP(ctx,[P(i0,a,z),P(i0,b,z+rise),P(i1,b,z+rise),P(i1,a,z)],shade(roof,1.05),EDGE);
       fillP(ctx,[P(i1,a,z),P(i1,b,z),P(i1,b,z+rise)],shade(wall,.7),EDGE);
-      fillP(ctx,[P(i0,b,z),P(i1,b,z),P(i1,b,z+rise),P(i0,b,z+rise)],'#8cc4dc',EDGE);
+      fillP(ctx,[P(i0,b,z),P(i1,b,z),P(i1,b,z+rise),P(i0,b,z+rise)],lit&&scene.dn.night>.35?'#ffd98a':'#8cc4dc',EDGE);if(lit) scene.lq.push([P(i0,b,z),P(i1,b,z),P(i1,b,z+rise),P(i0,b,z+rise)]);
       fillP(ctx,[P(i0+(i1-i0)*.1,b,z+rise*.25),P(i0+(i1-i0)*.45,b,z+rise*.25),P(i0+(i1-i0)*.45,b,z+rise*.8),P(i0+(i1-i0)*.1,b,z+rise*.8)],'rgba(255,255,255,.3)');
     }
   }
@@ -1543,15 +1645,18 @@ function jackSpots(){
 const CHUNK=512;
 const GRASS=['#8cc761','#88c35d','#90cb65','#85c05a'], FOREST_FLOOR=['#74b052','#70ab4e','#78b455','#6ca84b'];
 function drawGround(ctx,x0,y0,x1,y1){
-  ctx.fillStyle='#89c45e';ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  const GR=GRASS_S[SEAS]||GRASS, FF=FLOOR_S[SEAS]||FOREST_FLOOR;
+  ctx.fillStyle=SEAS===3?'#e6edf1':SEAS===2?'#b0b462':'#89c45e';ctx.fillRect(x0,y0,x1-x0,y1-y0);
   const u0=Math.floor(y0/HH)-2,u1=Math.ceil(y1/HH)+1,v0=Math.floor(x0/HW)-2,v1=Math.ceil(x1/HW)+2;
   for(let u=u0;u<=u1;u++) for(let v=v0;v<=v1;v++){
     if((u+v)&1) continue; const i=(u+v)/2,j=(u-v)/2;
     const z=zoneAt(i+.5,j+.5); if(z!=='grass') continue;
-    const h=hash2(i,j); const pal=isForestPt(i+.5,j+.5)?FOREST_FLOOR:GRASS;
+    const h=hash2(i,j); const pal=isForestPt(i+.5,j+.5)?FF:GR;
     let c=pal[Math.floor(h*4)]; if((i+j)&1) c=shade(c,1.03);
     fillP(ctx,[P(i,j),P(i+1,j),P(i+1,j+1),P(i,j+1)],c);
-    if(h>0.55){const [x,y]=P(i+.3+h*.4,j+.5);ctx.strokeStyle='rgba(50,100,30,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x-3,y-3);ctx.lineTo(x,y+1);ctx.lineTo(x+3,y-4);ctx.moveTo(x+5,y-2);ctx.lineTo(x+6,y+1);ctx.stroke();}
+    if(SEAS===2&&h>.4){const [x,y]=P(i+.2+h*.6,j+.3+hash2(j,i)*.5);ell(ctx,x,y,2.2,1.2,AUT[Math.floor(h*10)%4][2]);ell(ctx,x+6,y+2,1.8,1,AUT[Math.floor(h*7)%4][1]);}
+    if(SEAS===0&&h>.82){const [x,y]=P(i+.3+h*.4,j+.4);ell(ctx,x,y,1.6,1.2,'#ffb8cc');ell(ctx,x+4,y+1.5,1.4,1,'#fff4f8');}
+    if(h>0.55&&SEAS!==3){const [x,y]=P(i+.3+h*.4,j+.5);ctx.strokeStyle=SEAS===2?'rgba(120,100,30,.35)':'rgba(50,100,30,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x-3,y-3);ctx.lineTo(x,y+1);ctx.lineTo(x+3,y-4);ctx.moveTo(x+5,y-2);ctx.lineTo(x+6,y+1);ctx.stroke();}
   }
   // faint tile grid over grass
   ctx.strokeStyle='rgba(40,80,20,.07)';ctx.lineWidth=1;ctx.beginPath();
@@ -1569,13 +1674,14 @@ function drawGround(ctx,x0,y0,x1,y1){
     }
     // lip (side faces) first, below front edges
     for(const [i,j] of tiles){
-      if(!yardTile(i+1,j)) fillP(ctx,[P(i+1,j),P(i+1,j+1),P(i+1,j+1,-5),P(i+1,j,-5)],'#a98a5c');
-      if(!yardTile(i,j+1)) fillP(ctx,[P(i,j+1),P(i+1,j+1),P(i+1,j+1,-5),P(i,j+1,-5)],'#c2a274');
+      if(!yardTile(i+1,j)) fillP(ctx,[P(i+1,j),P(i+1,j+1),P(i+1,j+1,-5),P(i+1,j,-5)],SEAS===3?'#b4bfc8':'#a98a5c');
+      if(!yardTile(i,j+1)) fillP(ctx,[P(i,j+1),P(i+1,j+1),P(i+1,j+1,-5),P(i,j+1,-5)],SEAS===3?'#cdd5db':'#c2a274');
     }
     for(const [i,j] of tiles){
       const h=hash2(i+50,j+50), lane=laneTile(i,j);
       let c=lane?(((i+j)&1)?'#d3cdbf':'#cbc4b4'):(((i+j)&1)?'#dcc598':'#d6be8f');
       if(!lane&&h>.86) c='#d1b886';
+      if(SEAS===3) c=lane?(((i+j)&1)?'#dfe2e4':'#d8dcdf'):(h>.55?'#eef2f5':((i+j)&1)?'#e4e9ed':'#dde3e8');
       fillP(ctx,[P(i,j),P(i+1,j),P(i+1,j+1),P(i,j+1)],c);
       if(lane){ // paver joints
         ctx.strokeStyle='rgba(120,110,95,.22)';ctx.lineWidth=1;ctx.beginPath();
@@ -1635,8 +1741,10 @@ function drawGround(ctx,x0,y0,x1,y1){
   for(const d of scene.deco){
     const [x,y]=P(d.i,d.j); if(x<x0-20||x>x1+20||y<y0-20||y>y1+20) continue;
     if(d.t==='rock'){ell(ctx,x+2,y+2,6*d.s,3*d.s,'rgba(30,40,10,.2)');ell(ctx,x,y,5.5*d.s,3.6*d.s,'#9a9890');ell(ctx,x-1.2*d.s,y-1.2*d.s,3.4*d.s,2*d.s,'#c4c2ba');}
-    else if(d.t==='bush'){ell(ctx,x+3,y+2,10*d.s,4.5*d.s,'rgba(30,50,10,.22)');ell(ctx,x-4*d.s,y-3*d.s,6*d.s,5*d.s,'#4f9a3a');ell(ctx,x+4*d.s,y-3*d.s,6*d.s,5*d.s,'#468f34');ell(ctx,x,y-6*d.s,6.5*d.s,5.5*d.s,'#5aa843');ell(ctx,x-2*d.s,y-8*d.s,3*d.s,2.4*d.s,'#7cc45e');}
-    else if(d.t==='flowers'){for(let k=0;k<4;k++){const fx=x+(hash2(k,d.i*9)-.5)*18,fy=y+(hash2(d.j*9,k)-.5)*8;ell(ctx,fx,fy-1,1.8,1.4,d.c);ell(ctx,fx,fy-1,.7,.6,'#e8a020');}}
+    else if(d.t==='bush'){const B=SEAS===3?['#5f7a5a','#566f52','#f4f8fa','#ffffff']:SEAS===2?['#b0702c','#9c5e24','#d08a36','#e8b050']:['#4f9a3a','#468f34','#5aa843','#7cc45e'];
+      ell(ctx,x+3,y+2,10*d.s,4.5*d.s,'rgba(30,50,10,.22)');ell(ctx,x-4*d.s,y-3*d.s,6*d.s,5*d.s,B[0]);ell(ctx,x+4*d.s,y-3*d.s,6*d.s,5*d.s,B[1]);ell(ctx,x,y-6*d.s,6.5*d.s,5.5*d.s,B[2]);ell(ctx,x-2*d.s,y-8*d.s,3*d.s,2.4*d.s,B[3]);
+      if(SEAS===0){ell(ctx,x-3*d.s,y-7*d.s,1.4,1.2,'#ffc2d6');ell(ctx,x+3*d.s,y-5*d.s,1.4,1.2,'#fff');ell(ctx,x+1*d.s,y-9*d.s,1.4,1.2,'#ffc2d6');}}
+    else if(d.t==='flowers'){if(SEAS===3) continue; for(let k=0;k<4;k++){const fx=x+(hash2(k,d.i*9)-.5)*18,fy=y+(hash2(d.j*9,k)-.5)*8;ell(ctx,fx,fy-1,1.8,1.4,d.c);ell(ctx,fx,fy-1,.7,.6,'#e8a020');}}
   }
   for(const s of scene.stumps||[]){const [x,y]=P(s.i,s.j); if(x<x0-20||x>x1+20||y<y0-20||y>y1+20) continue; ell(ctx,x+2,y+1.5,6,2.8,'rgba(30,40,10,.22)');ctx.fillStyle='#7a5230';ctx.fillRect(x-4,y-5,8,5);ell(ctx,x,y,4,2,'#7a5230');ell(ctx,x,y-5,4,2,'#e2be86');ell(ctx,x,y-5,1.6,.8,'#c99a5e');}
   // tire tracks in the harvest clearing
@@ -1661,7 +1769,7 @@ function getChunk(cx,cy,cs,allowRender){
   return c;
 }
 function drawChunks(ctx,vx0,vy0,vx1,vy1,force){
-  if(scene.chunkTier!==S.tree){scene.chunks.clear();scene.chunkTier=S.tree;force=true;}
+  if(scene.chunkTier!==S.tree*10+SEAS){scene.chunks.clear();scene.chunkTier=S.tree*10+SEAS;force=true;}
   const cs=chunkScale(); let budget=force?99:2;
   for(let cy=Math.floor(vy0/CHUNK);cy<=Math.floor(vy1/CHUNK);cy++) for(let cx=Math.floor(vx0/CHUNK);cx<=Math.floor(vx1/CHUNK);cx++){
     let c=getChunk(cx,cy,cs,false);
@@ -1682,9 +1790,10 @@ const TREE_PAL=[
   {k:'round',c:['#6a2a22','#8e3d2a','#b8603e']},
   {k:'cone',c:['#20242f','#30374a','#56607e']},
 ];
+const CHERRY={k:'round',cherry:true,c:['#c86a8e','#e891b2','#ffc4d8']};
 function treeShadow(ctx,x,y,s){ctx.fillStyle='rgba(30,50,10,.2)';ctx.beginPath();ctx.ellipse(x+5*s,y+1,13*s,6*s,0,0,TAU);ctx.fill();}
 function drawTree(ctx,x,y,t,tier){
-  const pal=TREE_PAL[tier]||TREE_PAL[0]; const s=t.s*(t.grow===undefined?1:t.grow);
+  let pal=TREE_PAL[tier]||TREE_PAL[0]; if(SEAS===0&&t.var<.17) pal=CHERRY; const s=t.s*(t.grow===undefined?1:t.grow);
   if(t.stump>0){ // stump
     ell(ctx,x,y,4.5,2.4,'#7a4a24'); ctx.fillStyle='#8a5a2c';ctx.fillRect(x-4.5,y-4,9,4); ell(ctx,x,y-4,4.5,2.4,'#e0b67a'); ell(ctx,x,y-4,2,1,'#b8864a'); return;
   }
@@ -1694,9 +1803,10 @@ function drawTree(ctx,x,y,t,tier){
   if(t.down){ctx.translate(fd*3,-2);ctx.scale(1,.58);ctx.rotate(fd*1.5);}
   else if(t.fall>0){const f=t.fall,a=Math.min(1.5,f*f*1.5);ctx.translate(0,-3.5*t.s*f);ctx.scale(1,1-.42*f*f);ctx.rotate(a*fd);}
   if(t.shake>0){ctx.rotate(Math.sin(t.shake*40)*0.06*t.shake);}
+  else if(t.dyn&&scene.wxv&&scene.wxv.wind>.05){ctx.rotate(Math.sin(scene.t*2.3+t.var*9)*.045*scene.wxv.wind);}
   ctx.scale(s,s);
   if(t.down){ctx.fillStyle='#7a4a26';ctx.fillRect(-2.6,-40,5.2,40);ctx.fillStyle='#5e3618';ctx.fillRect(.8,-40,1.8,40);ctx.fillStyle='#e0b67a';ctx.fillRect(-2.6,-1,5.2,1.6);ctx.globalAlpha=Math.max(0,1-(t.buck||0)*1.1);if(ctx.globalAlpha<=0.01){ctx.restore();return;}}
-  const v=t.var; const c0=pal.c[0],c1=pal.c[1],c2=pal.c[2];
+  const v=t.var; const TC=treeColors(pal,t,tier); const c0=TC[0],c1=TC[1],c2=TC[2]; const snowy=SEAS===3;
   ctx.fillStyle='#7a4a26';ctx.fillRect(-2.2,-10,4.4,10);ctx.fillStyle='#5e3618';ctx.fillRect(.6,-10,1.6,10);
   if(pal.k==='cone'){
     const H=[[-44,13],[-32,16],[-20,18.5]];
@@ -1704,13 +1814,19 @@ function drawTree(ctx,x,y,t,tier){
       ctx.fillStyle=c1;ctx.beginPath();ctx.moveTo(0,top);ctx.lineTo(-w,base);ctx.quadraticCurveTo(0,base+4,w,base);ctx.closePath();ctx.fill();
       ctx.fillStyle=c0;ctx.beginPath();ctx.moveTo(0,top);ctx.lineTo(w,base);ctx.quadraticCurveTo(w*.5,base+3,1,base+3.5);ctx.closePath();ctx.fill();
       ctx.fillStyle=c2;ctx.beginPath();ctx.moveTo(0,top+2);ctx.lineTo(-w*.55,base-4);ctx.lineTo(-w*.2,base-3);ctx.closePath();ctx.fill();
+      if(snowy){const sb=top+(base-top)*.5;ctx.fillStyle='#f4f8fb';ctx.beginPath();ctx.moveTo(0,top-.5);ctx.lineTo(-w*.52,sb);ctx.quadraticCurveTo(-w*.25,sb-2.5,0,sb+1);ctx.quadraticCurveTo(w*.25,sb-1,w*.5,sb+.5);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#d8e3ea';ctx.beginPath();ctx.moveTo(0,top-.5);ctx.lineTo(w*.5,sb+.5);ctx.quadraticCurveTo(w*.25,sb-1,0,sb+1);ctx.closePath();ctx.fill();}
+      else if(SEAS===0&&v>.5){ctx.fillStyle='#a6dc6a';ctx.fillRect(-w*.5,base-3,2.4,2);ctx.fillRect(w*.3,base-2.5,2.4,2);}
     }
   } else {
     const blobs=[[0,-24,13],[-8,-18,9],[8,-18,9.5],[-5,-31,8.5],[5,-30,8]];
     for(const [bx,by,r] of blobs){ell(ctx,bx+1.5,by+1.5,r,r*.92,c0);}
     for(const [bx,by,r] of blobs){ell(ctx,bx,by,r*.9,r*.82,c1);}
     ell(ctx,-4,-30,6,5,c2); ell(ctx,-9,-21,4,3.4,c2); ell(ctx,3,-35,3.5,2.6,shade(c2,1.15));
-    if(tier===2){ctx.fillStyle='#f7c95a';for(let k=0;k<4;k++){ctx.fillRect(-8+k*5+v*3,-26+((k*7)%10),1.8,1.8);}}
+    if(snowy){ell(ctx,-4,-33,7.5,3.4,'#f4f8fb');ell(ctx,5,-33,5.5,2.6,'#eef3f7');ell(ctx,-9,-24,4.5,2.2,'#f4f8fb');ell(ctx,8,-23,4.5,2.1,'#e4ecf1');}
+    else if(pal.cherry){for(let k=0;k<9;k++){ell(ctx,-11+((k*7.3+v*40)%22),-37+((k*5.1)%22),1.5,1.3,k%3?'#fff4f8':'#ffd8e6');}}
+    else if(SEAS===0&&v<.62){const BC=v<.3?'#ffb6cc':'#fff2f6';for(let k=0;k<7;k++){ell(ctx,-10+((k*7.3+v*20)%20),-36+((k*5.1)%20),1.7,1.5,BC);}}
+    if(tier===2&&SEAS<2){ctx.fillStyle='#f7c95a';for(let k=0;k<4;k++){ctx.fillRect(-8+k*5+v*3,-26+((k*7)%10),1.8,1.8);}}
   }
   ctx.restore();
 }
@@ -2561,8 +2677,8 @@ function updateEntities(dt){
     if(tr.shake>0) tr.shake=Math.max(0,tr.shake-dt*2.8);
     if(tr.fall>0){tr.fall+=dt/1.35;if(tr.fall>=1){tr.fall=0;tr.down=1;const c=trunkMid(tr);const p=P(c[0],c[1]);for(let k=0;k<16;k++) emitP(p[0]+(Math.random()-.5)*40,p[1],'dust');}}
     else if(tr.down){ if(!tr.claim){tr.down=0;tr.stump=40;} }
-    else if(tr.stump>0){tr.stump-=dt;if(tr.stump<=0){tr.stump=0;tr.grow=.14;}}
-    else if(tr.grow<1){tr.grow=Math.min(1,tr.grow+dt*.055);}
+    else if(tr.stump>0){tr.stump-=dt*(seasonIdx()===0?2.2:1);if(tr.stump<=0){tr.stump=0;tr.grow=.14;}}   // v2.3: spring regrowth
+    else if(tr.grow<1){tr.grow=Math.min(1,tr.grow+dt*(seasonIdx()===0?.1:.055));}
   }
   for(const h of scene.harvesters){h.ph+=dt;const dir=Math.cos(h.ph*.25)>=0?1:-1;const y=dir>0?Math.PI/2:-Math.PI/2;h.yaw=h.yaw===undefined?y:angLerp(h.yaw,y,Math.min(1,dt*2.5));}
   for(const d of scene.drones) d.ph+=dt;
@@ -2839,12 +2955,13 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
 function drawScene(dt){
   const ctx=scene.ctx, dpr=scene.dpr, W=scene.w, H=scene.h, c=scene.cam, z=c.z;
+  scene.dn=dayState(); scene.lq.length=0;
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(!scene.bg){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#bfe3a8');g.addColorStop(1,'#5f9a48');scene.bg=g;}
   ctx.fillStyle=scene.bg; ctx.fillRect(0,0,W,H);
@@ -2852,6 +2969,7 @@ function drawScene(dt){
   const vx0=c.x-W/2/z,vx1=c.x+W/2/z,vy0=c.y-H/2/z,vy1=c.y+H/2/z;
   drawChunks(ctx,vx0,vy0,vx1,vy1,scene.firstFrame);
   const inView=(x,y,m)=>x>vx0-m&&x<vx1+m&&y>vy0-m&&y<vy1+m*2;
+  drawPuddles(ctx,inView);
   // decals: conveyors, dynamic shadows
   const lots=MAIN_BLD.map(b=>LOTS[b.id]);
   for(const L of lots) drawConveyor(ctx,L);
@@ -2917,8 +3035,11 @@ function drawScene(dt){
     ctx.save();ctx.translate(a.x,a.y);ctx.scale(1.25,1.25);ctx.rotate(ang);ctx.globalAlpha=Math.min(1,(1-k2)*3);
     ctx.fillStyle='#7a4a22';ctx.fillRect(-1.5,-22,3,24);ctx.fillStyle='#c9d2da';ctx.beginPath();ctx.moveTo(1,-22);ctx.lineTo(11,-26);ctx.lineTo(12,-14);ctx.lineTo(1,-16);ctx.closePath();ctx.fill();
     ctx.strokeStyle='#5a6470';ctx.lineWidth=.8;ctx.stroke();ctx.restore();}
+  // v2.3: time-of-day light map (multiplied over the world), then sky & weather
+  drawLighting(ctx);
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawSky(ctx); drawWeather(ctx,dt);
   drawOverlays(ctx);
   drawGolden(ctx,dt);
 }
@@ -3112,7 +3233,8 @@ function limo(ctx,i,j,yaw,o){
 /* ---------- premium buildings ---------- */
 function glassFace(ctx,face,K,a0,a1,z0,z1,interior){
   fillP(ctx,fq(face,K,a0,a1,z0,z1),'#1d2a33');
-  const g=interior||'#7fb8d0'; fillP(ctx,fq(face,K,a0+.02,a1-.02,z0+1,z1-1),g);
+  const D=scene.dn, lit=D&&D.night>.35; const g=lit?'#ffe2a0':(interior||'#7fb8d0'); fillP(ctx,fq(face,K,a0+.02,a1-.02,z0+1,z1-1),g);
+  if(D&&D.lights>.03) scene.lq.push(fq(face,K,a0+.02,a1-.02,z0+1,z1-1));
   // reflection streaks
   const w=a1-a0; fillP(ctx,[...fq(face,K,a0+w*.12,a0+w*.3,z0+1,z1-1)].map((p,k)=>k===2||k===3?[p[0]+4,p[1]]:p),'rgba(255,255,255,.22)');
   fillP(ctx,fq(face,K,a0+w*.36,a0+w*.42,z0+1,z1-1),'rgba(255,255,255,.14)');
@@ -3347,6 +3469,164 @@ function focusPrem(){const c=scene.cam;const [tb]=barH();const bot=sheetTop()-16
 function premPoof(){const p=P(25,4.5,10);for(let k=0;k<40;k++) emitP(p[0]+(Math.random()-.5)*200,p[1]+(Math.random()-.5)*80,'poof');}
 function stoPoof(id){scene.stoFlash={id,t:0};const L=LOTS[id];if(!L) return;const G=stockGeom(L);const p=P(G.out[0]+.4,G.out[1]+.4,10);for(let k=0;k<12;k++) emitP(p[0]+(Math.random()-.5)*30,p[1]+(Math.random()-.5)*14,'poof');}
 
+/* ===================== v2.3 LIGHTING, SEASONS & WEATHER (visuals) ===================== */
+let SEAS=0;   // season the cached ground chunks / roofs / trees are drawn for
+// ambient multiply colour across the day (0 = midnight). Night stays a readable moonlit blue, never black.
+const AMB_KEYS=[[0,[124,138,196]],[.17,[124,138,196]],[.215,[196,160,190]],[.255,[248,232,218]],[.31,[255,255,255]],[.68,[255,255,255]],
+  [.735,[255,222,176]],[.785,[238,164,122]],[.835,[150,140,190]],[.86,[124,138,196]],[1,[124,138,196]]];
+function ambAt(p){for(let k=1;k<AMB_KEYS.length;k++){const [p1,c1]=AMB_KEYS[k];if(p<=p1){const [p0,c0]=AMB_KEYS[k-1];let t=(p-p0)/(p1-p0);t=t*t*(3-2*t);return [c0[0]+(c1[0]-c0[0])*t,c0[1]+(c1[1]-c0[1])*t,c0[2]+(c1[2]-c0[2])*t];}}return AMB_KEYS[0][1].slice();}
+function dayState(){
+  const p=dayPhase(), wv=scene.wxv; let a=ambAt(p);
+  const oc=Math.max(wv.rain,wv.snow*.75);  // overcast
+  a=[a[0]*(1-.2*oc),a[1]*(1-.17*oc),a[2]*(1-.09*oc)];
+  const lum0=(a[0]+a[1]+a[2])/3, day=Math.max(0,Math.min(1,(lum0-170)/70));
+  if(wv.sunny>0){const s=wv.sunny*day;a=[a[0],a[1]*(1-.025*s),a[2]*(1-.08*s)];}
+  const lum=(a[0]+a[1]+a[2])/3, night=Math.max(0,Math.min(1,(246-lum)/(246-152)));
+  return {p,amb:a,night,day,oc,lights:Math.max(night,oc*.5)};
+}
+scene.wxv={rain:0,snow:0,wind:0,sunny:0}; scene.wet=0; scene.lq=[]; scene.dn={p:.3,amb:[255,255,255],night:0,day:1,oc:0,lights:0};
+function updateWorldVis(dt){
+  const w=weatherId(), v=scene.wxv;
+  for(const k in v){const tg=w===k?1:0;v[k]+=(tg-v[k])*Math.min(1,dt*(tg>v[k]?.35:.25));if(v[k]<.002) v[k]=0;}
+  scene.wet=Math.max(0,Math.min(1,scene.wet+(v.rain>.3?dt*.06:-dt*.012)));
+  const si=seasonIdx(); if(si!==SEAS){SEAS=si;scene.chunks.clear();scene.seasonFlash=1;}
+  if(scene.seasonFlash>0) scene.seasonFlash=Math.max(0,scene.seasonFlash-dt*.5);
+}
+/* ---------- season palettes ---------- */
+const SNOW='#eaf0f4';
+const GRASS_S=[null,['#86c75a','#80c055','#8bcc60','#7dbd52'],['#b4b765','#adb05e','#b8bc6b','#a6aa58'],['#e9eff3','#e3eaef','#eef3f6','#dfe7ec']];
+const FLOOR_S=[null,['#6cae4c','#68a948','#70b250','#64a645'],['#a3a254','#9c9b4e','#a8a85a','#96954a'],['#dde6eb','#d7e1e7','#e2eaee','#d2dde4']];
+const AUT=[['#a8481c','#d0702a','#efa040'],['#a8801c','#d4aa2c','#f0d058'],['#86281e','#b23c28','#dc6036'],['#9a6a1e','#c8902c','#e8b84a']];
+function treeColors(pal,t,tier){
+  const c=pal.c, v=t.var;
+  if(pal.cherry) return c;
+  if(SEAS===2){ if(pal.k==='round') return AUT[Math.floor(v*3.999)%3]; if(v<.42) return AUT[3]; return c;}
+  if(SEAS===3){ if(pal.k==='round') return ['#6d6255','#86796a','#a39584']; return [shade(c[0],.85),shade(c[1],.85),shade(c[2],.9)];}
+  return c;
+}
+/* ---------- puddles (appear while it rains, dry slowly) ---------- */
+function puddleSpots(){
+  if(scene._pud) return scene._pud; const out=[];
+  for(let u=14;u<=54;u+=1.7){const h=hash2(u*13,7);const v=(h-.5)*3.2;out.push({i:(u+v)/2,j:(u-v)/2,r:9+h*13,h});}
+  for(let j=-8;j<44;j+=2.6){const h=hash2(j*7,3);out.push({i:30.15+h*.1,j:j+h,r:7+h*9,h});}
+  for(let i=-12;i<5;i+=2.4){const h=hash2(i*5,11);out.push({i,j:DIRT_J+(h-.5)*1.2,r:8+h*10,h,mud:true});}
+  return scene._pud=out;
+}
+function drawPuddles(ctx,inView){
+  const w=scene.wet; if(w<.02) return; const t=scene.t, rain=scene.wxv.rain;
+  for(const q of puddleSpots()){const [x,y]=P(q.i,q.j);if(!inView(x,y,40)) continue;const r=q.r*(.45+.55*w);
+    ctx.fillStyle=q.mud?`rgba(110,80,45,${.45*w})`:`rgba(96,118,148,${.42*w})`;ctx.beginPath();ctx.ellipse(x,y,r,r*.5,0,0,TAU);ctx.fill();
+    ctx.fillStyle=`rgba(225,236,250,${.28*w})`;ctx.beginPath();ctx.ellipse(x-r*.25,y-r*.12,r*.4,r*.12,0,0,TAU);ctx.fill();
+    if(rain>.15){for(let k=0;k<2;k++){const ph=(t*1.4+q.h*7+k*.5)%1;ctx.strokeStyle=`rgba(235,242,255,${(1-ph)*.55*rain})`;ctx.lineWidth=.8;
+      ctx.beginPath();ctx.ellipse(x+(hash2(k,q.i*9)-.5)*r,y+(hash2(q.j*9,k)-.5)*r*.4,ph*r*.45,ph*r*.22,0,0,TAU);ctx.stroke();}}}
+}
+/* ---------- light sprites ---------- */
+const _glow={};
+function glowSprite(col){let c=_glow[col];if(c) return c;c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
+  const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,`rgba(${col},1)`);gr.addColorStop(.35,`rgba(${col},.55)`);gr.addColorStop(1,`rgba(${col},0)`);
+  g.fillStyle=gr;g.fillRect(0,0,64,64);return _glow[col]=c;}
+const LC={warm:'255,190,105',gold:'255,214,120',cool:'225,235,255',red:'255,55,35',fire:'255,130,40',glass:'255,226,160'};
+function glow(g,x,y,rx,ry,col,a,rot){if(a<=.003) return;g.globalAlpha=Math.min(1,a);const sp=glowSprite(LC[col]||col);
+  if(rot){g.save();g.translate(x,y);g.rotate(rot);g.drawImage(sp,-rx,-ry,rx*2,ry*2);g.restore();} else g.drawImage(sp,x-rx,y-ry,rx*2,ry*2);}
+function vehLights(out,v,front,back,small){
+  if(v.i===undefined||v.done) return; const V=VF(v.i,v.j,v.yaw||0,0);
+  const d=P(V.fi,V.fj),o=P(0,0),rot=Math.atan2(d[1]-o[1],d[0]-o[0]);
+  const b=VL(V,front+(small?.8:1.7),0,0);out.push({x:b[0],y:b[1],rx:small?30:66,ry:small?14:24,c:'warm',a:.75,rot});
+  for(const cc of [-.3,.3]){const h=VL(V,front,cc*(small?.7:1),small?4:6);out.push({x:h[0],y:h[1],rx:7,ry:7,c:'cool',a:.95,core:1});}
+  if(back) for(const cc of [-.32,.32]){const h=VL(V,back,cc,8.5);out.push({x:h[0],y:h[1],rx:v.brake?11:7,ry:v.brake?11:7,c:'red',a:v.brake?1:.7,core:1});}
+}
+function collectLights(){
+  const out=[], t=scene.t;
+  for(const l of scene.lamps){const [x,y]=P(l.i,l.j);out.push({x:x+5,y:y+2,rx:50,ry:25,c:'warm',a:.85});out.push({x:x+6,y:y-27,rx:15,ry:15,c:'warm',a:.9,core:1});}
+  if(premOpen()) for(const [i,j] of [[24.75,.35],[24.75,8.7],[28.75,.3],[21.25,.3]]){const [x,y]=P(i,j);out.push({x,y:y+1,rx:42,ry:21,c:'gold',a:.8});out.push({x,y:y-27,rx:13,ry:13,c:'gold',a:.95,core:1});}
+  for(const b of BUILDINGS){const st=S.buildings[b.id];if(!st.lvl) continue;if(b.premium&&!premOpen()) continue;const L=LOTS[b.id];const d=doorOf(L);
+    const [x,y]=P(d[0],d[1],0);out.push({x,y,rx:30,ry:15,c:b.premium?'gold':'warm',a:.6});const [hx,hy]=P(d[0],d[1],15);out.push({x:hx,y:hy,rx:9,ry:9,c:'warm',a:.8,core:1});
+    if(b.id==='kiln'&&st.on){const fl=.75+.25*Math.sin(t*9)*Math.sin(t*5.3);const k=P(d[0],d[1]-.9,6);out.push({x:k[0],y:k[1],rx:48,ry:30,c:'fire',a:.7*fl});}}
+  {const [x,y]=P(YARD.ci,YARD.cj,0);out.push({x,y,rx:80,ry:40,c:'warm',a:.45});}
+  {const [x,y]=P(28.6,21,0);out.push({x,y,rx:70,ry:34,c:'warm',a:.55});}
+  {const fl=.8+.2*Math.sin(t*11)*Math.sin(t*6.7);const [x,y]=P(CAMP.i,CAMP.j,0);out.push({x,y,rx:86,ry:48,c:'fire',a:.85*fl});out.push({x,y:y-6,rx:16,ry:16,c:'fire',a:1,core:1});}
+  for(const v of scene.logTrucks) vehLights(out,v,1.62,-1.64);
+  for(const v of scene.dockTrucks) vehLights(out,v,1.62,-1.64);
+  for(const v of scene.premTrucks||[]) vehLights(out,v,1.62,-1.64);
+  if(scene.client&&scene.client.veh) vehLights(out,scene.client.veh,1.08,-1.06);
+  for(const f of scene.forklifts) vehLights(out,f,.55,null,true);
+  if(scene.pfork) vehLights(out,scene.pfork,.55,null,true);
+  return out;
+}
+/* ---------- lighting pass: half-res light map, multiplied over the world ---------- */
+function drawLighting(ctx){
+  const D=scene.dn, a=D.amb; if(a[0]>253.5&&a[1]>253.5&&a[2]>253.5&&D.lights<.02){scene.lightCount=0;return;}
+  const W=scene.w,H=scene.h,dpr=scene.dpr,c=scene.cam,z=c.z,LR=.5;
+  const lw=Math.ceil(scene.canvas.width*LR),lh=Math.ceil(scene.canvas.height*LR);
+  if(!scene.lm||scene.lm.width!==lw||scene.lm.height!==lh){scene.lm=document.createElement('canvas');scene.lm.width=lw;scene.lm.height=lh;scene.lmx=scene.lm.getContext('2d');}
+  const g=scene.lmx; g.setTransform(1,0,0,1,0,0); g.globalCompositeOperation='source-over'; g.globalAlpha=1;
+  g.fillStyle=`rgb(${Math.round(a[0])},${Math.round(a[1])},${Math.round(a[2])})`; g.fillRect(0,0,lw,lh);
+  let lights=null;
+  if(D.lights>.02){
+    g.globalCompositeOperation='lighter'; const s=dpr*LR; g.setTransform(s*z,0,0,s*z,s*(W/2-c.x*z),s*(H/2-c.y*z));
+    g.globalAlpha=1; g.fillStyle=`rgba(255,196,110,${.6*D.lights})`; for(const q of scene.lq){pth(g,q);g.fill();}
+    lights=collectLights(); for(const l of lights) glow(g,l.x,l.y,l.rx,l.ry,l.c,l.a*D.lights,l.rot);
+    g.globalAlpha=1;
+  }
+  scene.lightCount=(lights?lights.length:0)+scene.lq.length;
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='multiply'; ctx.drawImage(scene.lm,0,0,scene.canvas.width,scene.canvas.height); ctx.restore();
+  // bright cores & halos on top (bulbs, head/tail lights, flames) so they read as light sources
+  if(lights&&D.lights>.05){ctx.save();ctx.globalCompositeOperation='lighter';
+    for(const l of lights) if(l.core) glow(ctx,l.x,l.y,l.rx*1.1,l.ry*1.1,l.c,.55*D.lights);
+    ctx.restore();}
+}
+/* ---------- sky band with stars & moon at night ---------- */
+function drawSky(ctx){
+  const D=scene.dn, n=D.night*(1-D.oc*.8); if(n<.03) return; const W=scene.w,H=scene.h, tb=barH()[0], t=scene.t;
+  const g=ctx.createLinearGradient(0,0,0,H*.32);g.addColorStop(0,`rgba(12,18,48,${.62*n})`);g.addColorStop(1,'rgba(12,18,48,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.32);
+  for(let k=0;k<90;k++){const x=hash2(k,3)*W,y=tb+hash2(5,k)*H*.24;const tw=.55+.45*Math.sin(t*(1.3+hash2(k,k)*2)+k);const a=n*tw*(1-(y-tb)/(H*.26));if(a<.05) continue;
+    ctx.fillStyle=`rgba(255,252,235,${a})`;const r=hash2(k,9)>.9?1.6:.9;ctx.fillRect(x-r/2,y-r/2,r,r);}
+  if(W>600){const mx=W*.66,my=tb+16;ctx.save();ctx.globalAlpha=n;ctx.globalCompositeOperation='lighter';glow(ctx,mx,my,46,46,'cool',.35);ctx.restore();
+    ctx.globalAlpha=n;ell(ctx,mx,my,12,12,'#f4f1e2');ell(ctx,mx+5,my-3,10.5,10.5,`rgb(${Math.round(30+12*(1-n))},${Math.round(40+10*(1-n))},${Math.round(80)})`);ctx.globalAlpha=1;}
+}
+/* ---------- weather particles (screen space) ---------- */
+function drawWeather(ctx,dt){
+  const W=scene.w,H=scene.h,v=scene.wxv,t=scene.t,D=scene.dn, dim=1-.35*D.night;
+  const wx=-60-v.wind*260; // wind drift px/s
+  const P2=scene.wp||(scene.wp={rain:[],snow:[],leaf:[],streak:[],splash:[]});
+  const area=W*H/1e6;
+  const sync=(arr,n,mk)=>{while(arr.length<n) arr.push(mk(true));if(arr.length>n) arr.length=n;};
+  // rain
+  const nr=Math.round(Math.min(340,260*area)*v.rain);
+  sync(P2.rain,nr,()=>({x:Math.random()*(W+300),y:Math.random()*H,s:900+Math.random()*350,l:15+Math.random()*12}));
+  if(nr){ctx.strokeStyle=`rgba(210,225,248,${.62*dim})`;ctx.lineWidth=1.3;ctx.beginPath();
+    for(const d of P2.rain){d.y+=d.s*dt;d.x+=wx*1.4*dt;if(d.y>H){if(Math.random()<.5) P2.splash.push({x:d.x,y:H*(.3+Math.random()*.7),l:0});d.y=-20-Math.random()*60;d.x=Math.random()*(W+300);}
+      const k=d.l/d.s;ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-wx*1.4*k,d.y-d.l);}ctx.stroke();}
+  if(P2.splash.length){ctx.strokeStyle=`rgba(225,235,255,${.55*dim})`;ctx.lineWidth=.9;
+    for(const s of P2.splash){s.l+=dt*4;const r=2+s.l*5;ctx.globalAlpha=Math.max(0,1-s.l);ctx.beginPath();ctx.ellipse(s.x,s.y,r,r*.4,0,0,TAU);ctx.stroke();}
+    ctx.globalAlpha=1;P2.splash=P2.splash.filter(s=>s.l<1).slice(-80);}
+  // snow
+  const ns=Math.round(Math.min(260,200*area)*v.snow);
+  sync(P2.snow,ns,()=>({x:Math.random()*W,y:Math.random()*H,s:35+Math.random()*55,r:1.1+Math.random()*1.9,ph:Math.random()*9}));
+  if(ns){ctx.fillStyle=`rgba(255,255,255,${.92*dim})`;for(const f of P2.snow){f.y+=f.s*dt;f.x+=(Math.sin(t*1.3+f.ph)*22+wx*.35)*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x<-10) f.x+=W+20;if(f.x>W+10) f.x-=W+20;
+    ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();}}
+  // autumn leaves / spring petals
+  const lv=SEAS===2?(.4+v.wind*.9)*(1-v.snow):SEAS===0?(.3+v.wind*.7):0;
+  const nl=Math.round(Math.min(60,46*area)*lv);
+  const LCOL=SEAS===2?['#d8702a','#e8a43a','#b8402a','#f0c850']:['#ffc0d4','#ffd8e4','#fff0f4','#f7a8c4'];
+  sync(P2.leaf,nl,()=>({x:Math.random()*W,y:Math.random()*H,s:30+Math.random()*35,ph:Math.random()*9,c:Math.floor(Math.random()*4),r:Math.random()*6}));
+  for(const f of P2.leaf){f.y+=f.s*dt;f.x+=(Math.sin(t*1.1+f.ph)*30+wx*.7)*dt;f.r+=dt*(1.5+Math.sin(f.ph));if(f.y>H+8){f.y=-8;f.x=Math.random()*W*1.2;}if(f.x<-12) f.x+=W+24;
+    ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.r);ctx.scale(1,Math.abs(Math.cos(f.r*1.7))*.8+.2);ctx.globalAlpha=dim;ctx.fillStyle=LCOL[f.c];
+    ctx.beginPath();ctx.ellipse(0,0,SEAS===2?4.2:3,SEAS===2?2.4:2.2,0,0,TAU);ctx.fill();ctx.restore();}
+  // wind streaks
+  const nw=Math.round(9*v.wind);
+  sync(P2.streak,nw,()=>({x:Math.random()*W,y:Math.random()*H*.9+H*.05,l:80+Math.random()*120,s:500+Math.random()*300,ph:Math.random()*9}));
+  if(nw){ctx.lineCap='round';ctx.lineWidth=1.6;for(const s of P2.streak){s.x-=s.s*dt;if(s.x<-s.l-40){s.x=W+40;s.y=Math.random()*H*.9+H*.05;}
+    ctx.strokeStyle=`rgba(255,255,255,${.28*v.wind*dim})`;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.bezierCurveTo(s.x+s.l*.3,s.y-6*Math.sin(t*2+s.ph),s.x+s.l*.7,s.y+6,s.x+s.l,s.y-3);ctx.stroke();}ctx.lineCap='butt';}
+  // sunbeams
+  const sb=v.sunny*D.day*(1-v.rain);
+  if(sb>.02){ctx.save();ctx.globalCompositeOperation='lighter';for(let k=0;k<3;k++){const x0=W*(.05+k*.28)+Math.sin(t*.2+k)*30;const a=.075*sb*(.7+.3*Math.sin(t*.5+k*2));
+    const g=ctx.createLinearGradient(x0,0,x0+H*.5,H);g.addColorStop(0,`rgba(255,240,190,${a})`);g.addColorStop(1,'rgba(255,240,190,0)');ctx.fillStyle=g;
+    ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0+90+k*30,0);ctx.lineTo(x0+H*.62+140,H);ctx.lineTo(x0+H*.62,H);ctx.closePath();ctx.fill();}ctx.restore();}
+  scene.wxParts=P2.rain.length+P2.snow.length+P2.leaf.length+P2.streak.length;
+}
+function setClock(c){S.wx.clock=c;M=computeMods();wxSig='';updateWorldVis(0);}
+
 /* ===================== MAIN RENDER (HUD + open sheet) ===================== */
 let chopRateDisplay=0;
 function render(){
@@ -3362,10 +3642,10 @@ function render(){
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); updateOrders(); updatePrem();
+  renderOrderCard(); updateOrders(); updatePrem(); updateWx();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
 }
-function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';M=computeMods();render();}
+function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';wxSig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -3392,7 +3672,7 @@ function setupUI(){
     confirmModal('🌱 Replant the Forest?',`You will sell the company and start over with <b>+${g} Seeds</b> (total ${S.seeds+g}, giving <b>+${(S.seeds+g)*10}%</b> production).<br><br>Coins, stock, collectors, buildings, upgrades and trees reset.`,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();}});};
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
-  setupPremiumUI();
+  setupPremiumUI(); setupWx();
   updateMuteBtn();
 }
 function dockSale(v){scene.earnAcc+=0;const p=P(DOCK.ci+.4,DOCK.cj+.2,74);scene.floats.push({x:p[0],y:p[1]-14,text:'+'+fmt(v),coin:true,t:0,dur:1.4,big:true});scene.lastEarned=S.totalEarned;}
@@ -3449,6 +3729,8 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   // v2.2 premium / orders / storage helpers
   MAIN_BLD,PREM_BLD,PREM,buyPremium,premCost,buyStorage,stoCost,stoLvl,stockCaps,bldCap,offerOrder,acceptOrder,declineOrder,deliverFromStock,makeOrder,prodRate,focusPrem,
   premScreen:()=>{const p=P((PREM.i0+PREM.i1)/2,(PREM.j0+PREM.j1)/2,10);return w2s(p[0],p[1]);},
+  // v2.3 world clock / seasons / weather helpers
+  DAY_LEN,SEASON_DAYS,SEASONS,WEATHER,dayPhase,dayNum,seasonIdx,weatherId,setWeather,setClock,clockStr,dayState,isNight,
   get cam(){return scene.cam;}};
 init();
 })();
