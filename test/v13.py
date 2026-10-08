@@ -1,4 +1,4 @@
-# v1.3 tests: building milestones & yard workers, v1.2 save migration
+# v1.3 tests (updated for v2.0 scene UI): building milestones & yard workers, v1.2 save migration
 from playwright.sync_api import sync_playwright
 URL='file:///workspace/lumber-idle/lumber-idle.html'
 OLD='file:///workspace/lumber-idle/releases/timber-tycoon-v1.2.html'
@@ -18,7 +18,7 @@ with sync_playwright() as p:
     pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(800)
     S=pg.evaluate('TT.S')
-    ok(S['version']=='1.3','save migrated to 1.3')
+    ok(S['version']==pg.evaluate('TT.VERSION'),'save migrated to current version')
     ok(S['buildings']['sawmill']['lvl']==27 and S['collectors']['lumberjack']==40 and S['golden']==3,'old progress kept')
     ok(len(S['ach'])>=old['a'],'old trophies kept')
     ok('ms1' in S['ach'],'Milestone! trophy unlocked from old save (sawmill Lv 27)')
@@ -29,10 +29,10 @@ with sync_playwright() as p:
     ok(pg.evaluate('[TT.msCount(9),TT.msCount(10),TT.msCount(24),TT.msCount(25),TT.msCount(400)]')==[0,1,1,2,6],'milestone thresholds')
     ok(pg.evaluate('TT.nextMs(27)')==50 and pg.evaluate('TT.nextMs(400)') is None,'next milestone lookup')
     # card UI
-    pg.click('#tabs button[data-t=bld]'); pg.wait_for_timeout(300)
-    card=pg.locator('#bldList .bcard').first
-    ok(card.locator('.ms .stars .on').count()==2,'sawmill card shows 2 lit stars')
-    ok('Lv 50' in card.locator('.ms .mtx').inner_text() and '×4' in card.locator('.ms .mtx').inner_text(),'card shows next milestone and current multiplier')
+    pt=pg.evaluate('TT.lotScreen("sawmill")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(300)
+    ok(pg.evaluate('TT.curSheet')=='bld' and pg.evaluate('TT.sheetBld')=='sawmill','tapping sawmill opens its sheet')
+    ok(pg.locator('#bpStars .on').count()==2,'sawmill sheet shows 2 lit stars')
+    ok('Lv 50' in pg.locator('#bpMtx').inner_text() and '×4' in pg.locator('#bpMtx').inner_text(),'sheet shows next milestone and current multiplier')
     # crossing a milestone
     pg.evaluate('document.querySelectorAll(".toast").forEach(t=>t.remove()); TT.S.coins=1e12')
     sp0=pg.evaluate('TT.bSpeed("sawmill")/27')
@@ -60,7 +60,7 @@ with sync_playwright() as p:
     ok(q0==q1 and pg.evaluate('TT.scene.workers.filter(w=>w.bid=="sawmill").every(w=>w.idle)'),'workers idle when building is off')
     pg.evaluate('TT.S.buildings.sawmill.on=true')
     # stats + trophies
-    pg.click('#tabs button[data-t=co]'); pg.wait_for_timeout(200)
+    pg.click('#bottombar [data-s=co]'); pg.wait_for_timeout(200)
     ok('Milestone stars' in pg.locator('#statsKv').inner_text(),'stats show milestone stars')
     pg.evaluate('TT.buyBuilding("sawmill",60)'); pg.wait_for_timeout(1300)
     ok('lvl100' in pg.evaluate('TT.S.ach'),'Centurion trophy at Lv 100')

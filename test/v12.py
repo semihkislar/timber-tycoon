@@ -1,4 +1,4 @@
-# v1.2 tests: trophies, golden logs, v1.1 save migration
+# v1.2 tests (updated for v2.0 scene UI): trophies, golden logs, v1.1 save migration
 import json
 from playwright.sync_api import sync_playwright
 URL='file:///workspace/lumber-idle/lumber-idle.html'
@@ -26,16 +26,16 @@ with sync_playwright() as p:
     print('unlocked from old save:',got)
     for k in ['chop1','chop100','earn1k','earn1m','jack25','oak']: ok(k in got,f'trophy {k} unlocked on load')
     ok(pg.locator('.toast.ach-toast').count()==1,'single summary toast for bulk unlock')
-    ok(not pg.locator('#achDot').get_attribute('class').count('hidden'),'trophy tab dot shown')
+    ok(not pg.locator('#achDot').get_attribute('class').count('hidden'),'trophy button dot shown')
     n=pg.evaluate('TT.achCount()'); m=pg.evaluate('TT.M.ach')
     ok(abs(m-(1+0.02*n))<1e-9,f'trophy bonus x{m:.2f} for {n} trophies')
     # tab UI
-    pg.click('#tabs button[data-t=ach]'); pg.wait_for_timeout(300)
+    pg.click('#bottombar [data-s=ach]'); pg.wait_for_timeout(300)
     ok(pg.locator('#achGrid .ach').count()==pg.evaluate('TT.ACH.length'),'all trophies rendered')
     ok(pg.locator('#achGrid .ach.got').count()==n,'unlocked trophies highlighted')
     ok(pg.locator('#achGrid .ach.fresh').count()==n,'NEW badges on fresh trophies')
     ok(f'{n} / ' in pg.locator('#achCount').inner_text(),'trophy count header')
-    pg.click('#tabs button[data-t=bld]'); pg.wait_for_timeout(200)
+    pg.click('#shClose'); pg.wait_for_timeout(200)
     ok('hidden' in pg.locator('#achDot').get_attribute('class'),'dot cleared after viewing')
     # live unlock via loop
     pg.evaluate('TT.S.coins+=1e5; TT.buyBuilding("sawmill",10)'); pg.wait_for_timeout(1500)
@@ -80,7 +80,7 @@ with sync_playwright() as p:
     pg.evaluate('TT.save(true)'); k=pg.evaluate('TT.achCount()')
     pg.reload(); pg.wait_for_timeout(600)
     ok(pg.evaluate('TT.achCount()')==k,'trophies persist through reload')
-    pg.click('#tabs button[data-t=co]'); pg.wait_for_timeout(200)
+    pg.click('#bottombar [data-s=co]'); pg.wait_for_timeout(200)
     ok('Trophies' in pg.locator('#statsKv').inner_text() and 'Golden logs' in pg.locator('#statsKv').inner_text(),'stats show trophies & golden logs')
     # hard reset wipes trophies
     pg.evaluate('TT.hardReset()'); ok(pg.evaluate('TT.achCount()')==0,'hard reset wipes trophies')
@@ -92,6 +92,8 @@ with sync_playwright() as p:
     mp.touchscreen.tap(box['x']+gx, box['y']+gy); mp.wait_for_timeout(300)
     ok(mp.evaluate('TT.S.golden')==1,'golden log tappable on mobile')
     ok(mp.evaluate('document.documentElement.scrollWidth')<=391,'no horizontal overflow on mobile')
+    mp.evaluate('TT.closeSheet()'); pt=mp.evaluate('TT.lotScreen("dock")'); mp.touchscreen.tap(pt[0],pt[1]); mp.wait_for_timeout(300)
+    ok(mp.evaluate('TT.curSheet')=='market','dock tappable on mobile (touch)')
     print('ERRORS:',errs); ok(len(errs)==0,'no console errors')
     b.close()
 print('FAILS',FAILS)

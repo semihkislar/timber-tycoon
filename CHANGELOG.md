@@ -5,6 +5,57 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.0] — 2026-10-08
+
+> **Visual direction (read this before future releases):** from v2.0 the game is *scene-first* — a full-screen,
+> Lumber Inc.-style **isometric 2.5D factory** drawn entirely in code on a canvas. The old 3-column card layout is gone
+> for good. New features should show up *in the world* (a building, vehicle, worker, prop or effect on the iso map) and
+> only use the bottom sheets for numbers and buttons. Keep the cozy palette (warm earth yard, grass, cream/brown UI),
+> tile-aligned ground (no screen-aligned rectangles), shaded 3-face boxes for anything solid, and no external
+> images, fonts or CDNs. `lumber-idle.html` is a build artifact: edit `src/*` and run `src/build.sh`.
+
+### Added
+- **Isometric factory world** filling the whole viewport (desktop and mobile portrait): diamond-tile grass, a raised
+  tile-aligned packed-earth factory yard, a paved production lane with curbs and lamps, concrete pads per lot, a dirt log
+  road and an asphalt highway past the shipping dock; depth-sorted (painter's algorithm) objects, soft shadows, drifting
+  cloud shadows and a vignette
+- **Every building on its own lot** as a shaded 3D model: Sawmill (red gable, spinning saw), Wood Chipper (hopper and fan),
+  Charcoal Kiln (brick, glowing arches, tall chimney), Carpentry (timber-frame), Pellet Press (silo), Paper Mill
+  (sawtooth roof, turning rollers), Furniture Factory (signage). Buildings grow and gain windows, a cupola, a flag
+  and gold trim at milestones; smoke rises from chimneys while running
+- Conveyors with moving belts and visible goods run from each building to the lane; yard workers carry the right
+  inputs, forklifts haul finished goods to the **shipping dock**, and box trucks back in, load and drive off when goods sell
+  (with a big coin pop)
+- Forest crews in the world: lumberjacks chopping (tree shake, fall, stump, regrow), chainsaw crews, log trucks on the
+  dirt road, harvesters working a stump clearing, drones and a sky-crane helicopter; tree look follows your wood tier
+- Unbuilt lots show a dashed construction plot with brambles or cones and a price/“Earn X” tag; an affordable lot glows
+  and is built with a single tap (with a build "poof")
+- Status in the world: red **!** bubbles over starved buildings, **zzz** and dimming when switched off, level pills with
+  milestone stars, milestone star flashes, floating +coin numbers over the dock
+- **Tap anything:** a building opens its bottom-sheet card (level, rate, inputs → outputs, milestone stars, status,
+  ×1/×10/Max upgrade, on/off, prev/next); the log yard opens Crew, the dock opens Market; tapping the forest chops
+  with an axe swing and wood-chip particles. Hit-testing uses the real iso building outlines
+- **Camera:** drag to pan, mouse wheel / pinch to zoom (clamped), auto-fit on load, "Fit factory" in Settings; the camera
+  slides the selected building above the open sheet
+- Slim top bar (coins, income/s, logs/s, Seeds, version badge, mute) and a compact bottom bar (Crew, Market, Upgrades,
+  Trophies, Replant, Settings) with notification dots; all panels are bottom sheets
+- `src/` with the source parts and `src/build.sh`; `test/v20.py` covering v1.3 save migration, viewport coverage,
+  hit-testing of all 7 lots + yard + dock, sheet focus, build-by-tap, pan/zoom bounds, entity caps, pause-when-hidden,
+  golden logs in the scene and mobile touch
+
+### Changed
+- Whole UI rebuilt around the scene; trophies, market, upgrades, prestige and settings moved into bottom sheets
+- `test/functional.py`, `v12.py`, `v13.py` and `shot.py` rewritten for the scene UI; release screenshots:
+  `screenshot.png` (desktop mid-game), `screenshot-mobile.png`, `screenshot-sheet.png`, `screenshot-early.png`
+
+### Performance
+- requestAnimationFrame loop with DPR-aware canvas; static ground (tiles, roads, static trees) is cached in 512px
+  offscreen chunks per zoom level (LRU, bounded); particles and entities are capped; rendering pauses while the tab is hidden
+
+### Fixed / Compatibility
+- v1.x saves (v1.0–v1.3) load and migrate; all systems (collectors, chain logic, market/auto-sell, upgrades, tree tiers,
+  Seeds prestige, events, golden logs, trophies, milestones, yard workers, offline progress, autosave, SFX) are unchanged
+
 ## [1.3] — 2026-10-08
 
 ### Added
@@ -90,6 +141,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Random timed events, offline progress (capped at 8h), autosave every 10s
 - `window.TT` test/debug hook; Playwright functional & balance tests
 
+[2.0]: ./releases/timber-tycoon-v2.0.html
 [1.3]: ./releases/timber-tycoon-v1.3.html
 [1.2]: ./releases/timber-tycoon-v1.2.html
 [1.1]: ./releases/timber-tycoon-v1.1.html
