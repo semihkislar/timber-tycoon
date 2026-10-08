@@ -5,6 +5,47 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.1] — 2026-10-08
+
+Feedback addressed: *"the trucks are really bad"* and *"I want realistic people in the forest"*.
+
+### Added
+- **Real iso 3D vehicle kit** (`VF`/`vbox`/`vwheel`/`vlog`): every vehicle is now a small 3D model drawn from oriented
+  boxes, so it's correct at *any* heading, including smooth turns at corners (it's no longer a flat rotated sprite).
+  Visible faces are chosen by normal, faces are shaded, wheels are dark ellipses with hubcaps on the visible side,
+  and footprints have a soft two-layer shadow.
+- **Log trucks**: a cab with hood, grille, headlights, windshield, side windows, mirrors, roof marker lights and a chrome
+  exhaust stack; a ladder headboard, stakes and a 3-2-1 pyramid of round-ended logs. They drive the dirt road,
+  brake to a stop beside the log yard, and unload log by log with their own **knuckle-boom crane**
+  (the grapple lifts each log off). Then they turn round in a turnaround bulb and drive out. Trucks keep a following
+  distance by route progress.
+- **Shipping trucks**: a box trailer with a company stripe, ribs and a "TIMBER CO." wordmark (never mirrored), plus five
+  liveries. They drive the highway, wait in a queue on the road, and **reverse into the dock bay** on an arc. The rear doors swing open
+  so crates are visible inside, and a dock hand carries crates from the platform. A loading bar fills, then the truck pulls out
+  with a coin pop.
+- Accelerating and braking (brake lights), a slight suspension bounce, and exhaust puffs that scale with throttle.
+- **Forklifts** with a seated driver, overhead guard, mast, forks and pallet; the **harvester** is a 6-wheel model with a boom.
+- **Realistic people** (`human()`): proportioned figures with a head about 1/7.5 of their height, varied skin tones and hair, men and women,
+  hard hats or caps, plaid or hi-vis shirts, arms, legs and boots, plus a walk cycle. Poses: two-handed axe swing (wind-up, strike,
+  chips, recoil), chainsaw with vibration and sawdust, log on the shoulder, crate carry, plant, sit, drink,
+  wipe brow, look around, clipboard and point.
+- **Forest crew AI**: lumberjacks pick a tree and walk to a work spot facing the camera. They chop or saw, the tree **falls in
+  the cut direction** with a "Timber!" callout, they buck it, carry the log to a **landing pile** that visibly
+  grows, and rest. Stumps stay until regrowth.
+- Other forest roles: a **foreman** with a clipboard who paces and points, a **planter** who plants saplings at stumps
+  that grow back, and a **tea break** with two people on a log bench and one standing by a campfire with a kettle. Caps are 8 axe + 5 chainsaw crew.
+  A 2-person starter crew is always working, so the forest is alive from the first second.
+- Yard workers use the same human figure.
+- Test helpers `TT.forestPeople()`, `TT.vehicles()` and `TT.LANDINGS`; new `test/v21.py` (28 checks).
+- Screenshots `screenshot-forest.png` and `screenshot-trucks.png`.
+
+### Changed
+- People are about 15% larger. The default camera now shows the forest band, with a crew working on load on desktop and mobile.
+- Removed a lamp post that stood in the log-truck turnaround.
+
+### Compatibility
+- v2.0 (and older) saves load unchanged; the version is bumped to 2.1.
+
 ## [2.0] — 2026-10-08
 
 > **Visual direction (read this before future releases):** from v2.0 the game is *scene-first* — a full-screen,
@@ -141,6 +182,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Random timed events, offline progress (capped at 8h), autosave every 10s
 - `window.TT` test/debug hook; Playwright functional & balance tests
 
+[2.1]: ./releases/timber-tycoon-v2.1.html
 [2.0]: ./releases/timber-tycoon-v2.0.html
 [1.3]: ./releases/timber-tycoon-v1.3.html
 [1.2]: ./releases/timber-tycoon-v1.2.html

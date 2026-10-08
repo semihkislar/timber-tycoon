@@ -182,7 +182,7 @@ function initWorld(){
   }
   // lamps along the lane
   scene.lamps=[];
-  for(let u=14;u<=54;u+=8){scene.lamps.push({i:(u-2.25)/2,j:(u+2.25)/2});scene.lamps.push({i:(u+4+2.25)/2,j:(u+4-2.25)/2});}
+  for(let u=14;u<=54;u+=8){if(u>14) scene.lamps.push({i:(u-2.25)/2,j:(u+2.25)/2});scene.lamps.push({i:(u+4+2.25)/2,j:(u+4-2.25)/2});}
 }
 /* lumberjack work spots: front-row trees near the log yard first (top band, then left band) */
 function jackSpots(){

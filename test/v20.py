@@ -20,7 +20,7 @@ with sync_playwright() as p:
     pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=pg.evaluate('TT.S')
-    ok(S['version']=='2.0','v1.3 save migrated to 2.0')
+    ok(float(S['version'])>=2.0,'v1.3 save migrated to current (>=2.0)')
     ok(S['buildings']['sawmill']['lvl']==30 and S['buildings']['chipper']['lvl']==12 and S['buildings']['kiln']['on']==False,'buildings, levels and on/off kept')
     ok(S['collectors']==old['collectors'] and S['golden']==2 and S['tree']==1 and len(S['ach'])>=len(old['ach']),'collectors, golden count, tree tier, trophies kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.01,'coins kept')

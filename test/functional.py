@@ -18,7 +18,7 @@ with sync_playwright() as p:
     pg.on('console',lambda m: errs.append(m.text) if m.type in('error','warning') else None); pg.on('pageerror',lambda e: errs.append(str(e)))
     pg.goto(URL); pg.wait_for_timeout(600)
     ok(pg.title().startswith('Timber Tycoon'),'title')
-    ok(pg.evaluate('TT.VERSION')=='2.0','version 2.0')
+    ok(float(pg.evaluate('TT.VERSION'))>=2.0,'version >= 2.0')
     # chop by tapping the forest in the scene
     tap_forest(pg,25)
     S=pg.evaluate('TT.S'); ok(S['clicks']==25,f"25 forest taps registered ({S['clicks']})")

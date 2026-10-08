@@ -10,7 +10,7 @@ function fitCamera(instant){
   const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h;
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
-  const bx0=portrait?-376:-480, bx1=portrait?392:440, by0=portrait?-36:30, by1=portrait?900:880;
+  const bx0=portrait?-340:-480, bx1=portrait?356:440, by0=portrait?-66:-62, by1=portrait?900:826;
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -139,33 +139,44 @@ function drawScene(dt){
   const lots=BUILDINGS.map(b=>LOTS[b.id]);
   for(const L of lots) drawConveyor(ctx,L);
   const objs=[];
-  for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!t.stump) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
+  for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!t.stump&&!t.down&&!t.fall) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
   for(const L of lots) objs.push({k:L.ci+L.cj,f:()=>drawLot(ctx,L)});
   objs.push({k:YARD.ci+YARD.cj,f:()=>drawYardLot(ctx)});
   objs.push({k:DOCK.ci+DOCK.cj,f:()=>drawDockLot(ctx)});
   for(const l of scene.lamps){objs.push({k:l.i+l.j,f:()=>{const [x,y]=P(l.i,l.j);ell(ctx,x+2,y+1,5,2.5,'rgba(0,0,0,.2)');ctx.fillStyle='#4a4f56';ctx.fillRect(x-1.2,y-30,2.4,30);ctx.fillRect(x-1.2,y-30,7,2);
     ctx.fillStyle='#fff3c0';ctx.beginPath();ctx.arc(x+6,y-27,2.4,0,TAU);ctx.fill();}});}
-  // forest crews
-  for(const j of scene.jacks){const tr=j.tree;const busy=!tr.stump&&!tr.fall;const [x,y]=P(j.i,j.j);if(!inView(x,y,40)) continue;
-    objs.push({k:j.i+j.j,f:()=>{ell(ctx,x+2,y+1,6,2.6,'rgba(30,40,10,.25)');
-      person(ctx,x,y,j.type==='jack'?{face:-1,action:busy?'chop':null,ph:j.ph,shirt:'#c43a2e',pants:'#3d4f7a',hat:'beanie',hatc:'#2e6ac8',beard:'#6a3a1a'}:{face:-1,action:busy?'saw':null,ph:j.ph,shirt:'#3a6a3a',vest:'#f08a1a',pants:'#3a3a40',hat:'hard',hatc:'#f08a1a'});}});}
-  scene.logTrucks.forEach((tk,k)=>{const T=24,n=scene.logTrucks.length,tt=((scene.t+k*T/n)%T);let i,dir,load;
-    if(tt<9){const e=tt/9;i=-26+29.4*(1-Math.pow(1-e,2));dir=1;load=1;} else if(tt<11.5){i=3.4;dir=1;load=1-(tt-9)/2.5;} else if(tt<20.5){const e=(tt-11.5)/9;i=3.4-29.4*e*e;dir=-1;load=0;} else return;
-    const j=DIRT_J+(dir>0?.48:-.48); const [x,y]=P(i,j);if(!inView(x,y,80)) return;
-    if(tt>=9&&tt<11.5&&Math.random()<dt*3) emitP(...P(5.4,DIRT_J-.5,8),'dust');
-    objs.push({k:i+j,f:()=>truck(ctx,i,j,'i',dir,tk.col,'logs',load)});});
-  for(const h of scene.harvesters){const i=-1.2+h.k*2.2, j=13.6+h.k*1.4+Math.sin(h.ph*.25)*1.4, dir=Math.cos(h.ph*.25)>=0?1:-1;const [x,y]=P(i,j);if(!inView(x,y,60)) continue;
-    objs.push({k:i+j,f:()=>harvesterV(ctx,i,j,dir,h.ph)});}
+  // forest crew (people are depth-sorted among the trees)
+  const hp=(p,o)=>{const [x,y]=P(p.i,p.j);if(!inView(x,y,40)) return;objs.push({k:p.i+p.j+.01,f:()=>human(ctx,x,y,Object.assign({look:p.look,fx:p.fx,back:p.back,pose:p.pose,ph:p.ph,t:p.wt},o||{}))});};
+  for(const p of scene.jacks) hp(p);
+  if(scene.foreman) hp(scene.foreman);
+  if(scene.planter) hp(scene.planter,{t:scene.planter.pt||0});
+  // log landings (piles grow as crews deliver)
+  for(const k in LANDINGS){const lg=LANDINGS[k];const [x,y]=P(lg.i,lg.j);if(!inView(x,y,60)) continue;objs.push({k:lg.i+lg.j,f:()=>drawLanding(ctx,lg)});}
+  // tea break by the campfire
+  {const [x,y]=P(CAMP.i,CAMP.j);if(inView(x,y,80)){objs.push({k:CAMP.i+CAMP.j,f:()=>drawCampfire(ctx,CAMP.i,CAMP.j)});
+    objs.push({k:CAMP.i+CAMP.j-.6,f:()=>{const V=VF(CAMP.i-.5,CAMP.j-.5,-Math.PI/4,0);vlog(ctx,V,-.75,.75,0,3.6,3.6,'#7a4e26');}});
+    for(const c of scene.campers){const ci=c.pose==='drink'?CAMP.i+c.o[0]:CAMP.i-.5+c.o[0]*1.4,cj=c.pose==='drink'?CAMP.j+c.o[1]:CAMP.j-.5-c.o[0]*1.4;const [hx,hy]=P(ci,cj);
+      objs.push({k:ci+cj+.02,f:()=>human(ctx,hx,hy,{look:c.look,fx:c.fx,pose:c.pose,ph:c.ph})});}}}
+  for(const v of scene.logTrucks){if(v.done||v.i===undefined) continue;const [x,y]=P(v.i,v.j);if(!inView(x,y,110)) continue;
+    const unloading=v.li===0&&v.legs[0].pa.tot-v.s<.05&&v.v===0;let boom=null;if(unloading){const ph=(v.unload||0)/.85;if(ph<6) boom={t:ph%1,carry:(ph%1)<.5&&v.load>0};}
+    objs.push({k:v.i+v.j,f:()=>{const st=logTruck(ctx,v.i,v.j,v.yaw,{col:v.col,load:v.load,boom,brake:v.brake,bounce:vehBounce(v)});exhaust(st,v);}});}
+  for(const h of scene.harvesters){const i=-1.2+h.k*2.2, j=13.6+h.k*1.4+Math.sin(h.ph*.25)*1.4;const [x,y]=P(i,j);if(!inView(x,y,80)) continue;
+    objs.push({k:i+j,f:()=>harvesterV(ctx,i,j,h.yaw||0,h.ph)});}
   for(const w of scene.workers){const f=w.p<1?w.p:2-w.p;const [i,j,di,dj]=pathAt(w.path,f);const [x,y]=P(i,j);if(!inView(x,y,30)) continue;
-    const sdx=(di-dj)*(w.p<1?1:-1);const carrying=w.p<1&&!w.idle;
-    objs.push({k:i+j,f:()=>{ell(ctx,x+2,y+1,5.5,2.4,'rgba(30,30,10,.25)');person(ctx,x,y,{face:sdx>=0?1:-1,walk:!w.idle,ph:w.ph,shirt:'#5a6a7a',vest:VEST[w.bid],pants:'#3a4a6a',hat:'hard',cargo:carrying?w.res:null,zz:w.idle,s:.95});}});}
-  for(const fl of scene.forklifts){const f=fl.p<1?fl.p:2-fl.p;const [i,j,di,dj]=pathAt(fl.path,f);const [x,y]=P(i,j);if(!inView(x,y,40)) continue;const sg=fl.p<1?1:-1;
-    objs.push({k:i+j,f:()=>forklift(ctx,i,j,di*sg,dj*sg,fl.p<1?fl.res:null)});}
-  for(const tk of scene.dockTrucks){const [x,y]=P(ROAD_I,tk.j);if(!inView(x,y,90)) continue;
-    objs.push({k:ROAD_I+tk.j,f:()=>truck(ctx,ROAD_I,tk.j,'j',1,tk.col,'box',tk.state==='leave'?1:tk.load)});}
+    const sg=w.p<1?1:-1,sdx=(di-dj)*sg,sdy=(di+dj)*sg;const carrying=w.p<1&&!w.idle;
+    objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:sdx>=0?1:-1,back:sdy<0,pose:w.idle?'stand':carrying?'box':'walk',ph:w.ph,cargo:carrying?w.res:null,zz:w.idle})});}
+  for(const fl of scene.forklifts){if(fl.i===undefined) continue;const [x,y]=P(fl.i,fl.j);if(!inView(x,y,40)) continue;
+    objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,Math.sin(fl.ph*3)*.25)});}
+  for(const tk of scene.dockTrucks){if(tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j);if(!inView(x,y,110)) continue;
+    objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
+  if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
+    objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
   scene.objCount=objs.length;
+  // loading progress over the docked truck
+  for(const tk of scene.dockTrucks){if(tk.li!==3||tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j,70);if(!inView(x,y,40)) continue;
+    ctx.fillStyle='rgba(30,22,12,.72)';rr(ctx,x-19,y-4,38,8,4);ctx.fill();ctx.fillStyle=tk.load>=1?'#8fd14f':'#f5c84c';rr(ctx,x-17,y-2,34*Math.max(.06,tk.load),4,2);ctx.fill();}
   // drifting cloud shadows (soft, over ground and roofs)
   ctx.fillStyle='rgba(25,45,15,.075)';
   for(let k=0;k<3;k++){const span=2600,cx=((scene.t*9+k*890)%span)-1300,cy=120+k*330-((scene.t*4.5+k*445)%span)*.5+300;
@@ -177,8 +188,8 @@ function drawScene(dt){
   for(const h of scene.helis){const T=16,tt=(h.ph%T)/T;const A=P(-14,-1),B=P(3.2,3.6);let e,carry;if(tt<.5){e=tt*2;carry=true;}else{e=1-(tt-.5)*2;carry=false;}const s=e*e*(3-2*e);
     const x=A[0]+(B[0]-A[0])*s,y=A[1]+(B[1]-A[1])*s;heli(ctx,x,y,74,h.ph,carry);}
   // smoke & particles (world space)
-  for(const s of scene.smoke){const k2=s.life/s.max,r=3+k2*11;const a=(1-k2)*(s.kind==='dark'?.55:s.kind==='grey'?.42:.5);
-    ctx.fillStyle=s.kind==='dark'?`rgba(70,64,60,${a})`:s.kind==='grey'?`rgba(150,145,140,${a})`:`rgba(250,250,248,${a})`;ctx.beginPath();ctx.arc(s.x,s.y,r,0,TAU);ctx.fill();}
+  for(const s of scene.smoke){const k2=s.life/s.max,r=s.kind==='exh'?1.6+k2*6:3+k2*11;const a=(1-k2)*(s.kind==='dark'?.55:s.kind==='grey'?.42:.5);
+    ctx.fillStyle=s.kind==='dark'?`rgba(70,64,60,${a})`:s.kind==='grey'||s.kind==='exh'?`rgba(140,138,135,${s.kind==='exh'?a*.75:a})`:`rgba(250,250,248,${a})`;ctx.beginPath();ctx.arc(s.x,s.y,r,0,TAU);ctx.fill();}
   for(const p of scene.particles){const k2=p.life/p.max;
     if(p.col==='spark'){ctx.fillStyle=`rgba(120,255,240,${k2})`;ctx.fillRect(p.x-1,p.y-1,2,2);continue;}
     if(p.type==='dust'||p.type==='poof'){ctx.fillStyle=p.col+(k2*.7)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.size*(1.6-k2*.6),0,TAU);ctx.fill();continue;}
@@ -247,7 +258,7 @@ function drawOverlays(ctx){
   }
   // floating numbers
   for(const f of scene.floats){const k=f.t/f.dur;const [sx,sy]=w2s(f.x,f.y);const y=sy-k*(f.big?60:44);ctx.globalAlpha=k<.7?1:1-(k-.7)/.3;
-    const fs=f.big?20:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;
+    const fs=f.big?20:f.timber?17:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;
     if(f.coin) coinAt(ctx,x0+fs*.35,y,fs*.42,'coin'); if(f.log) coinAt(ctx,x0+fs*.35,y,fs*.38,'log');
     ctx.lineWidth=4;ctx.strokeStyle='rgba(40,20,5,.85)';ctx.strokeText(f.text,x0+ix,y);ctx.fillStyle=f.col||(f.coin?'#ffe066':'#fff');ctx.fillText(f.text,x0+ix,y);ctx.globalAlpha=1;}
   // first-time hint
