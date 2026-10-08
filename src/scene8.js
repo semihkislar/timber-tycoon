@@ -81,6 +81,7 @@ function collectLights(){
   if(scene.client&&scene.client.veh) vehLights(out,scene.client.veh,1.08,-1.06);
   for(const f of scene.forklifts) vehLights(out,f,.55,null,true);
   if(scene.pfork) vehLights(out,scene.pfork,.55,null,true);
+  staffLights(out);
   return out;
 }
 /* ---------- lighting pass: half-res light map, multiplied over the world ---------- */

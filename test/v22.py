@@ -32,7 +32,7 @@ with sync_playwright() as p:
     pg.add_script_tag(path='/workspace/lumber-idle/test/bot.js'); pg.evaluate('runBot(240,3,240)')
     full=pg.evaluate('Object.entries(TT.bstat).filter(([k,v])=>v.full).map(([k])=>k)')
     ok(full==[],f'early game with auto-sell: no building is ever FULL ({full})')
-    ok(pg.locator('#bottombar .bb').count()==7 and pg.locator('#bbOrd').count()==1,'Orders button in the bottom bar (7 buttons)')
+    ok(pg.locator('#bottombar .bb').count()>=7 and pg.locator('#bbOrd').count()==1,'Orders button in the bottom bar (7+ buttons)')
     ok(pg.evaluate('TT.S.orders.offer!==null||TT.S.orders.next>0'),'order schedule running')
     ctx.close()
     # --- mid game ---

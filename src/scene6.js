@@ -61,6 +61,7 @@ function hitTest(sx,sy){
   let best=null;
   for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.prem&&!S.premium.lvl) continue;if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
   if(best) return {type:best.id==='yard'?'yard':best.id==='dock'?'dock':'bld',id:best.id};
+  if(STATION.hit&&pip(STATION.hit,wx,wy)) return {type:'station'};
   {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
     if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
   const [gi,gj]=toGrid(wx,wy);
@@ -70,6 +71,7 @@ function hitTest(sx,sy){
 function sceneTap(sx,sy){
   const g=golden.cur;
   if(g&&Math.hypot(sx-g.x,sy-g.y)<=Math.max(30,goldenSize()*2)){catchGolden();return;}
+  if(fireTapAt(sx,sy)) return;
   const h=hitTest(sx,sy);
   if(h.type==='bld'){
     const b=BMAP[h.id],st=S.buildings[h.id];
@@ -78,6 +80,7 @@ function sceneTap(sx,sy){
   } else if(h.type==='yard') openSheet('crew');
   else if(h.type==='dock') openSheet('market');
   else if(h.type==='prem') openSheet('prem');
+  else if(h.type==='station') openSheet('staff');
   else if(h.type==='forest') forestChop(sx,sy);
   else closeSheet();
 }
@@ -125,7 +128,7 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -176,11 +179,12 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  premDraw(ctx,objs,inView);
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView);
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
   scene.objCount=objs.length;
+  staffPost(ctx);
   // loading progress over the docked truck
   for(const tk of scene.dockTrucks){if(tk.li!==3||tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j,70);if(!inView(x,y,40)) continue;
     ctx.fillStyle='rgba(30,22,12,.72)';rr(ctx,x-19,y-4,38,8,4);ctx.fill();ctx.fillStyle=tk.load>=1?'#8fd14f':'#f5c84c';rr(ctx,x-17,y-2,34*Math.max(.06,tk.load),4,2);ctx.fill();}
@@ -210,7 +214,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){
@@ -251,7 +255,8 @@ function drawOverlays(ctx){
       const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'');
       pill(ctx,px,py+2,txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
     }
-    if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
+    if(S.fires[b.id]){} // v2.4: the fire pill replaces status badges
+    else if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
     else if(starved){
       // v2.2: mild shortages (>=70% running) get a small calm amber badge; real starvation keeps the bouncing red alert
       const bad=bs.f<.7, R=bad?12:8.5, by=sy-8+(bad?Math.sin(t*5)*3:0);ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,R,0,TAU);ctx.fill();

@@ -5,6 +5,35 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.4] — 2026-10-08
+
+**Managers** run your buildings and **fires** break out now and then. Tap them out, or build a **fire station** whose red truck answers every call.
+
+### Added
+- **12 unique managers**, one per building, each with a hand-drawn SVG portrait, a rarity (Common/Rare/Epic/Legendary) and a special skill:
+  Emre Yıldız (Sawmill, Pace Setter), Sofia Rossi (Chipper, Stock Master), Mert Demir (Kiln, Fire Marshal), Elif Kaya (Carpentry, Lucky Batch),
+  Kwame Mensah (Pellets, Lean Line), Yuki Tanaka (Paper, Pace Setter), Defne Aydın (Furniture, Lucky Batch), Lucas Moreau (Atelier, Lean Line), Zeynep Çelik (Parquet, Stock Master),
+  Priya Sharma (Stationer, Client Charmer), Can Öztürk (Cabinetry, Pace Setter) and Isabella García (Showroom, Lucky Batch).
+  Skills: faster production, chance to double each batch, lower input use, bigger storage, better order rewards, fire safety.
+  Every manager also adds +3…12 % speed. Managers are hired with coins, levelled 1→10 with coins (levels 6–10 also cost Seeds).
+  No random rolls. They keep working offline and stay through Replant.
+- **Staff panel** (new 👔 Staff button): manager cards with portrait, rarity, skill and hire/level button, plus the fire-safety block.
+  The building sheet shows that building's manager, and a fire note while it burns.
+- Managers **walk around their building** in the scene in a suit or a coloured safety vest with a rarity diamond above them.
+  Lucky Batch managers pop a "×2" over the building when it triggers.
+- **Fires**: occasional fires (kiln ≈3× and pellet press ≈2× more likely; premium buildings never burn, no fires in the first 5 min, offline, or within 2 min of the last one).
+  A burning building shows flames, glow, smoke and embers and pauses. **Tap the flames 12×** for a hero bonus (≈30 s of income).
+  Unattended, a fire burns out after 60 s with no permanent loss.
+- **Fire Station** (5 levels) in the empty yard corner next to the Log Yard: a red truck with a flashing light bar drives to the fire,
+  firefighters hop out and spray water arcs, then the truck backs into its bay. Each level: −10 % fire risk, faster dispatch, stronger spray.
+  New upgrades **Smoke Detectors** (−25 % risk) and **Sprinkler System** (−35 %). Trophies: Firefighter, Fire Brigade, First Hire, Management Team.
+- `test/v24.py` (69 checks). New screenshots: `screenshot-fire.png`, `screenshot-fire-night.png`, `screenshot-managers.png`, `screenshot-mobile-staff.png`.
+
+### Changed
+- Save version 2.4. v2.3 saves migrate automatically (managers/station/fire state initialised, everything else kept).
+- Balance bot now checks trophies every simulated second, as the real game loop does. Earlier bot runs undercounted trophy bonuses.
+  v2.4 with managers earns ≈ +23 % at 1 h vs v2.3 (8 seeded runs). Without managers it is within noise of v2.3.
+
 ## [2.3] — 2026-10-08
 
 The world now lives: a **day/night cycle**, **four seasons** and **weather**, each with gameplay effects.
@@ -284,6 +313,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 - Random timed events, offline progress (capped at 8h), autosave every 10s
 - `window.TT` test/debug hook; Playwright functional & balance tests
 
+[2.4]: ./releases/timber-tycoon-v2.4.html
 [2.3]: ./releases/timber-tycoon-v2.3.html
 [2.2]: ./releases/timber-tycoon-v2.2.html
 [2.1]: ./releases/timber-tycoon-v2.1.html

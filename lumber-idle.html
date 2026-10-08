@@ -49,6 +49,23 @@ button{font:inherit;color:inherit}
 .scene-label.golden{background:rgba(150,105,10,.92);color:#fff8c8;animation:glabel 1s ease-in-out infinite}
 @keyframes glabel{50%{box-shadow:0 0 14px rgba(255,213,74,.95)}}
 #events{display:flex;gap:6px;flex-wrap:wrap}
+/* v2.4 managers + fire station */
+.mgr-card{display:grid;grid-template-columns:62px 1fr auto;gap:9px;align-items:center;padding:7px 9px;border-radius:13px;background:#fffaf0;border:1.5px solid var(--line);box-shadow:0 2px 0 rgba(160,110,50,.15)}
+.mgr-card.hired{border-color:var(--rc);box-shadow:0 0 0 1.5px var(--rc) inset,0 2px 0 rgba(160,110,50,.15);background:linear-gradient(160deg,#fffaf0,#fff3dc)}
+.mgr-card.compact{grid-template-columns:54px 1fr auto;padding:6px 8px}
+.mgr-card .portrait{display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.mg-n{font-weight:800;font-size:14px;line-height:1.1}
+.mg-r{font-size:10px;font-weight:800;color:#fff;background:var(--rc);padding:1px 6px;border-radius:999px;vertical-align:2px;margin-left:2px}
+.mg-s{font-size:11.5px;color:var(--ink2)}
+.mg-k{font-size:11.5px;margin-top:2px;line-height:1.25}
+.mg-count{font-size:11px;font-weight:700;color:var(--ink2);margin-left:6px}
+.stn-hero{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.stn-hero .ph-ic svg{width:46px;height:46px}
+.stn-hero .ph-t{color:#9a2a14;font-weight:900}
+.stn-stats{font-size:11.5px;color:var(--ink2);margin-top:3px;font-weight:700}
+.fire-note{margin:8px 0;padding:8px 10px;border-radius:11px;background:linear-gradient(90deg,#ffe2d0,#ffd0b0);border:1.5px solid #ff8a50;font-size:12.5px;animation:firePulse 1s ease-in-out infinite}
+@keyframes firePulse{50%{box-shadow:0 0 12px rgba(255,110,40,.7)}}
+.bmgr{margin-top:6px}
 /* v2.3 season / weather / clock widget */
 .wx{display:flex;align-items:center;gap:6px;pointer-events:auto;cursor:pointer;background:var(--hud);border:1.5px solid rgba(255,220,160,.25);border-radius:999px;
   padding:2px 10px 2px 3px;height:30px;box-shadow:0 2px 6px rgba(0,0,0,.25);color:#fff6e0;white-space:nowrap;transition:background .6s}
@@ -313,6 +330,7 @@ button{font:inherit;color:inherit}
   <button class="bb" data-s="crew" id="bbCrew"><span class="dot hidden" id="crewDot"></span><span class="bi"></span><span class="l">Crew</span></button>
   <button class="bb" data-s="market" id="bbMarket"><span class="bi"></span><span class="l">Market</span></button>
   <button class="bb" data-s="ord" id="bbOrd"><span class="dot hidden" id="ordDot"></span><span class="bi"></span><span class="l">Orders</span></button>
+  <button class="bb" data-s="staff" id="bbStaff"><span class="dot hidden" id="staffDot"></span><span class="bi"></span><span class="l">Staff</span></button>
   <button class="bb" data-s="upg" id="bbUpg"><span class="dot hidden" id="upgDot"></span><span class="bi"></span><span class="l">Upgrades</span></button>
   <button class="bb" data-s="ach" id="bbAch"><span class="dot hidden" id="achDot"></span><span class="bi"></span><span class="l">Trophies</span></button>
   <button class="bb" data-s="co" id="bbCo"><span class="dot hidden" id="coDot"></span><span class="bi"></span><span class="l">Replant</span></button>
@@ -333,6 +351,8 @@ button{font:inherit;color:inherit}
           <label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
         <button class="btn buy big" id="bpBuy"></button>
         <div class="pbar"><i id="bpPbar"></i></div>
+        <div class="fire-note hidden" id="bpFire"></div>
+        <div class="bmgr hidden" id="bpMgr"></div>
         <div class="stor hidden" id="bpStor">
           <div class="stor-h"><b>📦 Stock area</b><span class="lv" id="bpStLv"></span><span class="chip" id="bpStChip"></span>
             <label class="sw" title="Turn auto-sell off for this building's output to stockpile it (for orders)"><input type="checkbox" id="bpStKeep"><span class="tr"></span><span id="bpStKeepL">Keep stock</span></label></div>
@@ -355,6 +375,7 @@ button{font:inherit;color:inherit}
     </div>
     <div class="pane" id="pane-ord"><div id="ordBody"></div></div>
     <div class="pane" id="pane-prem"><div id="premBody"></div></div>
+    <div class="pane" id="pane-staff"><div id="staffBody"></div></div>
     <div class="pane" id="pane-upg"><div class="list" id="upgList"></div><div class="legend" id="upgOwned"></div></div>
     <div class="pane" id="pane-ach">
       <div class="trophy-head"><span id="achHeadMedal"></span><div style="flex:1"><div class="big" id="achCount">0 / 0</div><div class="legend" style="margin-top:3px" id="achBonus">Each trophy: +2% to all production, forever.</div><div class="pbar"><i id="achBar"></i></div></div></div>
@@ -389,7 +410,7 @@ button{font:inherit;color:inherit}
 <script>
 (function(){
 'use strict';
-const VERSION='2.3';
+const VERSION='2.4';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -507,6 +528,9 @@ const UPGRADES=[
   {id:'brand',icon:'🏷️',name:'Designer Brand',desc:'Chairs & Furniture sell ×2',cost:40000000,req:()=>bl('furniture')>=1,apply:m=>{m.price.chairs*=2;m.price.furniture*=2}},
   {id:'logistics',icon:'🌍',name:'Global Logistics',desc:'All buildings speed ×2',cost:100000000,req:()=>bl('furniture')>=4,apply:m=>m.bldAll*=2},
   {id:'rotors',icon:'🌀',name:'Twin Rotors',desc:'Sky-Cranes ×2',cost:300000000,req:()=>cn('heli')>=5,apply:m=>m.col.heli*=2},
+  // v2.4 fire safety
+  {id:'alarm',icon:'🚨',name:'Smoke Detectors',desc:'Fire risk −25%',cost:40000,req:()=>bl('kiln')>=1,apply:m=>m.fire*=.75},
+  {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
 ];
 const EVENTS=[
   {id:'hotel',name:'🏨 Big Hotel Order',desc:'Chairs & Furniture sell for 3×!',dur:60,req:()=>bl('carpentry')>0,apply:m=>{m.price.chairs*=3;m.price.furniture*=3}},
@@ -565,6 +589,10 @@ const ACH=[
   {id:'lvl100',t:'gold',e:'💯',n:'Centurion',d:'Get any building to Lv 100',p:()=>[maxLvl(),100]},
   {id:'order1',t:'bronze',e:'📋',n:'Order Up!',d:'Complete a client order',p:()=>[(S.orders&&S.orders.done)||0,1]},
   {id:'order10',t:'silver',e:'🤝',n:'Trusted Supplier',d:'Complete 10 client orders',p:()=>[(S.orders&&S.orders.done)||0,10]},
+  {id:'fire1',t:'bronze',e:'🧑‍🚒',n:'Firefighter',d:'Put out a fire by tapping it',p:()=>[(S.fireStats&&S.fireStats.tap)>0?1:0,1]},
+  {id:'fire10',t:'silver',e:'🚒',n:'Fire Brigade',d:'Put out 10 fires',p:()=>[(S.fireStats&&S.fireStats.n)||0,10]},
+  {id:'mgr1',t:'bronze',e:'🤝',n:'First Hire',d:'Hire a manager',p:()=>[Object.keys(S.mgr||{}).length,1]},
+  {id:'mgr6',t:'gold',e:'👔',n:'Management Team',d:'Hire 6 managers',p:()=>[Object.keys(S.mgr||{}).length,6]},
   {id:'premium',t:'gold',e:'🏛️',n:'Haute Bois',d:'Open the Premium Factory Area',p:()=>[(S.premium&&S.premium.lvl)>0?1:0,1]},
 ];
 
@@ -574,7 +602,8 @@ function freshState(keep){
     seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
     storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
-    wx:{clock:126,w:'clear',ends:0,next:201}};
+    wx:{clock:126,w:'clear',ends:0,next:201},
+    mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0};
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -605,6 +634,11 @@ function migrateSave(o){
   if(!o.orders||typeof o.orders!=='object') o.orders={offer:null,active:null,next:(o.time||0)+60,done:0,failed:0,hist:[]};
   // v2.2 -> v2.3: world clock / season / weather (starts at 07:12, day 1 of spring)
   if(!o.wx||typeof o.wx!=='object'||typeof o.wx.clock!=='number') o.wx={clock:126,w:'clear',ends:0,next:201};
+  // v2.3 -> v2.4: managers, fire station, fires
+  if(!o.mgr||typeof o.mgr!=='object') o.mgr={};
+  if(!o.station||typeof o.station!=='object') o.station={lvl:0};
+  if(!o.fires||typeof o.fires!=='object') o.fires={};
+  if(!o.fireStats||typeof o.fireStats!=='object') o.fireStats={n:0,tap:0};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -621,7 +655,7 @@ function merge(base,obj){
 
 /* ===================== MODIFIERS ===================== */
 function computeMods(){
-  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false};
+  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1};
   COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1);
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
@@ -635,7 +669,7 @@ function computeMods(){
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRate(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id);}
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
@@ -643,16 +677,16 @@ function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 /* ===================== SIMULATION ===================== */
 function tick(dt,offline){
   M=computeMods();
-  S.time+=dt; S.playTime+=dt; wxTick(dt,offline);
+  S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
   const demand={}; RES.forEach(r=>demand[r.id]=0);
   const active=[];
   for(const b of BUILDINGS){
     const st=S.buildings[b.id];
-    if(!st.lvl||!st.on){bstat[b.id]={f:0,lim:null,speed:st.lvl?bSpeed(b.id):0};continue;}
-    const sp=bSpeed(b.id); active.push([b,sp]);
-    for(const k in b.inp) demand[k]+=b.inp[k]*sp*dt;
+    if(!st.lvl||!st.on||onFire(b.id)){bstat[b.id]={f:0,lim:null,speed:st.lvl?bSpeed(b.id):0,fire:onFire(b.id)};continue;}
+    const sp=bSpeed(b.id); active.push([b,sp]); const mi=mgrIn(b.id);
+    for(const k in b.inp) demand[k]+=b.inp[k]*sp*dt*mi;
   }
   const frac={};
   for(const k in demand) frac[k]=demand[k]>0?Math.min(1,S.res[k]/demand[k]):1;
@@ -662,14 +696,15 @@ function tick(dt,offline){
   for(const [b,sp] of active){
     let f=1,lim=null;
     for(const k in b.inp) if(frac[k]<f-1e-9){f=frac[k];lim=k;}
-    pre.push([b,sp,f,lim]); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f;
+    pre.push([b,sp,f,lim]); const mo=mgrOut(b.id); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f*mo;
   }
   const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
   for(const [b,sp,f0,lim] of pre){
     let f=f0,full=null;
     for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
-    for(const k in b.inp){const a=b.inp[k]*sp*dt*f;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
-    for(const k in b.out){const a=b.out[k]*sp*dt*f;pend[k]=(pend[k]||0)+a;}
+    const mi=mgrIn(b.id), mo=mgrOut(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
+    for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
+    for(const k in b.out){const a=b.out[k]*sp*dt*f*mo;pend[k]=(pend[k]||0)+a;}
     if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+b.out.planks*sp*dt*f;}
     bstat[b.id]={f,lim:full?null:lim,speed:sp,full};
   }
@@ -764,7 +799,7 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,ach:Object.assign({},S.ach),golden:S.golden,
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)}};
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
@@ -923,6 +958,7 @@ const SHEETS={
   set:{title:'Settings',icon:'set'},
   ord:{title:'Client Orders',icon:'ord'},
   prem:{title:'Premium Factory Area',icon:'prem'},
+  staff:{title:'Managers & Fire Station',icon:'staff'},
 };
 function openSheet(name,arg){
   const prev=curSheet;
@@ -934,7 +970,7 @@ function openSheet(name,arg){
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
-  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; premSig='';
+  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; premSig=''; staffSig='';
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
   if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
@@ -994,6 +1030,7 @@ function statusOf(b){
   const st=S.buildings[b.id],bs=bstat[b.id];
   if(!st.lvl) return {cls:'off',txt:'Not built',f:0};
   if(!st.on) return {cls:'off',txt:'⏸ Off',f:0};
+  if(onFire(b.id)) return {cls:'bad',txt:'🔥 On fire! Tap the flames',f:0};
   if(bs.full&&bs.f<0.985) return {cls:'bad',txt:`⛔ Storage FULL: ${RMAP[bs.full].name}`,f:bs.f};
   if(bs.f<0.985) return {cls:'bad',txt:`⚠ Starved: ${RMAP[bs.lim]?RMAP[bs.lim].name:'input'}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};
@@ -1035,7 +1072,7 @@ function updateBuildingSheet(){
   const bb=$('bpBuy'); const bh=costBtnHtml(st.lvl?`⬆ Upgrade${n>1?' +'+n:''}`:'🔨 Build',cost); if(bb._h!==bh){bb.innerHTML=bh;bb._h=bh;}
   bb.disabled=S.coins+1e-9<cost;
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
-  updateStorageBlock(b);
+  updateStorageBlock(b); updateBldMgr(b);
 }
 function cycleBuilding(d){
   if(!sheetBld) return; let i=BUILDINGS.findIndex(b=>b.id===sheetBld);
@@ -1172,13 +1209,13 @@ function stoCost(id){const b=BMAP[id],l=stoLvl(id);return b.cost*5*Math.pow(5,l)
 // capacity (units) per resource = sum over built producers of (output/s at full speed) x seconds of storage
 function stockCaps(){
   const c={}; for(const r of RES) c[r.id]=0; const has={};
-  for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl) continue; const sp=bSpeed(b.id), sec=stoSec(stoLvl(b.id));
+  for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl) continue; const sp=bSpeed(b.id), sec=stoSec(stoLvl(b.id))*mgrSto(b.id);
     for(const k in b.out){c[k]+=b.out[k]*sp*sec;has[k]=1;}
     if(b.id==='sawmill'&&M.sawdust){c.chips+=b.out.planks*sp*sec;has.chips=1;}}
   for(const r of RES) c[r.id]=has[r.id]?Math.max(50,c[r.id]):Infinity;
   return c;
 }
-function bldCap(id){const b=BMAP[id],st=S.buildings[id];if(!st.lvl) return 0;let t=0;const sp=bSpeed(id),sec=stoSec(stoLvl(id));for(const k in b.out) t+=b.out[k]*sp*sec;return Math.max(50,t);}
+function bldCap(id){const b=BMAP[id],st=S.buildings[id];if(!st.lvl) return 0;let t=0;const sp=bSpeed(id),sec=stoSec(stoLvl(id))*mgrSto(id);for(const k in b.out) t+=b.out[k]*sp*sec;return Math.max(50,t);}
 function buyStorage(id){
   const l=stoLvl(id); if(l>=STO_MAX||!S.buildings[id].lvl) return false; const c=stoCost(id); if(S.coins+1e-9<c) return false;
   S.coins-=c; S.storage[id]=l+1; M=computeMods(); sfx('buy');
@@ -1229,7 +1266,7 @@ function makeOrder(forceItem){
   const p=(rates[r.id]&&rates[r.id].p>.02)?Math.min(p0,rates[r.id].p):p0;
   const amt=niceNum(Math.max(5,p*dur*(.25+Math.random()*.15)));
   const cands=CLIENTS.filter(c=>c.likes.includes(r.id)); const cl=(cands.length?cands:CLIENTS)[Math.floor(Math.random()*(cands.length||CLIENTS.length))];
-  let reward=Math.max(amt*price(r.id)*1.8,coinRate*dur*.25,50)*(r.premium?1.25:1); reward=niceNum(reward);
+  let reward=Math.max(amt*price(r.id)*1.8,coinRate*dur*.25,50)*(r.premium?1.25:1)*mgrOrders(); reward=niceNum(reward);
   let bonus=null; const rr=Math.random();
   if(r.premium&&rr<.2&&S.totalEarned>=1e7) bonus={type:'seeds',n:1};
   else if(rr<(r.premium?.45:.25)) bonus={type:'boost',id:'viprush'};
@@ -1431,6 +1468,194 @@ function updateWx(){
 }
 function setupWx(){const el=$('wxChip'); if(el) el.onclick=e=>{e.stopPropagation();wxOpen=!wxOpen;wxSig='';updateWx();};
   document.addEventListener('pointerdown',e=>{if(wxOpen&&!e.target.closest('#wxChip,#wxPop')){wxOpen=false;wxSig='';updateWx();}});}
+
+/* ===================== v2.4 MANAGERS, FIRE & FIREFIGHTING (logic + UI) ===================== */
+const RARITY={C:{n:'Common',c:'#8a96a4',cm:1,rm:1},R:{n:'Rare',c:'#2f86d8',cm:1.6,rm:1.3},E:{n:'Epic',c:'#9a4ad8',cm:2.5,rm:1.6},L:{n:'Legendary',c:'#e39a18',cm:4,rm:2}};
+const MGR_MAX=10;
+const SKILLS={
+  speed:{n:'Pace Setter',e:'⚡',d:(l,rm)=>`+${Math.round(mgrSkillV('speed',l,rm)*100)}% production speed`},
+  double:{n:'Lucky Batch',e:'🎲',d:(l,rm)=>`${Math.round(mgrSkillV('double',l,rm)*100)}% chance to double each batch`},
+  thrift:{n:'Lean Line',e:'♻️',d:(l,rm)=>`−${Math.round(mgrSkillV('thrift',l,rm)*100)}% input use`},
+  storage:{n:'Stock Master',e:'📦',d:(l,rm)=>`+${Math.round(mgrSkillV('storage',l,rm)*100)}% storage capacity`},
+  orders:{n:'Client Charmer',e:'🤝',d:(l,rm)=>`+${Math.round(mgrSkillV('orders',l,rm)*100)}% reward on every client order`},
+  safety:{n:'Fire Marshal',e:'🧯',d:(l,rm)=>`−${Math.round(mgrSkillV('safety',l,rm)*100)}% fire risk here, −${Math.round(l*2*rm)}% everywhere`},
+};
+function mgrSkillV(k,l,rm){
+  if(k==='speed') return (.05+.025*l)*rm;
+  if(k==='double') return Math.min(.6,(.04+.016*l)*rm);
+  if(k==='thrift') return Math.min(.5,(.04+.016*l)*rm);
+  if(k==='storage') return (.3+.15*l)*rm;
+  if(k==='orders') return (.1+.04*l)*rm;
+  if(k==='safety') return Math.min(.9,(.45+.05*l)*rm);
+  return 0;
+}
+// one unique, hand-made manager per building (no random rolls); look indexes SKINS / HAIRS
+const MANAGERS=[
+  {id:'emre',bid:'sawmill',name:'Emre Yıldız',from:'İzmir',r:'C',skill:'speed',look:{f:0,skin:2,hair:0,style:'short',beard:1,out:'vest',col:'#e8742a'}},
+  {id:'sofia',bid:'chipper',name:'Sofia Rossi',from:'Torino',r:'C',skill:'storage',look:{f:1,skin:0,hair:3,style:'pony',out:'vest',col:'#3aa0d8'}},
+  {id:'mert',bid:'kiln',name:'Mert Demir',from:'Bursa',r:'R',skill:'safety',look:{f:0,skin:1,hair:2,style:'crew',beard:2,out:'vest',col:'#d84a3a',hatc:'#d8301e'}},
+  {id:'elif',bid:'carpentry',name:'Elif Kaya',from:'Ankara',r:'R',skill:'double',look:{f:1,skin:1,hair:1,style:'long',out:'suit',col:'#6a3a2a',tie:'#e8c43a',glasses:1}},
+  {id:'kwame',bid:'pellet',name:'Kwame Mensah',from:'Accra',r:'R',skill:'thrift',look:{f:0,skin:5,hair:6,style:'bald',beard:1,out:'vest',col:'#9a6ad8',glasses:1}},
+  {id:'yuki',bid:'paper',name:'Yuki Tanaka',from:'Osaka',r:'E',skill:'speed',look:{f:1,skin:0,hair:6,style:'bun',out:'suit',col:'#2a4a5a',tie:'#4ac0a0'}},
+  {id:'defne',bid:'furniture',name:'Defne Aydın',from:'İstanbul',r:'E',skill:'double',look:{f:1,skin:1,hair:7,style:'long',out:'suit',col:'#2e2e3a',tie:'#e85a9a'}},
+  {id:'lucas',bid:'atelier',name:'Lucas Moreau',from:'Lyon',r:'E',skill:'thrift',look:{f:0,skin:0,hair:4,style:'short',out:'suit',col:'#1c1c22',tie:'#d8a930'}},
+  {id:'zeynep',bid:'parquet',name:'Zeynep Çelik',from:'Trabzon',r:'E',skill:'storage',look:{f:1,skin:2,hair:1,style:'pony',out:'suit',col:'#5a3a22',tie:'#f5c84c',glasses:1}},
+  {id:'priya',bid:'stationer',name:'Priya Sharma',from:'Mumbai',r:'L',skill:'orders',look:{f:1,skin:3,hair:0,style:'long',out:'suit',col:'#1f3a5a',tie:'#f5c84c'}},
+  {id:'can',bid:'cabinetry',name:'Can Öztürk',from:'Antalya',r:'L',skill:'speed',look:{f:0,skin:1,hair:5,style:'short',beard:1,out:'suit',col:'#3a2418',tie:'#d8a930',glasses:1}},
+  {id:'isabella',bid:'showroom',name:'Isabella García',from:'Sevilla',r:'L',skill:'double',look:{f:1,skin:2,hair:0,style:'bun',out:'suit',col:'#6a1f3a',tie:'#f5d36a'}},
+];
+const MGR_OF={}; MANAGERS.forEach(m=>MGR_OF[m.bid]=m);
+const MGR_MAP={}; MANAGERS.forEach(m=>MGR_MAP[m.id]=m);
+function mgrLvl(bid){const m=MGR_OF[bid];return (m&&S.mgr&&S.mgr[m.id])||0;}
+function mgrRm(bid){return RARITY[MGR_OF[bid].r].rm;}
+function mgrSkill(bid,k){const l=mgrLvl(bid);if(!l) return 0;const m=MGR_OF[bid];return m.skill===k?mgrSkillV(k,l,RARITY[m.r].rm):0;}
+function mgrSpd(bid){const l=mgrLvl(bid);if(!l) return 1;return (1+.02+.01*l)*(1+mgrSkill(bid,'speed'));}   // every manager: +3..12% base, plus their skill
+function mgrIn(bid){return 1-mgrSkill(bid,'thrift');}
+function mgrOut(bid){return 1+mgrSkill(bid,'double');}
+function mgrSto(bid){return 1+mgrSkill(bid,'storage');}
+function mgrOrders(){let b=0;for(const m of MANAGERS) if(m.skill==='orders') b+=mgrSkill(m.bid,'orders');return 1+b;}
+function mgrHireCost(m){return BMAP[m.bid].cost*1000*RARITY[m.r].cm;}
+function mgrUpCost(m,l){return {coins:mgrHireCost(m)*Math.pow(3.2,l),seeds:l>=5?l-3:0};}
+function mgrAvail(m){const b=BMAP[m.bid];return S.buildings[m.bid].lvl>0&&(!b.premium||S.premium.lvl>0);}
+function hireMgr(id){const m=MGR_MAP[id];if(!m||mgrLvl(m.bid)||!mgrAvail(m)) return false;const c=mgrHireCost(m);if(S.coins+1e-9<c) return false;
+  S.coins-=c;S.mgr[m.id]=1;M=computeMods();sfx('unlock');scene.mgrPoof=m.bid;
+  toast(`${RARITY[m.r].n==='Legendary'?'🌟':'🤝'} <b>${m.name}</b> now runs the ${BMAP[m.bid].name}! ${SKILLS[m.skill].e} ${SKILLS[m.skill].n}: ${SKILLS[m.skill].d(1,RARITY[m.r].rm)}`,4200,'ms-toast');
+  checkAch&&checkAch();return true;}
+function levelMgr(id){const m=MGR_MAP[id];const l=m?mgrLvl(m.bid):0;if(!l||l>=MGR_MAX) return false;const c=mgrUpCost(m,l);if(S.coins+1e-9<c.coins||S.seeds<c.seeds) return false;
+  S.coins-=c.coins;S.seeds-=c.seeds;S.mgr[m.id]=l+1;M=computeMods();sfx('buy');scene.mgrPoof=m.bid;
+  toast(`⬆ <b>${m.name}</b> → Lv ${l+1}: ${SKILLS[m.skill].d(l+1,RARITY[m.r].rm)}`);return true;}
+
+/* ---------- fire ---------- */
+const FIRE_BASE=1/4500, FIRE_HP=12, FIRE_BURN=60, FIRE_COOL=120, FIRE_GRACE=300;
+const FIRE_RISK={kiln:3,pellet:2,sawmill:1.2,chipper:1,carpentry:.8,paper:.8,furniture:.8};
+const STATION_COST=6e4, STATION_MAX=5;
+function stationLvl(){return (S.station&&S.station.lvl)||0;}
+function stationCost(){return STATION_COST*Math.pow(6,stationLvl());}
+function stationVisible(){return stationLvl()>0||S.buildings.kiln.lvl>0||S.fireStats.n>0;}
+function stationDelay(){const l=stationLvl();return Math.max(4,20-3*l);}
+function stationSpray(){return 1.5+.5*stationLvl();}
+function onFire(bid){return !!(S.fires&&S.fires[bid]);}
+function fireRisk(bid){
+  if(!FIRE_RISK[bid]) return 0;
+  let r=FIRE_BASE*FIRE_RISK[bid]*(1-.1*stationLvl())*(M?M.fire:1);
+  r*=1-mgrSkill(bid,'safety');
+  for(const m of MANAGERS) if(m.skill==='safety'&&mgrLvl(m.bid)) r*=1-.02*mgrLvl(m.bid)*RARITY[m.r].rm;
+  if(S.wx){const w=weatherId();if(w==='rain'||w==='snow') r*=.7;if(seasonIdx()===3) r*=1.2;}
+  return r;
+}
+function startFire(bid){
+  if(!S.buildings[bid]||!S.buildings[bid].lvl||onFire(bid)) return false;
+  S.fires[bid]={t:0,hp:FIRE_HP,max:FIRE_HP,taps:0,eta:stationLvl()?stationDelay()+7:-1};
+  sfx&&sfx('event'); toast(`🔥 <b>Fire at the ${BMAP[bid].name}!</b> ${stationLvl()?'The fire brigade is on its way — tap the flames to help!':'Tap the flames to put it out!'}`,4200);
+  return true;
+}
+function fireTick(dt,offline){
+  if(!S.fires) return;
+  for(const bid in S.fires){const f=S.fires[bid];f.t+=dt;
+    if(f.eta>=0&&f.t>=f.eta){f.hp-=stationSpray()*dt;f.spray=1;}
+    if(f.hp<=0){extinguish(bid,f.taps>=f.max*.5?'tap':'truck',offline);continue;}
+    if(f.t>=FIRE_BURN){delete S.fires[bid];S.fireCool=S.time+FIRE_COOL;if(!offline) toast(`🧯 The fire at the ${BMAP[bid].name} burnt out. Repairs done, back to work!`);scene.smoulder=scene.smoulder||{};scene.smoulder[bid]=8;}}
+  if(offline||S.time<FIRE_GRACE||(S.fireCool||0)>S.time||Object.keys(S.fires).length) return;
+  let built=0; for(const b of MAIN_BLD) if(S.buildings[b.id].lvl) built++; if(built<3) return;
+  for(const b of MAIN_BLD){const st=S.buildings[b.id];if(!st.lvl||!st.on) continue;if(Math.random()<fireRisk(b.id)*dt){startFire(b.id);break;}}
+}
+function tapFire(bid){const f=S.fires[bid];if(!f) return false;f.hp-=1;f.taps++;scene.fireTap={bid,t:0};if(f.hp<=0) extinguish(bid,'tap');return true;}
+function extinguish(bid,by,offline){
+  const f=S.fires[bid];if(!f) return; delete S.fires[bid]; S.fireCool=S.time+FIRE_COOL; S.fireStats.n++; if(by==='tap') S.fireStats.tap++;
+  const r=by==='tap'?Math.max(150,coinRate*30):Math.max(50,coinRate*10); earn(r);
+  scene.smoulder=scene.smoulder||{}; scene.smoulder[bid]=6; scene.fireOut={bid,t:0,r,by};
+  if(!offline){toast(by==='tap'?`🧑‍🚒 <b>Fire out!</b> You saved the ${BMAP[bid].name}: +${fmt(r)} coins hero bonus`:`🚒 <b>The fire brigade put out the fire</b> at the ${BMAP[bid].name}. Insurance paid +${fmt(r)}`,3800,'ms-toast');sfx('unlock');}
+  checkAch&&checkAch();
+}
+function buyStation(){const l=stationLvl();if(l>=STATION_MAX) return false;const c=stationCost();if(S.coins+1e-9<c) return false;
+  S.coins-=c;S.station.lvl=l+1;M=computeMods();sfx('unlock');stationPoof();
+  toast(l?`🚒 Fire Station → Lv ${l+1}: fire risk −${(l+1)*10}%, the truck rolls out in ${stationDelay()}s and sprays faster`:`🚒 <b>Fire Station built!</b> A fire truck now answers every fire automatically.`,4200,'ms-toast');
+  for(const bid in S.fires){const f=S.fires[bid];if(f.eta<0) f.eta=f.t+stationDelay()+7;}
+  return true;}
+
+/* ---------- portraits (SVG, drawn in code) ---------- */
+function portraitSVG(m,size){
+  const L=m.look,sk=SKINS[L.skin],hr=HAIRS[L.hair],R=RARITY[m.r],id='pg'+m.id;size=size||56;
+  const suit=L.out==='suit', body=suit?L.col:'#e8e4dc';
+  let h=`<svg viewBox="0 0 64 64" width="${size}" height="${size}" class="portrait"><defs><radialGradient id="${id}" cx="50%" cy="38%" r="65%"><stop offset="0" stop-color="#fff6e0"/><stop offset="1" stop-color="${R.c}"/></radialGradient>
+    <clipPath id="${id}c"><circle cx="32" cy="32" r="29"/></clipPath></defs><circle cx="32" cy="32" r="31" fill="${R.c}"/><circle cx="32" cy="32" r="29" fill="url(#${id})"/><g clip-path="url(#${id}c)">`;
+  if(L.style==='long') h+=`<path d="M17 30 Q16 52 22 56 L42 56 Q48 52 47 30 Z" fill="${shade(hr,.85)}"/>`;
+  // shoulders / outfit
+  h+=`<path d="M8 66 Q9 47 24 44 L40 44 Q55 47 56 66 Z" fill="${body}"/>`;
+  if(suit){h+=`<path d="M26 44 L32 56 L38 44 Z" fill="#f6f4ee"/><path d="M30.6 46 L33.4 46 L34.4 58 L32 61 L29.6 58 Z" fill="${L.tie||'#c83a2e'}"/><path d="M24 44 L31 58 L26 60 Z M40 44 L33 58 L38 60 Z" fill="${shade(L.col,.75)}"/>`;}
+  else {h+=`<path d="M10 66 Q11 49 22 45.5 L28 45 L30 66 Z M54 66 Q53 49 42 45.5 L36 45 L34 66 Z" fill="${L.col}"/><rect x="11" y="56" width="18" height="2.2" fill="#eef2f4" opacity=".9"/><rect x="35" y="56" width="18" height="2.2" fill="#eef2f4" opacity=".9"/>`;}
+  h+=`<rect x="28" y="36" width="8" height="9" rx="3" fill="${shade(sk,.88)}"/><ellipse cx="32" cy="27" rx="11" ry="12.5" fill="${sk}"/><ellipse cx="21.3" cy="28" rx="2" ry="3" fill="${shade(sk,.9)}"/><ellipse cx="42.7" cy="28" rx="2" ry="3" fill="${shade(sk,.9)}"/>`;
+  // hair
+  if(L.style!=='bald'){
+    if(L.style==='crew') h+=`<path d="M21.5 24 Q22 14 32 14 Q42 14 42.5 24 Q38 19 32 19 Q26 19 21.5 24 Z" fill="${hr}"/>`;
+    else h+=`<path d="M20.5 27 Q19 13 32 13 Q45 13 43.5 27 Q42 19 35 18.5 Q30 22 22 22 Q21 24 20.5 27 Z" fill="${hr}"/>`;
+    if(L.style==='bun') h+=`<circle cx="32" cy="11.5" r="5" fill="${hr}"/>`;
+    if(L.style==='pony') h+=`<path d="M42 19 Q50 24 46 36 Q44 28 41 24 Z" fill="${hr}"/>`;
+  } else h+=`<path d="M22 22 Q24 15 32 15 Q40 15 42 22" fill="none" stroke="${shade(sk,.85)}" stroke-width="1.5" opacity=".6"/>`;
+  if(L.beard===2) h+=`<path d="M26.5 31.6 Q32 29.4 37.5 31.6 Q36 33.4 32 32.4 Q28 33.4 26.5 31.6 Z" fill="${hr}"/>`;
+  else if(L.beard) h+=`<path d="M21.5 28 Q22 40 32 40.5 Q42 40 42.5 28 Q41 34 37 35 Q32 33 27 35 Q23 34 21.5 28 Z" fill="${hr}" opacity=".95"/>`;
+  // face
+  h+=`<ellipse cx="27.5" cy="27.5" rx="1.5" ry="1.8" fill="#2a1a12"/><ellipse cx="36.5" cy="27.5" rx="1.5" ry="1.8" fill="#2a1a12"/><circle cx="28" cy="27" r=".5" fill="#fff"/><circle cx="37" cy="27" r=".5" fill="#fff"/>
+    <path d="M25 23.5 Q27.5 22.4 30 23.5 M34 23.5 Q36.5 22.4 39 23.5" stroke="${shade(hr,.8)}" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <path d="M28.5 33.2 Q32 35.8 35.5 33.2" stroke="#8a3a2a" stroke-width="1.3" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="31.5" rx="2" ry="1.1" fill="#e88a7a" opacity=".35"/><ellipse cx="39" cy="31.5" rx="2" ry="1.1" fill="#e88a7a" opacity=".35"/>`;
+  if(L.glasses) h+=`<g fill="none" stroke="#2a2a2e" stroke-width="1.2"><circle cx="27.5" cy="27.6" r="3.4"/><circle cx="36.5" cy="27.6" r="3.4"/><path d="M30.9 27.4 L33.1 27.4"/></g>`;
+  if(L.out==='vest') h+=`<path d="M19 16.5 Q20 8 32 8 Q44 8 45 16.5 L47 18 Q32 15 17 18 Z" fill="${L.hatc||'#f7f7f2'}" stroke="${L.hatc?shade(L.hatc,.7):'#c8c8c0'}" stroke-width=".6"/>`;
+  h+=`</g><circle cx="32" cy="32" r="30" fill="none" stroke="${shade(R.c,1.25)}" stroke-width="1.5" opacity=".8"/></svg>`;
+  return h;
+}
+function mgrHumanLook(m){if(m._look) return m._look;const L=m.look;
+  return m._look={female:!!L.f,skin:SKINS[L.skin],hair:HAIRS[L.hair],style:L.style==='crew'?'crew':L.style,beard:L.beard===1?HAIRS[L.hair]:null,mus:L.beard===2?HAIRS[L.hair]:null,
+    hat:L.out==='vest'?'hard':null,hatc:L.hatc||'#f7f7f2',shirt:L.out==='suit'?L.col:'#e8e4dc',vest:L.out==='vest'?L.col:null,suit:L.out==='suit',tie:L.tie,glasses:!!L.glasses,
+    plaid:null,pants:L.out==='suit'?shade(L.col,.8):'#2e3440',boots:'#1a1a1e'};}
+
+/* ---------- Staff sheet (managers + fire station) ---------- */
+let staffSig='';
+function mgrBtnHtml(m){const l=mgrLvl(m.bid);if(!mgrAvail(m)&&!l) return {h:`🔒 Build the ${BMAP[m.bid].name}`,dis:true};
+  if(!l){const c=mgrHireCost(m);return {h:costBtnHtml('🤝 Hire',c),dis:S.coins+1e-9<c};}
+  if(l>=MGR_MAX) return {h:'★ Max level',dis:true};
+  const c=mgrUpCost(m,l);return {h:costBtnHtml(`⬆ Lv ${l+1}`+(c.seeds?` · ${c.seeds}🌱`:''),c.coins),dis:S.coins+1e-9<c.coins||S.seeds<c.seeds};}
+function mgrCardHtml(m,compact){const R=RARITY[m.r],sk=SKILLS[m.skill],l=mgrLvl(m.bid);
+  return `<div class="mgr-card${l?' hired':''}${compact?' compact':''}" data-id="${m.id}" style="--rc:${R.c}"><div class="mg-p">${portraitSVG(m,compact?50:58)}</div>
+    <div class="mg-b"><div class="mg-n">${m.name} <span class="mg-r">${R.n}</span></div><div class="mg-s">${compact?'':`${BMAP[m.bid].icon} ${BMAP[m.bid].name} · `}<span class="mg-lv">${l?'Lv '+l:'from '+m.from}</span></div>
+    <div class="mg-k">${sk.e} <b>${sk.n}</b>: <span class="mg-kd"></span></div></div><button class="btn buy small mg-btn"></button></div>`;}
+function mgrCardUpdate(el){const m=MGR_MAP[el.dataset.id],l=mgrLvl(m.bid),R=RARITY[m.r];
+  const kd=`${SKILLS[m.skill].d(Math.max(1,l),R.rm)}${l?` · +${Math.round(((1.04+.02*l)-1)*100)}% speed`:''}`;const ke=el.querySelector('.mg-kd');if(ke._t!==kd){ke.textContent=kd;ke._t=kd;}
+  el.classList.toggle('hired',!!l);el.querySelector('.mg-lv').textContent=l?'Lv '+l+(l>=MGR_MAX?' ★':''):'from '+m.from;
+  const b=mgrBtnHtml(m),bt=el.querySelector('.mg-btn');if(bt._h!==b.h){bt.innerHTML=b.h;bt._h=b.h;}bt.disabled=b.dis;}
+function wireMgrCards(root){root.querySelectorAll('.mgr-card').forEach(el=>{el.querySelector('.mg-btn').onclick=e=>{e.stopPropagation();const m=MGR_MAP[el.dataset.id];
+  if(mgrLvl(m.bid)) levelMgr(m.id); else hireMgr(m.id); staffSig='';bpSig='';render();};});}
+function updateStaff(){
+  const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
+  if(curSheet!=='staff') return;
+  const sig=stationLvl()+'|'+stationVisible()+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join();
+  if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=MANAGERS.filter(m=>mgrLvl(m.bid)).length;
+    const fl=Object.keys(S.fires);
+    let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
+    h+=`<h4>👔 Managers <span class="mg-count">${n}/${MANAGERS.length} hired</span></h4><div class="list">`+MANAGERS.map(m=>mgrCardHtml(m)).join('')+`</div>`;
+    h+=`<div class="legend">Every building has one unique manager. They boost speed, add their special skill, keep working offline and stay with you through Replant. Levels 6–10 also cost Seeds.</div>`;
+    h+=`<h4>🚒 Fire Safety</h4><div class="stn-hero"><div class="ph-ic">${UI_ICONS.fire}</div><div style="flex:1"><div class="ph-t">${l?`Fire Station · Lv ${l}`:'Fire Station'}</div>
+      <div class="legend" style="margin:2px 0 0" id="stnTx"></div><div class="stn-stats">🧯 ${S.fireStats.n} fires put out (${S.fireStats.tap} by hand) · Kiln risk <span id="stnRisk"></span></div></div></div>
+      <button class="btn red big" id="stnBuy"></button>`;
+    $('staffBody').innerHTML=h; wireMgrCards($('staffBody'));
+    $('stnBuy').onclick=()=>{if(buyStation()){staffSig='';render();}};
+  }
+  const l=stationLvl(),c=stationCost(),b=$('stnBuy');
+  const bh=l>=STATION_MAX?'Fire Station at max level':costBtnHtml(l?`⬆ Fire Station Lv ${l+1}`:'🚒 Build the Fire Station',c);
+  if(b._h!==bh){b.innerHTML=bh;b._h=bh;} b.disabled=l>=STATION_MAX||S.coins+1e-9<c;
+  const tx=l?`A red fire truck races to every fire after <b>${stationDelay()}s</b> and sprays ${stationSpray().toFixed(1)}/s. Fire risk −${l*10}%.`:`Fires break out now and then (kilns most of all). Tap the flames 12× to put one out, or build a fire station to answer every fire automatically. An unattended fire pauses the building for ${FIRE_BURN}s.`;
+  const te=$('stnTx'); if(te._t!==tx){te.innerHTML=tx;te._t=tx;}
+  const rk=fireRisk('kiln'); $('stnRisk').textContent=S.buildings.kiln.lvl?(rk>0?'≈ 1 per '+fmtTime(1/rk):'none'):'—';
+  document.querySelectorAll('#staffBody .mgr-card').forEach(mgrCardUpdate);
+}
+function updateBldMgr(b){
+  const el=$('bpMgr'); if(!el) return; const m=MGR_OF[b.id]; if(!m||!S.buildings[b.id].lvl){el.classList.add('hidden');return;} el.classList.remove('hidden');
+  if(el.dataset.id!==m.id){el.dataset.id=m.id;el.innerHTML=`<h4>👔 Manager</h4>`+mgrCardHtml(m,true);wireMgrCards(el);}
+  mgrCardUpdate(el.querySelector('.mgr-card'));
+  const fb=$('bpFire'); if(fb){const f=S.fires[b.id];fb.classList.toggle('hidden',!f);if(f) fb.innerHTML=`🔥 <b>On fire!</b> Tap the flames in the scene (${Math.ceil(f.hp)} left)${f.eta>=0?(f.t<f.eta?` · 🚒 arriving in ${Math.ceil(f.eta-f.t)}s`:' · 🚒 spraying'):''}`;}
+}
+function setupStaffUI(){}
+UI_ICONS.staff=`<svg viewBox="0 0 32 32"><circle cx="16" cy="10" r="6" fill="#f0c8a0" stroke="#6a4020" stroke-width="1.4"/><path d="M10 8 Q11 3 16 3 Q21 3 22 8 Q19 6 16 6 Q13 6 10 8Z" fill="#4a2c18"/><path d="M5 30 Q6 19 16 18 Q26 19 27 30Z" fill="#2e3a5a" stroke="#1a2236" stroke-width="1.4"/><path d="M13 18.5 L16 24 L19 18.5Z" fill="#fff"/><path d="M15.2 19.5 L16.8 19.5 L17.4 25 L16 27 L14.6 25Z" fill="#e8a020"/></svg>`;
+UI_ICONS.fire=`<svg viewBox="0 0 32 32"><rect x="2" y="13" width="20" height="11" rx="1.5" fill="#d42a1e" stroke="#7a1410" stroke-width="1.2"/><path d="M22 16 L27 16 L30 20 L30 24 L22 24Z" fill="#d42a1e" stroke="#7a1410" stroke-width="1.2"/><rect x="23.5" y="17.2" width="3.5" height="3" fill="#bfe0f0"/><rect x="3" y="10.5" width="17" height="1.6" fill="#ddd"/><path d="M4 10.5 L4 13 M8 10.5 L8 13 M12 10.5 L12 13 M16 10.5 L16 13" stroke="#999"/><rect x="24" y="11.5" width="3" height="2" fill="#4a8af0"/><circle cx="8" cy="25" r="3" fill="#222"/><circle cx="25" cy="25" r="3" fill="#222"/><rect x="2" y="19" width="20" height="1.5" fill="#fff"/></svg>`;
 
 /* =====================================================================
    ISOMETRIC FACTORY SCENE (v2.0)
@@ -1923,6 +2148,8 @@ function human(ctx,x,y,o){
     props.push(()=>{ctx.save();ctx.translate(3.6,SHY+5.2);ctx.rotate(-.18);ctx.fillStyle='#8a5a2c';ctx.fillRect(-2.6,-3.4,5.4,7);ctx.fillStyle='#fafaf2';ctx.fillRect(-2,-2.6,4.2,5.6);
       ctx.fillStyle='#9aa0a8';for(let k=0;k<3;k++)ctx.fillRect(-1.4,-1.6+k*1.6,3,.45);ctx.fillStyle='#c0c4c8';ctx.fillRect(-.9,-3.8,2,1);ctx.restore();});}
   if(pose==='point'){hand=[[-ns*3+.2,HU.hip+.6],[8.2,SHY-3.6]];}
+  if(pose==='spray'){const j=Math.sin(T*31)*.25;hand=[[4.6,SHY+4.2+j],[7.6,SHY+2.6+j]];lean=.9;
+    props.push(()=>{limb(ctx,[[-2,HU.hip+1],[4.6,SHY+4.4+j]],1.3,'#c8b090');limb(ctx,[[4.6,SHY+4.2+j],[9.6,SHY+1.8+j]],1.1,'#3a3a40');ell(ctx,9.8,SHY+1.7+j,.8,.8,'#c8ced6');});}
   if(pose==='look'){headTurn=Math.sin(T*1.3+ph)>0?1:-1;}
   let mug=null;
   if(pose==='drink'||pose==='sitdrink'){const k=Math.max(0,Math.sin(T*1.1+ph*3));const sip=k>.8?1:k/.8;const rest=pose==='sitdrink'?[3.4,hipY-2.4]:[3.1,HU.hip-1];
@@ -1949,6 +2176,9 @@ function human(ctx,x,y,o){
     else {ctx.beginPath();ctx.moveTo(-3.5,HU.sh+.3);ctx.lineTo(-.4,HU.sh+.3);ctx.lineTo(.1,HU.sh+3.6);ctx.lineTo(.6,HU.sh+.3);ctx.lineTo(3.6,HU.sh+.3);ctx.lineTo(3.6,HU.hip+.2);ctx.lineTo(-3.5,HU.hip+.2);ctx.closePath();ctx.fill();
       ctx.fillStyle='#e9eef2';ctx.fillRect(-3.5,HU.hip+2.4,7.1,.9);ctx.fillRect(-3.5,HU.hip+4.6,7.1,.9);}
     ctx.restore();}
+  if(L.suit&&!back){ctx.fillStyle='#f6f4ee';ctx.beginPath();ctx.moveTo(-1.3,HU.sh+.1);ctx.lineTo(.1,HU.sh+4.2);ctx.lineTo(1.5,HU.sh+.1);ctx.closePath();ctx.fill();
+    ctx.fillStyle=L.tie||'#c83a2e';ctx.beginPath();ctx.moveTo(-.25,HU.sh+.5);ctx.lineTo(.45,HU.sh+.5);ctx.lineTo(.7,HU.sh+3.6);ctx.lineTo(.1,HU.sh+4.6);ctx.lineTo(-.5,HU.sh+3.6);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(-3.2,HU.sh+5.2,6.5,.5);}
   ctx.save();pth(ctx,tp);ctx.clip();ctx.fillStyle='rgba(0,0,0,.16)';ctx.fillRect(1.7,HU.sh,3,10);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(-3.4,HU.sh,1.2,10);ctx.restore();
   ctx.fillStyle='rgba(30,20,10,.55)';ctx.fillRect(-2.7,HU.hip+.1,5.3,1);
   // neck + head
@@ -1970,6 +2200,7 @@ function human(ctx,x,y,o){
     if(L.style==='bun') ell(ctx,-1.9,-1.7,1.25,1.15,L.hair);
     ell(ctx,-.75,.35,.55,.75,shade(L.skin,.86));
     ctx.fillStyle='#2a1a12';ctx.beginPath();ctx.arc(1.25,-.15,.42,0,TAU);ctx.fill();
+    if(L.glasses){ctx.strokeStyle='#1e1e22';ctx.lineWidth=.32;ctx.beginPath();ctx.arc(1.25,-.15,.85,0,TAU);ctx.moveTo(.4,-.3);ctx.lineTo(-.9,-.5);ctx.stroke();}
     ctx.fillStyle=shade(L.hair,.8);ctx.fillRect(.75,-1.05,1.1,.35);
     ctx.fillStyle=shade(L.skin,.92);ctx.beginPath();ctx.moveTo(2.15,-.2);ctx.lineTo(2.75,.75);ctx.lineTo(2.05,.85);ctx.closePath();ctx.fill();
     if(L.beard){ctx.fillStyle=L.beard;ctx.beginPath();ctx.moveTo(-.6,.5);ctx.quadraticCurveTo(-.2,2.9,1.2,2.7);ctx.quadraticCurveTo(2.4,2.4,2.3,1.2);ctx.lineTo(1.4,1.4);ctx.lineTo(.2,.6);ctx.closePath();ctx.fill();}
@@ -2480,7 +2711,7 @@ function drawLot(ctx,L){
   const H=BDRAW[id](ctx,L,B,run,scene.t);
   ctx.restore();
   L.hit=boxHit(B.i0-.1,B.j0-.1,B.i1+.15,B.j1+.15,H);
-  L.top=P(L.ci,L.cj,H+4);
+  L.top=P(L.ci,L.cj,H+4); L.H=H;
   if(!st.on){ctx.fillStyle='rgba(40,40,60,.32)';pth(ctx,boxHit(B.i0,B.j0,B.i1,B.j1,Math.min(H,B.ms*4+40)));ctx.fill();}
 }
 function drawConveyor(ctx,L){
@@ -2891,6 +3122,7 @@ function hitTest(sx,sy){
   let best=null;
   for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.prem&&!S.premium.lvl) continue;if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
   if(best) return {type:best.id==='yard'?'yard':best.id==='dock'?'dock':'bld',id:best.id};
+  if(STATION.hit&&pip(STATION.hit,wx,wy)) return {type:'station'};
   {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
     if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
   const [gi,gj]=toGrid(wx,wy);
@@ -2900,6 +3132,7 @@ function hitTest(sx,sy){
 function sceneTap(sx,sy){
   const g=golden.cur;
   if(g&&Math.hypot(sx-g.x,sy-g.y)<=Math.max(30,goldenSize()*2)){catchGolden();return;}
+  if(fireTapAt(sx,sy)) return;
   const h=hitTest(sx,sy);
   if(h.type==='bld'){
     const b=BMAP[h.id],st=S.buildings[h.id];
@@ -2908,6 +3141,7 @@ function sceneTap(sx,sy){
   } else if(h.type==='yard') openSheet('crew');
   else if(h.type==='dock') openSheet('market');
   else if(h.type==='prem') openSheet('prem');
+  else if(h.type==='station') openSheet('staff');
   else if(h.type==='forest') forestChop(sx,sy);
   else closeSheet();
 }
@@ -2955,7 +3189,7 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -3006,11 +3240,12 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  premDraw(ctx,objs,inView);
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView);
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
   scene.objCount=objs.length;
+  staffPost(ctx);
   // loading progress over the docked truck
   for(const tk of scene.dockTrucks){if(tk.li!==3||tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j,70);if(!inView(x,y,40)) continue;
     ctx.fillStyle='rgba(30,22,12,.72)';rr(ctx,x-19,y-4,38,8,4);ctx.fill();ctx.fillStyle=tk.load>=1?'#8fd14f':'#f5c84c';rr(ctx,x-17,y-2,34*Math.max(.06,tk.load),4,2);ctx.fill();}
@@ -3040,7 +3275,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){
@@ -3081,7 +3316,8 @@ function drawOverlays(ctx){
       const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'');
       pill(ctx,px,py+2,txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
     }
-    if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
+    if(S.fires[b.id]){} // v2.4: the fire pill replaces status badges
+    else if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
     else if(starved){
       // v2.2: mild shortages (>=70% running) get a small calm amber badge; real starvation keeps the bouncing red alert
       const bad=bs.f<.7, R=bad?12:8.5, by=sy-8+(bad?Math.sin(t*5)*3:0);ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,R,0,TAU);ctx.fill();
@@ -3551,6 +3787,7 @@ function collectLights(){
   if(scene.client&&scene.client.veh) vehLights(out,scene.client.veh,1.08,-1.06);
   for(const f of scene.forklifts) vehLights(out,f,.55,null,true);
   if(scene.pfork) vehLights(out,scene.pfork,.55,null,true);
+  staffLights(out);
   return out;
 }
 /* ---------- lighting pass: half-res light map, multiplied over the world ---------- */
@@ -3627,6 +3864,193 @@ function drawWeather(ctx,dt){
 }
 function setClock(c){S.wx.clock=c;M=computeMods();wxSig='';updateWorldVis(0);}
 
+/* ===================== v2.4 MANAGERS, FIRE STATION & FIRES (scene) ===================== */
+const STATION={id:'station',ci:10.05,cj:1.55,face:'J'};
+const STB={i0:8.75,i1:11.35,j0:.25,j1:2.85,bs:2.6};
+const FT_HOME=[9.62,1.15];
+const FIRE_LOOK=[0,1].map(k=>Object.assign(mkLook(611+k,{role:'worker'}),{shirt:'#2c2c32',vest:'#d8a832',hat:'hard',hatc:'#d8261c',pants:'#2c2c32',boots:'#141414'}));
+scene.mgrs={}; scene.mgrFx=[]; scene.stDoor=0; scene.ftruck=null; scene.smoulder={};
+function lpt(u,v){return [(u+v)/2,(u-v)/2];}
+function ftRoute(bid){
+  const L=LOTS[bid],d=doorOf(L),u=d[0]+d[1],vt=L.face==='I'?-1.2:1.2;
+  const pts=[FT_HOME,[9.62,4.4],[9.66,7.5]];
+  if(u>22){pts.push(lpt(20.4,.7));pts.push(lpt(u-2.6,vt));}
+  pts.push(lpt(u,vt)); return {pts,u,vt};
+}
+function crewSpots(T){const r=T.route;return [lpt(r.u-.55,r.vt*2.05),lpt(r.u+.75,r.vt*2.05)];}
+function fireSceneUpdate(dt){
+  // dispatch the truck so it arrives as the station's crew starts spraying (logic eta)
+  for(const bid in S.fires){const f=S.fires[bid];
+    if(f.eta>=0&&!scene.ftruck&&f.t>=f.eta-7.2){const R=ftRoute(bid);const pa=crPath(R.pts,8);const vmax=Math.max(2.6,pa.tot/5.0);
+      scene.ftruck={bid,route:R,crew:0,legs:[{pa,vmax,hold:(v)=>!!S.fires[bid]||v.crewT.crew>.02},{pa:crPath(R.pts.slice().reverse(),8),vmax:2.3,rev:true}],li:0,s:0,v:0};
+      scene.ftruck.crewT=scene.ftruck;}}
+  const T=scene.ftruck;
+  if(T){stepVeh(T,dt);const parked=T.li===0&&T.legs[0].pa.tot-T.s<.05&&T.v<.05;
+    T.crew=parked&&S.fires[T.bid]?Math.min(1,T.crew+dt/1.3):Math.max(0,T.crew-dt/1.1);
+    if(T.done){scene.ftruck=null;}}
+  const home=!T||(T.li===0&&T.s<2.2)||(T.li===1&&T.legs[1].pa.tot-T.s<2.4);
+  scene.stDoor=Math.max(0,Math.min(1,scene.stDoor+((T&&home)?dt*1.6:-dt*1.2)));
+  for(const k in scene.smoulder){scene.smoulder[k]-=dt;if(scene.smoulder[k]<=0) delete scene.smoulder[k];}
+  if(scene.fireOut){scene.fireOut.t+=dt;if(scene.fireOut.t>2.6) scene.fireOut=null;}
+  if(scene.fireTap){scene.fireTap.t+=dt;if(scene.fireTap.t>.4) scene.fireTap=null;}
+  // managers idle routines + lucky-batch pops
+  for(const m of MANAGERS){const l=mgrLvl(m.bid);if(!l) continue;let s=scene.mgrs[m.bid];
+    if(!s) s=scene.mgrs[m.bid]={ph:Math.random()*9,pose:'clip',tm:2+Math.random()*4,off:0,to:0,fx:0,dbl:6+Math.random()*8};
+    s.ph+=dt*(s.pose==='walk'?7:1); s.tm-=dt;
+    if(s.pose==='walk'){const d=s.to-s.off;s.off+=Math.sign(d)*Math.min(Math.abs(d),dt*.45);if(Math.abs(d)<.01){s.pose='clip';s.tm=3+Math.random()*4;}}
+    else if(s.tm<=0){const r=Math.random();if(r<.35){s.pose='walk';s.to=(Math.random()-.5)*.8;}else{s.pose=r<.6?'look':r<.8?'point':'clip';s.tm=2.5+Math.random()*3.5;}}
+    if(m.skill==='double'&&S.buildings[m.bid].on&&bstat[m.bid]&&bstat[m.bid].f>.2){s.dbl-=dt*mgrSkill(m.bid,'double')*3;if(s.dbl<=0){s.dbl=4+Math.random()*6;scene.mgrFx.push({bid:m.bid,t:0});}}}
+  scene.mgrFx=scene.mgrFx.filter(x=>(x.t+=dt)<1.8);
+  if(scene.mgrPoof){const L=LOTS[scene.mgrPoof];if(L){const sp=mgrSpot(scene.mgrPoof),p=P(sp[0],sp[1],10);for(let k=0;k<18;k++) emitP(p[0]+(Math.random()-.5)*30,p[1]+(Math.random()-.5)*14,'poof');}scene.mgrPoof=null;}
+}
+function mgrSpot(bid){const L=LOTS[bid],B=lotBox(L),s=scene.mgrs[bid],o=s?s.off:0;return L.face==='I'?[B.i1+.52,B.j0+B.bs*.08+o]:[B.i0+B.bs*.08+o,B.j1+.52];}
+/* ---------- fire truck ---------- */
+function fireTruck(ctx,i,j,yaw,o){
+  const V=VF(i,j,yaw,o.bounce||0),V0=VF(i,j,yaw,0),red='#d42a1e';
+  vshadow(ctx,V0,-1.6,1.6,.47);
+  truckWheels(ctx,V0,[1.12,-.95,-1.33],false);
+  const parts=[];
+  parts.push({d:vdepth(V,-.7,0),f:()=>{
+    vbox(ctx,V,-1.62,1.45,-.3,.3,4,8,'#34343a',{});
+    vbox(ctx,V,-1.62,.24,-.46,.46,8.5,29,red,{deco:(f,b)=>{
+      if(f==='R'||f==='L'){for(const [a0,a1] of [[-1.52,-1.0],[-.94,-.42],[-.36,.14]]){vquad(ctx,V,f,b,a0,a1,12.5,26.5,'#c9ced4','rgba(30,30,30,.5)');
+          ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=.5;ctx.beginPath();for(let z=14.5;z<26;z+=2.2){const q=vface(V,f,b,a0,a1,z+V.dz,z+V.dz);ctx.moveTo(q[0][0],q[0][1]);ctx.lineTo(q[1][0],q[1][1]);}ctx.stroke();}
+        vquad(ctx,V,f,b,-1.62,.24,9.4,11.2,'#f4f4ee');vquad(ctx,V,f,b,-1.62,.24,27,28,'#f5c84c');}
+      if(f==='B'){vquad(ctx,V,'B',b,-.4,.4,11,27,'#c9ced4','rgba(30,30,30,.5)');for(const cc of [-.38,.38]) vquad(ctx,V,'B',b,cc-.05,cc+.05,6,8.4,o.brake?'#ff3a2a':'#a8221a');}
+    },decoTop:(b,z)=>{ // roof ladder
+      ctx.strokeStyle='#e6e9ec';ctx.lineWidth=1.1;ctx.beginPath();for(const cc of [-.22,.22]){const p0=VL(V,-1.72,cc,z+2.4),p1=VL(V,.6,cc,z+2.4);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}
+      for(let a=-1.62;a<.6;a+=.22){const p0=VL(V,a,-.22,z+2.4),p1=VL(V,a,.22,z+2.4);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}ctx.stroke();
+      ctx.strokeStyle='#8a9098';ctx.lineWidth=1;ctx.beginPath();for(const a of [-1.4,0]) for(const cc of [-.22,.22]){const p0=VL(V,a,cc,z),p1=VL(V,a,cc,z+2.4);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}ctx.stroke();
+      const hr=VL(V,-.8,0,z+.4);ell(ctx,hr[0],hr[1],4.2,2.4,'#b8902a');ell(ctx,hr[0],hr[1]-1,3,1.6,'#d8b040');}});
+  }});
+  const stack=truckCab(ctx,V,red,parts,o);
+  drawParts(ctx,parts);
+  truckWheels(ctx,V0,[1.12,-.95,-1.33],true);
+  // flashing light bar on the cab roof
+  vbox(ctx,V,.56,.78,-.32,.32,36,38,'#2a2a2e',{edge:false});
+  const on=o.siren?Math.floor(scene.t*7)%2:-1;
+  const pr=VL(V,.67,-.18,38.6+V.dz),pb=VL(V,.67,.18,38.6+V.dz);
+  ell(ctx,pr[0],pr[1],2,1.3,on===0?'#ff5a4a':'#a81e14');ell(ctx,pb[0],pb[1],2,1.3,on===1?'#5aa8ff':'#1e4a9a');
+  if(o.siren){ctx.save();ctx.globalCompositeOperation='lighter';glow(ctx,on===0?pr[0]:pb[0],on===0?pr[1]:pb[1],26,26,on===0?'red':'90,160,255',.75);ctx.restore();}
+  return stack;
+}
+/* ---------- fire station ---------- */
+function drawStation(ctx){
+  const l=stationLvl(),{i0,i1,j0,j1}=STB,t=scene.t;
+  if(!l){if(!stationVisible()) return;
+    const pts=[P(i0,j0),P(i1,j0),P(i1,j1),P(i0,j1)];ctx.setLineDash([5,4]);fillP(ctx,pts,'rgba(255,240,210,.35)','rgba(200,60,40,.85)',1.6);ctx.setLineDash([]);
+    for(const [ci,cj] of [[i0+.1,j1+.15],[i1+.15,j1-.1],[i1+.1,j0+.1]]){const [x,y]=P(ci,cj);ctx.fillStyle='#f07020';ctx.beginPath();ctx.moveTo(x,y-9);ctx.lineTo(x-3.4,y);ctx.lineTo(x+3.4,y);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(x-2,y-5,4,1.4);}
+    const [sx,sy]=P(10,2.4,0);ctx.fillStyle='#6a4a2a';ctx.fillRect(sx-1,sy-16,2,16);ctx.fillStyle='#d42a1e';rr(ctx,sx-16,sy-26,32,12,2);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 6.5px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('FIRE STATION',sx,sy-20);
+    STATION.hit=[P(i0,j0,20),P(i1,j0,20),P(i1,j0,0),P(i1,j1,0),P(i0,j1,0),P(i0,j1,20)];STATION.top=P(STATION.ci,STATION.cj,26);return;}
+  const B=STB, H=22;
+  // apron with hatched lines in front of the bays
+  fillP(ctx,[P(i0,j1),P(i1,j1),P(i1,j1+1.15),P(i0,j1+1.15)],SEAS===3?'#e2e6e9':'#d6d0c4');
+  ctx.strokeStyle='rgba(210,50,30,.55)';ctx.lineWidth=2;ctx.beginPath();for(let a=i0+.15;a<i1;a+=.32){const p=P(a,j1+.15),q=P(a+.2,j1+1);ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);}ctx.stroke();
+  // hose tower at the back corner (Lv2+)
+  if(l>=2){box(ctx,i0+.12,j0+.12,i0+.95,j0+.95,0,44+l*2,'#a63a26',{});win(ctx,'I',i0+.95,j0+.35,.35,30,6,false);win(ctx,'J',j0+.95,i0+.35,.35,30,6,false);
+    box(ctx,i0+.05,j0+.05,i0+1.02,j0+1.02,44+l*2,47+l*2,'#5a2418',{});
+    const [fx,fy]=P(i0+.5,j0+.5,47+l*2);flag(ctx,fx,fy,'#d42a1e');}
+  box(ctx,i0,j0,i1,j1,0,H,'#b8442e',{});
+  bricks(ctx,B,'J',0,H);bricks(ctx,B,'I',0,H);
+  // white trim band + sign
+  fillP(ctx,fq('J',j1,i0,i1,H-4.5,H-.5),'#f2eee6');fillP(ctx,fq('I',i1,j0,j1,H-4.5,H-.5),'#f2eee6');
+  ctx.save();fxf(ctx,'J',j1,(i0+i1)/2,H-2.5);ctx.fillStyle='#b8261c';ctx.font='900 5.6px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(l>=5?'★ FIRE STATION ★':'FIRE STATION',0,0);ctx.restore();
+  // bay doors (second bay from Lv3); the first one rolls up when the truck goes out
+  const bays=l>=3?[[i0+.22,i0+1.18],[i0+1.42,i0+2.38]]:[[i0+.22,i0+1.18]];
+  bays.forEach(([a0,a1],k)=>{fillP(ctx,fq('J',j1,a0-.06,a1+.06,0,15.2),'#f2eee6');fillP(ctx,fq('J',j1,a0,a1,0,14.4),'#1c1714');
+    const open=k===0?scene.stDoor:0, z0=14.4*open;
+    if(z0<14.3){fillP(ctx,fq('J',j1,a0,a1,z0,14.4),'#e9e3d6','rgba(60,40,30,.4)',.6);ctx.strokeStyle='rgba(90,70,50,.3)';ctx.lineWidth=.6;ctx.beginPath();for(let z=z0+1.6;z<14.4;z+=1.6){const q=fq('J',j1,a0,a1,z,z);ctx.moveTo(q[0][0],q[0][1]);ctx.lineTo(q[1][0],q[1][1]);}ctx.stroke();
+      if(open<.6){for(const z of [9.5]){const q=fq('J',j1,a0+.12,a1-.12,z,z+2.2);fillP(ctx,q,'#8fc3dc');}}}});
+  if(l<3) winOn(ctx,B,'J',.62,.22,7,6,false);
+  winOn(ctx,B,'I',.18,.22,7,6,false);winOn(ctx,B,'I',.55,.22,7,6,false);
+  doorOn(ctx,B,'I',.82,.95,11,'#8a2a1e');
+  // roof: parapet + siren mast (Lv4+) + AC box
+  box(ctx,i0+1.6,j0+.5,i0+2.2,j0+1.1,H,H+3.5,'#9aa0a6',{});
+  if(l>=4){const [mx,my]=P(i1-.4,j0+.4,H);ctx.fillStyle='#5a5f66';ctx.fillRect(mx-.8,my-16,1.6,16);const on=Math.floor(t*3)%2;ell(ctx,mx,my-17,2.6,2.6,on?'#ff4a3a':'#a81e14');}
+  // lamp over the bays
+  const [lx,ly]=P(i0+.7,j1,16.8);ell(ctx,lx,ly,1.6,1.2,'#fff3c0');
+  STATION.hit=boxHit(i0-.1,j0-.1,i1+.15,j1+.15,l>=2?50:26);STATION.top=P(STATION.ci,STATION.cj,l>=2?52:28);
+}
+/* ---------- flames ---------- */
+function flame(ctx,x,y,s,ph){
+  for(const [c,sc] of [['rgba(205,48,18,.92)',1],['rgba(255,128,26,.95)',.72],['rgba(255,226,110,.96)',.42]]){
+    const w=8*s*sc,h=(22+7*Math.sin(ph*7.3)+4*Math.sin(ph*11.1))*s*sc,sw=Math.sin(ph*5.3)*3.2*s;
+    ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x-w,y);ctx.bezierCurveTo(x-w*1.05,y-h*.5,x+sw-w*.35,y-h*.72,x+sw,y-h);ctx.bezierCurveTo(x+sw+w*.35,y-h*.72,x+w*1.05,y-h*.5,x+w,y);ctx.quadraticCurveTo(x,y+w*.35,x-w,y);ctx.fill();}
+}
+function fireSpots(L){const B=lotBox(L),H=(L.H||30)*.82;return [[B.i0+B.bs*.3,B.j0+B.bs*.32,H],[B.i0+B.bs*.72,B.j0+B.bs*.45,H*.95],[B.i0+B.bs*.42,B.j0+B.bs*.78,H*.9]];}
+function drawFire(ctx,bid){
+  const L=LOTS[bid],f=S.fires[bid],t=scene.t; if(!f) return;
+  const k=Math.min(1,f.t/1.5)*(.35+.65*Math.max(0,f.hp)/f.max);
+  fireSpots(L).forEach(([i,j,z],n)=>{const [x,y]=P(i,j,z);
+    ctx.save();ctx.globalCompositeOperation='lighter';glow(ctx,x,y-8,46*k+10,34*k+8,'fire',.55);ctx.restore();
+    flame(ctx,x,y,(.9+n*.15)*k+.25,t*1.1+n*2.1);flame(ctx,x+7*k,y+2,.5*k+.15,t*1.3+n*3.7);flame(ctx,x-6*k,y+1.5,.45*k+.12,t*1.5+n*1.3);
+    if(Math.random()<scene.dtF*4*k) emitSmoke(x+(Math.random()-.5)*6,y-20*k,'dark');
+    if(Math.random()<scene.dtF*7*k&&scene.particles.length<300) scene.particles.push({x:x+(Math.random()-.5)*10,y:y-8,vx:(Math.random()-.5)*16+(scene.wxv?-scene.wxv.wind*20:0),vy:-26-Math.random()*26,g:-6,life:1.1,max:1.1,size:1,col:'#ffb040',rot:0,vr:5,type:'ember'});});
+}
+function sprayArc(ctx,from,to,t,a){
+  const mx=(from[0]+to[0])/2,my=Math.min(from[1],to[1])-34;
+  ctx.lineCap='round';ctx.strokeStyle=`rgba(150,205,255,${.85*a})`;ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(from[0],from[1]);ctx.quadraticCurveTo(mx,my,to[0],to[1]);ctx.stroke();
+  ctx.setLineDash([3,5]);ctx.lineDashOffset=-t*60;ctx.strokeStyle=`rgba(255,255,255,${.8*a})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(from[0],from[1]);ctx.quadraticCurveTo(mx,my,to[0],to[1]);ctx.stroke();ctx.setLineDash([]);ctx.lineCap='butt';
+  for(let k=0;k<5;k++){const ph=(t*2.3+k*.2)%1;ctx.fillStyle=`rgba(200,230,255,${(1-ph)*.8*a})`;ctx.beginPath();ctx.arc(to[0]+(hash2(k,9)-.5)*20*ph,to[1]-6*ph+12*ph*ph,1.4,0,TAU);ctx.fill();}
+  if(Math.random()<scene.dtF*5) emitSmoke(to[0]+(Math.random()-.5)*10,to[1]-4,'white');
+}
+/* ---------- scene objects (depth sorted) ---------- */
+function staffDraw(ctx,objs,inView){
+  {const [x,y]=P(STATION.ci,STATION.cj);if(inView(x,y,120)) objs.push({k:STATION.ci+STATION.cj,f:()=>drawStation(ctx)});}
+  // fire truck (clipped by the station wall while it's still in the bay)
+  const T=scene.ftruck;
+  if(T&&T.i!==undefined){const [x,y]=P(T.i,T.j);if(inView(x,y,110)){
+    objs.push({k:T.i+T.j,f:()=>{const inBay=T.j<STB.j1+1.7;if(inBay){ctx.save();ctx.beginPath();ctx.rect(-1e5,-1e5,2e5,2e5);pth(ctx,boxHit(STB.i0,STB.j0,STB.i1,STB.j1,22).slice().reverse());const dq=fq('J',STB.j1,STB.i0+.22,STB.i0+1.18,0,14.4);pth(ctx,dq);ctx.clip('evenodd');}
+      const st=fireTruck(ctx,T.i,T.j,T.yaw||Math.PI/2,{bounce:vehBounce(T),brake:T.brake,siren:!!S.fires[T.bid]||T.li===0});if(inBay) ctx.restore();exhaust(st,T);}});}
+    // crew: hop out, unroll the hose and spray
+    if(T.crew>0){const sp=crewSpots(T),door=[T.i,T.j];sp.forEach((s,k)=>{const q=Math.min(1,T.crew*1.15-k*.15);if(q<=0) return;const i=lerp(door[0],s[0],q),j=lerp(door[1],s[1],q);const [hx,hy]=P(i,j);
+      const L=LOTS[T.bid],tgt=P(L.ci,L.cj,0),fx=tgt[0]>=hx?1:-1;
+      objs.push({k:i+j+.02,f:()=>human(ctx,hx,hy,{look:FIRE_LOOK[k],fx,pose:q<1?'walk':S.fires[T.bid]?'spray':'stand',ph:scene.t*7+k})});});}}
+  for(const bid in S.fires){const L=LOTS[bid];const [x,y]=P(L.ci,L.cj);if(inView(x,y,120)) objs.push({k:L.ci+L.cj+.05,f:()=>drawFire(ctx,bid)});}
+  for(const bid in scene.smoulder){const L=LOTS[bid];if(Math.random()<scene.dtF*3){const s=fireSpots(L)[Math.floor(Math.random()*3)];const p=P(s[0],s[1],s[2]);emitSmoke(p[0],p[1],'grey');}}
+  // managers
+  for(const m of MANAGERS){const l=mgrLvl(m.bid);if(!l||!S.buildings[m.bid].lvl) continue;const L=LOTS[m.bid];if(L.prem&&!S.premium.lvl) continue;
+    const sp=mgrSpot(m.bid),s=scene.mgrs[m.bid];if(!s) continue;const [x,y]=P(sp[0],sp[1]);if(!inView(x,y,40)) continue;
+    const walkDir=s.pose==='walk'?Math.sign(s.to-s.off):0;const fx=L.face==='I'?(walkDir? (walkDir>0?-1:1):1):(walkDir?(walkDir>0?1:-1):-1);
+    objs.push({k:sp[0]+sp[1]+.03,f:()=>{human(ctx,x,y,{look:mgrHumanLook(m),fx,pose:onFire(m.bid)?'point':s.pose,ph:s.ph,back:false});
+      const R=RARITY[m.r],by=y-38+Math.sin(scene.t*3+s.ph)*1.5;ctx.fillStyle=R.c;ctx.strokeStyle='#fff';ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(x,by-4.5);ctx.lineTo(x+3.4,by);ctx.lineTo(x,by+4.5);ctx.lineTo(x-3.4,by);ctx.closePath();ctx.fill();ctx.stroke();
+      if(m.r==='L'&&Math.sin(scene.t*2.2+s.ph)>.6){ctx.fillStyle='rgba(255,240,170,.9)';ctx.fillRect(x+4,by-6,1.4,1.4);ctx.fillRect(x-5,by+2,1.2,1.2);}}});}
+}
+function staffPost(ctx){ // after the depth-sorted pass: water jets on top
+  const T=scene.ftruck; if(!T||T.crew<.9||!S.fires[T.bid]) return;
+  const sp=crewSpots(T),L=LOTS[T.bid],spots=fireSpots(L);
+  sp.forEach((s,k)=>{const [hx,hy]=P(s[0],s[1]);const tgtS=spots[k%3],tg=P(tgtS[0],tgtS[1],tgtS[2]);const fx=tg[0]>=hx?1:-1;
+    sprayArc(ctx,[hx+fx*11.3,hy-20.5],[tg[0],tg[1]-6],scene.t+k*.37,1);});
+}
+function staffLights(out){
+  for(const bid in S.fires){const L=LOTS[bid];for(const [i,j,z] of fireSpots(L)){const [x,y]=P(i,j,z);out.push({x,y:y-6,rx:90,ry:60,c:'fire',a:1});}const [x,y]=P(L.ci,L.cj,0);out.push({x,y,rx:110,ry:60,c:'fire',a:.8});}
+  if(stationLvl()){const [x,y]=P(STB.i0+.7,STB.j1+.5,0);out.push({x,y,rx:34,ry:17,c:'warm',a:.7});}
+  const T=scene.ftruck;if(T&&T.i!==undefined){vehLights(out,T,1.62,-1.64);if(S.fires[T.bid]||T.li===0){const on=Math.floor(scene.t*7)%2,[x,y]=P(T.i,T.j,0);out.push({x,y,rx:70,ry:40,c:on?'90,160,255':'red',a:.6});}}
+}
+function staffOverlays(ctx){
+  const t=scene.t;
+  for(const bid in S.fires){const L=LOTS[bid],f=S.fires[bid];if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]-26);if(sx<-60||sx>scene.w+60||sy<-40||sy>scene.h+40) continue;
+    const bob=Math.sin(t*6)*2;const r=pill(ctx,sx,sy+bob,`🔥 TAP! ${Math.ceil(f.hp)}`,{bg:'#d8261c',fg:'#fff',fs:12,stroke:'#ffd0a0',padX:11,padY:7});
+    const w=56;ctx.fillStyle='rgba(30,10,5,.7)';rr(ctx,sx-w/2,sy+bob+r[3]/2+3,w,5,2.5);ctx.fill();ctx.fillStyle='#ffb040';rr(ctx,sx-w/2+1,sy+bob+r[3]/2+4,(w-2)*Math.max(0,f.hp)/f.max,3,1.5);ctx.fill();
+    const tl=FIRE_BURN-f.t;if(f.eta>=0&&f.t<f.eta&&!(scene.ftruck&&scene.ftruck.bid===bid&&scene.ftruck.crew)) pill(ctx,sx,sy+bob+r[3]/2+17,`🚒 ${Math.ceil(f.eta-f.t)}s`,{fs:10,bg:'rgba(43,27,14,.75)'});
+    else if(f.eta<0) pill(ctx,sx,sy+bob+r[3]/2+17,`burns out in ${Math.ceil(tl)}s`,{fs:9.5,bg:'rgba(43,27,14,.6)'});
+    const k=(t*1.4)%1;ctx.strokeStyle=`rgba(255,90,40,${1-k})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(sx,sy+bob+30,18+k*26,0,TAU);ctx.stroke();}
+  if(scene.fireOut){const L=LOTS[scene.fireOut.bid];if(L.top){const [sx,sy]=w2s(L.top[0],L.top[1]-20);const k=scene.fireOut.t/2.6;ctx.globalAlpha=Math.max(0,1-k);
+    pill(ctx,sx,sy-k*40,(scene.fireOut.by==='tap'?'🧑‍🚒 Fire out! +':'🚒 Saved! +')+fmt(scene.fireOut.r),{bg:'#2f86d8',fg:'#fff',fs:13,stroke:'#cfe6ff',padX:13,padY:8});ctx.globalAlpha=1;}}
+  if(!stationLvl()&&stationVisible()&&STATION.top){const [sx,sy]=w2s(STATION.top[0],STATION.top[1]);if(sx>-80&&sx<scene.w+80&&sy>-40&&sy<scene.h+40){const c=stationCost(),can=S.coins+1e-9>=c,bob=can?Math.sin(t*4)*2.5:0;
+    pill(ctx,sx,sy-12+bob,'🚒 Fire Station',{bg:can?'#d8261c':'rgba(43,27,14,.75)',fg:'#fff',fs:11,stroke:can?'#ffd0a0':null});pill(ctx,sx,sy+8+bob,fmt(c),{icon:'coin',bg:'#fff6e0',fg:can?'#3b7f27':'#8a6a40',fs:10.5,stroke:can?'#4fa633':'#d9b98a'});}}
+  for(const fx of scene.mgrFx){const L=LOTS[fx.bid];if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const k=fx.t/1.8;ctx.globalAlpha=Math.max(0,1-k*k);
+    pill(ctx,sx+22,sy-6-k*30,'🎲 ×2',{bg:'#9a4ad8',fg:'#fff',fs:11,stroke:'#e8d0ff'});ctx.globalAlpha=1;}
+}
+function stationPoof(){const p=P(STATION.ci,STATION.cj,10);for(let k=0;k<26;k++) emitP(p[0]+(Math.random()-.5)*80,p[1]+(Math.random()-.5)*30,'poof');}
+function fireTapAt(sx,sy){
+  for(const bid in S.fires){const L=LOTS[bid];let hit=L.hit&&pip(L.hit,...s2w(sx,sy));
+    if(!hit&&L.top){const [tx,ty]=w2s(L.top[0],L.top[1]);hit=Math.hypot(sx-tx,sy-ty)<Math.max(46,60*scene.cam.z);}
+    if(hit){tapFire(bid);const [wx,wy]=s2w(sx,sy);for(let k=0;k<10;k++) scene.particles.push({x:wx,y:wy,vx:(Math.random()-.5)*90,vy:-40-Math.random()*60,g:220,life:.5,max:.5,size:1.6,col:'#9fd4ff',rot:0,vr:0,type:'water'});
+      emitSmoke(wx,wy-6,'white');sfx('chop');render();return true;}}
+  return false;
+}
+
 /* ===================== MAIN RENDER (HUD + open sheet) ===================== */
 let chopRateDisplay=0;
 function render(){
@@ -3642,10 +4066,10 @@ function render(){
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); updateOrders(); updatePrem(); updateWx();
+  renderOrderCard(); updateOrders(); updatePrem(); updateWx(); updateStaff();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
 }
-function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';wxSig='';M=computeMods();render();}
+function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';wxSig='';staffSig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -3731,6 +4155,9 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   premScreen:()=>{const p=P((PREM.i0+PREM.i1)/2,(PREM.j0+PREM.j1)/2,10);return w2s(p[0],p[1]);},
   // v2.3 world clock / seasons / weather helpers
   DAY_LEN,SEASON_DAYS,SEASONS,WEATHER,dayPhase,dayNum,seasonIdx,weatherId,setWeather,setClock,clockStr,dayState,isNight,
+  // v2.4 managers / fire helpers
+  MANAGERS,RARITY,SKILLS,portraitSVG,mgrLvl,hireMgr,levelMgr,mgrHireCost,mgrUpCost,mgrSpd,mgrIn,mgrOut,mgrSto,mgrOrders,startFire,tapFire,fireRisk,buyStation,stationCost,stationLvl,onFire,STATION,
+  fireScreen:bid=>{const L=LOTS[bid];return L.top?w2s(L.top[0],L.top[1]):null;},stationScreen:()=>{const p=P(STATION.ci,STATION.cj,12);return w2s(p[0],p[1]);},
   get cam(){return scene.cam;}};
 init();
 })();

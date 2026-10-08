@@ -271,7 +271,7 @@ function drawLot(ctx,L){
   const H=BDRAW[id](ctx,L,B,run,scene.t);
   ctx.restore();
   L.hit=boxHit(B.i0-.1,B.j0-.1,B.i1+.15,B.j1+.15,H);
-  L.top=P(L.ci,L.cj,H+4);
+  L.top=P(L.ci,L.cj,H+4); L.H=H;
   if(!st.on){ctx.fillStyle='rgba(40,40,60,.32)';pth(ctx,boxHit(B.i0,B.j0,B.i1,B.j1,Math.min(H,B.ms*4+40)));ctx.fill();}
 }
 function drawConveyor(ctx,L){

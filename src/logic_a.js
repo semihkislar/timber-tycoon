@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const VERSION='2.3';
+const VERSION='2.4';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -118,6 +118,9 @@ const UPGRADES=[
   {id:'brand',icon:'🏷️',name:'Designer Brand',desc:'Chairs & Furniture sell ×2',cost:40000000,req:()=>bl('furniture')>=1,apply:m=>{m.price.chairs*=2;m.price.furniture*=2}},
   {id:'logistics',icon:'🌍',name:'Global Logistics',desc:'All buildings speed ×2',cost:100000000,req:()=>bl('furniture')>=4,apply:m=>m.bldAll*=2},
   {id:'rotors',icon:'🌀',name:'Twin Rotors',desc:'Sky-Cranes ×2',cost:300000000,req:()=>cn('heli')>=5,apply:m=>m.col.heli*=2},
+  // v2.4 fire safety
+  {id:'alarm',icon:'🚨',name:'Smoke Detectors',desc:'Fire risk −25%',cost:40000,req:()=>bl('kiln')>=1,apply:m=>m.fire*=.75},
+  {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
 ];
 const EVENTS=[
   {id:'hotel',name:'🏨 Big Hotel Order',desc:'Chairs & Furniture sell for 3×!',dur:60,req:()=>bl('carpentry')>0,apply:m=>{m.price.chairs*=3;m.price.furniture*=3}},
@@ -176,6 +179,10 @@ const ACH=[
   {id:'lvl100',t:'gold',e:'💯',n:'Centurion',d:'Get any building to Lv 100',p:()=>[maxLvl(),100]},
   {id:'order1',t:'bronze',e:'📋',n:'Order Up!',d:'Complete a client order',p:()=>[(S.orders&&S.orders.done)||0,1]},
   {id:'order10',t:'silver',e:'🤝',n:'Trusted Supplier',d:'Complete 10 client orders',p:()=>[(S.orders&&S.orders.done)||0,10]},
+  {id:'fire1',t:'bronze',e:'🧑‍🚒',n:'Firefighter',d:'Put out a fire by tapping it',p:()=>[(S.fireStats&&S.fireStats.tap)>0?1:0,1]},
+  {id:'fire10',t:'silver',e:'🚒',n:'Fire Brigade',d:'Put out 10 fires',p:()=>[(S.fireStats&&S.fireStats.n)||0,10]},
+  {id:'mgr1',t:'bronze',e:'🤝',n:'First Hire',d:'Hire a manager',p:()=>[Object.keys(S.mgr||{}).length,1]},
+  {id:'mgr6',t:'gold',e:'👔',n:'Management Team',d:'Hire 6 managers',p:()=>[Object.keys(S.mgr||{}).length,6]},
   {id:'premium',t:'gold',e:'🏛️',n:'Haute Bois',d:'Open the Premium Factory Area',p:()=>[(S.premium&&S.premium.lvl)>0?1:0,1]},
 ];
 
@@ -185,7 +192,8 @@ function freshState(keep){
     seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
     storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
-    wx:{clock:126,w:'clear',ends:0,next:201}};
+    wx:{clock:126,w:'clear',ends:0,next:201},
+    mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0};
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -216,6 +224,11 @@ function migrateSave(o){
   if(!o.orders||typeof o.orders!=='object') o.orders={offer:null,active:null,next:(o.time||0)+60,done:0,failed:0,hist:[]};
   // v2.2 -> v2.3: world clock / season / weather (starts at 07:12, day 1 of spring)
   if(!o.wx||typeof o.wx!=='object'||typeof o.wx.clock!=='number') o.wx={clock:126,w:'clear',ends:0,next:201};
+  // v2.3 -> v2.4: managers, fire station, fires
+  if(!o.mgr||typeof o.mgr!=='object') o.mgr={};
+  if(!o.station||typeof o.station!=='object') o.station={lvl:0};
+  if(!o.fires||typeof o.fires!=='object') o.fires={};
+  if(!o.fireStats||typeof o.fireStats!=='object') o.fireStats={n:0,tap:0};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -232,7 +245,7 @@ function merge(base,obj){
 
 /* ===================== MODIFIERS ===================== */
 function computeMods(){
-  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false};
+  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1};
   COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1);
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
@@ -246,7 +259,7 @@ function computeMods(){
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRate(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id);}
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
@@ -254,16 +267,16 @@ function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 /* ===================== SIMULATION ===================== */
 function tick(dt,offline){
   M=computeMods();
-  S.time+=dt; S.playTime+=dt; wxTick(dt,offline);
+  S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
   const demand={}; RES.forEach(r=>demand[r.id]=0);
   const active=[];
   for(const b of BUILDINGS){
     const st=S.buildings[b.id];
-    if(!st.lvl||!st.on){bstat[b.id]={f:0,lim:null,speed:st.lvl?bSpeed(b.id):0};continue;}
-    const sp=bSpeed(b.id); active.push([b,sp]);
-    for(const k in b.inp) demand[k]+=b.inp[k]*sp*dt;
+    if(!st.lvl||!st.on||onFire(b.id)){bstat[b.id]={f:0,lim:null,speed:st.lvl?bSpeed(b.id):0,fire:onFire(b.id)};continue;}
+    const sp=bSpeed(b.id); active.push([b,sp]); const mi=mgrIn(b.id);
+    for(const k in b.inp) demand[k]+=b.inp[k]*sp*dt*mi;
   }
   const frac={};
   for(const k in demand) frac[k]=demand[k]>0?Math.min(1,S.res[k]/demand[k]):1;
@@ -273,14 +286,15 @@ function tick(dt,offline){
   for(const [b,sp] of active){
     let f=1,lim=null;
     for(const k in b.inp) if(frac[k]<f-1e-9){f=frac[k];lim=k;}
-    pre.push([b,sp,f,lim]); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f;
+    pre.push([b,sp,f,lim]); const mo=mgrOut(b.id); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f*mo;
   }
   const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
   for(const [b,sp,f0,lim] of pre){
     let f=f0,full=null;
     for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
-    for(const k in b.inp){const a=b.inp[k]*sp*dt*f;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
-    for(const k in b.out){const a=b.out[k]*sp*dt*f;pend[k]=(pend[k]||0)+a;}
+    const mi=mgrIn(b.id), mo=mgrOut(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
+    for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
+    for(const k in b.out){const a=b.out[k]*sp*dt*f*mo;pend[k]=(pend[k]||0)+a;}
     if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+b.out.planks*sp*dt*f;}
     bstat[b.id]={f,lim:full?null:lim,speed:sp,full};
   }
@@ -375,7 +389,7 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,ach:Object.assign({},S.ach),golden:S.golden,
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)}};
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;

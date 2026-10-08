@@ -91,6 +91,8 @@ function human(ctx,x,y,o){
     props.push(()=>{ctx.save();ctx.translate(3.6,SHY+5.2);ctx.rotate(-.18);ctx.fillStyle='#8a5a2c';ctx.fillRect(-2.6,-3.4,5.4,7);ctx.fillStyle='#fafaf2';ctx.fillRect(-2,-2.6,4.2,5.6);
       ctx.fillStyle='#9aa0a8';for(let k=0;k<3;k++)ctx.fillRect(-1.4,-1.6+k*1.6,3,.45);ctx.fillStyle='#c0c4c8';ctx.fillRect(-.9,-3.8,2,1);ctx.restore();});}
   if(pose==='point'){hand=[[-ns*3+.2,HU.hip+.6],[8.2,SHY-3.6]];}
+  if(pose==='spray'){const j=Math.sin(T*31)*.25;hand=[[4.6,SHY+4.2+j],[7.6,SHY+2.6+j]];lean=.9;
+    props.push(()=>{limb(ctx,[[-2,HU.hip+1],[4.6,SHY+4.4+j]],1.3,'#c8b090');limb(ctx,[[4.6,SHY+4.2+j],[9.6,SHY+1.8+j]],1.1,'#3a3a40');ell(ctx,9.8,SHY+1.7+j,.8,.8,'#c8ced6');});}
   if(pose==='look'){headTurn=Math.sin(T*1.3+ph)>0?1:-1;}
   let mug=null;
   if(pose==='drink'||pose==='sitdrink'){const k=Math.max(0,Math.sin(T*1.1+ph*3));const sip=k>.8?1:k/.8;const rest=pose==='sitdrink'?[3.4,hipY-2.4]:[3.1,HU.hip-1];
@@ -117,6 +119,9 @@ function human(ctx,x,y,o){
     else {ctx.beginPath();ctx.moveTo(-3.5,HU.sh+.3);ctx.lineTo(-.4,HU.sh+.3);ctx.lineTo(.1,HU.sh+3.6);ctx.lineTo(.6,HU.sh+.3);ctx.lineTo(3.6,HU.sh+.3);ctx.lineTo(3.6,HU.hip+.2);ctx.lineTo(-3.5,HU.hip+.2);ctx.closePath();ctx.fill();
       ctx.fillStyle='#e9eef2';ctx.fillRect(-3.5,HU.hip+2.4,7.1,.9);ctx.fillRect(-3.5,HU.hip+4.6,7.1,.9);}
     ctx.restore();}
+  if(L.suit&&!back){ctx.fillStyle='#f6f4ee';ctx.beginPath();ctx.moveTo(-1.3,HU.sh+.1);ctx.lineTo(.1,HU.sh+4.2);ctx.lineTo(1.5,HU.sh+.1);ctx.closePath();ctx.fill();
+    ctx.fillStyle=L.tie||'#c83a2e';ctx.beginPath();ctx.moveTo(-.25,HU.sh+.5);ctx.lineTo(.45,HU.sh+.5);ctx.lineTo(.7,HU.sh+3.6);ctx.lineTo(.1,HU.sh+4.6);ctx.lineTo(-.5,HU.sh+3.6);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(-3.2,HU.sh+5.2,6.5,.5);}
   ctx.save();pth(ctx,tp);ctx.clip();ctx.fillStyle='rgba(0,0,0,.16)';ctx.fillRect(1.7,HU.sh,3,10);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(-3.4,HU.sh,1.2,10);ctx.restore();
   ctx.fillStyle='rgba(30,20,10,.55)';ctx.fillRect(-2.7,HU.hip+.1,5.3,1);
   // neck + head
@@ -138,6 +143,7 @@ function human(ctx,x,y,o){
     if(L.style==='bun') ell(ctx,-1.9,-1.7,1.25,1.15,L.hair);
     ell(ctx,-.75,.35,.55,.75,shade(L.skin,.86));
     ctx.fillStyle='#2a1a12';ctx.beginPath();ctx.arc(1.25,-.15,.42,0,TAU);ctx.fill();
+    if(L.glasses){ctx.strokeStyle='#1e1e22';ctx.lineWidth=.32;ctx.beginPath();ctx.arc(1.25,-.15,.85,0,TAU);ctx.moveTo(.4,-.3);ctx.lineTo(-.9,-.5);ctx.stroke();}
     ctx.fillStyle=shade(L.hair,.8);ctx.fillRect(.75,-1.05,1.1,.35);
     ctx.fillStyle=shade(L.skin,.92);ctx.beginPath();ctx.moveTo(2.15,-.2);ctx.lineTo(2.75,.75);ctx.lineTo(2.05,.85);ctx.closePath();ctx.fill();
     if(L.beard){ctx.fillStyle=L.beard;ctx.beginPath();ctx.moveTo(-.6,.5);ctx.quadraticCurveTo(-.2,2.9,1.2,2.7);ctx.quadraticCurveTo(2.4,2.4,2.3,1.2);ctx.lineTo(1.4,1.4);ctx.lineTo(.2,.6);ctx.closePath();ctx.fill();}

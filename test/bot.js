@@ -5,9 +5,10 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
   const snaps=[];
   for(let t=0;t<totalSec;t++){
     if(t<clickUntil) for(let i=0;i<clickPerSec;i++) T.chop();
-    T.simulate(1,0.25);
+    T.simulate(1,0.25); if(T.checkAch) T.checkAch(true);   // real play checks trophies every second (main loop)
     if(T.S.orders&&T.S.orders.offer&&window.BOT_ORDERS!==false) T.acceptOrder();
     const S=T.S;
+    if(S.fires&&window.BOT_FIRE!==false) for(const bid in S.fires){const c0=S.coins;for(let k=0;k<14&&S.fires[bid];k++) T.tapFire(bid);(window.FIRE_LOG=window.FIRE_LOG||[]).push([t,bid,Math.round(S.coins-c0),Math.round(T.coinRate)]);}
     // purchases loop
     for(let guard=0;guard<20;guard++){
       const lr=T.logRate(); const cpl=lr>0?Math.max(T.price('logs'),T.coinRate/Math.max(lr,1)):1;
@@ -26,6 +27,12 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
       if(T.premCost&&window.BOT_PREM!==false&&S.premium.lvl<5){const pc=T.premCost(); if(pc<S.totalEarned*3) cands.push({k:'p:area'+(S.premium.lvl+1),cost:pc,gain:S.premium.lvl?Math.max(T.coinRate,1)*0.1:Math.max(T.coinRate,1)*0.3,do:()=>T.buyPremium()});}
       if(T.buyStorage&&window.BOT_STORAGE!==false) for(const b of T.BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||T.stoLvl(b.id)>=8) continue; let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);
         cands.push({k:'s:'+b.id+T.stoLvl(b.id),cost:T.stoCost(b.id),gain:Math.max(0,val)*T.bstat[b.id].speed*0.1*Math.min(1,T.bstat[b.id].f||0),do:()=>T.buyStorage(b.id)});}
+      // v2.4: managers (hire + level) and the fire station
+      if(T.MANAGERS&&window.BOT_MGR!==false) for(const m of T.MANAGERS){const b=T.BUILDINGS.find(x=>x.id===m.bid),st=S.buildings[m.bid];if(!st.lvl) continue;
+        let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k); const pr=Math.max(0,val)*T.bstat[b.id].speed*Math.min(1,T.bstat[b.id].f||0);
+        const l=T.mgrLvl(m.bid); if(!l) cands.push({k:'m:'+m.id,cost:T.mgrHireCost(m),gain:pr*.15,do:()=>T.hireMgr(m.id)});
+        else if(l<10){const c=T.mgrUpCost(m,l); if(S.seeds>=c.seeds+5||!c.seeds) cands.push({k:'m:'+m.id+l,cost:c.coins,gain:pr*.05,do:()=>T.levelMgr(m.id)});}}
+      if(T.buyStation&&window.BOT_STATION!==false&&T.stationLvl()<5&&S.buildings.kiln.lvl) cands.push({k:'f:station'+T.stationLvl(),cost:T.stationCost(),gain:Math.max(T.coinRate,1)*0.03,do:()=>T.buyStation()});
       const nt=T.TREES[S.tree+1]; if(nt) cands.push({k:'t:'+nt.name,cost:nt.cost,gain:Math.max(T.coinRate,1)*(nt.mult/T.TREES[S.tree].mult-1),do:()=>T.buyTree()});
       cands.forEach(c=>c.r=c.gain/c.cost);
       cands.sort((a,b)=>b.r-a.r);

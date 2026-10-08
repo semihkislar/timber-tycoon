@@ -9,13 +9,13 @@ function stoCost(id){const b=BMAP[id],l=stoLvl(id);return b.cost*5*Math.pow(5,l)
 // capacity (units) per resource = sum over built producers of (output/s at full speed) x seconds of storage
 function stockCaps(){
   const c={}; for(const r of RES) c[r.id]=0; const has={};
-  for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl) continue; const sp=bSpeed(b.id), sec=stoSec(stoLvl(b.id));
+  for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl) continue; const sp=bSpeed(b.id), sec=stoSec(stoLvl(b.id))*mgrSto(b.id);
     for(const k in b.out){c[k]+=b.out[k]*sp*sec;has[k]=1;}
     if(b.id==='sawmill'&&M.sawdust){c.chips+=b.out.planks*sp*sec;has.chips=1;}}
   for(const r of RES) c[r.id]=has[r.id]?Math.max(50,c[r.id]):Infinity;
   return c;
 }
-function bldCap(id){const b=BMAP[id],st=S.buildings[id];if(!st.lvl) return 0;let t=0;const sp=bSpeed(id),sec=stoSec(stoLvl(id));for(const k in b.out) t+=b.out[k]*sp*sec;return Math.max(50,t);}
+function bldCap(id){const b=BMAP[id],st=S.buildings[id];if(!st.lvl) return 0;let t=0;const sp=bSpeed(id),sec=stoSec(stoLvl(id))*mgrSto(id);for(const k in b.out) t+=b.out[k]*sp*sec;return Math.max(50,t);}
 function buyStorage(id){
   const l=stoLvl(id); if(l>=STO_MAX||!S.buildings[id].lvl) return false; const c=stoCost(id); if(S.coins+1e-9<c) return false;
   S.coins-=c; S.storage[id]=l+1; M=computeMods(); sfx('buy');
@@ -66,7 +66,7 @@ function makeOrder(forceItem){
   const p=(rates[r.id]&&rates[r.id].p>.02)?Math.min(p0,rates[r.id].p):p0;
   const amt=niceNum(Math.max(5,p*dur*(.25+Math.random()*.15)));
   const cands=CLIENTS.filter(c=>c.likes.includes(r.id)); const cl=(cands.length?cands:CLIENTS)[Math.floor(Math.random()*(cands.length||CLIENTS.length))];
-  let reward=Math.max(amt*price(r.id)*1.8,coinRate*dur*.25,50)*(r.premium?1.25:1); reward=niceNum(reward);
+  let reward=Math.max(amt*price(r.id)*1.8,coinRate*dur*.25,50)*(r.premium?1.25:1)*mgrOrders(); reward=niceNum(reward);
   let bonus=null; const rr=Math.random();
   if(r.premium&&rr<.2&&S.totalEarned>=1e7) bonus={type:'seeds',n:1};
   else if(rr<(r.premium?.45:.25)) bonus={type:'boost',id:'viprush'};
