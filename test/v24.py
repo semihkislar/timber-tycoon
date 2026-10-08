@@ -23,7 +23,7 @@ with sync_playwright() as p:
     old=pg.evaluate('JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=pg.evaluate('TT.S')
-    ok(S['version']=='2.4','v2.3 save migrated to 2.4')
+    ok(S['version']>='2.4','v2.3 save migrated to current ('+S['version']+')')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==4 and S['orders']['done']==3,'collectors, buildings, orders kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.02,'coins kept')
     ok(abs(S['wx']['clock']-old['wx']['clock'])<5,'world clock kept')

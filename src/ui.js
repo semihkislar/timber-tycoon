@@ -24,18 +24,19 @@ const SHEETS={
   ord:{title:'Client Orders',icon:'ord'},
   prem:{title:'Premium Factory Area',icon:'prem'},
   staff:{title:'Managers & Fire Station',icon:'staff'},
+  rnd:{title:'Research & Trade',icon:'rnd'},
 };
 function openSheet(name,arg){
   const prev=curSheet;
   if(prev==='ach'&&name!=='ach') achFresh={};
   curSheet=name; sheetBld=name==='bld'?arg:null;
   Object.keys(SHEETS).forEach(k=>$('pane-'+k).classList.toggle('hidden',k!==name));
-  const sh=$('sheet'); sh.classList.add('open'); document.body.classList.add('sheet-on'); sh.setAttribute('aria-hidden','false');
+  const sh=$('sheet'); sh.dataset.s=name; sh.classList.add('open'); document.body.classList.add('sheet-on'); sh.setAttribute('aria-hidden','false');
   if(name==='bld'){ const b=BMAP[arg]; $('shTitle').textContent=b.name; $('shIc').innerHTML=svgIcon(b.svg,30); }
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
-  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; premSig=''; staffSig='';
+  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; premSig=''; staffSig=''; resSig=''; tradeSig='';
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
   if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
@@ -90,7 +91,7 @@ function updateCollectors(){
 }
 
 /* ===================== RENDER: BUILDING SHEET ===================== */
-function bVisible(b,i){if(b.premium) return S.premium.lvl>0; if(i===undefined) i=BUILDINGS.indexOf(b); return S.buildings[b.id].lvl>0||S.totalEarned>=b.cost*0.25||i===0;}
+function bVisible(b,i){if(b.premium) return S.premium.lvl>0; if(b.tech) return bldUnlocked(b.id)||S.buildings[b.id].lvl>0; if(i===undefined) i=BUILDINGS.indexOf(b); return S.buildings[b.id].lvl>0||S.totalEarned>=b.cost*0.25||i===0;}
 function statusOf(b){
   const st=S.buildings[b.id],bs=bstat[b.id];
   if(!st.lvl) return {cls:'off',txt:'Not built',f:0};
@@ -129,13 +130,14 @@ function updateBuildingSheet(){
   // input -> output flow
   const sp=st.lvl?bSpeed(b.id):0, f=st.lvl&&st.on?bstat[b.id].f:0;
   const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f)+' / '+fr(v*sp):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  let outsArr=Object.entries(b.out).map(([k,v])=>[k,v]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',b.out.planks]);
-  const outs=outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
+  let outsArr=Object.entries(b.out).map(([k,v])=>[k,v]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',b.out.planks]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*.5]);
+  const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   const io=ins+'<span class="arr">➜</span>'+outs; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   const on=$('bpOn'); on.checked=st.on; on.disabled=!st.lvl; $('bpOnL').textContent=st.on?'On':'Off';
   on.parentElement.classList.toggle('hidden',!st.lvl);
   const bb=$('bpBuy'); const bh=costBtnHtml(st.lvl?`⬆ Upgrade${n>1?' +'+n:''}`:'🔨 Build',cost); if(bb._h!==bh){bb.innerHTML=bh;bb._h=bh;}
-  bb.disabled=S.coins+1e-9<cost;
+  const unl=bldUnlocked(b.id); if(!unl){const lt=b.id==='lab'?'🔒 Needs a Paper Mill':b.id==='boatyard'&&hasRes('boats')?'🔒 Needs the Harbour':'🔒 Research '+RNMAP[TECH_UNLOCK[b.id]].name;if(bb._h!==lt){bb.innerHTML=lt;bb._h=lt;}}
+  bb.disabled=!unl||S.coins+1e-9<cost;
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
   updateStorageBlock(b); updateBldMgr(b);
 }
@@ -149,6 +151,7 @@ function cycleBuilding(d){
 let mktSig='', mktEls={};
 function resVisible(r){
   if(r.id==='logs') return true; if(S.res[r.id]>0.01) return true;
+  if(r.id==='glue'&&M.tar&&S.buildings.kiln.lvl>0) return true;
   return BUILDINGS.some(b=>S.buildings[b.id].lvl>0&&(b.out[r.id]||(r.id==='chips'&&b.id==='sawmill'&&S.upgrades.sawdust)));
 }
 function buildMarket(){

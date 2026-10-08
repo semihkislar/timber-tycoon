@@ -14,10 +14,10 @@ function render(){
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); updateOrders(); updatePrem(); updateWx(); updateStaff();
+  renderOrderCard(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
 }
-function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';wxSig='';staffSig='';M=computeMods();render();}
+function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -44,7 +44,7 @@ function setupUI(){
     confirmModal('🌱 Replant the Forest?',`You will sell the company and start over with <b>+${g} Seeds</b> (total ${S.seeds+g}, giving <b>+${(S.seeds+g)*10}%</b> production).<br><br>Coins, stock, collectors, buildings, upgrades and trees reset.`,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();}});};
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
-  setupPremiumUI(); setupWx();
+  setupPremiumUI(); setupWx(); setupRndUI();
   updateMuteBtn();
 }
 function dockSale(v){scene.earnAcc+=0;const p=P(DOCK.ci+.4,DOCK.cj+.2,74);scene.floats.push({x:p[0],y:p[1]-14,text:'+'+fmt(v),coin:true,t:0,dur:1.4,big:true});scene.lastEarned=S.totalEarned;}
@@ -103,6 +103,8 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   premScreen:()=>{const p=P((PREM.i0+PREM.i1)/2,(PREM.j0+PREM.j1)/2,10);return w2s(p[0],p[1]);},
   // v2.3 world clock / seasons / weather helpers
   DAY_LEN,SEASON_DAYS,SEASONS,WEATHER,dayPhase,dayNum,seasonIdx,weatherId,setWeather,setClock,clockStr,dayState,isNight,
+  // v2.5 research / trade helpers
+  RNODES,CITIES,CMAP,bldUnlocked,freeSlot,harborAvail,labBuilt,nodeAvail,openResearch,openTrade,vesselPose,hasRes,doResearch,canResearch,labRP,buyHarbor,openRoute,dispatch,departNow,harborLvl,harborCost,routeOpen,tradeMult,tradeGoods,campusOpen,harborOpen,HOME,
   // v2.4 managers / fire helpers
   MANAGERS,RARITY,SKILLS,portraitSVG,mgrLvl,hireMgr,levelMgr,mgrHireCost,mgrUpCost,mgrSpd,mgrIn,mgrOut,mgrSto,mgrOrders,startFire,tapFire,fireRisk,buyStation,stationCost,stationLvl,onFire,STATION,
   fireScreen:bid=>{const L=LOTS[bid];return L.top?w2s(L.top[0],L.top[1]):null;},stationScreen:()=>{const p=P(STATION.ci,STATION.cj,12);return w2s(p[0],p[1]);},

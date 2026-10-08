@@ -69,7 +69,7 @@ function collectLights(){
   const out=[], t=scene.t;
   for(const l of scene.lamps){const [x,y]=P(l.i,l.j);out.push({x:x+5,y:y+2,rx:50,ry:25,c:'warm',a:.85});out.push({x:x+6,y:y-27,rx:15,ry:15,c:'warm',a:.9,core:1});}
   if(premOpen()) for(const [i,j] of [[24.75,.35],[24.75,8.7],[28.75,.3],[21.25,.3]]){const [x,y]=P(i,j);out.push({x,y:y+1,rx:42,ry:21,c:'gold',a:.8});out.push({x,y:y-27,rx:13,ry:13,c:'gold',a:.95,core:1});}
-  for(const b of BUILDINGS){const st=S.buildings[b.id];if(!st.lvl) continue;if(b.premium&&!premOpen()) continue;const L=LOTS[b.id];const d=doorOf(L);
+  for(const b of BUILDINGS){const st=S.buildings[b.id];if(!st.lvl||b.tech) continue;if(b.premium&&!premOpen()) continue;const L=LOTS[b.id];const d=doorOf(L);
     const [x,y]=P(d[0],d[1],0);out.push({x,y,rx:30,ry:15,c:b.premium?'gold':'warm',a:.6});const [hx,hy]=P(d[0],d[1],15);out.push({x:hx,y:hy,rx:9,ry:9,c:'warm',a:.8,core:1});
     if(b.id==='kiln'&&st.on){const fl=.75+.25*Math.sin(t*9)*Math.sin(t*5.3);const k=P(d[0],d[1]-.9,6);out.push({x:k[0],y:k[1],rx:48,ry:30,c:'fire',a:.7*fl});}}
   {const [x,y]=P(YARD.ci,YARD.cj,0);out.push({x,y,rx:80,ry:40,c:'warm',a:.45});}
@@ -81,7 +81,7 @@ function collectLights(){
   if(scene.client&&scene.client.veh) vehLights(out,scene.client.veh,1.08,-1.06);
   for(const f of scene.forklifts) vehLights(out,f,.55,null,true);
   if(scene.pfork) vehLights(out,scene.pfork,.55,null,true);
-  staffLights(out);
+  staffLights(out); techLights(out);
   return out;
 }
 /* ---------- lighting pass: half-res light map, multiplied over the world ---------- */

@@ -186,7 +186,7 @@ function updatePrem(){
     const t=st.lvl?'Open':costBtnHtml('🔨 Build',bulkCost(bb.cost,bb.scale,0,1)); if(bt._h!==t){bt.innerHTML=t;bt._h=t;}});
 }
 function updateStorageBlock(b){
-  const el=$('bpStor'); if(!el) return; const st=S.buildings[b.id]; el.classList.toggle('hidden',!st.lvl); if(!st.lvl) return;
+  const el=$('bpStor'); if(!el) return; const st=S.buildings[b.id]; el.classList.toggle('hidden',!st.lvl||!Object.keys(b.out).length); if(!st.lvl||!Object.keys(b.out).length) return;
   const l=stoLvl(b.id), outs=Object.keys(b.out), k=outs[0], caps=stockCaps(), cap=caps[k], have=S.res[k], fr0=cap<Infinity?Math.min(1,have/cap):0, full=!!(bstat[b.id]&&bstat[b.id].full);
   $('bpStLv').textContent='Lv '+l; const ch=$('bpStChip'); ch.className='chip'+(full?' bad':fr0>.8?' off':''); ch.textContent=full?'⛔ FULL — production paused':`${fmt(have)} / ${fmt(cap)} ${RMAP[k].name}`;
   $('bpStBi').style.width=(fr0*100).toFixed(1)+'%'; $('bpStBar').className='bar'+(full?' bad':fr0>.8?' warn':'');

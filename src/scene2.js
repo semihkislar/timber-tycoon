@@ -66,8 +66,9 @@ function drawGround(ctx,x0,y0,x1,y1){
   }
   // concrete pads for every lot + yard + dock
   drawPremGround(ctx,x0,y0,x1,y1);
+  if(typeof techGround==='function') techGround(ctx);
   for(const L of [...Object.values(LOTS),YARD,DOCK]){
-    if(L.prem) continue;
+    if(L.prem||L.tech) continue;
     const {ci,cj}=L; const e=2.15;
     const pts=[P(ci-e,cj-e),P(ci+e,cj-e),P(ci+e,cj+e),P(ci-e,cj+e)];
     const bb=[pts[3][0],pts[0][1],pts[1][0],pts[2][1]]; if(bb[2]<x0-10||bb[0]>x1+10||bb[3]<y0-10||bb[1]>y1+10) continue;

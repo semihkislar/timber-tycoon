@@ -9,6 +9,11 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
     if(T.S.orders&&T.S.orders.offer&&window.BOT_ORDERS!==false) T.acceptOrder();
     const S=T.S;
     if(S.fires&&window.BOT_FIRE!==false) for(const bid in S.fires){const c0=S.coins;for(let k=0;k<14&&S.fires[bid];k++) T.tapFire(bid);(window.FIRE_LOG=window.FIRE_LOG||[]).push([t,bid,Math.round(S.coins-c0),Math.round(T.coinRate)]);}
+    if(T.doResearch&&window.BOT_V25!==false&&window.BOT_RES!==false){const av=T.RNODES.filter(n=>T.canResearch(n.id)).sort((a,b)=>a.rp-b.rp); if(av[0]&&T.doResearch(av[0].id)) mark('R:'+av[0].id,t);}
+    if(T.dispatch&&window.BOT_V25!==false&&window.BOT_TRADE!==false&&T.harborLvl()){ // load the best good for each free vessel
+      for(const mode of ['train','ship']){ if(!T.freeSlot(mode)) continue; let best=null;
+        for(const c of T.CITIES){ if(c.mode!==mode||!T.routeOpen(c.id)) continue; for(const r of T.tradeGoods()){const v=T.tradeMult(c.id,r.id)*T.price(r.id)*Math.min(1,T.rates[r.id]?T.rates[r.id].s/Math.max(1e-9,T.rates[r.id].p||1e-9):0)*(T.rates[r.id]?T.rates[r.id].p:0)/c.trip; if(!best||v>best.v) best={v,c:c.id,g:r.id};}}
+        if(best&&T.dispatch(best.c,best.g)) mark('ship:'+best.c,t);}}
     // purchases loop
     for(let guard=0;guard<20;guard++){
       const lr=T.logRate(); const cpl=lr>0?Math.max(T.price('logs'),T.coinRate/Math.max(lr,1)):1;
@@ -16,7 +21,8 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
       for(const c of T.COLLECTORS){const own=S.collectors[c.id];const cost=T.bulkCost(c.cost,T.COL_SCALE,own,1);
         if(cost>S.totalEarned*3+200) continue; cands.push({k:'c:'+c.id,cost,gain:T.logRate()>=0?(c.rate*cpl):0,do:()=>T.buyCollector(c.id,1)});}
       for(const b of T.BUILDINGS){const st=S.buildings[b.id];const cost=T.bulkCost(b.cost,b.scale,st.lvl,1);
-        if(cost>S.totalEarned*3+200) continue;
+        if(cost>S.totalEarned*3+200) continue; if(T.bldUnlocked&&!T.bldUnlocked(b.id)) continue;
+        if(b.id==='lab'){if(window.BOT_V25===false||window.BOT_RES===false) continue; const left=T.RNODES.filter(n=>!T.hasRes(n.id)).length; if(left&&st.lvl<12) cands.push({k:'b:lab',cost,gain:Math.max(T.coinRate,1)*(st.lvl?.02:.12),do:()=>T.buyBuilding('lab',1)}); continue;}
         // available surplus of inputs (being sold)
         let ok=1; for(const k in b.inp){const R=T.rates[k];const sur=R.s/(b.inp[k]*(T.bstat[b.id].speed/Math.max(st.lvl,1)||1)); ok=Math.min(ok,sur);}
         let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);
@@ -33,6 +39,9 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         const l=T.mgrLvl(m.bid); if(!l) cands.push({k:'m:'+m.id,cost:T.mgrHireCost(m),gain:pr*.15,do:()=>T.hireMgr(m.id)});
         else if(l<10){const c=T.mgrUpCost(m,l); if(S.seeds>=c.seeds+5||!c.seeds) cands.push({k:'m:'+m.id+l,cost:c.coins,gain:pr*.05,do:()=>T.levelMgr(m.id)});}}
       if(T.buyStation&&window.BOT_STATION!==false&&T.stationLvl()<5&&S.buildings.kiln.lvl) cands.push({k:'f:station'+T.stationLvl(),cost:T.stationCost(),gain:Math.max(T.coinRate,1)*0.03,do:()=>T.buyStation()});
+      // v2.5: harbour levels + trade routes (research is bought outside this loop)
+      if(T.buyHarbor&&window.BOT_V25!==false&&window.BOT_TRADE!==false&&T.harborAvail()&&T.harborLvl()<5){const hc=T.harborCost(); if(hc<S.totalEarned*3) cands.push({k:'h:harbor'+(T.harborLvl()+1),cost:hc,gain:Math.max(T.coinRate,1)*(T.harborLvl()?.04:.1),do:()=>T.buyHarbor()});}
+      if(T.openRoute&&window.BOT_V25!==false&&T.harborLvl()) for(const c of T.CITIES){if(T.routeOpen(c.id)||c.cost>S.totalEarned*3) continue; cands.push({k:'r:'+c.id,cost:c.cost,gain:Math.max(T.coinRate,1)*.06,do:()=>T.openRoute(c.id)});}
       const nt=T.TREES[S.tree+1]; if(nt) cands.push({k:'t:'+nt.name,cost:nt.cost,gain:Math.max(T.coinRate,1)*(nt.mult/T.TREES[S.tree].mult-1),do:()=>T.buyTree()});
       cands.forEach(c=>c.r=c.gain/c.cost);
       cands.sort((a,b)=>b.r-a.r);
@@ -48,7 +57,7 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
     if(T.pendingSeeds()>=1) mark('prestige>=1 seed',t);
     if([60,120,300,600,900,1200,1800,2700,3600].includes(t+1)) snaps.push({t:t+1,coins:Math.round(S.coins),earned:Math.round(S.totalEarned),income:Math.round(T.coinRate),logs:Math.round(T.logRate()),seeds:T.pendingSeeds(),
       cols:Object.entries(S.collectors).filter(x=>x[1]).map(x=>x[0]+':'+x[1]).join(' '),blds:Object.entries(S.buildings).filter(x=>x[1].lvl).map(x=>x[0]+':'+x[1].lvl+'@'+Math.round(T.bstat[x[0]].f*100)+'%').join(' '),
-      upg:Object.keys(S.upgrades).length,tree:S.tree,prem:S.premium?S.premium.lvl:0,orders:S.orders?S.orders.done+'/'+(S.orders.done+S.orders.failed):''});
+      upg:Object.keys(S.upgrades).length,res:S.research?Object.keys(S.research).length:0,rp:Math.round(S.rp||0),trade:S.trade?S.trade.lvl+'/'+Object.keys(S.trade.routes).length+'/'+S.trade.stats.trips+'/'+Math.round(S.trade.stats.earned):'',tree:S.tree,prem:S.premium?S.premium.lvl:0,orders:S.orders?S.orders.done+'/'+(S.orders.done+S.orders.failed):''});
   }
   return {log,snaps};
 };

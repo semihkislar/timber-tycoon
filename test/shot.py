@@ -1,6 +1,7 @@
 # screenshots: early / mid-game desktop / mobile / building sheet / v2.1 zoomed forest crew + trucks / v2.2 premium, order, storage
 # v2.3: night, winter, autumn, rain (every shot pins the world clock + weather so results are deterministic)
 # v2.4: fire + fire brigade, managers panel (desktop + mobile)
+# v2.5: research tree, trade map, harbour (ship + train), R&D campus, mobile research
 import sys
 from playwright.sync_api import sync_playwright
 URL='file:///workspace/lumber-idle/lumber-idle.html'
@@ -28,13 +29,18 @@ with sync_playwright() as p:
         ('screenshot-fire-night.png', {'width':1280,'height':800}, 2400, '@firenight'),
         ('screenshot-managers.png', {'width':1280,'height':800}, 2400, '@staff'),
         ('screenshot-mobile-staff.png', {'width':430,'height':900}, 1500, '@mstaff'),
+        ('screenshot-research.png', {'width':1280,'height':800}, 2400, '@research'),
+        ('screenshot-trade.png', {'width':1280,'height':800}, 2400, '@trade'),
+        ('screenshot-harbour.png', {'width':1280,'height':800}, 2400, '@harbour'),
+        ('screenshot-campus.png', {'width':1280,'height':800}, 2400, '@campus'),
+        ('screenshot-mobile-research.png', {'width':430,'height':900}, 2400, '@mres'),
     ]
     D=420
     # (clock seconds, weather) per shot; default = spring, late morning, fair
     WORLD={'@night':(D*.93,'clear'),'@mnight':(D*.95,'snow',9),'@winter':(D*9+D*.46,'snow'),'@autumn':(D*6+D*.715,'wind'),'@rain':(D*1+D*.56,'rain'),'@firenight':(D*.95,'clear')}
     def world(pg,sheet):
         c,w=WORLD.get(sheet,(D*.45,'clear'))[:2]; extra=WORLD.get(sheet,(0,0,0))[2] if len(WORLD.get(sheet,()))>2 else 0
-        pg.evaluate(f"(()=>{{TT.setClock({c+extra*D});TT.setWeather('{w}',900);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']=1;TT.scene.wet={1 if w=='rain' else 0};if('{sheet}' in {{'@night':1,'@winter':1,'@autumn':1,'@rain':1,'@mnight':1}}){{TT.S.orders.active=null;TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;TT.scene.orderEv=null;}}if(!'{sheet}'.startsWith('@fire')){{TT.S.fires={{}};TT.S.fireCool=TT.S.time+9999;}}}})()")
+        pg.evaluate(f"(()=>{{TT.setClock({c+extra*D});TT.setWeather('{w}',900);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']=1;TT.scene.wet={1 if w=='rain' else 0};if('{sheet}' in {{'@night':1,'@winter':1,'@autumn':1,'@rain':1,'@mnight':1,'@research':1,'@trade':1,'@harbour':1,'@campus':1,'@mres':1}}){{TT.S.orders.active=null;TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;TT.scene.orderEv=null;}}if(!'{sheet}'.startsWith('@fire')){{TT.S.fires={{}};TT.S.fireCool=TT.S.time+9999;}}}})()")
     FOCUS={
       # zoom on the top forest work zone, centred on the axe/saw crew there
       '@forest':'''(()=>{const fp=TT.forestPeople().filter(q=>q.i+q.j<3&&q.type!=='crew');let i=-1,j=2;if(fp.length){i=fp.reduce((a,q)=>a+q.i,0)/fp.length;j=fp.reduce((a,q)=>a+q.j,0)/fp.length;}
@@ -62,6 +68,20 @@ with sync_playwright() as p:
     FOCUS['@staff']='''(()=>{TT.openSheet('staff');})()'''
     FOCUS['@mstaff']=FOCUS['@staff']
     MGR_SETUP='''(()=>{const c0=TT.S.coins,s0=TT.S.seeds;TT.S.coins=1e30;TT.S.seeds=1e4;TT.MANAGERS.forEach((m,i)=>{if(TT.hireMgr(m.id)) for(let k=0;k<(i*7)%9;k++) TT.levelMgr(m.id);});while(TT.stationLvl()<2) TT.buyStation();TT.S.coins=c0;TT.S.seeds=s0;TT.S.fireStats={n:7,tap:4};})()'''
+    # v2.5: a mid-tree research state, all tech buildings, harbour Lv 3 with a ship + train loading
+    TECH_SETUP='''(()=>{const c0=TT.S.coins,s0=TT.S.seeds;TT.S.coins=1e30;TT.S.seeds=1e4;if(TT.S.buildings.lab.lvl<3) TT.buyBuilding('lab',3-TT.S.buildings.lab.lvl);TT.S.rp=1e6;
+      for(const id of ['science','blades','tar','pulp','bending','plywood','market','toys','logistics','boats']) TT.doResearch(id);TT.S.rp=740;
+      while(TT.harborLvl()<3) TT.buyHarbor();for(const c of ['ist','ham','rot','dxb']) TT.openRoute(c);
+      for(const [b,n] of [['plymill',10],['toyshop',2],['boatyard',1]]) if(TT.S.buildings[b].lvl<n) TT.buyBuilding(b,n-TT.S.buildings[b].lvl);
+      TT.S.coins=c0;TT.S.seeds=s0;TT.simulate(10);TT.S.trade.fleet=[];TT.S.trade.spike={city:'dxb',good:'furniture',ends:TT.S.time+150};
+      TT.dispatch('rot','pellets');TT.dispatch('dxb','furniture');TT.dispatch('ist','toys');TT.simulate(14);
+      const sh=TT.S.trade.fleet.find(v=>v.city==='rot');if(sh) sh.got=Math.max(sh.got,sh.cap*.55);
+      const sh2=TT.S.trade.fleet.find(v=>v.city==='dxb');if(sh2){sh2.got=Math.max(sh2.got,sh2.cap*.9);TT.departNow(sh2.id);sh2.t=7;}})()'''
+    FOCUS['@research']='''(()=>{TT.openResearch();})()'''
+    FOCUS['@mres']=FOCUS['@research']
+    FOCUS['@trade']='''(()=>{TT.openTrade();})()'''
+    FOCUS['@harbour']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.7;const p=TT.P(36.4,15.7,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
+    FOCUS['@campus']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=2.1;const p=TT.P(16.9,1.1,8);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
     import os
     ONLY=[x for x in os.environ.get('ONLY','').split(',') if x]
     for name,vp,sec,sheet in jobs:
@@ -83,6 +103,9 @@ with sync_playwright() as p:
                 pg.wait_for_timeout(250)
             pg.evaluate("TT.S.orders.offer.expires=TT.S.time+70")
         if sheet in ('@fire','@firenight','@staff','@mstaff'): pg.evaluate(MGR_SETUP); pg.wait_for_timeout(600)
+        if sheet in ('@research','@trade','@harbour','@campus','@mres'): pg.evaluate(TECH_SETUP); pg.wait_for_timeout(2500)
+        if sheet in ('@research','@mres'): pg.evaluate("TT.closeSheet()")
+        if sheet=='@trade': pg.evaluate("(()=>{const v=TT.S.trade.fleet.find(v=>v.city==='dxb');if(v){v.state='out';v.t=v.trip*.3;}})()")
         if sheet in ('@fire','@firenight'):
             pg.evaluate("TT.S.fires={};TT.S.fireCool=0;TT.startFire('kiln');TT.S.fires.kiln.t=TT.S.fires.kiln.eta-7.3")
             for k in range(60):

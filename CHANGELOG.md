@@ -5,6 +5,45 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.5] — 2026-10-08
+
+A **Research Lab** turns paper into Research Points for a 14-node **research tree**. A **harbour and rail station** on the river ships your goods to six cities on a **trade map**.
+
+### Added
+- **Research Lab** on a new **R&D campus** north-east of the yard. It opens once you own a Paper Mill.
+  The lab burns paper and makes **Research Points** (RP): +0.015 RP/s per unit of lab speed, more with level, milestones and research.
+- **Research tree** with 14 nodes in 6 tiers:
+  Wood Science (lab +25 % RP); Carbide Blades, Pulp Chemistry, Steam Bending (+15 % for their buildings);
+  Pine Tar Glue (kilns also distil glue); Market Research (all prices +5 %); Kiln Science (kiln & pellets +15 %, fire risk −30 %);
+  Trade Logistics (trade payouts +20 %, trips 20 % faster); Automation (all buildings +10 %, costs Seeds); Lab Robotics (lab +50 % RP);
+  Masterworks (plywood, toys, boats & luxury goods +25 %, costs Seeds).
+  Each node has prerequisites, an RP cost and a detail card with time-to-afford.
+- **Three tech buildings** unlocked by research:
+  **Plywood Mill** (planks + glue → plywood), **Toy Workshop** (plywood + paper → wooden toys), and **Boat Yard** at the harbour (plywood + planks + glue → wooden boats).
+  The Boat Yard has a boat on its slipway under a gantry crane. New goods: Pine Tar Glue, Plywood, Wooden Toys, Wooden Boats.
+- **Harbour & Rail Station** (5 levels) on the river by the highway. It has a quay, container cranes, a rail platform and a harbour office.
+  Levels add ships (1 → 3) and trains (1 → 2) and bigger holds.
+- **Trade map** (🌍 Trade tab): a stylised world map with our mill at Bartın. You can open routes to Istanbul and Hamburg (rail) and to Rotterdam, Dubai, New York and Tokyo (sea).
+  Each city pays its own multiplier per good (likes ×1.2–1.7), and demand drifts every 45 s.
+  Random **demand spikes** pay ×2 for 2½ min. Tap a good to load the next free ship or train.
+  It collects up to 80 % of that good's production until full (or tap **Depart**), then sails and pays on arrival.
+  **Auto-repeat** (on by default, toggle in the Trade tab) reloads returning vessels with the same cargo, so trade also runs while you are away.
+- Ships and trains **move in the scene**. Ships berth at the quay and steer out to the far fairway when they leave, and trains load at the platform and run along the rail line.
+  A ribbon over the harbour shows every vessel's progress. The campus and harbour get street lamps at night, and roofs take snow in winter.
+- **R&D button** (🧪) in the bottom bar. It appears once the lab or harbour is available and opens a **Research & Trade** sheet with both tabs.
+  A dot shows when a node is affordable or a spike is live.
+- Trophies: Eureka!, Think Tank, Bon Voyage, Global Brand.
+- `test/v25.py` (86 checks). New screenshots: `screenshot-research.png`, `screenshot-trade.png`, `screenshot-harbour.png`, `screenshot-campus.png`, `screenshot-mobile-research.png`.
+
+### Changed
+- Save version 2.5. v2.4 saves migrate automatically: research, RP and trade start empty, tech buildings start unbuilt, and everything else is kept.
+- **Replant** keeps research, unspent RP, the harbour level, opened routes and trade stats. Tech buildings reset like the other buildings, and vessels at sea are cleared.
+- The camera fit widens to frame the harbour once it is built.
+- On landscape screens the R&D sheet can grow to 76 % of the height so the whole tree fits. The bottom bar tightens when the 9th button appears.
+- Balance: v2.5 earns ≈ +30 % at 1 h vs v2.4 and is slightly behind at 20 min while the lab pays off (12 seeded bot runs).
+  With research and trade unused it is within noise of v2.4.
+- Tests: the v2.3 weather-roll check now samples two in-game years instead of one (it was flaky), and the v2.4 bottom-bar check accepts the 9th button.
+
 ## [2.4] — 2026-10-08
 
 **Managers** run your buildings and **fires** break out now and then. Tap them out, or build a **fire station** whose red truck answers every call.

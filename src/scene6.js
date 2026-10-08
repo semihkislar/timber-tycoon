@@ -10,7 +10,8 @@ function fitCamera(instant){
   const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h;
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
-  const bx0=portrait?-340:-480, bx1=portrait?356:880, by0=portrait?-66:-62, by1=portrait?900:826;
+  const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
+  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=portrait?900:(hb?935:826);
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -62,6 +63,8 @@ function hitTest(sx,sy){
   for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.prem&&!S.premium.lvl) continue;if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
   if(best) return {type:best.id==='yard'?'yard':best.id==='dock'?'dock':'bld',id:best.id};
   if(STATION.hit&&pip(STATION.hit,wx,wy)) return {type:'station'};
+  {const [gi,gj]=toGrid(wx,wy);if(gi>=14.2&&gi<=19.6&&gj>=-1.4&&gj<=3.5&&campusOpen()) return {type:'campus'};
+    if(gi>=32.4&&gi<=37&&gj>=11.5&&gj<=17.2&&(harborOpen()||harborAvail())) return {type:'harbor'};}
   {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
     if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
   const [gi,gj]=toGrid(wx,wy);
@@ -81,6 +84,8 @@ function sceneTap(sx,sy){
   else if(h.type==='dock') openSheet('market');
   else if(h.type==='prem') openSheet('prem');
   else if(h.type==='station') openSheet('staff');
+  else if(h.type==='campus') openResearch();
+  else if(h.type==='harbor') openTrade();
   else if(h.type==='forest') forestChop(sx,sy);
   else closeSheet();
 }
@@ -128,7 +133,7 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); techVisTick(); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -179,7 +184,7 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView);
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView);
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
@@ -214,7 +219,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx); staffOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){
@@ -236,7 +241,7 @@ function coinAt(ctx,x,y,r,kind){
 function drawOverlays(ctx){
   const z=scene.cam.z, t=scene.t;
   const showTags=z>.33;
-  for(const b of BUILDINGS){const L=LOTS[b.id],st=S.buildings[b.id];if(!L.top) continue;if(b.premium&&!S.premium.lvl) continue;
+  for(const b of BUILDINGS){const L=LOTS[b.id],st=S.buildings[b.id];if(b.tech||!L.top) continue;if(b.premium&&!S.premium.lvl) continue;
     const [sx,sy]=w2s(L.top[0],L.top[1]);
     if(sx<-80||sx>scene.w+80||sy<-60||sy>scene.h+120) continue;
     if(!st.lvl){

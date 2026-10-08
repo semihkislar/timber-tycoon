@@ -125,7 +125,7 @@ const VEST={sawmill:'#e8742a',chipper:'#3aa0d8',kiln:'#d84a3a',carpentry:'#e8c43
 function msOf(id){return msCount(S.buildings[id].lvl);}
 function lotBox(L){
   const ms=L.id==='dock'||L.id==='yard'?0:msOf(L.id);
-  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); if(L.id==='dock') bs=3.0;
+  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.tech) bs=Math.min(L.bs0+.3,L.bs0+.05*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); if(L.id==='dock') bs=3.0;
   const hb=bs/2; return {i0:L.ci-hb,i1:L.ci+hb,j0:L.cj-hb,j1:L.cj+hb,bs,ms};
 }
 function doorOf(L){const b=lotBox(L);return L.face==='I'?[b.i1+.38,b.j0+b.bs*.28]:[b.i0+b.bs*.28,b.j1+.38];}
@@ -143,6 +143,10 @@ function zoneAt(i,j){
   if(i>=30&&i<32) return 'road';
   if(j>=7&&j<9&&i<6.2) return 'dirt';
   if(i>=PREM.i0&&i<PREM.i1&&j>=PREM.j0&&j<PREM.j1) return 'prem';
+  // v2.5: R&D campus (north of the kiln row) and harbour across the highway
+  if(i>=14.2&&i<19.6&&j>=-1.4&&j<3.5) return 'campus';
+  if(i>=32.4&&i<40.4&&j>=11.5&&j<17.2) return 'harbor';
+  if(i>=32.2&&j>=17.1&&j<20) return 'river';
   const u=i+j,v=i-j;
   if(inFactory(u,v)) return 'yard';
   return 'grass';
@@ -153,6 +157,9 @@ function isForestPt(i,j){
   if(i>=27.5&&i<34.6) return false;
   if(j>=4.8&&j<11.2&&i<7.5) return false;
   if(Math.abs(v)<=13&&u>=1&&u<=58.5) return false;
+  if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
+  if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;
+  if(i>=32&&j>=16.8&&j<20.4) return false;
   return true;
 }
 function isLumberZone(i,j){const u=i+j,v=i-j;return (v>=-18&&v<=-12.5&&u>=-3&&u<=34)||(u>=-6&&u<=2.6&&Math.abs(v)<=17);}

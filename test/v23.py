@@ -56,7 +56,7 @@ with sync_playwright() as p:
     sn=mods(D*9+D*.5,'snow'); ok(abs(sn['ch']/wi['ch']-1.15)<1e-6 and abs(sn['colAll']/wi['colAll']-.9)<1e-6,'snowfall: collectors -10%, charcoal +15%')
     lr=pg.evaluate('TT.logRate()'); setw(pg,D*.5,'clear'); lr2=pg.evaluate('TT.logRate()'); ok(lr2>lr,'log rate responds to the weather')
     # --- weather schedule (season-appropriate, ends, toasts) ---
-    seen=pg.evaluate(f'''(()=>{{TT.S.wx.w='clear';TT.S.wx.next=TT.S.wx.clock;const seen={{}};for(let k=0;k<4*3*{D}/5;k++){{TT.simulate(5,5);const s=TT.seasonIdx(),w=TT.weatherId();seen[s+':'+w]=1;}}return Object.keys(seen);}})()''')
+    seen=pg.evaluate(f'''(()=>{{TT.S.wx.w='clear';TT.S.wx.next=TT.S.wx.clock;const seen={{}};for(let k=0;k<2*4*3*{D}/5;k++){{TT.simulate(5,5);const s=TT.seasonIdx(),w=TT.weatherId();seen[s+':'+w]=1;}}return Object.keys(seen);}})()''')
     ok(any(s.startswith('0:rain') for s in seen) and any(s.startswith('3:snow') for s in seen),f'rain in spring, snow in winter ({sorted(seen)})')
     ok(not any(s.endswith(':snow') and not s.startswith('3') for s in seen),'snow only falls in winter')
     ok(sum(1 for s in seen if s.endswith(':clear'))>=3,'fair weather between events')
