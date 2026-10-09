@@ -5,6 +5,32 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.6] — 2026-10-09
+
+**Daily contracts** — three local-day jobs at the new Contract Office, with streaks, a courier van and an Orders tab.
+
+### Added
+- **Daily contracts**: once the Sawmill is running and you have earned ~🪙500, each local calendar day offers **exactly 3 contracts** (Easy / Standard / Hard).
+  Deliver amount A of resource R within duration D for coin rewards (Hard ones can also grant a Seed or a short VIP Rush).
+  Amounts and rewards scale from current production (same idea as client orders). Mix of common goods plus premium/tech goods when you make them.
+- **Up to 2 concurrent** active contracts. Declining frees that day's slot with **no replacement**.
+- **Priority fill**: active dailies take surplus plus ≥65 % of that item's output; **Deliver from storage** fills the rest.
+- **Streak**: consecutive local days with ≥1 complete. Bonuses while the streak is active: day 3 → +8 %, day 7 → +15 %, day 14 → +25 % contract rewards.
+  A single timeout does not break the streak; ending a day with zero completes does.
+- **Contract Office / Notice Board** between the Furniture Factory and the Shipping dock: wooden porch, cork board with fluttering papers, night lamp, winter snow on the roof. Tap it to open the Daily tab.
+- On complete: toast + confetti and a realistic **courier van** (box truck) loads at the office then drives onto the highway off-screen.
+- Orders sheet tabs: **📅 Daily | 📋 Clients**. Defaults to Daily when new offers await. Streak badge, progress cards, history. Notification dot on Orders when a daily offer is waiting. Optional HUD chip while a daily is active.
+- Trophies: On the Clock, Three-Day Grind, Week Warrior, Contract Ace.
+- `test/v26.py` (60 checks). Screenshots: `screenshot-daily.png`, `screenshot-daily-office.png`, `screenshot-mobile-daily.png`.
+
+### Changed
+- Save version 2.6. v2.5 saves migrate automatically: daily state starts empty; everything else is kept.
+- **Replant** keeps streak / best streak / total completes; clears today's offers and actives.
+- Offline: contracts keep filling from production and timers advance with the existing offline cap (no unfair extra expiry).
+
+### Fixed
+- (none required beyond migration init)
+
 ## [2.5] — 2026-10-08
 
 A **Research Lab** turns paper into Research Points for a 14-node **research tree**. A **harbour and rail station** on the river ships your goods to six cities on a **trade map**.
@@ -289,7 +315,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 
 ### Next ideas
 - Research tree / skill points spent on specialisations
-- Daily contracts (deliver X chairs in Y minutes for a reward)
+- ~~Daily contracts (deliver X chairs in Y minutes for a reward)~~ → shipped in [2.6]
 - Seasonal visuals (autumn/winter forest) and weather in the scene
 - Market cart / delivery truck carrying finished goods off-screen
 - Managers that auto-upgrade a building to its next milestone
@@ -314,7 +340,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 ### Next ideas
 - Worker carriers walking logs between buildings in the scene (Lumber Inc. style)
 - Research tree / skill points spent on specialisations
-- Daily contracts (deliver X chairs in Y minutes for a reward)
+- ~~Daily contracts (deliver X chairs in Y minutes for a reward)~~ → shipped in [2.6]
 - Seasonal visuals (autumn/winter forest) and weather in the scene
 - Building-level milestones (×2 speed at levels 25/50/100)
 
@@ -361,3 +387,5 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 [1.2]: ./releases/timber-tycoon-v1.2.html
 [1.1]: ./releases/timber-tycoon-v1.1.html
 [1.0]: ./releases/timber-tycoon-v1.0.html
+
+[2.6]: ./releases/timber-tycoon-v2.6.html

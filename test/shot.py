@@ -2,6 +2,7 @@
 # v2.3: night, winter, autumn, rain (every shot pins the world clock + weather so results are deterministic)
 # v2.4: fire + fire brigade, managers panel (desktop + mobile)
 # v2.5: research tree, trade map, harbour (ship + train), R&D campus, mobile research
+# v2.6: daily contracts sheet, contract office, mobile daily
 import sys
 from playwright.sync_api import sync_playwright
 URL='file:///workspace/lumber-idle/lumber-idle.html'
@@ -34,13 +35,16 @@ with sync_playwright() as p:
         ('screenshot-harbour.png', {'width':1280,'height':800}, 2400, '@harbour'),
         ('screenshot-campus.png', {'width':1280,'height':800}, 2400, '@campus'),
         ('screenshot-mobile-research.png', {'width':430,'height':900}, 2400, '@mres'),
+        ('screenshot-daily.png', {'width':1280,'height':800}, 2400, '@daily'),
+        ('screenshot-daily-office.png', {'width':1280,'height':800}, 2400, '@office'),
+        ('screenshot-mobile-daily.png', {'width':430,'height':900}, 2400, '@mdaily'),
     ]
     D=420
     # (clock seconds, weather) per shot; default = spring, late morning, fair
     WORLD={'@night':(D*.93,'clear'),'@mnight':(D*.95,'snow',9),'@winter':(D*9+D*.46,'snow'),'@autumn':(D*6+D*.715,'wind'),'@rain':(D*1+D*.56,'rain'),'@firenight':(D*.95,'clear')}
     def world(pg,sheet):
         c,w=WORLD.get(sheet,(D*.45,'clear'))[:2]; extra=WORLD.get(sheet,(0,0,0))[2] if len(WORLD.get(sheet,()))>2 else 0
-        pg.evaluate(f"(()=>{{TT.setClock({c+extra*D});TT.setWeather('{w}',900);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']=1;TT.scene.wet={1 if w=='rain' else 0};if('{sheet}' in {{'@night':1,'@winter':1,'@autumn':1,'@rain':1,'@mnight':1,'@research':1,'@trade':1,'@harbour':1,'@campus':1,'@mres':1}}){{TT.S.orders.active=null;TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;TT.scene.orderEv=null;}}if(!'{sheet}'.startsWith('@fire')){{TT.S.fires={{}};TT.S.fireCool=TT.S.time+9999;}}}})()")
+        pg.evaluate(f"(()=>{{TT.setClock({c+extra*D});TT.setWeather('{w}',900);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']=1;TT.scene.wet={1 if w=='rain' else 0};if('{sheet}' in {{'@night':1,'@winter':1,'@autumn':1,'@rain':1,'@mnight':1,'@research':1,'@trade':1,'@harbour':1,'@campus':1,'@mres':1,'@daily':1,'@office':1,'@mdaily':1}}){{TT.S.orders.active=null;TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;TT.scene.orderEv=null;}}if(!'{sheet}'.startsWith('@fire')){{TT.S.fires={{}};TT.S.fireCool=TT.S.time+9999;}}}})()")
     FOCUS={
       # zoom on the top forest work zone, centred on the axe/saw crew there
       '@forest':'''(()=>{const fp=TT.forestPeople().filter(q=>q.i+q.j<3&&q.type!=='crew');let i=-1,j=2;if(fp.length){i=fp.reduce((a,q)=>a+q.i,0)/fp.length;j=fp.reduce((a,q)=>a+q.j,0)/fp.length;}
@@ -82,6 +86,14 @@ with sync_playwright() as p:
     FOCUS['@trade']='''(()=>{TT.openTrade();})()'''
     FOCUS['@harbour']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.7;const p=TT.P(36.4,15.7,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
     FOCUS['@campus']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=2.1;const p=TT.P(16.9,1.1,8);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
+
+    DAILY_SETUP='''(()=>{const c0=TT.S.coins;TT.S.coins=1e30;TT.S.totalEarned=Math.max(TT.S.totalEarned,5000);
+      TT.S.daily={day:TT.dayKey(),offers:[],active:[],doneToday:1,streak:5,bestStreak:5,total:12,hist:[{item:"chairs",amt:40,reward:900,diff:"std",e:"🟡",ok:true,day:TT.dayKey()}],failedToday:0,_made:false};
+      TT.makeDailyOffers();const id=TT.S.daily.offers[0].id;TT.acceptDaily(id);
+      const a=TT.S.daily.active[0];a.got=a.amt*.45;TT.S.coins=c0;})()'''
+    FOCUS['@daily']='''(()=>{TT.openDaily();})()'''
+    FOCUS['@mdaily']=FOCUS['@daily']
+    FOCUS['@office']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.85;const p=TT.P(24.2,24.5,8);c.x=c.tx=p[0];c.y=c.ty=p[1];TT.closeSheet();})()'''
     import os
     ONLY=[x for x in os.environ.get('ONLY','').split(',') if x]
     for name,vp,sec,sheet in jobs:
@@ -104,6 +116,8 @@ with sync_playwright() as p:
             pg.evaluate("TT.S.orders.offer.expires=TT.S.time+70")
         if sheet in ('@fire','@firenight','@staff','@mstaff'): pg.evaluate(MGR_SETUP); pg.wait_for_timeout(600)
         if sheet in ('@research','@trade','@harbour','@campus','@mres'): pg.evaluate(TECH_SETUP); pg.wait_for_timeout(2500)
+        if sheet in ('@daily','@office','@mdaily'): pg.evaluate(DAILY_SETUP); pg.wait_for_timeout(800)
+        if sheet=='@office': pg.evaluate('TT.closeSheet()')
         if sheet in ('@research','@mres'): pg.evaluate("TT.closeSheet()")
         if sheet=='@trade': pg.evaluate("(()=>{const v=TT.S.trade.fleet.find(v=>v.city==='dxb');if(v){v.state='out';v.t=v.trip*.3;}})()")
         if sheet in ('@fire','@firenight'):
