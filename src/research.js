@@ -16,6 +16,7 @@ const RNODES=[
   {id:'boats',   name:'Boat Yard',       icon:'⛵',col:4,row:2,rp:3000,req:['toys'],            d:'Unlocks the Boat Yard at the harbour (plywood + planks + glue → boats)',unlock:'boatyard'},
   {id:'labx',    name:'Lab Robotics',    icon:'🦾',col:4,row:4,rp:2500,req:['logistics','drying'],d:'Research Lab +50 % RP',fx:m=>{m.lab*=1.5;}},
   {id:'master',  name:'Masterworks',     icon:'🏆',col:5,row:2,rp:12000,seeds:10,req:['automation','boats'],d:'Plywood, toys, boats & luxury goods sell +25 %',fx:m=>{for(const k of ['plywood','toys','boats','luxfurn','cabinets']) m.price[k]*=1.25;}},
+  {id:'genetics',name:'Tree Genetics',  icon:'🧬',col:5,row:4,rp:3500,req:['labx'],          d:'Saplings grow 30 % faster and every grown tree yields +20 % logs',fx:m=>{m.grow*=1.3;m.yield*=1.2;}},
 ];
 const RNMAP={}; RNODES.forEach(n=>RNMAP[n.id]=n);
 const TECH_UNLOCK={}; RNODES.forEach(n=>{if(n.unlock) TECH_UNLOCK[n.unlock]=n.id;});

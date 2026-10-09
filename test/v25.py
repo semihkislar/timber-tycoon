@@ -28,7 +28,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=E(pg,'TT.S')
-    ok(S['version']=='2.5','v2.4 save migrated to 2.5')
+    ok(float(S['version'])>=2.5,'v2.4 save migrated to 2.5+')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==4,'collectors, buildings, golden kept')
     ok(S['mgr']=={'sawmill':3} and S['station']['lvl']==2,'v2.4 managers + fire station kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.02,'coins kept')
@@ -130,7 +130,7 @@ with sync_playwright() as p:
     # --- UI: R&D sheet ---
     E(pg,"TT.openResearch()"); pg.wait_for_timeout(400)
     ok(E(pg,"TT.curSheet")=='rnd','R&D sheet opens')
-    ok(E(pg,"document.querySelectorAll('#rndRes .rn').length")==14,'research tree shows 14 nodes')
+    ok(E(pg,"document.querySelectorAll('#rndRes .rn').length")>=14,'research tree shows all nodes')
     ok(E(pg,"document.querySelectorAll('#rndRes .rn.done').length")==E(pg,"Object.keys(TT.S.research).length"),'done nodes marked')
     ok(E(pg,"document.querySelectorAll('#rndRes path.re').length")>=15,'tree edges drawn')
     E(pg,"TT.S.rp=1e6"); pg.wait_for_timeout(100)

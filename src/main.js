@@ -14,10 +14,10 @@ function render(){
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
 }
-function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';M=computeMods();render();}
+function rebuildAll(){cSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -45,6 +45,7 @@ function setupUI(){
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
   setupPremiumUI(); setupWx(); setupRndUI();
+  $('forestChip').onclick=()=>{if(curSheet==='crew') closeSheet(); else openSheet('crew');};
   updateMuteBtn();
 }
 function dockSale(v){scene.earnAcc+=0;const p=P(DOCK.ci+.4,DOCK.cj+.2,74);scene.floats.push({x:p[0],y:p[1]-14,text:'+'+fmt(v),coin:true,t:0,dur:1.4,big:true});scene.lastEarned=S.totalEarned;}
@@ -64,7 +65,8 @@ function loop(){
 function welcomeBack(elapsed,r){
   const capped=elapsed>OFFLINE_CAP;
   const lines=RES.filter(x=>r.p[x.id]>0.5).map(x=>`<div>${x.icon} ${x.name} produced</div><div>${fmt(r.p[x.id])}</div>`).join('');
-  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.
+  const pl=r.planted>0.5?`<br>🌱 Your planters put <b>${fmt(r.planted)}</b> saplings in the ground; the forest now stands at <b>${Math.round((1-S.forest.st/forestPlots())*100)}%</b> covered.`:'';
+  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}
     ${lines?`<div class="gainlist">${lines}</div>`:''}`,[{label:'Back to work!',cls:'gold'}]);
 }
 function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yardSigV='';scene._fsig='';scene.lastEarned=S.totalEarned;}
@@ -95,7 +97,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   forestScreen:()=>{const [tb,bb]=barH();for(let y=tb+60;y<scene.h-bb-40;y+=23) for(let x=40;x<scene.w-40;x+=29){const h=hitTest(x,y);if(h.type==='forest'&&!(golden.cur&&Math.hypot(x-golden.cur.x,y-golden.cur.y)<80)) return [x,y];} return null;},
   // v2.1 entity helpers
   LANDINGS,
-  forestPeople:()=>{const [tb,bb]=barH();const all=[...scene.jacks,...(scene.foreman?[scene.foreman]:[]),...(scene.planter?[scene.planter]:[])];
+  forestPeople:()=>{const [tb,bb]=barH();const all=[...scene.jacks,...(scene.foreman?[scene.foreman]:[]),...(scene.planters||[])];
     return all.map(p=>{const q=P(p.i,p.j);const s=w2s(q[0],q[1]);return {st:p.st,type:p.type||'crew',pose:p.pose,i:p.i,j:p.j,sx:s[0],sy:s[1],vis:s[0]>8&&s[0]<scene.w-8&&s[1]>tb+20&&s[1]<scene.h-bb-4};});},
   vehicles:()=>({log:scene.logTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,done:!!v.done,i:v.i,j:v.j,yaw:v.yaw})),dock:scene.dockTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,i:v.i,j:v.j,yaw:v.yaw})),forklifts:scene.forklifts.length,harvesters:scene.harvesters.length}),
   // v2.2 premium / orders / storage helpers
@@ -105,9 +107,14 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   DAY_LEN,SEASON_DAYS,SEASONS,WEATHER,dayPhase,dayNum,seasonIdx,weatherId,setWeather,setClock,clockStr,dayState,isNight,
   // v2.5 research / trade helpers
   RNODES,CITIES,CMAP,bldUnlocked,freeSlot,harborAvail,labBuilt,nodeAvail,openResearch,openTrade,vesselPose,hasRes,doResearch,canResearch,labRP,buyHarbor,openRoute,dispatch,departNow,harborLvl,harborCost,routeOpen,tradeMult,tradeGoods,campusOpen,harborOpen,HOME,
+  // v2.6 daily contracts
+  dailyOpen,makeDailyOffers,acceptDaily,declineDaily,deliverDaily,makeDailyContract,dayKey,streakMult,openDaily,dailyAwaiting,dailyActiveN,DAILY_MAX_ACTIVE,DAILY_DIFFS,OFFICE,spawnCourierVan,get ordTab(){return ordTab;},set ordTab(v){ordTab=v;},
+
   // v2.4 managers / fire helpers
   MANAGERS,RARITY,SKILLS,portraitSVG,mgrLvl,hireMgr,levelMgr,mgrHireCost,mgrUpCost,mgrSpd,mgrIn,mgrOut,mgrSto,mgrOrders,startFire,tapFire,fireRisk,buyStation,stationCost,stationLvl,onFire,STATION,
   fireScreen:bid=>{const L=LOTS[bid];return L.top?w2s(L.top[0],L.top[1]):null;},stationScreen:()=>{const p=P(STATION.ci,STATION.cj,12);return w2s(p[0],p[1]);},
+  // v2.7 forest / planting crew helpers
+  PLANTERS,PMAP,buyPlanter,plCost,plRate,plantCap,fellDemand,forestPlots,forestEff,growMult,logRatePot:()=>{M=computeMods();return logRatePot();},forestState,FELL,FOREST_BASE,LAND_PER,planterPeople:()=>scene.planters||[],forestScreenAt:(i,j)=>{const p=P(i,j);return w2s(p[0],p[1]);},
   get cam(){return scene.cam;}};
 init();
 })();

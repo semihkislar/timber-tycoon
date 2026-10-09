@@ -55,10 +55,11 @@ function setupInput(){
   cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,scene.cam.z*Math.exp(-e.deltaY*.0016));},{passive:false});
   window.addEventListener('keydown',e=>{if(e.key==='Escape') closeSheet();});
 }
-function updateHover(x,y){const h=hitTest(x,y);const on=h.type!=='none'||(golden.cur&&Math.hypot(x-golden.cur.x,y-golden.cur.y)<Math.max(30,goldenSize()*2));
-  scene.hover=h.type==='bld'||h.type==='yard'||h.type==='dock'?h.id:null; scene.canvas.classList.toggle('pointer',!!on);}
+function updateHover(x,y){const h=hitTest(x,y);const on=h.type!=='none'||h.type==='office'||(golden.cur&&Math.hypot(x-golden.cur.x,y-golden.cur.y)<Math.max(30,goldenSize()*2));
+  scene.hover=h.type==='bld'||h.type==='yard'||h.type==='dock'?h.id:(h.type==='office'?'office':null); scene.canvas.classList.toggle('pointer',!!on);}
 function hitTest(sx,sy){
   const [wx,wy]=s2w(sx,sy);
+  if(OFFICE.hit&&pip(OFFICE.hit,wx,wy)) return {type:'office'};
   let best=null;
   for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.prem&&!S.premium.lvl) continue;if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
   if(best) return {type:best.id==='yard'?'yard':best.id==='dock'?'dock':'bld',id:best.id};
@@ -84,6 +85,7 @@ function sceneTap(sx,sy){
   else if(h.type==='dock') openSheet('market');
   else if(h.type==='prem') openSheet('prem');
   else if(h.type==='station') openSheet('staff');
+  else if(h.type==='office') openDaily();
   else if(h.type==='campus') openResearch();
   else if(h.type==='harbor') openTrade();
   else if(h.type==='forest') forestChop(sx,sy);
@@ -133,7 +135,7 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   const c=scene.cam, k=1-Math.exp(-dt*9);
   if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;}
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); techVisTick(); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -162,7 +164,7 @@ function drawScene(dt){
   const hp=(p,o)=>{const [x,y]=P(p.i,p.j);if(!inView(x,y,40)) return;objs.push({k:p.i+p.j+.01,f:()=>human(ctx,x,y,Object.assign({look:p.look,fx:p.fx,back:p.back,pose:p.pose,ph:p.ph,t:p.wt},o||{}))});};
   for(const p of scene.jacks) hp(p);
   if(scene.foreman) hp(scene.foreman);
-  if(scene.planter) hp(scene.planter,{t:scene.planter.pt||0});
+  for(const p of scene.planters||[]) hp(p,{t:p.wt});
   // log landings (piles grow as crews deliver)
   for(const k in LANDINGS){const lg=LANDINGS[k];const [x,y]=P(lg.i,lg.j);if(!inView(x,y,60)) continue;objs.push({k:lg.i+lg.j,f:()=>drawLanding(ctx,lg)});}
   // tea break by the campfire
@@ -184,7 +186,7 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView);
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView);
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
@@ -203,6 +205,7 @@ function drawScene(dt){
     if(Math.random()<dt*2){emitP(x,y-40,'spark');}}
   for(const h of scene.helis){const T=16,tt=(h.ph%T)/T;const A=P(-14,-1),B=P(3.2,3.6);let e,carry;if(tt<.5){e=tt*2;carry=true;}else{e=1-(tt-.5)*2;carry=false;}const s=e*e*(3-2*e);
     const x=A[0]+(B[0]-A[0])*s,y=A[1]+(B[1]-A[1])*s;heli(ctx,x,y,74,h.ph,carry);}
+  forestAir(ctx,dt);
   // smoke & particles (world space)
   for(const s of scene.smoke){const k2=s.life/s.max,r=s.kind==='exh'?1.6+k2*6:3+k2*11;const a=(1-k2)*(s.kind==='dark'?.55:s.kind==='grey'?.42:.5);
     ctx.fillStyle=s.kind==='dark'?`rgba(70,64,60,${a})`:s.kind==='grey'||s.kind==='exh'?`rgba(140,138,135,${s.kind==='exh'?a*.75:a})`:`rgba(250,250,248,${a})`;ctx.beginPath();ctx.arc(s.x,s.y,r,0,TAU);ctx.fill();}
@@ -219,7 +222,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){

@@ -159,6 +159,7 @@ function isForestPt(i,j){
   if(Math.abs(v)<=13&&u>=1&&u<=58.5) return false;
   if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
   if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;
+  if(i>=6.2&&i<10.6&&j>=-8.4&&j<-4.4) return false;   // v2.7: tree-nursery clearing
   if(i>=32&&j>=16.8&&j<20.4) return false;
   return true;
 }

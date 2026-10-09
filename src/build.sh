@@ -4,5 +4,5 @@
 set -e
 D="$(cd "$(dirname "$0")" && pwd)"
 cd "$D"
-cat head.html logic_a.js logic_b.js ui.js premium.js world.js staff.js research.js scene1.js scene2.js scene3.js scene4.js scene5.js scene6.js scene7.js scene8.js scene9.js scene10.js main.js > ../lumber-idle.html
+cat head.html logic_a.js logic_b.js ui.js premium.js world.js staff.js research.js forest.js scene1.js scene2.js scene3.js scene4.js scene5.js scene6.js scene7.js scene8.js scene9.js scene10.js scene11.js main.js > ../lumber-idle.html
 wc -c ../lumber-idle.html

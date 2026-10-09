@@ -68,6 +68,7 @@ with sync_playwright() as p:
     pg.click('#shClose'); pg.wait_for_timeout(200)
     tap_lot(pg,'dock'); ok(pg.evaluate('TT.curSheet')=='market','dock tap opens market')
     pg.wait_for_timeout(200); ok(pg.locator('#mktBody tr').count()>=5,'market rows rendered')
+    pg.click('#shClose'); pg.wait_for_timeout(200); pg.evaluate('(()=>{const c=TT.cam,p=TT.P(TT.YARD.ci,TT.YARD.cj,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'); pg.wait_for_timeout(150)  # v2.7: the yard can sit under the HUD chips after a sheet pans the camera
     tap_lot(pg,'yard'); ok(pg.evaluate('TT.curSheet') in ('crew',None),'yard tap handled')
     # events
     for e in ['hotel','storm','termites','boom','acorn']: pg.evaluate(f'TT.triggerEvent("{e}")')

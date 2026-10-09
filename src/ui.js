@@ -21,7 +21,7 @@ const SHEETS={
   ach:{title:'Trophies',icon:'ach'},
   co:{title:'Replant & Stats',icon:'co'},
   set:{title:'Settings',icon:'set'},
-  ord:{title:'Client Orders',icon:'ord'},
+  ord:{title:'Orders',icon:'ord'},
   prem:{title:'Premium Factory Area',icon:'prem'},
   staff:{title:'Managers & Fire Station',icon:'staff'},
   rnd:{title:'Research & Trade',icon:'rnd'},
@@ -30,13 +30,14 @@ function openSheet(name,arg){
   const prev=curSheet;
   if(prev==='ach'&&name!=='ach') achFresh={};
   curSheet=name; sheetBld=name==='bld'?arg:null;
+  if(name==='ord'&&dailyAwaiting()&&!S.orders.offer&&!S.orders.active) ordTab='daily';
   Object.keys(SHEETS).forEach(k=>$('pane-'+k).classList.toggle('hidden',k!==name));
   const sh=$('sheet'); sh.dataset.s=name; sh.classList.add('open'); document.body.classList.add('sheet-on'); sh.setAttribute('aria-hidden','false');
   if(name==='bld'){ const b=BMAP[arg]; $('shTitle').textContent=b.name; $('shIc').innerHTML=svgIcon(b.svg,30); }
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
-  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; premSig=''; staffSig=''; resSig=''; tradeSig='';
+  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; dailySig=''; premSig=''; staffSig=''; resSig=''; tradeSig='';
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
   if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
@@ -209,7 +210,7 @@ function updateUpgrades(){
 let treeSig='';
 function updateTrees(){
   const nx=TREES[S.tree+1];
-  $('crewDot').classList.toggle('hidden',!(nx&&S.coins>=nx.cost)||curSheet==='crew');
+  $('crewDot').classList.toggle('hidden',!((nx&&S.coins>=nx.cost)||forestNeedsCrew())||curSheet==='crew');
   if(curSheet!=='crew') return;
   const sig=S.tree+'|'+TREES.map(t=>S.totalEarned>=t.cost*0.2?1:0).join('');
   if(sig!==treeSig){treeSig=sig;const L=$('treeList');L.innerHTML='';

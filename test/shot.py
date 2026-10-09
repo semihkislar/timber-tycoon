@@ -3,6 +3,7 @@
 # v2.4: fire + fire brigade, managers panel (desktop + mobile)
 # v2.5: research tree, trade map, harbour (ship + train), R&D campus, mobile research
 # v2.6: daily contracts sheet, contract office, mobile daily
+# v2.7: planting crew among saplings/stumps + nursery greenhouse, depleted forest with warning
 import sys
 from playwright.sync_api import sync_playwright
 URL='file:///workspace/lumber-idle/lumber-idle.html'
@@ -38,6 +39,8 @@ with sync_playwright() as p:
         ('screenshot-daily.png', {'width':1280,'height':800}, 2400, '@daily'),
         ('screenshot-daily-office.png', {'width':1280,'height':800}, 2400, '@office'),
         ('screenshot-mobile-daily.png', {'width':430,'height':900}, 2400, '@mdaily'),
+        ('screenshot-planters.png', {'width':1280,'height':800}, 2400, '@planters'),
+        ('screenshot-depleted.png', {'width':1280,'height':800}, 1500, '@depleted'),
     ]
     D=420
     # (clock seconds, weather) per shot; default = spring, late morning, fair
@@ -93,6 +96,8 @@ with sync_playwright() as p:
       const a=TT.S.daily.active[0];a.got=a.amt*.45;TT.S.coins=c0;})()'''
     FOCUS['@daily']='''(()=>{TT.openDaily();})()'''
     FOCUS['@mdaily']=FOCUS['@daily']
+    FOCUS['@planters']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=2.3;const p=TT.P(4.9,-4.5,6);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
+    FOCUS['@depleted']='''(()=>{const c=TT.cam;c.z=c.tz=Math.min(c.maxZ,c.fitZ*1.5);const p=TT.P(3,-1.5,0);c.x=c.tx=p[0];c.y=c.ty=p[1]+40;})()'''
     FOCUS['@office']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.85;const p=TT.P(24.2,24.5,8);c.x=c.tx=p[0];c.y=c.ty=p[1];TT.closeSheet();})()'''
     import os
     ONLY=[x for x in os.environ.get('ONLY','').split(',') if x]
@@ -118,6 +123,15 @@ with sync_playwright() as p:
         if sheet in ('@research','@trade','@harbour','@campus','@mres'): pg.evaluate(TECH_SETUP); pg.wait_for_timeout(2500)
         if sheet in ('@daily','@office','@mdaily'): pg.evaluate(DAILY_SETUP); pg.wait_for_timeout(800)
         if sheet=='@office': pg.evaluate('TT.closeSheet()')
+        if sheet=='@planters':
+            pg.evaluate('''(()=>{const c0=TT.S.coins;TT.S.coins=1e30;const need={planter:4,team:3,nursery:1,sdrone:2};for(const k in need) if((TT.S.planters[k]||0)<need[k]) TT.buyPlanter(k,need[k]-(TT.S.planters[k]||0));TT.S.coins=c0;
+              let n=0;for(const t of TT.scene.dynTrees){const u=t.i+t.j,v=t.i-t.j;if(u<1&&v>2.5&&v<10.5){const r=(n++)%4;if(r===0){t.stump=1;t.grow=1;t.planted=false;}else if(r===1){t.stump=0;t.grow=.12+((n*37)%10)/40;}else if(r===2){t.stump=0;t.grow=.45+((n*13)%10)/22;}}}
+              const st=TT.scene.dynTrees.filter(t=>t.stump>0&&t.i-t.j>5);TT.planterPeople().forEach((p,k)=>{if(p.kind==='nursery') return;const t=st[(k*2)%Math.max(1,st.length)];if(t){p.i=t.i-.9;p.j=t.j+.3;}p.st='find';p.tm=0;});})()''')
+            pg.wait_for_timeout(4200); pg.evaluate(CLEAN)
+        if sheet=='@depleted':
+            pg.evaluate('''(()=>{const F=TT.S.forest;F.st+=F.m+F.y+F.s-3;F.m=1;F.y=1;F.s=1;F.warn=0;TT.S.planters={planter:0,team:0,nursery:0,sdrone:0};TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;
+              let n=0;for(const t of TT.scene.dynTrees){if(t.claim) continue;if((n++)%11){t.stump=1;t.grow=1;t.planted=false;}else{t.stump=0;t.grow=.16;}}})()''')
+            pg.wait_for_timeout(1600)
         if sheet in ('@research','@mres'): pg.evaluate("TT.closeSheet()")
         if sheet=='@trade': pg.evaluate("(()=>{const v=TT.S.trade.fleet.find(v=>v.city==='dxb');if(v){v.state='out';v.t=v.trip*.3;}})()")
         if sheet in ('@fire','@firenight'):
@@ -142,6 +156,7 @@ with sync_playwright() as p:
             pt=pg.evaluate(f'TT.lotScreen("{sheet}")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(900)
         else: pg.wait_for_timeout(700)
         pg.evaluate(CLEAN); world(pg,sheet); pg.wait_for_timeout(1200 if sheet in WORLD else 50); pg.evaluate(CLEAN)
+        if sheet=='@depleted': pg.evaluate('TT.S.forest.warn=0'); pg.wait_for_timeout(900)
         if sheet in ('@fire','@firenight'): pg.evaluate("TT.S.fires.kiln.hp=12;TT.tapFire('kiln');TT.tapFire('kiln')"); pg.wait_for_timeout(250)
         pg.screenshot(path=OUT+name)
         print(name, pg.evaluate('JSON.stringify({c:Math.round(TT.S.coins),tree:TT.S.tree,sheet:TT.curSheet,b:Object.fromEntries(Object.entries(TT.S.buildings).map(([k,v])=>[k,v.lvl]))})'))

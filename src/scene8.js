@@ -82,6 +82,8 @@ function collectLights(){
   for(const f of scene.forklifts) vehLights(out,f,.55,null,true);
   if(scene.pfork) vehLights(out,scene.pfork,.55,null,true);
   staffLights(out); techLights(out);
+  if(OFFICE.top){const [x,y]=P(OFFICE.ci,OFFICE.cj+0.4,0);out.push({x,y,rx:40,ry:20,c:'warm',a:.7});const [lx,ly]=P(OFFICE.ci,OFFICE.cj+.5,20);out.push({x:lx,y:ly-7,rx:12,ry:12,c:'warm',a:.9,core:1});}
+  for(const v of scene.couriers||[]) vehLights(out,v,1.62,-1.64);
   return out;
 }
 /* ---------- lighting pass: half-res light map, multiplied over the world ---------- */

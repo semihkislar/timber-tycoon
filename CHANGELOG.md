@@ -5,6 +5,37 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.7] — 2026-10-09
+
+**Planting crew**: the forest is now a resource. Loggers use up grown trees, and you hire planters to put saplings back on the stumps.
+
+### Added
+- **Forest stock**: the logging forest has a fixed number of plots, each holding a grown tree, a young tree, a sapling or a stump. Every collector fells grown trees in proportion to its count (lumberjacks least, helicopters most). Manual chopping takes a little too.
+  - Full log output while at least ~10 s of felling stands grown. Below that, output falls with the stock. At 0 only what matures gets cut, plus a very slow natural regrowth (a small trickle).
+  - Growth: sapling → young → grown (~30 s + ~40 s at base). **Spring ×1.5, summer ×1.1, autumn ×0.85, winter ×0.6.**
+- **Planting crew** (new section in the Crew sheet, own cost scaling ×1.15):
+  🧑‍🌾 **Planter** (0.1 saplings/s, 🪙60; **the first one is free**), 👩‍🌾 **Planting Team** (0.8/s, 🪙15K), 🏡 **Tree Nursery** greenhouse (6/s, 🪙1.5M), 🛸 **Seed Drone** (45/s, 🪙120M).
+  Each hire also adds forest land (+90 plots per sapling/s), which is planted straight away.
+- **Upgrades**: ⛏️ Steel Spades (Planters & Teams ×2), 🌾 Fertilizer (growth +50 %), 🌲 Elite Saplings (+50 % logs per tree), 💧 Drip Irrigation (growth +50 %).
+- **Research**: 🧬 Tree Genetics (after the Experimental Lab): saplings grow 30 % faster and each tree yields +20 % logs.
+- **Forest HUD chip**: cover bar plus the grown-tree count. It turns amber when thinning and pulses red when depleted. Tapping it opens Crew.
+  A forest card in the Crew sheet shows the grown / young / sapling / stump bar, felling vs planting rates, the growth multiplier with the season, and log output %.
+- **Depletion warnings**: a toast and an in-world bubble say "Forest depleted, hire planters!". The Crew button gets a dot when you can afford a planter.
+- **Scene**: the logging zones mirror the stock. Felled trees stay as stumps until planted.
+  Planters (varied looks, sapling bag) walk to a stump, **dig** with a spade (dirt flies), set the sapling, **water** it and move on. Team members wear orange/yellow vests.
+  Saplings grow in place through visible stages. The **Tree Nursery** greenhouse has glass panels, white mullions, benches of seedlings, seed beds, a gardener, and a warm glow at night.
+  **Seed drones** circle over the forest dropping seed pods. Entity caps: ≤ 2 planters + 4 team members + 1 gardener, ≤ 2 drones.
+- Trophies: 🌱 **Green Thumb** (plant 1,000 saplings), 🌳 **Reforestation** (plant 100,000).
+- `test/v27.py` (60+ checks). Screenshots: `screenshot-planters.png`, `screenshot-depleted.png`.
+
+### Changed
+- Save version 2.7. **v2.6 saves migrate with a full forest** and a free planting crew sized to cover the loggers they already own, so nobody loads into a depleted forest.
+- **Replant** resets the forest to full and the crew to one free planter. Lifetime saplings planted (trophies) are kept.
+- Offline progress simulates felling, planting and growth. The welcome-back card reports saplings planted and forest cover.
+- Balance bot buys planters when depletion looms. Over 10 one-hour runs it stays within roughly ±15 % of v2.6 at most checkpoints (see README / report).
+- The old single cosmetic planter is replaced by the real planting crew.
+- Mobile: compact forest chip. Golden logs now spawn below the HUD sub-bar.
+
 ## [2.6] — 2026-10-09
 
 **Daily contracts** — three local-day jobs at the new Contract Office, with streaks, a courier van and an Orders tab.

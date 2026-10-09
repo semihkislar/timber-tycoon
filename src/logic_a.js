@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const VERSION='2.5';
+const VERSION='2.7';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -105,7 +105,7 @@ const TREES=[
   {name:'Mahogany',icon:'🌳',mult:3,cost:1.5e7,flt:'hue-rotate(-50deg) saturate(1.6) brightness(.8)',color:'#5a2010',color2:'#8a3020'},
   {name:'Ebony',icon:'🌲',mult:5,cost:4e8,flt:'brightness(.35) contrast(1.3)',color:'#1a1a1a',color2:'#2a2a2a'},
 ];
-const bl=id=>S.buildings[id].lvl, cn=id=>S.collectors[id];
+const bl=id=>S.buildings[id].lvl, cn=id=>S.collectors[id], pn=id=>(S.planters&&S.planters[id])||0;
 const UPGRADES=[
   {id:'sharp',icon:'🪓',name:'Sharper Axes',desc:'Chopping ×2',cost:40,req:()=>true,apply:m=>m.chop*=2},
   {id:'steel',icon:'⚒️',name:'Steel Axes',desc:'Lumberjacks ×2',cost:400,req:()=>cn('lumberjack')>=5,apply:m=>m.col.lumberjack*=2},
@@ -130,6 +130,11 @@ const UPGRADES=[
   {id:'rotors',icon:'🌀',name:'Twin Rotors',desc:'Sky-Cranes ×2',cost:300000000,req:()=>cn('heli')>=5,apply:m=>m.col.heli*=2},
   // v2.4 fire safety
   {id:'alarm',icon:'🚨',name:'Smoke Detectors',desc:'Fire risk −25%',cost:40000,req:()=>bl('kiln')>=1,apply:m=>m.fire*=.75},
+  // v2.7 forestry
+  {id:'spades',icon:'⛏️',name:'Steel Spades',desc:'Planters & Planting Teams ×2',cost:2500,req:()=>pn('planter')>=5,apply:m=>{m.plantT.planter*=2;m.plantT.team*=2;}},
+  {id:'fert',icon:'🌾',name:'Fertilizer',desc:'Saplings grow 50% faster',cost:12000,req:()=>pn('planter')>=3,apply:m=>m.grow*=1.5},
+  {id:'elite',icon:'🌲',name:'Elite Saplings',desc:'Every grown tree yields 50% more logs',cost:6e5,req:()=>pn('team')>=3,apply:m=>m.yield*=1.5},
+  {id:'irrig',icon:'💧',name:'Drip Irrigation',desc:'Saplings grow 50% faster',cost:3e6,req:()=>pn('nursery')>=1,apply:m=>m.grow*=1.5},
   {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
 ];
 const EVENTS=[
@@ -197,7 +202,13 @@ const ACH=[
   {id:'trade1',t:'bronze',e:'🚢',n:'Bon Voyage',d:'Complete a trade delivery',p:()=>[(S.trade&&S.trade.stats.trips)||0,1]},
   {id:'trade6',t:'gold',e:'🌍',n:'Global Brand',d:'Open all 6 trade routes',p:()=>[Object.keys((S.trade&&S.trade.routes)||{}).length,6]},
   {id:'mgr6',t:'gold',e:'👔',n:'Management Team',d:'Hire 6 managers',p:()=>[Object.keys(S.mgr||{}).length,6]},
+  {id:'plant1k',t:'silver',e:'🌱',n:'Green Thumb',d:'Plant 1,000 saplings',p:()=>[(S.forestLife&&S.forestLife.planted)||0,1000]},
+  {id:'plant100k',t:'gold',e:'🌳',n:'Reforestation',d:'Plant 100,000 saplings',p:()=>[(S.forestLife&&S.forestLife.planted)||0,1e5]},
   {id:'premium',t:'gold',e:'🏛️',n:'Haute Bois',d:'Open the Premium Factory Area',p:()=>[(S.premium&&S.premium.lvl)>0?1:0,1]},
+  {id:'daily1',t:'bronze',e:'📅',n:'On the Clock',d:'Complete a daily contract',p:()=>[(S.daily&&S.daily.total)||0,1]},
+  {id:'daily3',t:'silver',e:'🔥',n:'Three-Day Grind',d:'Reach a 3-day contract streak',p:()=>[(S.daily&&S.daily.bestStreak)||0,3]},
+  {id:'daily7',t:'gold',e:'📆',n:'Week Warrior',d:'Reach a 7-day contract streak',p:()=>[(S.daily&&S.daily.bestStreak)||0,7]},
+  {id:'daily25',t:'gold',e:'📬',n:'Contract Ace',d:'Complete 25 daily contracts',p:()=>[(S.daily&&S.daily.total)||0,25]},
 ];
 
 /* ===================== STATE ===================== */
@@ -208,7 +219,9 @@ function freshState(keep){
     storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
     wx:{clock:126,w:'clear',ends:0,next:201},
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
-    research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0}};
+    research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
+    daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -249,6 +262,15 @@ function migrateSave(o){
   if(typeof o.rp!=='number') o.rp=0;
   if(!o.trade||typeof o.trade!=='object') o.trade={lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0};
   if(!Array.isArray(o.trade.fleet)) o.trade.fleet=[]; if(!o.trade.routes) o.trade.routes={}; if(!o.trade.stats) o.trade.stats={trips:0,earned:0}; if(!o.trade.dem) o.trade.dem={};
+  // v2.5 -> v2.6: daily contracts
+  if(!o.daily||typeof o.daily!=='object') o.daily={day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0};
+  if(!Array.isArray(o.daily.offers)) o.daily.offers=[]; if(!Array.isArray(o.daily.active)) o.daily.active=[]; if(!Array.isArray(o.daily.hist)) o.daily.hist=[];
+  if(typeof o.daily.streak!=='number') o.daily.streak=0; if(typeof o.daily.bestStreak!=='number') o.daily.bestStreak=0;
+  if(typeof o.daily.total!=='number') o.daily.total=0; if(typeof o.daily.doneToday!=='number') o.daily.doneToday=0;
+  if(typeof o.daily.failedToday!=='number') o.daily.failedToday=0;
+  // v2.6 -> v2.7: forest stock + planting crew (full forest; free starter crew sized to the current loggers)
+  if(!o.forest||typeof o.forest!=='object') migrateForest(o);
+  if(!o.forestLife||typeof o.forestLife!=='object') o.forestLife={planted:0};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -265,7 +287,7 @@ function merge(base,obj){
 
 /* ===================== MODIFIERS ===================== */
 function computeMods(){
-  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1};
+  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
   COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1);
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
@@ -279,7 +301,8 @@ function computeMods(){
 }
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
-function logRate(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
+function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
+function logRate(){return logRatePot()*forestEff();}   // v2.7: collectors can only fell grown trees
 function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
@@ -290,6 +313,7 @@ function tick(dt,offline){
   M=computeMods();
   S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
+  forestTick(dt,offline);
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
   const demand={}; RES.forEach(r=>demand[r.id]=0);
   const active=[];
@@ -321,7 +345,7 @@ function tick(dt,offline){
     bstat[b.id]={f,lim:full?null:lim,speed:sp,full};
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
-  orderCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt);
+  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt);
   let earned=0;
   for(const r of RES){
     if(!S.autosell[r.id]) continue;
@@ -340,7 +364,7 @@ function tick(dt,offline){
     for(const r of RES){offlineAcc.p[r.id]+=fl[r.id].p;offlineAcc.s[r.id]+=fl[r.id].s;}
     for(const r of RES) rates[r.id].d=demand[r.id]/dt;
   }
-  orderTick(dt,offline); tradeTick(dt,offline);
+  orderTick(dt,offline); dailyTick(dt,offline); tradeTick(dt,offline);
   S.events=S.events.filter(e=>e.ends>S.time);
   if(offline){ if(S.nextEvent<S.time) S.nextEvent=S.time+60; }
   else if(S.time>=S.nextEvent){ triggerEvent(); S.nextEvent=S.time+90+Math.random()*90; }
@@ -363,7 +387,7 @@ function simulate(sec,step){
   while(t>1e-9){const d=Math.min(step,t);tick(d,false);t-=d;}
 }
 function simulateOffline(sec){
-  offlineAcc={coins:0,p:{},s:{}}; RES.forEach(r=>{offlineAcc.p[r.id]=0;offlineAcc.s[r.id]=0;});
+  offlineAcc={coins:0,p:{},s:{},planted:0}; RES.forEach(r=>{offlineAcc.p[r.id]=0;offlineAcc.s[r.id]=0;});
   const steps=Math.min(Math.ceil(sec),6000), dt=sec/steps;
   for(let i=0;i<steps;i++) tick(dt,true);
   const res=offlineAcc; offlineAcc=null; return res;
@@ -401,7 +425,7 @@ function buyTree(){
   S.coins-=nx.cost; S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
 }
 function chop(){
-  const n=chopPower(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
+  const n=chopPower()*chopForest(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
 }
 function sellAll(id){
   const n=S.res[id]; if(n<=0) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
@@ -413,7 +437,9 @@ function doPrestige(){
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
     firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
-    orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)}};
+    orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
+    daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
+  keep.forestLife=Object.assign({},S.forestLife||{planted:0});
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);

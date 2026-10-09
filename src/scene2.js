@@ -67,6 +67,7 @@ function drawGround(ctx,x0,y0,x1,y1){
   // concrete pads for every lot + yard + dock
   drawPremGround(ctx,x0,y0,x1,y1);
   if(typeof techGround==='function') techGround(ctx);
+  if(typeof forestGround==='function') forestGround(ctx);
   for(const L of [...Object.values(LOTS),YARD,DOCK]){
     if(L.prem||L.tech) continue;
     const {ci,cj}=L; const e=2.15;
@@ -150,12 +151,23 @@ const TREE_PAL=[
   {k:'cone',c:['#20242f','#30374a','#56607e']},
 ];
 const CHERRY={k:'round',cherry:true,c:['#c86a8e','#e891b2','#ffc4d8']};
+function drawSapling(ctx,x,y,t,pal,tier){
+  const g=t.grow, TC=treeColors(pal,t,tier), h=7+g*30, r=2.6+g*10, snowy=SEAS===3;
+  ell(ctx,x,y+.4,4.6+g*4,2+g*1.6,'#6a4a2a'); ell(ctx,x-.6,y-.2,3+g*3,1.2+g*1,'#7d5a34');
+  ctx.fillStyle='#c8a26a';ctx.fillRect(x+2.6,y-h*.9,1,h*.9);ctx.strokeStyle='rgba(240,230,200,.8)';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(x+2.6,y-h*.55);ctx.lineTo(x+.4,y-h*.55);ctx.stroke();
+  ctx.fillStyle='#7a4a26';ctx.fillRect(x-.6,y-h,1.3,h);
+  if(pal.k==='cone'){for(let k=0;k<2;k++){const top=y-h-2-r*.2+k*r*.75,w=r*(.55+k*.25);ctx.fillStyle=k?TC[1]:TC[2];ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x-w,top+r*1.05);ctx.lineTo(x+w,top+r*1.05);ctx.closePath();ctx.fill();
+      ctx.fillStyle=TC[0];ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x+w,top+r*1.05);ctx.lineTo(x+1,top+r*1.05);ctx.closePath();ctx.fill();}
+    if(snowy){ctx.fillStyle='#f4f8fb';ctx.beginPath();ctx.moveTo(x,y-h-2-r*.2);ctx.lineTo(x-r*.35,y-h+r*.3);ctx.lineTo(x+r*.35,y-h+r*.3);ctx.closePath();ctx.fill();}}
+  else{ell(ctx,x+.8,y-h+.6,r*.85,r*.7,TC[0]);ell(ctx,x-.3,y-h,r*.75,r*.62,TC[1]);ell(ctx,x-r*.3,y-h-r*.25,r*.35,r*.3,TC[2]);if(snowy) ell(ctx,x-.3,y-h-r*.45,r*.55,r*.22,'#f4f8fb');}
+}
 function treeShadow(ctx,x,y,s){ctx.fillStyle='rgba(30,50,10,.2)';ctx.beginPath();ctx.ellipse(x+5*s,y+1,13*s,6*s,0,0,TAU);ctx.fill();}
 function drawTree(ctx,x,y,t,tier){
   let pal=TREE_PAL[tier]||TREE_PAL[0]; if(SEAS===0&&t.var<.17) pal=CHERRY; const s=t.s*(t.grow===undefined?1:t.grow);
   if(t.stump>0){ // stump
     ell(ctx,x,y,4.5,2.4,'#7a4a24'); ctx.fillStyle='#8a5a2c';ctx.fillRect(x-4.5,y-4,9,4); ell(ctx,x,y-4,4.5,2.4,'#e0b67a'); ell(ctx,x,y-4,2,1,'#b8864a'); return;
   }
+  if(t.grow!==undefined&&t.grow<.4&&!t.down&&!(t.fall>0)){drawSapling(ctx,x,y,t,pal,tier);return;}   // v2.7: freshly planted sapling
   const fd=t.fdir||(t.var>.5?1:-1);
   if(t.down||t.fall>0){ell(ctx,x,y,4.2*t.s,2.2*t.s,'#7a4a24');ctx.fillStyle='#8a5a2c';ctx.fillRect(x-4.2*t.s,y-3.5*t.s,8.4*t.s,3.5*t.s);ell(ctx,x,y-3.5*t.s,4.2*t.s,2.2*t.s,'#e0b67a');}
   ctx.save(); ctx.translate(x,y);

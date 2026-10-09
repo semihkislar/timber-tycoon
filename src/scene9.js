@@ -129,9 +129,82 @@ function sprayArc(ctx,from,to,t,a){
   for(let k=0;k<5;k++){const ph=(t*2.3+k*.2)%1;ctx.fillStyle=`rgba(200,230,255,${(1-ph)*.8*a})`;ctx.beginPath();ctx.arc(to[0]+(hash2(k,9)-.5)*20*ph,to[1]-6*ph+12*ph*ph,1.4,0,TAU);ctx.fill();}
   if(Math.random()<scene.dtF*5) emitSmoke(to[0]+(Math.random()-.5)*10,to[1]-4,'white');
 }
+
+/* ===================== v2.6 CONTRACT OFFICE + COURIER VAN ===================== */
+// Small notice-board office between the furniture row and the shipping dock.
+const OFFICE={id:'office',ci:24.2,cj:24.5,face:'J'};
+const OFFB={i0:23.35,i1:25.05,j0:23.7,j1:25.3,bs:1.7};
+scene.couriers=[];
+function spawnCourierVan(o){
+  // park by the office, load briefly, then drive onto the highway and off-screen north
+  const park=[25.1,24.9];
+  const legs=[
+    {pa:crPath([[30.35,22.5],[28.4,23.4],[26.4,24.4],[park[0],park[1]]],8),vmax:2.8,hold:(v,dt)=>{v.load=Math.min(1,(v.load||0)+dt*.55);v.doors=Math.min(1,(v.doors||0)+dt*1.4);return v.load<1||v.wait<1.6;}},
+    {pa:crPath([[park[0],park[1]],[26.8,24.2],[28.6,22.8],[30.35,21.2],[30.35,12],[30.35,-26]],10),vmax:3.6}
+  ];
+  scene.couriers.push({kind:'courier',legs,li:0,s:0,v:0,load:0,doors:0,col:'#2f6fb0',box:'#f4f1e8',stripe:'#e8a020',item:o&&o.item,logo:'DAILY CO.'});
+}
+function courierUpdate(dt){
+  for(const tk of scene.couriers){if(tk.li===0){/* loading at office */} if(tk.li===1) tk.doors=Math.max(0,(tk.doors||0)-dt*1.8); stepVeh(tk,dt);}
+  scene.couriers=scene.couriers.filter(t=>!t.done);
+}
+function drawOffice(ctx){
+  const {i0,i1,j0,j1}=OFFB, H=18, t=scene.t;
+  // apron / wooden deck
+  fillP(ctx,[P(i0-.15,j1),P(i1+.15,j1),P(i1+.15,j1+.55),P(i0-.15,j1+.55)],SEAS===3?'#e4e8ea':'#c4b08a');
+  // posts
+  for(const [a,b] of [[i0+.12,j1+.08],[i1-.12,j1+.08],[i0+.12,j0+.12],[i1-.12,j0+.12]]) box(ctx,a-.07,b-.07,a+.07,b+.07,0,H+2,'#6a4a2a',{edge:false});
+  // cabin body
+  box(ctx,i0,j0,i1,j1,0,H,'#c99357',{left:'#b07a42',right:'#8a5a32',top:SEAS===3?SNOW:'#6a4228'});
+  // door on +j
+  const dm=(i0+i1)/2; fillP(ctx,fq('J',j1,dm-.18,dm+.18,0,11),'#5a3a1a'); fillP(ctx,fq('J',j1,dm-.15,dm+.15,1,10),'#3a2414');
+  {const hp=P(dm+.12,j1+.02,5.5); ctx.fillStyle='#f5c84c'; ctx.fillRect(hp[0]-.5,hp[1]-1.5,1,3);}
+  // windows on the side walls
+  win(ctx,'I',i1,j0+(j1-j0)*.28,.38,9,6,true);
+  win(ctx,'I',i0,j0+(j1-j0)*.28,.38,9,6,true);
+  // porch roof
+  const pr=H+1; fillP(ctx,[P(i0-.2,j1,pr),P(i1+.2,j1,pr),P(i1+.2,j1+.7,pr-3),P(i0-.2,j1+.7,pr-3)],SEAS===3?SNOW:'#5a3a22');
+  // cork notice board on the apron with fluttering papers
+  const bx=i0+.35, by=j1+.28;
+  box(ctx,bx,by,bx+.95,by+.08,0,9,'#8a5a32',{});
+  fillP(ctx,fq('J',by+.08,bx+.05,bx+.9,1,8.5),'#c4a06a');
+  for(let k=0;k<5;k++){
+    const a=bx+.12+k*.16, flutter=Math.sin(t*3.2+k*1.7)*.04;
+    const z0=2.2+(k%3)*.9, z1=z0+2.2;
+    fillP(ctx,[P(a,by+.09+flutter,z0),P(a+.12,by+.09+flutter,z0),P(a+.12,by+.09,z1),P(a,by+.09,z1)],['#fff6e0','#ffe8c0','#e8f2ff','#f0ffe0','#ffe0e8'][k]);
+    // pin
+    const p=P(a+.06,by+.1,z1+.2); ell(ctx,p[0],p[1],1.1,1.1,'#d42a1e');
+  }
+  // sign
+  const sp=P((i0+i1)/2,j0+.05,H+6);
+  ctx.fillStyle='#1f3a5a'; rr(ctx,sp[0]-18,sp[1]-10,36,14,2); ctx.fill();
+  ctx.strokeStyle='#6ab0e0'; ctx.lineWidth=1.4; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='900 6.5px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('CONTRACTS',sp[0],sp[1]-3); ctx.fillText('DAILY BOARD',sp[0],sp[1]+4);
+  // night lamp over the porch
+  const lp=P(dm,j1+.35,H+2); ctx.fillStyle='#4a4f56'; ctx.fillRect(lp[0]-1,lp[1]-6,2,6);
+  ctx.fillStyle='#fff3c0'; ctx.beginPath(); ctx.arc(lp[0],lp[1]-7,2.6,0,TAU); ctx.fill();
+  if(scene.dn&&scene.dn.lights>.03) scene.lq.push([P(dm-.3,j1+.2,8),P(dm+.3,j1+.2,8),P(dm+.3,j1+.2,14),P(dm-.3,j1+.2,14)]);
+  OFFICE.hit=boxHit(i0-.15,j0-.15,i1+.2,j1+.7,H+8);
+  OFFICE.top=P(OFFICE.ci,OFFICE.cj,H+10);
+}
+function officeOverlay(ctx){
+  if(!OFFICE.top||!dailyOpen()) return;
+  const [sx,sy]=w2s(OFFICE.top[0],OFFICE.top[1]);
+  if(sx<-80||sx>scene.w+80||sy<-40||sy>scene.h+40) return;
+  const n=dailyAwaiting()?S.daily.offers.length:0, act=dailyActiveN();
+  const bob=n?Math.sin(scene.t*3.5)*2.5:0;
+  if(n){const r=pill(ctx,sx,sy-8+bob,`📅 ${n} daily contract${n>1?'s':''}`,{bg:'#3e86c8',fg:'#fff',fs:11,stroke:'#cfe6ff',padX:11,padY:7});
+    const k=(scene.t*1.3)%1;ctx.strokeStyle=`rgba(62,134,200,${1-k})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(sx,sy-8+bob,r[2]/2+k*16,0,TAU);ctx.stroke();}
+  else if(act) pill(ctx,sx,sy-6,`📅 ${act} active`,{bg:'#fff6e0',fg:'#4a2e06',fs:10,stroke:'#e8b13a'});
+}
+
 /* ---------- scene objects (depth sorted) ---------- */
 function staffDraw(ctx,objs,inView){
   {const [x,y]=P(STATION.ci,STATION.cj);if(inView(x,y,120)) objs.push({k:STATION.ci+STATION.cj,f:()=>drawStation(ctx)});}
+  {const [x,y]=P(OFFICE.ci,OFFICE.cj);if(inView(x,y,100)) objs.push({k:OFFICE.ci+OFFICE.cj,f:()=>drawOffice(ctx)});}
+  for(const tk of scene.couriers||[]){if(tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j);if(!inView(x,y,110)) continue;
+    objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load||0,doors:tk.doors||0,brake:tk.brake,bounce:vehBounce(tk),logo:tk.logo||'DAILY CO.'});exhaust(st,tk);}});}
   // fire truck (clipped by the station wall while it's still in the bay)
   const T=scene.ftruck;
   if(T&&T.i!==undefined){const [x,y]=P(T.i,T.j);if(inView(x,y,110)){
@@ -163,6 +236,7 @@ function staffLights(out){
   const T=scene.ftruck;if(T&&T.i!==undefined){vehLights(out,T,1.62,-1.64);if(S.fires[T.bid]||T.li===0){const on=Math.floor(scene.t*7)%2,[x,y]=P(T.i,T.j,0);out.push({x,y,rx:70,ry:40,c:on?'90,160,255':'red',a:.6});}}
 }
 function staffOverlays(ctx){
+  officeOverlay(ctx);
   const t=scene.t;
   for(const bid in S.fires){const L=LOTS[bid],f=S.fires[bid];if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]-26);if(sx<-60||sx>scene.w+60||sy<-40||sy>scene.h+40) continue;
     const bob=Math.sin(t*6)*2;const r=pill(ctx,sx,sy+bob,`🔥 TAP! ${Math.ceil(f.hp)}`,{bg:'#d8261c',fg:'#fff',fs:12,stroke:'#ffd0a0',padX:11,padY:7});

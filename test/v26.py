@@ -27,7 +27,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=E(pg,'TT.S')
-    ok(S['version']=='2.6','v2.5 save migrated to 2.6')
+    ok(float(S['version'])>=2.6,'v2.5 save migrated to 2.6+')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==4,'collectors, buildings, golden kept')
     ok(S['research']=={'science':1} and abs(S['rp']-40)<1e-6 and S['trade']['lvl']==1,'research / RP / trade kept')
     ok(S['daily']['offers']==[] and S['daily']['active']==[] and S['daily']['streak']==0 and S['daily']['total']==0,'daily state initialised empty')
@@ -36,7 +36,7 @@ with sync_playwright() as p:
 
     # --- fresh game: daily gated ---
     ctx,pg=fresh()
-    ok(E(pg,'TT.VERSION')=='2.6','VERSION is 2.6')
+    ok(float(E(pg,'TT.VERSION'))>=2.6,'VERSION is 2.6+')
     ok(not E(pg,'TT.dailyOpen()'),'daily gated on fresh game')
     ok(not E(pg,'TT.makeDailyOffers()'),'no offers before unlock')
     E(pg,"TT.S.coins=1e6;TT.buyBuilding('sawmill',1);TT.S.totalEarned=100")
@@ -176,14 +176,14 @@ with sync_playwright() as p:
 
     # --- ACH count includes new trophies ---
     ok(E(pg,'TT.ACH.filter(a=>a.id.startsWith("daily")).length')==4,'4 daily trophies registered')
-    ok(E(pg,"document.getElementById('verBadge').textContent")=='v2.6','verBadge shows v2.6')
-    ok(E(pg,"document.getElementById('footerVer').textContent")=='v2.6','footer shows v2.6')
+    ok(E(pg,"document.getElementById('verBadge').textContent")=='v'+E(pg,'TT.VERSION'),'verBadge shows current version')
+    ok(E(pg,"document.getElementById('footerVer').textContent")=='v'+E(pg,'TT.VERSION'),'footer shows current version')
     # hist records completes
     ok(E(pg,'(TT.S.daily.hist||[]).some(h=>h.ok)'),'history records successful dailies')
     # save/load keeps daily streak
     E(pg,"TT.S.daily.streak=6;TT.S.daily.bestStreak=6;TT.S.daily.total=8;TT.save(true)")
     pg.reload(); pg.wait_for_timeout(800)
-    ok(E(pg,'TT.S.version')=='2.6' and E(pg,'TT.S.daily.streak')==6 and E(pg,'TT.S.daily.total')==8,'daily streak/total survive reload')
+    ok(E(pg,'TT.S.version')==E(pg,'TT.VERSION') and E(pg,'TT.S.daily.streak')==6 and E(pg,'TT.S.daily.total')==8,'daily streak/total survive reload')
     # office hit type is office
     E(pg,"(()=>{const c=TT.cam;c.z=c.tz=1.7;const p=TT.P(24.2,24.5,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()"); pg.wait_for_timeout(500)
     ok(E(pg,"(()=>{const p=TT.P(24.2,24.55,6);const s=TT.w2s(p[0],p[1]);return TT.hitTest(s[0],s[1]).type})()")=='office','hitTest returns office at contract board')

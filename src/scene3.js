@@ -14,7 +14,7 @@ function mkLook(seed,o){
   else if(o.role==='saw'){L.shirt=PLAIDS[Math.floor(R()*PLAIDS.length)][0];L.vest=R()<.5?'#f2d21a':'#f58a1a';L.hat='hard';L.hatc=R()<.5?'#f08a1a':'#f5f2ea';L.pants='#3a3f48';}
   else if(o.role==='worker'){L.shirt=['#5a6a7a','#e8e2d4','#3a4a5a','#7a8a6a'][Math.floor(R()*4)];L.vest=o.vest||'#f2d21a';L.hat='hard';L.hatc=o.hatc||'#f5c22e';}
   else if(o.role==='foreman'){L.shirt='#e8e4dc';L.vest='#f2d21a';L.hat='hard';L.hatc='#f7f7f2';L.pants='#2e3440';}
-  else if(o.role==='planter'){L.shirt='#6a8a4a';L.plaid=null;L.hat=R()<.6?'cap':null;L.hatc='#c8a050';L.pants='#4a4030';}
+  else if(o.role==='planter'){L.shirt=['#6a8a4a','#7a9a5a','#5a7a3a','#8a7a4a'][Math.floor(R()*4)];L.plaid=null;L.hat=R()<.7?(R()<.5?'cap':'bucket'):null;L.hatc=['#c8a050','#6a8a4a','#e8e0c8'][Math.floor(R()*3)];L.pants=['#4a4030','#3a4a3a','#5a4a3a'][Math.floor(R()*3)];L.bag=true;L.gloves='#c89a5a';if(o.vest) L.vest=o.vest;}
   else if(o.role==='casual'){const p=PLAIDS[Math.floor(R()*PLAIDS.length)];L.shirt=p[0];L.plaid=R()<.6?p[1]:null;L.hat=R()<.4?'beanie':null;L.hatc=['#c83a2e','#2e6ac8','#e8c43a'][Math.floor(R()*3)];}
   return L;
 }
@@ -76,6 +76,28 @@ function human(ctx,x,y,o){
       props.push(()=>{const k=o.t||0;ctx.strokeStyle='#5a3a1c';ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(6.4,0);ctx.lineTo(6.4,-3.4-k*2);ctx.stroke();
         ell(ctx,6.4,-4-k*2.4,1.8+k,1.2+k*.6,'#4f9a3a');ell(ctx,5.6,-4.6-k*2.4,1,.8,'#7cc45e');ell(ctx,6.2,.2,2.4,.9,'#6a4a2a');});
       break;}
+    case 'dig': { // spade: push the blade in with a foot, lever the soil, toss it aside
+      const u=((o.t!==undefined?o.t:ph/TAU)%1+1)%1;
+      const push=u<.42?ease(u/.42):u<.7?1:1-ease((u-.7)/.3), lever=u<.42?0:u<.7?ease((u-.42)/.28):1-ease((u-.7)/.3), toss=u>=.7?Math.sin((u-.7)/.3*Math.PI):0;
+      hipY=HU.hip+1.2+push*.6; lean=1.6+lever*.6; legs=[[[hipF[0],hipY],[hipF[0]-1.4,hipY*.5],[hipF[0]-2.2,0]],[[hipN[0],hipY],[hipN[0]+4.2,hipY*.55-push*1.2],[6.6,-1.6-push*1.4+lever*1.2]]];
+      const tip=[7.4,1.1*push-1.6-toss*3.5], a=-.12-lever*.55-toss*.25, L2=17;
+      const top=[tip[0]+Math.sin(a)*L2,tip[1]-Math.cos(a)*L2], at=f=>[tip[0]+(top[0]-tip[0])*f,tip[1]+(top[1]-tip[1])*f];
+      hand=[at(.93),at(.58)];
+      props.push(()=>{limb(ctx,[at(.12),top],1.25,'#8a5a2c');limb(ctx,[[top[0]-1.4,top[1]],[top[0]+1.4,top[1]]],1.1,'#5a3a1c');
+        const d=[Math.sin(a),-Math.cos(a)],n=[Math.cos(a),Math.sin(a)],bp=(p,q)=>[tip[0]+d[0]*p+n[0]*q,tip[1]+d[1]*p+n[1]*q];
+        fillP(ctx,[bp(0,-1.6),bp(0,1.6),bp(4.2,1.4),bp(4.2,-1.4)],'#9aa4ae');limb(ctx,[bp(0,-1.6),bp(0,1.6)],.5,'#e8eef2');
+        if(toss>.05||lever>.3) ell(ctx,tip[0]+d[0]*2.4,tip[1]+d[1]*2.4-1.2,2.4,1.3,'#6a4a2a');});
+      break;}
+    case 'water': { // watering can: tip it over the fresh sapling, drops fall from the rose
+      lean=.7; legs=stance(1.1,.3);
+      const tilt=.35+Math.sin(T*1.7+ph)*.08; hand=[[3.4,HU.hip-3.4],[6.2,HU.hip-1.4]];
+      props.push(()=>{ctx.save();ctx.translate(5.6,HU.hip-1.2);ctx.rotate(tilt);
+        ctx.fillStyle='#3f8a5a';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(-2.6,-2.2,5.2,4.4,1.1);else ctx.rect(-2.6,-2.2,5.2,4.4);ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(-2.2,-1.8,1,3.6);ctx.strokeStyle='#2c6a42';ctx.lineWidth=.7;ctx.beginPath();ctx.arc(-.6,-2.4,1.9,Math.PI,0);ctx.stroke();
+        ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(2.4,.6);ctx.lineTo(6.4,-1.6);ctx.stroke();ell(ctx,6.7,-1.8,.9,1.3,'#2c6a42');ctx.restore();
+        const sx=5.6+Math.cos(tilt)*6.7-Math.sin(tilt)*-1.8, sy=HU.hip-1.2+Math.sin(tilt)*6.7+Math.cos(tilt)*-1.8;
+        for(let k=0;k<5;k++){const f=((T*2.4+k/5+ph)%1);ell(ctx,sx+.4+f*1.2+(k%2)*.6,sy+f*(-sy),.45,.75,`rgba(150,205,255,${.9-f*.5})`);}});
+      break;}
     case 'sit': case 'sitdrink': {
       hipY=-7.4; legs=[[[hipF[0]-1,hipY],[hipF[0]+3.4,hipY-.4],[hipF[0]+3.8,0]],[[hipN[0]-1,hipY],[hipN[0]+3.8,hipY-.2],[hipN[0]+4.4,0]]];
       hand=[[1.6,hipY-1.8],[2.8,hipY-1.2]]; break;}
@@ -124,6 +146,10 @@ function human(ctx,x,y,o){
     ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(-3.2,HU.sh+5.2,6.5,.5);}
   ctx.save();pth(ctx,tp);ctx.clip();ctx.fillStyle='rgba(0,0,0,.16)';ctx.fillRect(1.7,HU.sh,3,10);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(-3.4,HU.sh,1.2,10);ctx.restore();
   ctx.fillStyle='rgba(30,20,10,.55)';ctx.fillRect(-2.7,HU.hip+.1,5.3,1);
+  if(L.bag){limb(ctx,[[2.2,HU.sh+.6],[-2.6,HU.hip-1]],.8,'#7a6040');ctx.fillStyle='#b89a6a';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(-5.2,HU.hip-3.2,3.8,4.4,1);else ctx.rect(-5.2,HU.hip-3.2,3.8,4.4);ctx.fill();
+    ctx.fillStyle='#9a7e52';ctx.fillRect(-5.2,HU.hip-3.2,3.8,1.1);ctx.strokeStyle='#4f9a3a';ctx.lineWidth=.9;ctx.beginPath();
+    for(const [x0,h] of [[-4.6,3.2],[-3.6,4.2],[-2.4,3.4]]){ctx.moveTo(x0,HU.hip-3.2);ctx.lineTo(x0-.3,HU.hip-3.2-h);}ctx.stroke();
+    for(const [x0,h] of [[-4.6,3.2],[-3.6,4.2],[-2.4,3.4]]) ell(ctx,x0-.3,HU.hip-3.4-h,1.1,.8,'#7cc45e');}
   // neck + head
   const hx=back?-.1:.35, hy=HU.hc;
   ctx.fillStyle=shade(L.skin,.88);ctx.fillRect(-.7+hx*.5,HU.sh-1.7,1.7,2);
@@ -155,6 +181,7 @@ function human(ctx,x,y,o){
     ctx.fillStyle=shade(L.hatc,.82);ctx.beginPath();ctx.ellipse(.35,-1.05,3.45,.85,0,0,TAU);ctx.fill();ctx.fillStyle=L.hatc;ctx.fillRect(-2.6,-1.6,5.4,.6);
     ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(-.6,-2.6,.9,.55,-.4,0,TAU);ctx.fill();ctx.fillStyle=shade(L.hatc,.85);ctx.fillRect(-.25,-3.6,.6,2.3);}
   else if(L.hat==='beanie'){ctx.fillStyle=L.hatc;ctx.beginPath();ctx.ellipse(0,-1.1,2.55,2.6,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillStyle=shade(L.hatc,.82);ctx.fillRect(-2.6,-1.5,5.2,1.2);ell(ctx,0,-3.9,.9,.8,shade(L.hatc,1.15));}
+  else if(L.hat==='bucket'){ctx.fillStyle=L.hatc;ctx.beginPath();ctx.ellipse(0,-1.3,2.4,2.1,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillStyle=shade(L.hatc,.85);ctx.beginPath();ctx.ellipse(.1,-1.1,3.6,.9,0,0,TAU);ctx.fill();}
   else if(L.hat==='cap'){ctx.fillStyle=L.hatc;ctx.beginPath();ctx.ellipse(0,-1.1,2.5,2.2,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillStyle=shade(L.hatc,.78);ctx.beginPath();ctx.ellipse(back?-2.2:2.3,-1.0,1.9,.55,0,0,TAU);ctx.fill();}
   ctx.restore();
   ctx.restore();

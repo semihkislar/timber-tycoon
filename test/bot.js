@@ -20,6 +20,11 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
       const cands=[];
       for(const c of T.COLLECTORS){const own=S.collectors[c.id];const cost=T.bulkCost(c.cost,T.COL_SCALE,own,1);
         if(cost>S.totalEarned*3+200) continue; cands.push({k:'c:'+c.id,cost,gain:T.logRate()>=0?(c.rate*cpl):0,do:()=>T.buyCollector(c.id,1)});}
+      // v2.7: keep the planting crew ahead of the loggers (each sapling/s sustains logPot/D logs/s)
+      if(T.PLANTERS&&window.BOT_PLANT!==false){const D=T.fellDemand(),cap=T.plantCap(),pot=T.logRatePot();
+        const F=S.forest,ttd=(F.m-D*10)/Math.max(1e-9,D-cap),need=D>0&&cap<D*1.2&&(cap<D?ttd<300:F.m<T.forestPlots()*.7); window.__plNeed=need;
+        if(need) for(const p of T.PLANTERS){const cost=T.plCost(p.id,1);if(cost>S.totalEarned*3+200) continue;const r=T.plRate(p.id);
+          cands.push({k:'pl:'+p.id,cost,gain:Math.min(r,D*1.2-cap)*(pot/D)*cpl*(cap<D?3:1),do:()=>T.buyPlanter(p.id,1)});}}
       for(const b of T.BUILDINGS){const st=S.buildings[b.id];const cost=T.bulkCost(b.cost,b.scale,st.lvl,1);
         if(cost>S.totalEarned*3+200) continue; if(T.bldUnlocked&&!T.bldUnlocked(b.id)) continue;
         if(b.id==='lab'){if(window.BOT_V25===false||window.BOT_RES===false) continue; const left=T.RNODES.filter(n=>!T.hasRes(n.id)).length; if(left&&st.lvl<12) cands.push({k:'b:lab',cost,gain:Math.max(T.coinRate,1)*(st.lvl?.02:.12),do:()=>T.buyBuilding('lab',1)}); continue;}
@@ -28,7 +33,7 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);
         const sp=st.lvl?T.bstat[b.id].speed/st.lvl:1;
         cands.push({k:'b:'+b.id,cost,gain:Math.max(0,Math.min(1,ok))*val*sp+ (ok<0.3?0:0),do:()=>T.buyBuilding(b.id,1)});}
-      for(const u of T.UPGRADES){ if(S.upgrades[u.id]||!u.req()) continue; cands.push({k:'u:'+u.id,cost:u.cost,gain:Math.max(T.coinRate,1)*0.25,do:()=>T.buyUpgrade(u.id)});}
+      for(const u of T.UPGRADES){ if(S.upgrades[u.id]||!u.req()) continue; const plU=['spades','fert','elite','irrig'].includes(u.id); if(plU&&!window.__plNeed) continue; cands.push({k:'u:'+u.id,cost:u.cost,gain:Math.max(T.coinRate,1)*(plU?.15:0.25),do:()=>T.buyUpgrade(u.id)});}
       // v2.2: premium area (unlock + showroom levels) and stock-area upgrades (+10% speed each)
       if(T.premCost&&window.BOT_PREM!==false&&S.premium.lvl<5){const pc=T.premCost(); if(pc<S.totalEarned*3) cands.push({k:'p:area'+(S.premium.lvl+1),cost:pc,gain:S.premium.lvl?Math.max(T.coinRate,1)*0.1:Math.max(T.coinRate,1)*0.3,do:()=>T.buyPremium()});}
       if(T.buyStorage&&window.BOT_STORAGE!==false) for(const b of T.BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||T.stoLvl(b.id)>=8) continue; let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);
@@ -57,7 +62,7 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
     if(T.pendingSeeds()>=1) mark('prestige>=1 seed',t);
     if([60,120,300,600,900,1200,1800,2700,3600].includes(t+1)) snaps.push({t:t+1,coins:Math.round(S.coins),earned:Math.round(S.totalEarned),income:Math.round(T.coinRate),logs:Math.round(T.logRate()),seeds:T.pendingSeeds(),
       cols:Object.entries(S.collectors).filter(x=>x[1]).map(x=>x[0]+':'+x[1]).join(' '),blds:Object.entries(S.buildings).filter(x=>x[1].lvl).map(x=>x[0]+':'+x[1].lvl+'@'+Math.round(T.bstat[x[0]].f*100)+'%').join(' '),
-      upg:Object.keys(S.upgrades).length,res:S.research?Object.keys(S.research).length:0,rp:Math.round(S.rp||0),trade:S.trade?S.trade.lvl+'/'+Object.keys(S.trade.routes).length+'/'+S.trade.stats.trips+'/'+Math.round(S.trade.stats.earned):'',tree:S.tree,prem:S.premium?S.premium.lvl:0,orders:S.orders?S.orders.done+'/'+(S.orders.done+S.orders.failed):''});
+      upg:Object.keys(S.upgrades).length,forest:S.forest?Object.values(S.planters).join('/')+' eff'+Math.round(T.forestEff()*100)+' m'+Math.round(S.forest.m):'',res:S.research?Object.keys(S.research).length:0,rp:Math.round(S.rp||0),trade:S.trade?S.trade.lvl+'/'+Object.keys(S.trade.routes).length+'/'+S.trade.stats.trips+'/'+Math.round(S.trade.stats.earned):'',tree:S.tree,prem:S.premium?S.premium.lvl:0,orders:S.orders?S.orders.done+'/'+(S.orders.done+S.orders.failed):''});
   }
   return {log,snaps};
 };

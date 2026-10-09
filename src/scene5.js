@@ -92,7 +92,7 @@ function stepJack(p,dt){
     case 'tobuck': p.pose='walk'; if(walkTo(p,dt,1.0)){p.st='buck';p.tm=1.8;p.wt=Math.random();p.fx=tr.fdir||1;p.back=false;} break;
     case 'buck':{p.pose=p.type==='saw'?'saw':'chop';p.fx=tr.fdir||1;p.back=false;p.wt+=dt/0.95;tr.buck=Math.min(1,(tr.buck||0)+dt/1.8);
       if(p.type==='saw'&&Math.random()<dt*16){const c=trunkMid(tr),b=P(c[0],c[1],3);emitP(b[0],b[1],'saw');}
-      p.tm-=dt;if(p.tm<=0){tr.down=0;tr.buck=0;tr.stump=40;tr.claim=null;tr.planted=false;p.tree=null;const lg=LANDINGS[p.zone];p.ti=lg.i+(Math.random()-.5)*.9;p.tj=lg.j+.4+(Math.random()-.5)*.6;p.st='carry';}
+      p.tm-=dt;if(p.tm<=0){tr.down=0;tr.buck=0;tr.stump=1;tr.claim=null;tr.planted=false;p.tree=null;const lg=LANDINGS[p.zone];p.ti=lg.i+(Math.random()-.5)*.9;p.tj=lg.j+.4+(Math.random()-.5)*.6;p.st='carry';}
       break;}
     case 'carry': p.pose='carry'; if(walkTo(p,dt,.82)){const lg=LANDINGS[p.zone];lg.n=Math.min(10,lg.n+1);const q=P(lg.i,lg.j,6);for(let k=0;k<5;k++)emitP(q[0],q[1],'dust');
         if(Math.random()<.4){p.st='rest';p.tm=2.2;p.pose='brow';}else p.st='pick';} break;
@@ -105,13 +105,6 @@ function sfxSoft(){/* reserved */}
 function stepForeman(p,dt){
   if(p.st==='walk'){p.pose='walk';if(walkTo(p,dt,.7)){p.st='check';p.tm=3+Math.random()*3;p.pose=Math.random()<.65?'clip':'point';p.back=p.pose==='point';if(p.pose==='point')p.fx=Math.random()<.5?1:-1;}}
   else {p.tm-=dt;if(p.tm<=0){const W=[[.4,2.7],[-2.3,4.4],[2.2,1.4],[-.9,2.2]];const w=W[Math.floor(Math.random()*W.length)];p.ti=w[0];p.tj=w[1];p.st='walk';}}
-}
-function stepPlanter(p,dt){
-  if(p.st==='find'){const c=zoneTrees('T').filter(t=>t.stump>0&&!t.planted&&!t.claim);if(c.length){c.sort((a,b)=>Math.hypot(a.i-p.i,a.j-p.j)-Math.hypot(b.i-p.i,b.j-p.j));const t=c[0];t.planted=true;p.tree=t;p.ti=t.i;p.tj=t.j-.48;p.st='walk';}
-    else {p.st='wait';p.tm=3;p.pose='look';}}
-  else if(p.st==='walk'){p.pose='walk';if(walkTo(p,dt,.85)){p.st='plant';p.tm=2.8;p.fx=-1;p.back=false;}}
-  else if(p.st==='plant'){p.pose='plant';p.pt=1-p.tm/2.8;p.tm-=dt;if(p.tm<=0){const t=p.tree;if(t){t.stump=0;t.grow=.14;t.planted=false;}p.tree=null;p.st='find';}}
-  else {p.tm-=dt;if(p.tm<=0)p.st='find';}
 }
 function syncEntities(){
   // yard workers (v1.3 system, walking the iso lane)
@@ -129,9 +122,7 @@ function syncEntities(){
   if(scene._jsig!==sig){scene._jsig=sig;const old=scene.jacks;scene.jacks=want.map(w=>old.find(o=>o.id===w.id)||mkJack(w.id,w.type,w.zone));
     for(const o of old) if(!scene.jacks.includes(o)&&o.tree){o.tree.claim=null;}}
   if(!scene.foreman){scene.foreman={look:mkLook(4242,{role:'foreman',female:false}),i:.4,j:2.7,ti:.4,tj:2.7,st:'check',tm:2,ph:0,fx:1,back:false,pose:'clip'};}
-  const wantPl=S.collectors.lumberjack>=2;
-  if(wantPl&&!scene.planter) scene.planter={look:mkLook(5151,{role:'planter',female:true}),i:2,j:1.5,ti:2,tj:1.5,st:'find',tm:0,ph:0,fx:1,back:false,pose:'stand'};
-  if(!wantPl&&scene.planter){if(scene.planter.tree) scene.planter.tree.planted=false;scene.planter=null;}
+  syncPlanters();
   if(!scene.campers){scene.campers=[{look:mkLook(6001,{role:'casual',female:false}),pose:'sitdrink',o:[-.12,.2],fx:1,ph:0},{look:mkLook(6002,{role:'casual',female:true}),pose:'sit',o:[.22,-.14],fx:-1,ph:2},
     {look:mkLook(6003,{role:'saw',female:false}),pose:'drink',o:[.62,.1],fx:-1,ph:4}];}
   // log trucks
@@ -166,14 +157,14 @@ function updateEntities(dt){
   // forest crew
   for(const p of scene.jacks){stepJack(p,dt);}
   if(scene.foreman) stepForeman(scene.foreman,dt);
-  if(scene.planter) stepPlanter(scene.planter,dt);
+  forestVisTick(dt);
   for(const k in LANDINGS){const lg=LANDINGS[k];lg.dec=(lg.dec||0)+dt;if(lg.dec>9){lg.dec=0;if(lg.n>2) lg.n--;}}
   for(const tr of scene.dynTrees){
     if(tr.shake>0) tr.shake=Math.max(0,tr.shake-dt*2.8);
     if(tr.fall>0){tr.fall+=dt/1.35;if(tr.fall>=1){tr.fall=0;tr.down=1;const c=trunkMid(tr);const p=P(c[0],c[1]);for(let k=0;k<16;k++) emitP(p[0]+(Math.random()-.5)*40,p[1],'dust');}}
-    else if(tr.down){ if(!tr.claim){tr.down=0;tr.stump=40;} }
-    else if(tr.stump>0){tr.stump-=dt*(seasonIdx()===0?2.2:1);if(tr.stump<=0){tr.stump=0;tr.grow=.14;}}   // v2.3: spring regrowth
-    else if(tr.grow<1){tr.grow=Math.min(1,tr.grow+dt*(seasonIdx()===0?.1:.055));}
+    else if(tr.down){ if(!tr.claim){tr.down=0;tr.stump=1;} }
+    else if(tr.stump>0){}   // v2.7: a stump stays until a planter (or slow natural regrowth) puts a sapling on it
+    else if(tr.grow<1){const sap=tr.grow<.4,cap=sap?.38:.96;tr.grow=Math.min(Math.max(tr.grow,cap),tr.grow+dt*growMult()*(sap?.24/GROW_SAP:.54/GROW_YOUNG));}
   }
   for(const h of scene.harvesters){h.ph+=dt;const dir=Math.cos(h.ph*.25)>=0?1:-1;const y=dir>0?Math.PI/2:-Math.PI/2;h.yaw=h.yaw===undefined?y:angLerp(h.yaw,y,Math.min(1,dt*2.5));}
   for(const d of scene.drones) d.ph+=dt;
@@ -223,6 +214,8 @@ function emitP(x,y,type){
   else if(type==='saw'){p.vx=(R()-.5)*50;p.vy=-15-R()*25;p.g=60;p.life=p.max=.5+R()*.4;p.col='rgba(238,214,160,';p.size=1.2+R()*1.4;p.type='dust';}
   else if(type==='bark'){p.vx=20+R()*40;p.vy=-30-R()*30;p.g=180;p.life=p.max=.6;p.col='#6a4424';p.size=2;}
   else if(type==='poof'){const a=R()*TAU,s=30+R()*60;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s*.5-10;p.g=-8;p.life=p.max=.9+R()*.5;p.col='rgba(245,235,215,';p.size=5+R()*6;}
+  else if(type==='soil'){p.vx=8+R()*30;p.vy=-30-R()*35;p.g=220;p.life=p.max=.5+R()*.25;p.col=['#5a3f22','#6a4a2a','#7d5a34'][R()*3|0];p.size=1.6+R()*1.2;p.type='chip';}
+  else if(type==='seed'){p.vx=(R()-.5)*10;p.vy=10+R()*12;p.g=60;p.life=p.max=.6+R()*.3;p.col=['#c8a26a','#8a6a3a','#e8d8a0'][R()*3|0];p.size=1.2;p.type='chip';}
   else if(type==='spark'){const a=R()*TAU,s=40+R()*120;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s-30;p.g=90;p.life=p.max=1;p.col='spark';p.size=2;}
   scene.particles.push(p);
 }
@@ -232,7 +225,7 @@ function buildPoof(id){const L=LOTS[id];if(!L) return;scene.buildAnim[id]=0;cons
 /* ---------------- golden logs ---------------- */
 const golden={cur:null,timer:35,sparks:[]};
 function goldenSize(){return Math.max(16,Math.min(30,10+scene.cam.z*14));}
-function safeRect(){const tb=($('topbar').offsetHeight||50)+28;const bot=Math.min(sheetTop(),scene.h-($('bottombar').offsetHeight||70))-26;return [36,tb,scene.w-36,Math.max(tb+40,bot)];}
+function safeRect(){const sb=$('subbar'),tb=Math.max(($('topbar').offsetHeight||50)+28,sb?sb.getBoundingClientRect().bottom+10:0);const bot=Math.min(sheetTop(),scene.h-($('bottombar').offsetHeight||70))-26;return [36,tb,scene.w-36,Math.max(tb+40,bot)];}
 function spawnGolden(){
   const [x0,y0,x1,y1]=safeRect(); const vis=[];
   for(const t of scene.trees){const [x,y]=P(t.i,t.j,48*t.s);const s=w2s(x,y);if(s[0]>x0&&s[0]<x1&&s[1]>y0&&s[1]<y1) vis.push(t);}

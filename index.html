@@ -194,6 +194,29 @@ button{font:inherit;color:inherit}
 .card .nm .cnt{color:#c47f12;margin-left:4px}
 .card .ds{font-size:12px;color:var(--ink2)}
 .card.locked{opacity:.6;filter:grayscale(.6)}
+/* v2.7 forest */
+.fchip{pointer-events:auto;display:flex;align-items:center;gap:5px;font:inherit;font-size:11px;font-weight:900;color:#fff3d6;background:rgba(43,27,14,.6);border:0;padding:3px 9px 3px 7px;border-radius:999px;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.fchip .fi{font-size:12px}
+@media (max-width:720px){.fchip{padding:2px 7px 2px 5px;gap:3px;font-size:10px}.fchip .fi{font-size:10px}.fchip .fbar{width:22px;height:6px}}
+.fchip .fbar{width:44px;height:7px;border-radius:4px;background:rgba(122,78,38,.85);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.fchip .fbar i{display:block;height:100%;background:linear-gradient(90deg,#4f9a3a,#8ad05a);transition:width .4s}
+.fchip.warn .fbar i,.fchip.thin .fbar i{background:linear-gradient(90deg,#d08a1a,#f2c040)}
+.fchip.thin{background:rgba(150,90,10,.78)}
+.fchip.bad{background:rgba(196,70,61,.92);animation:fpulse 1.2s ease-in-out infinite}
+.fchip.bad .fbar i{background:#ffd0c8}
+@keyframes fpulse{50%{box-shadow:0 0 0 4px rgba(196,70,61,.3)}}
+.forest-card{border:1.5px solid #8ac06a;background:linear-gradient(160deg,#eef8e6,#dcefcf);border-radius:12px;padding:8px 10px;margin:2px 0 10px}
+.forest-card.warn,.forest-card.thin{border-color:#e0a030;background:linear-gradient(160deg,#fff6e0,#fbe8bf)}
+.forest-card.bad{border-color:#c4463d;background:linear-gradient(160deg,#ffece8,#fbd5cd)}
+.fc-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.fc-h b{color:#2f5a22}.fc-st{font-size:11.5px;font-weight:900}
+.forest-card.ok .fc-st{color:#3b7f27}.forest-card.warn .fc-st,.forest-card.thin .fc-st{color:#a06000}.forest-card.bad .fc-st{color:#b0302a}
+.fc-bar{display:flex;height:12px;border-radius:6px;background:#8a6a4a;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.fc-bar i{display:block;height:100%}.fc-bar .m,.fc-leg i.m{background:#3f8a3a}.fc-bar .y,.fc-leg i.y{background:#7cc04f}.fc-bar .s,.fc-leg i.s{background:#c8e6a0}.fc-leg i.st{background:#8a6a4a}
+.fc-leg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;font-weight:800;color:var(--ink2);margin:5px 0 4px}
+.fc-leg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}.fc-leg .mut{color:var(--muted);margin-left:auto}
+.fc-rates{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:11.5px;font-weight:800;color:var(--ink)}.fc-rates small{color:var(--muted);font-weight:700}
+.forest-toast{border-color:#c4463d!important}
 .card.afford{border-color:#8fd06a;box-shadow:0 2px 0 rgba(95,180,65,.35)}
 .card.cur{border-color:#e8a020;box-shadow:0 0 0 2px rgba(232,160,32,.25)}
 .pbar{height:5px;background:#ead6b2;border-radius:3px;margin-top:5px;overflow:hidden}
@@ -386,6 +409,7 @@ button{font:inherit;color:inherit}
   <button class="tb-btn" id="muteBtn" title="Toggle sound">🔇</button>
 </header>
 <div id="subbar"><div class="scene-label" id="sceneLabel">🌲 Pine Forest</div>
+  <button class="fchip ok" id="forestChip" title="Grown trees (tap for Crew & Forest)"><span class="fi">🌲</span><span class="fbar"><i id="fBarI"></i></span><b id="fPct">1.2K</b></button>
   <div id="wxChip" class="wx" title="Season, weather and time of day (tap for details)"><span class="wx-dial" id="wxDial"><i id="wxSun"></i></span><span class="wx-s" id="wxS">🌸</span><span class="wx-t"><b id="wxT1">Spring · Day 1</b><small id="wxT2">⛅ Fair</small></span><span class="wx-clk" id="wxClk">07:10</span></div>
   <div id="events"></div></div>
 <div id="wxPop" class="hidden"></div>
@@ -427,8 +451,12 @@ button{font:inherit;color:inherit}
       </div>
     </div>
     <div class="pane" id="pane-crew">
+      <div class="forest-card ok" id="forestCard"></div>
       <h4>Wood collectors <span class="seg mult"><button data-m="1" class="on">×1</button><button data-m="10">×10</button><button data-m="max">Max</button></span></h4>
       <div class="list" id="colList"></div>
+      <h4>Planting crew</h4>
+      <div class="legend" style="margin:0 0 6px">Loggers can only fell <b>grown</b> trees. Planters put saplings on stumps; saplings grow into young and then grown trees (fastest in spring, slowest in winter). Every planter also tends new forest land.</div>
+      <div class="list" id="plList"></div>
       <h4>Wood type</h4>
       <div class="legend" style="margin:0 0 6px">Harvesting rarer wood multiplies the sale price of <b>everything</b> you sell.</div>
       <div class="list" id="treeList"></div>
@@ -479,7 +507,7 @@ button{font:inherit;color:inherit}
 <script>
 (function(){
 'use strict';
-const VERSION='2.6';
+const VERSION='2.7';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -584,7 +612,7 @@ const TREES=[
   {name:'Mahogany',icon:'🌳',mult:3,cost:1.5e7,flt:'hue-rotate(-50deg) saturate(1.6) brightness(.8)',color:'#5a2010',color2:'#8a3020'},
   {name:'Ebony',icon:'🌲',mult:5,cost:4e8,flt:'brightness(.35) contrast(1.3)',color:'#1a1a1a',color2:'#2a2a2a'},
 ];
-const bl=id=>S.buildings[id].lvl, cn=id=>S.collectors[id];
+const bl=id=>S.buildings[id].lvl, cn=id=>S.collectors[id], pn=id=>(S.planters&&S.planters[id])||0;
 const UPGRADES=[
   {id:'sharp',icon:'🪓',name:'Sharper Axes',desc:'Chopping ×2',cost:40,req:()=>true,apply:m=>m.chop*=2},
   {id:'steel',icon:'⚒️',name:'Steel Axes',desc:'Lumberjacks ×2',cost:400,req:()=>cn('lumberjack')>=5,apply:m=>m.col.lumberjack*=2},
@@ -609,6 +637,11 @@ const UPGRADES=[
   {id:'rotors',icon:'🌀',name:'Twin Rotors',desc:'Sky-Cranes ×2',cost:300000000,req:()=>cn('heli')>=5,apply:m=>m.col.heli*=2},
   // v2.4 fire safety
   {id:'alarm',icon:'🚨',name:'Smoke Detectors',desc:'Fire risk −25%',cost:40000,req:()=>bl('kiln')>=1,apply:m=>m.fire*=.75},
+  // v2.7 forestry
+  {id:'spades',icon:'⛏️',name:'Steel Spades',desc:'Planters & Planting Teams ×2',cost:2500,req:()=>pn('planter')>=5,apply:m=>{m.plantT.planter*=2;m.plantT.team*=2;}},
+  {id:'fert',icon:'🌾',name:'Fertilizer',desc:'Saplings grow 50% faster',cost:12000,req:()=>pn('planter')>=3,apply:m=>m.grow*=1.5},
+  {id:'elite',icon:'🌲',name:'Elite Saplings',desc:'Every grown tree yields 50% more logs',cost:6e5,req:()=>pn('team')>=3,apply:m=>m.yield*=1.5},
+  {id:'irrig',icon:'💧',name:'Drip Irrigation',desc:'Saplings grow 50% faster',cost:3e6,req:()=>pn('nursery')>=1,apply:m=>m.grow*=1.5},
   {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
 ];
 const EVENTS=[
@@ -676,6 +709,8 @@ const ACH=[
   {id:'trade1',t:'bronze',e:'🚢',n:'Bon Voyage',d:'Complete a trade delivery',p:()=>[(S.trade&&S.trade.stats.trips)||0,1]},
   {id:'trade6',t:'gold',e:'🌍',n:'Global Brand',d:'Open all 6 trade routes',p:()=>[Object.keys((S.trade&&S.trade.routes)||{}).length,6]},
   {id:'mgr6',t:'gold',e:'👔',n:'Management Team',d:'Hire 6 managers',p:()=>[Object.keys(S.mgr||{}).length,6]},
+  {id:'plant1k',t:'silver',e:'🌱',n:'Green Thumb',d:'Plant 1,000 saplings',p:()=>[(S.forestLife&&S.forestLife.planted)||0,1000]},
+  {id:'plant100k',t:'gold',e:'🌳',n:'Reforestation',d:'Plant 100,000 saplings',p:()=>[(S.forestLife&&S.forestLife.planted)||0,1e5]},
   {id:'premium',t:'gold',e:'🏛️',n:'Haute Bois',d:'Open the Premium Factory Area',p:()=>[(S.premium&&S.premium.lvl)>0?1:0,1]},
   {id:'daily1',t:'bronze',e:'📅',n:'On the Clock',d:'Complete a daily contract',p:()=>[(S.daily&&S.daily.total)||0,1]},
   {id:'daily3',t:'silver',e:'🔥',n:'Three-Day Grind',d:'Reach a 3-day contract streak',p:()=>[(S.daily&&S.daily.bestStreak)||0,3]},
@@ -692,7 +727,8 @@ function freshState(keep){
     wx:{clock:126,w:'clear',ends:0,next:201},
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
-    daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0}};
+    daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -739,6 +775,9 @@ function migrateSave(o){
   if(typeof o.daily.streak!=='number') o.daily.streak=0; if(typeof o.daily.bestStreak!=='number') o.daily.bestStreak=0;
   if(typeof o.daily.total!=='number') o.daily.total=0; if(typeof o.daily.doneToday!=='number') o.daily.doneToday=0;
   if(typeof o.daily.failedToday!=='number') o.daily.failedToday=0;
+  // v2.6 -> v2.7: forest stock + planting crew (full forest; free starter crew sized to the current loggers)
+  if(!o.forest||typeof o.forest!=='object') migrateForest(o);
+  if(!o.forestLife||typeof o.forestLife!=='object') o.forestLife={planted:0};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -755,7 +794,7 @@ function merge(base,obj){
 
 /* ===================== MODIFIERS ===================== */
 function computeMods(){
-  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1};
+  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
   COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1);
   for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
   m.priceAll*=TREES[S.tree].mult;
@@ -769,7 +808,8 @@ function computeMods(){
 }
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
-function logRate(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
+function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
+function logRate(){return logRatePot()*forestEff();}   // v2.7: collectors can only fell grown trees
 function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
@@ -780,6 +820,7 @@ function tick(dt,offline){
   M=computeMods();
   S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
+  forestTick(dt,offline);
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
   const demand={}; RES.forEach(r=>demand[r.id]=0);
   const active=[];
@@ -853,7 +894,7 @@ function simulate(sec,step){
   while(t>1e-9){const d=Math.min(step,t);tick(d,false);t-=d;}
 }
 function simulateOffline(sec){
-  offlineAcc={coins:0,p:{},s:{}}; RES.forEach(r=>{offlineAcc.p[r.id]=0;offlineAcc.s[r.id]=0;});
+  offlineAcc={coins:0,p:{},s:{},planted:0}; RES.forEach(r=>{offlineAcc.p[r.id]=0;offlineAcc.s[r.id]=0;});
   const steps=Math.min(Math.ceil(sec),6000), dt=sec/steps;
   for(let i=0;i<steps;i++) tick(dt,true);
   const res=offlineAcc; offlineAcc=null; return res;
@@ -891,7 +932,7 @@ function buyTree(){
   S.coins-=nx.cost; S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
 }
 function chop(){
-  const n=chopPower(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
+  const n=chopPower()*chopForest(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
 }
 function sellAll(id){
   const n=S.res[id]; if(n<=0) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
@@ -905,6 +946,7 @@ function doPrestige(){
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
+  keep.forestLife=Object.assign({},S.forestLife||{planted:0});
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);
@@ -1249,7 +1291,7 @@ function updateUpgrades(){
 let treeSig='';
 function updateTrees(){
   const nx=TREES[S.tree+1];
-  $('crewDot').classList.toggle('hidden',!(nx&&S.coins>=nx.cost)||curSheet==='crew');
+  $('crewDot').classList.toggle('hidden',!((nx&&S.coins>=nx.cost)||forestNeedsCrew())||curSheet==='crew');
   if(curSheet!=='crew') return;
   const sig=S.tree+'|'+TREES.map(t=>S.totalEarned>=t.cost*0.2?1:0).join('');
   if(sig!==treeSig){treeSig=sig;const L=$('treeList');L.innerHTML='';
@@ -1982,6 +2024,7 @@ const RNODES=[
   {id:'boats',   name:'Boat Yard',       icon:'⛵',col:4,row:2,rp:3000,req:['toys'],            d:'Unlocks the Boat Yard at the harbour (plywood + planks + glue → boats)',unlock:'boatyard'},
   {id:'labx',    name:'Lab Robotics',    icon:'🦾',col:4,row:4,rp:2500,req:['logistics','drying'],d:'Research Lab +50 % RP',fx:m=>{m.lab*=1.5;}},
   {id:'master',  name:'Masterworks',     icon:'🏆',col:5,row:2,rp:12000,seeds:10,req:['automation','boats'],d:'Plywood, toys, boats & luxury goods sell +25 %',fx:m=>{for(const k of ['plywood','toys','boats','luxfurn','cabinets']) m.price[k]*=1.25;}},
+  {id:'genetics',name:'Tree Genetics',  icon:'🧬',col:5,row:4,rp:3500,req:['labx'],          d:'Saplings grow 30 % faster and every grown tree yields +20 % logs',fx:m=>{m.grow*=1.3;m.yield*=1.2;}},
 ];
 const RNMAP={}; RNODES.forEach(n=>RNMAP[n.id]=n);
 const TECH_UNLOCK={}; RNODES.forEach(n=>{if(n.unlock) TECH_UNLOCK[n.unlock]=n.id;});
@@ -2138,6 +2181,112 @@ function openTrade(){rndTab='trade';openSheet('rnd');}
 function openResearch(){rndTab='res';openSheet('rnd');}
 UI_ICONS.rnd=`<svg viewBox="0 0 32 32"><path d="M12 3h8v2h-1.5v7.5l7.2 12.3c1 1.8-.3 4.2-2.4 4.2H8.7c-2.1 0-3.4-2.4-2.4-4.2l7.2-12.3V5H12z" fill="#e8f4fb" stroke="#2f5a7a" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.2 22h13.6l2.3 3.9c.5.9-.1 2.1-1.2 2.1H8.1c-1.1 0-1.7-1.2-1.2-2.1z" fill="#5ac08a"/><circle cx="14" cy="24.5" r="1.3" fill="#fff"/><circle cx="18.5" cy="23.6" r=".9" fill="#fff"/><circle cx="23" cy="8" r="3.2" fill="#ffd34a" stroke="#b08010"/><path d="M23 6.4v3.2M21.4 8h3.2" stroke="#b08010" stroke-width="1"/></svg>`;
 UI_ICONS.trade=`<svg viewBox="0 0 32 32"><path d="M3 21h26l-3.5 6H6.5z" fill="#2f6fb0" stroke="#1a3e66" stroke-width="1.2"/><rect x="7" y="15" width="5" height="6" fill="#e8742a"/><rect x="12.5" y="15" width="5" height="6" fill="#3aa0d8"/><rect x="18" y="15" width="5" height="6" fill="#e8c43a"/><rect x="9.5" y="10" width="5" height="5" fill="#5ac08a"/><rect x="23.5" y="11" width="3.5" height="10" fill="#f4f1ea" stroke="#999" stroke-width=".6"/><path d="M2 29q3.5-2 7 0t7 0 7 0 7 0" fill="none" stroke="#5aa6e8" stroke-width="1.6"/></svg>`;
+/* ===================== v2.7 FOREST STOCK & PLANTING CREW =====================
+   The forest is a stock of plots: grown trees (m) → felled into stumps (st) → planted as saplings (s) → young trees (y) → grown (m).
+   Collectors fell grown trees (felling demand depends on HOW MANY collectors of each tier you own, not on log multipliers);
+   when the grown stock runs short, log output falls with it. Planters plant saplings onto stumps; growth follows the seasons. */
+const PLANTERS=[
+  {id:'planter',name:'Planter',svg:'planter',icon:'🧑‍🌾',rate:.1,cost:60,desc:'Spade, sapling bag and a watering can.'},
+  {id:'team',name:'Planting Team',svg:'pteam',icon:'👩‍🌾',rate:.8,cost:15000,desc:'A crew of four with a tool trailer.'},
+  {id:'nursery',name:'Tree Nursery',svg:'nursery',icon:'🏡',rate:6,cost:1.5e6,desc:'A glass greenhouse that raises saplings by the thousand.'},
+  {id:'sdrone',name:'Seed Drone',svg:'sdrone',icon:'🛸',rate:45,cost:1.2e8,desc:'Fires seed pods into bare ground from the air.'},
+];
+const PMAP={}; PLANTERS.forEach(p=>PMAP[p.id]=p);
+const PL_SCALE=1.15;
+const FELL={lumberjack:.015,chainsaw:.03,truck:.07,harvester:.1,drone:.15,heli:.25};   // grown trees felled per second, per collector
+const FOREST_BASE=1200, LAND_PER=90;   // plots: base forest + land each sapling/s of planting capacity tends
+const GROW_SAP=30, GROW_YOUNG=40;      // mean seconds sapling → young → grown (before season / upgrade multipliers)
+const SEASON_GROW=[1.5,1.1,.85,.6];    // spring, summer, autumn, winter
+const BUF_SEC=10, NATURAL=.00015, CHOP_TREES=.01;
+
+function plRate(id){return PMAP[id].rate*((M&&M.plantT&&M.plantT[id])||1);}
+function plantCap(){let t=0;for(const p of PLANTERS) t+=((S.planters&&S.planters[p.id])||0)*plRate(p.id);return t;}
+function plantCapBase(){let t=0;for(const p of PLANTERS) t+=((S.planters&&S.planters[p.id])||0)*p.rate;return t;}
+function forestPlots(){return FOREST_BASE+LAND_PER*plantCapBase();}
+function fellDemand(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*FELL[c.id];return t/((M&&M.yield)||1);}
+function growMult(){return ((M&&M.grow)||1)*SEASON_GROW[S.wx?seasonIdx():0];}
+function forestEff(){const F=S.forest;return F&&isFinite(F.eff)?F.eff:1;}
+function chopForest(){const F=S.forest;if(!F) return 1;const e=.25+.75*forestEff(),c=Math.min(F.m,CHOP_TREES);F.m-=c;F.st+=c;return e;}
+function forestTick(dt,offline){
+  const F=S.forest; if(!F) return;
+  const P=forestPlots(), tot=F.m+F.y+F.s+F.st; if(tot<P) F.s+=P-tot;   // new land (from more planters) arrives freshly planted with saplings
+  // growth: sapling → young → grown (exponential stage times, scaled by season + upgrades)
+  const g=growMult(), ks=F.s*(1-Math.exp(-dt*g/GROW_SAP)), ky=F.y*(1-Math.exp(-dt*g/GROW_YOUNG));
+  F.s-=ks; F.y+=ks-ky; F.m+=ky;
+  // planting onto stumps: the crew plus a very slow natural regrowth
+  const cap=plantCap()*dt, nat=NATURAL*F.st*dt, pl=Math.min(F.st,cap+nat), crew=Math.min(pl,cap);
+  F.st-=pl; F.s+=pl; if(S.forestLife) S.forestLife.planted+=crew; F.pr=(F.pr||0)+(crew/dt-(F.pr||0))*Math.min(1,dt/2);
+  if(offline&&offlineAcc) offlineAcc.planted=(offlineAcc.planted||0)+crew;
+  // felling: full output while ≥ BUF_SEC of grown trees stand; below that, output falls with the stock (at 0 only what matures gets cut)
+  const D=fellDemand(); const eff=D>1e-9?Math.min(1,F.m/(D*BUF_SEC)):1; const cut=Math.min(F.m,D*eff*dt);
+  F.m-=cut; F.st+=cut; F.eff=eff; F.D=D;
+  if(!offline){
+    if(eff<.5&&!F.warn&&D>0){F.warn=1;toast(`<span style="font-size:22px">🌲</span><span><b>Forest depleted, hire planters!</b><br>Loggers can only fell grown trees. Log output is down to ${Math.round(eff*100)}%.</span>`,6500,'forest-toast');sfx('event');}
+    else if(eff>.9&&F.warn) F.warn=0;
+  }
+}
+function plCost(id,n){return bulkCost(PMAP[id].cost,PL_SCALE,S.planters[id]||0,n);}
+function buyPlanter(id,n){
+  const p=PMAP[id];n=n||qty(p.cost,PL_SCALE,S.planters[id]||0);const cost=plCost(id,n);
+  if(S.coins+1e-9<cost) return false; S.coins-=cost; const first=!(S.planters[id]>0); S.planters[id]=(S.planters[id]||0)+n; M=computeMods();
+  if(first&&id!=='planter'){toast(`${p.icon} <b>${p.name}</b> hired! +${fr(p.rate)} saplings/s and +${fmt(LAND_PER*p.rate)} plots of forest land.`);sfx('unlock');} else sfx('buy');
+  return true;
+}
+// v2.6 → v2.7: a full forest and a free crew that covers today's loggers (so old saves do not crash into a depleted forest)
+function migrateForest(o){
+  let D=0;for(const c of COLLECTORS) D+=((o.collectors&&o.collectors[c.id])||0)*FELL[c.id];
+  const pl={planter:1,team:0,nursery:0,sdrone:0};let rem=D*1.1-.1;
+  for(const id of ['sdrone','nursery','team']){const r=PMAP[id].rate;const n=Math.floor(rem/r);if(n>0){pl[id]=n;rem-=n*r;}}
+  if(rem>0) pl.planter+=Math.ceil(rem/PMAP.planter.rate);
+  o.planters=pl;let cap=0;for(const p of PLANTERS) cap+=pl[p.id]*p.rate;
+  o.forest={m:FOREST_BASE+LAND_PER*cap,y:0,s:0,st:0,eff:1,warn:0,D:0};
+}
+function forestState(){const F=S.forest,e=forestEff(),D=F.D||fellDemand(),cap=plantCap();
+  if(e<.5) return {cls:'bad',txt:'⛔ Forest depleted, hire planters!'};
+  if(e<.99) return {cls:'thin',txt:`⚠ Thinning: log output ${Math.round(e*100)}%`};
+  if(D>cap*1.02&&D>0){const left=(F.m-D*BUF_SEC)/Math.max(1e-9,D-cap-NATURAL*F.st);return {cls:'warn',txt:`⚠ Felling outpaces planting${left>0&&left<36000?` · ~${fmtTime(left)} of trees left`:''}`};}
+  return {cls:'ok',txt:'✔ Healthy'};}
+
+/* ---------- Crew sheet: forest card + planting crew list ---------- */
+const plEls={}; let plSig='';
+function plVisible(p,i){return (S.planters[p.id]||0)>0||S.totalEarned>=p.cost*0.3||i===0;}
+function buildPlanters(){
+  const L=$('plList'); if(!L) return; L.innerHTML=''; let teaser=false;
+  PLANTERS.forEach((p,i)=>{
+    if(!plVisible(p,i)){ if(teaser) return; teaser=true;const d=document.createElement('div');d.className='card locked';
+      d.innerHTML=`<div class="ic">❔</div><div><div class="nm">???</div><div class="ds">Earn 🪙 ${fmt(p.cost*0.3)} total to reveal</div></div><div></div>`;L.appendChild(d);return;}
+    const d=document.createElement('div');d.className='card pl';d.dataset.id=p.id;
+    d.innerHTML=`<div class="ic">${svgIcon(p.svg,32)}</div><div><div class="nm">${p.name}<span class="cnt"></span></div><div class="ds"></div><div class="pbar"><i></i></div></div><button class="btn buy"></button>`;
+    const btn=d.querySelector('button'); btn.onclick=()=>{buyPlanter(p.id);render();};
+    plEls[p.id]={d,cnt:d.querySelector('.cnt'),ds:d.querySelector('.ds'),btn,pbar:d.querySelector('.pbar>i')};L.appendChild(d);});
+}
+function updateForestUI(){
+  // HUD chip (always)
+  const F=S.forest; if(!F) return; const P=forestPlots(), e=forestEff(), st=forestState();
+  const chip=$('forestChip'); if(chip){const pct=Math.max(0,Math.min(100,(1-F.st/Math.max(1,P))*100));$('fBarI').style.width=pct.toFixed(1)+'%';const t=fmt(Math.floor(F.m));if($('fPct').textContent!==t) $('fPct').textContent=t;
+    chip.className='fchip '+st.cls; chip.title=`Grown trees ${fmt(F.m)} / ${fmt(P)} plots · log output ${Math.round(e*100)}% (tap for Crew & Forest)`;}
+  if(curSheet!=='crew') return;
+  const c=$('forestCard'); if(c){const D=F.D||0,cap=plantCap(),nat=NATURAL*F.st,g=growMult();
+    const w=k=>(Math.max(0,F[k])/P*100).toFixed(2)+'%';
+    c.className='forest-card '+st.cls;
+    c.innerHTML=`<div class="fc-h"><b>🌲 ${TREES[S.tree].name} Forest</b><span class="fc-st">${st.txt}</span></div>
+      <div class="fc-bar"><i class="m" style="width:${w('m')}"></i><i class="y" style="width:${w('y')}"></i><i class="s" style="width:${w('s')}"></i></div>
+      <div class="fc-leg"><span><i class="m"></i>${fmt(F.m)} grown</span><span><i class="y"></i>${fmt(F.y)} young</span><span><i class="s"></i>${fmt(F.s)} saplings</span><span><i class="st"></i>${fmt(F.st)} stumps</span><span class="mut">${fmt(P)} plots</span></div>
+      <div class="fc-rates"><span>🪓 Felling <b>${fr(D*e)}</b>${e<.99?` / ${fr(D)}`:''} trees/s</span><span>🌱 Planting <b>${fr(cap)}</b>/s${nat>.005?` <small>+${fr(nat)} natural</small>`:''}</span><span>⏱ Growth ×${g.toFixed(2)} <small>(${SEASONS[S.wx?seasonIdx():0].n})</small></span><span>🪵 Log output <b>${Math.round(e*100)}%</b></span></div>`;}
+  const s1=PLANTERS.map((p,i)=>plVisible(p,i)?1:0).join(''); if(s1!==plSig||!$('plList').children.length){plSig=s1;buildPlanters();}
+  for(const p of PLANTERS){const el=plEls[p.id]; if(!el||!el.d.isConnected) continue;
+    const own=S.planters[p.id]||0, n=qty(p.cost,PL_SCALE,own), cost=plCost(p.id,n), r=plRate(p.id);
+    el.cnt.textContent=own?'×'+own:''; el.ds.textContent=`+${fr(r)} 🌱/s each · +${fmt(LAND_PER*p.rate)} plots`+(own?` · ${fr(r*own)}/s total`:` · ${p.desc}`);
+    el.btn.innerHTML=costBtnHtml(`Hire${n>1?' ×'+n:''}`,cost); el.btn.disabled=S.coins+1e-9<cost; el.d.classList.toggle('afford',!el.btn.disabled);
+    if(el.pbar) el.pbar.style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';}
+}
+function forestNeedsCrew(){const e=forestEff();if(e>=.8) return false;let c=1e99;for(const p of PLANTERS) c=Math.min(c,plCost(p.id,1));return S.coins>=c;}
+Object.assign(ICONS,{
+  planter:()=>`<svg viewBox="0 0 32 32"><circle cx="13" cy="8" r="4.5" fill="#e8c4a0"/><path d="M8.5 7.5a4.6 4.6 0 0 1 9 0z" fill="#c8a050"/><rect x="8.5" y="12" width="9" height="10" rx="2" fill="#6a8a4a"/><rect x="9.5" y="22" width="3" height="8" fill="#4a4030"/><rect x="13.5" y="22" width="3" height="8" fill="#4a4030"/><rect x="5" y="14" width="4.5" height="6" rx="1" fill="#b89a6a"/><path d="M6 14l-1-4M7.5 14l.6-4.6M9 14l1.4-3.6" stroke="#5aa03a" stroke-width="1.6" stroke-linecap="round"/><rect x="21" y="6" width="2" height="18" fill="#7a4a22" transform="rotate(14 22 15)"/><path d="M22.5 24h5l-1 5h-4z" fill="#9aa4ae" transform="rotate(14 24 26)"/></svg>`,
+  pteam:()=>`<svg viewBox="0 0 32 32"><circle cx="9" cy="9" r="3.6" fill="#efbf98"/><rect x="5.5" y="12.5" width="7" height="8" rx="1.6" fill="#e8742a"/><circle cx="21" cy="8" r="3.8" fill="#c08453"/><rect x="17" y="12" width="8" height="9" rx="1.8" fill="#6a8a4a"/><rect x="3" y="22" width="26" height="5" rx="1" fill="#8a5a2c"/><circle cx="8" cy="28" r="2.4" fill="#333"/><circle cx="24" cy="28" r="2.4" fill="#333"/><path d="M8 22v-4M13 22v-5M18 22v-4M23 22v-5" stroke="#5aa03a" stroke-width="2" stroke-linecap="round"/></svg>`,
+  nursery:()=>`<svg viewBox="0 0 32 32"><path d="M3 15L16 5l13 10v12H3z" fill="#cfeaf2" stroke="#6a8a9a" stroke-width="1.3"/><path d="M16 5v22M9.5 10v17M22.5 10v17M3 20h26" stroke="#8aaab8" stroke-width="1"/><rect x="3" y="24" width="26" height="4" fill="#8a6a4a"/><path d="M7 24v-3M12 24v-4M20 24v-3M25 24v-4" stroke="#4f9a3a" stroke-width="2" stroke-linecap="round"/></svg>`,
+  sdrone:()=>`<svg viewBox="0 0 32 32"><rect x="11" y="12" width="10" height="6" rx="1.5" fill="#3a5a3a"/><rect x="13" y="18" width="6" height="4" rx="1" fill="#7cc04f"/><path d="M5 10l6 4M27 10l-6 4" stroke="#999" stroke-width="1.5"/><ellipse cx="5" cy="10" rx="4" ry="1.4" fill="#cde" opacity=".9"/><ellipse cx="27" cy="10" rx="4" ry="1.4" fill="#cde" opacity=".9"/><circle cx="12" cy="27" r="1.6" fill="#8a5a2c"/><circle cx="17" cy="29" r="1.4" fill="#8a5a2c"/><circle cx="21" cy="26" r="1.5" fill="#8a5a2c"/></svg>`,
+});
 
 /* =====================================================================
    ISOMETRIC FACTORY SCENE (v2.0)
@@ -2299,6 +2448,7 @@ function isForestPt(i,j){
   if(Math.abs(v)<=13&&u>=1&&u<=58.5) return false;
   if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
   if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;
+  if(i>=6.2&&i<10.6&&j>=-8.4&&j<-4.4) return false;   // v2.7: tree-nursery clearing
   if(i>=32&&j>=16.8&&j<20.4) return false;
   return true;
 }
@@ -2423,6 +2573,7 @@ function drawGround(ctx,x0,y0,x1,y1){
   // concrete pads for every lot + yard + dock
   drawPremGround(ctx,x0,y0,x1,y1);
   if(typeof techGround==='function') techGround(ctx);
+  if(typeof forestGround==='function') forestGround(ctx);
   for(const L of [...Object.values(LOTS),YARD,DOCK]){
     if(L.prem||L.tech) continue;
     const {ci,cj}=L; const e=2.15;
@@ -2506,12 +2657,23 @@ const TREE_PAL=[
   {k:'cone',c:['#20242f','#30374a','#56607e']},
 ];
 const CHERRY={k:'round',cherry:true,c:['#c86a8e','#e891b2','#ffc4d8']};
+function drawSapling(ctx,x,y,t,pal,tier){
+  const g=t.grow, TC=treeColors(pal,t,tier), h=7+g*30, r=2.6+g*10, snowy=SEAS===3;
+  ell(ctx,x,y+.4,4.6+g*4,2+g*1.6,'#6a4a2a'); ell(ctx,x-.6,y-.2,3+g*3,1.2+g*1,'#7d5a34');
+  ctx.fillStyle='#c8a26a';ctx.fillRect(x+2.6,y-h*.9,1,h*.9);ctx.strokeStyle='rgba(240,230,200,.8)';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(x+2.6,y-h*.55);ctx.lineTo(x+.4,y-h*.55);ctx.stroke();
+  ctx.fillStyle='#7a4a26';ctx.fillRect(x-.6,y-h,1.3,h);
+  if(pal.k==='cone'){for(let k=0;k<2;k++){const top=y-h-2-r*.2+k*r*.75,w=r*(.55+k*.25);ctx.fillStyle=k?TC[1]:TC[2];ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x-w,top+r*1.05);ctx.lineTo(x+w,top+r*1.05);ctx.closePath();ctx.fill();
+      ctx.fillStyle=TC[0];ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x+w,top+r*1.05);ctx.lineTo(x+1,top+r*1.05);ctx.closePath();ctx.fill();}
+    if(snowy){ctx.fillStyle='#f4f8fb';ctx.beginPath();ctx.moveTo(x,y-h-2-r*.2);ctx.lineTo(x-r*.35,y-h+r*.3);ctx.lineTo(x+r*.35,y-h+r*.3);ctx.closePath();ctx.fill();}}
+  else{ell(ctx,x+.8,y-h+.6,r*.85,r*.7,TC[0]);ell(ctx,x-.3,y-h,r*.75,r*.62,TC[1]);ell(ctx,x-r*.3,y-h-r*.25,r*.35,r*.3,TC[2]);if(snowy) ell(ctx,x-.3,y-h-r*.45,r*.55,r*.22,'#f4f8fb');}
+}
 function treeShadow(ctx,x,y,s){ctx.fillStyle='rgba(30,50,10,.2)';ctx.beginPath();ctx.ellipse(x+5*s,y+1,13*s,6*s,0,0,TAU);ctx.fill();}
 function drawTree(ctx,x,y,t,tier){
   let pal=TREE_PAL[tier]||TREE_PAL[0]; if(SEAS===0&&t.var<.17) pal=CHERRY; const s=t.s*(t.grow===undefined?1:t.grow);
   if(t.stump>0){ // stump
     ell(ctx,x,y,4.5,2.4,'#7a4a24'); ctx.fillStyle='#8a5a2c';ctx.fillRect(x-4.5,y-4,9,4); ell(ctx,x,y-4,4.5,2.4,'#e0b67a'); ell(ctx,x,y-4,2,1,'#b8864a'); return;
   }
+  if(t.grow!==undefined&&t.grow<.4&&!t.down&&!(t.fall>0)){drawSapling(ctx,x,y,t,pal,tier);return;}   // v2.7: freshly planted sapling
   const fd=t.fdir||(t.var>.5?1:-1);
   if(t.down||t.fall>0){ell(ctx,x,y,4.2*t.s,2.2*t.s,'#7a4a24');ctx.fillStyle='#8a5a2c';ctx.fillRect(x-4.2*t.s,y-3.5*t.s,8.4*t.s,3.5*t.s);ell(ctx,x,y-3.5*t.s,4.2*t.s,2.2*t.s,'#e0b67a');}
   ctx.save(); ctx.translate(x,y);
@@ -2561,7 +2723,7 @@ function mkLook(seed,o){
   else if(o.role==='saw'){L.shirt=PLAIDS[Math.floor(R()*PLAIDS.length)][0];L.vest=R()<.5?'#f2d21a':'#f58a1a';L.hat='hard';L.hatc=R()<.5?'#f08a1a':'#f5f2ea';L.pants='#3a3f48';}
   else if(o.role==='worker'){L.shirt=['#5a6a7a','#e8e2d4','#3a4a5a','#7a8a6a'][Math.floor(R()*4)];L.vest=o.vest||'#f2d21a';L.hat='hard';L.hatc=o.hatc||'#f5c22e';}
   else if(o.role==='foreman'){L.shirt='#e8e4dc';L.vest='#f2d21a';L.hat='hard';L.hatc='#f7f7f2';L.pants='#2e3440';}
-  else if(o.role==='planter'){L.shirt='#6a8a4a';L.plaid=null;L.hat=R()<.6?'cap':null;L.hatc='#c8a050';L.pants='#4a4030';}
+  else if(o.role==='planter'){L.shirt=['#6a8a4a','#7a9a5a','#5a7a3a','#8a7a4a'][Math.floor(R()*4)];L.plaid=null;L.hat=R()<.7?(R()<.5?'cap':'bucket'):null;L.hatc=['#c8a050','#6a8a4a','#e8e0c8'][Math.floor(R()*3)];L.pants=['#4a4030','#3a4a3a','#5a4a3a'][Math.floor(R()*3)];L.bag=true;L.gloves='#c89a5a';if(o.vest) L.vest=o.vest;}
   else if(o.role==='casual'){const p=PLAIDS[Math.floor(R()*PLAIDS.length)];L.shirt=p[0];L.plaid=R()<.6?p[1]:null;L.hat=R()<.4?'beanie':null;L.hatc=['#c83a2e','#2e6ac8','#e8c43a'][Math.floor(R()*3)];}
   return L;
 }
@@ -2623,6 +2785,28 @@ function human(ctx,x,y,o){
       props.push(()=>{const k=o.t||0;ctx.strokeStyle='#5a3a1c';ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(6.4,0);ctx.lineTo(6.4,-3.4-k*2);ctx.stroke();
         ell(ctx,6.4,-4-k*2.4,1.8+k,1.2+k*.6,'#4f9a3a');ell(ctx,5.6,-4.6-k*2.4,1,.8,'#7cc45e');ell(ctx,6.2,.2,2.4,.9,'#6a4a2a');});
       break;}
+    case 'dig': { // spade: push the blade in with a foot, lever the soil, toss it aside
+      const u=((o.t!==undefined?o.t:ph/TAU)%1+1)%1;
+      const push=u<.42?ease(u/.42):u<.7?1:1-ease((u-.7)/.3), lever=u<.42?0:u<.7?ease((u-.42)/.28):1-ease((u-.7)/.3), toss=u>=.7?Math.sin((u-.7)/.3*Math.PI):0;
+      hipY=HU.hip+1.2+push*.6; lean=1.6+lever*.6; legs=[[[hipF[0],hipY],[hipF[0]-1.4,hipY*.5],[hipF[0]-2.2,0]],[[hipN[0],hipY],[hipN[0]+4.2,hipY*.55-push*1.2],[6.6,-1.6-push*1.4+lever*1.2]]];
+      const tip=[7.4,1.1*push-1.6-toss*3.5], a=-.12-lever*.55-toss*.25, L2=17;
+      const top=[tip[0]+Math.sin(a)*L2,tip[1]-Math.cos(a)*L2], at=f=>[tip[0]+(top[0]-tip[0])*f,tip[1]+(top[1]-tip[1])*f];
+      hand=[at(.93),at(.58)];
+      props.push(()=>{limb(ctx,[at(.12),top],1.25,'#8a5a2c');limb(ctx,[[top[0]-1.4,top[1]],[top[0]+1.4,top[1]]],1.1,'#5a3a1c');
+        const d=[Math.sin(a),-Math.cos(a)],n=[Math.cos(a),Math.sin(a)],bp=(p,q)=>[tip[0]+d[0]*p+n[0]*q,tip[1]+d[1]*p+n[1]*q];
+        fillP(ctx,[bp(0,-1.6),bp(0,1.6),bp(4.2,1.4),bp(4.2,-1.4)],'#9aa4ae');limb(ctx,[bp(0,-1.6),bp(0,1.6)],.5,'#e8eef2');
+        if(toss>.05||lever>.3) ell(ctx,tip[0]+d[0]*2.4,tip[1]+d[1]*2.4-1.2,2.4,1.3,'#6a4a2a');});
+      break;}
+    case 'water': { // watering can: tip it over the fresh sapling, drops fall from the rose
+      lean=.7; legs=stance(1.1,.3);
+      const tilt=.35+Math.sin(T*1.7+ph)*.08; hand=[[3.4,HU.hip-3.4],[6.2,HU.hip-1.4]];
+      props.push(()=>{ctx.save();ctx.translate(5.6,HU.hip-1.2);ctx.rotate(tilt);
+        ctx.fillStyle='#3f8a5a';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(-2.6,-2.2,5.2,4.4,1.1);else ctx.rect(-2.6,-2.2,5.2,4.4);ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(-2.2,-1.8,1,3.6);ctx.strokeStyle='#2c6a42';ctx.lineWidth=.7;ctx.beginPath();ctx.arc(-.6,-2.4,1.9,Math.PI,0);ctx.stroke();
+        ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(2.4,.6);ctx.lineTo(6.4,-1.6);ctx.stroke();ell(ctx,6.7,-1.8,.9,1.3,'#2c6a42');ctx.restore();
+        const sx=5.6+Math.cos(tilt)*6.7-Math.sin(tilt)*-1.8, sy=HU.hip-1.2+Math.sin(tilt)*6.7+Math.cos(tilt)*-1.8;
+        for(let k=0;k<5;k++){const f=((T*2.4+k/5+ph)%1);ell(ctx,sx+.4+f*1.2+(k%2)*.6,sy+f*(-sy),.45,.75,`rgba(150,205,255,${.9-f*.5})`);}});
+      break;}
     case 'sit': case 'sitdrink': {
       hipY=-7.4; legs=[[[hipF[0]-1,hipY],[hipF[0]+3.4,hipY-.4],[hipF[0]+3.8,0]],[[hipN[0]-1,hipY],[hipN[0]+3.8,hipY-.2],[hipN[0]+4.4,0]]];
       hand=[[1.6,hipY-1.8],[2.8,hipY-1.2]]; break;}
@@ -2671,6 +2855,10 @@ function human(ctx,x,y,o){
     ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(-3.2,HU.sh+5.2,6.5,.5);}
   ctx.save();pth(ctx,tp);ctx.clip();ctx.fillStyle='rgba(0,0,0,.16)';ctx.fillRect(1.7,HU.sh,3,10);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(-3.4,HU.sh,1.2,10);ctx.restore();
   ctx.fillStyle='rgba(30,20,10,.55)';ctx.fillRect(-2.7,HU.hip+.1,5.3,1);
+  if(L.bag){limb(ctx,[[2.2,HU.sh+.6],[-2.6,HU.hip-1]],.8,'#7a6040');ctx.fillStyle='#b89a6a';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(-5.2,HU.hip-3.2,3.8,4.4,1);else ctx.rect(-5.2,HU.hip-3.2,3.8,4.4);ctx.fill();
+    ctx.fillStyle='#9a7e52';ctx.fillRect(-5.2,HU.hip-3.2,3.8,1.1);ctx.strokeStyle='#4f9a3a';ctx.lineWidth=.9;ctx.beginPath();
+    for(const [x0,h] of [[-4.6,3.2],[-3.6,4.2],[-2.4,3.4]]){ctx.moveTo(x0,HU.hip-3.2);ctx.lineTo(x0-.3,HU.hip-3.2-h);}ctx.stroke();
+    for(const [x0,h] of [[-4.6,3.2],[-3.6,4.2],[-2.4,3.4]]) ell(ctx,x0-.3,HU.hip-3.4-h,1.1,.8,'#7cc45e');}
   // neck + head
   const hx=back?-.1:.35, hy=HU.hc;
   ctx.fillStyle=shade(L.skin,.88);ctx.fillRect(-.7+hx*.5,HU.sh-1.7,1.7,2);
@@ -2702,6 +2890,7 @@ function human(ctx,x,y,o){
     ctx.fillStyle=shade(L.hatc,.82);ctx.beginPath();ctx.ellipse(.35,-1.05,3.45,.85,0,0,TAU);ctx.fill();ctx.fillStyle=L.hatc;ctx.fillRect(-2.6,-1.6,5.4,.6);
     ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(-.6,-2.6,.9,.55,-.4,0,TAU);ctx.fill();ctx.fillStyle=shade(L.hatc,.85);ctx.fillRect(-.25,-3.6,.6,2.3);}
   else if(L.hat==='beanie'){ctx.fillStyle=L.hatc;ctx.beginPath();ctx.ellipse(0,-1.1,2.55,2.6,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillStyle=shade(L.hatc,.82);ctx.fillRect(-2.6,-1.5,5.2,1.2);ell(ctx,0,-3.9,.9,.8,shade(L.hatc,1.15));}
+  else if(L.hat==='bucket'){ctx.fillStyle=L.hatc;ctx.beginPath();ctx.ellipse(0,-1.3,2.4,2.1,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillStyle=shade(L.hatc,.85);ctx.beginPath();ctx.ellipse(.1,-1.1,3.6,.9,0,0,TAU);ctx.fill();}
   else if(L.hat==='cap'){ctx.fillStyle=L.hatc;ctx.beginPath();ctx.ellipse(0,-1.1,2.5,2.2,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.fillStyle=shade(L.hatc,.78);ctx.beginPath();ctx.ellipse(back?-2.2:2.3,-1.0,1.9,.55,0,0,TAU);ctx.fill();}
   ctx.restore();
   ctx.restore();
@@ -3318,7 +3507,7 @@ function stepJack(p,dt){
     case 'tobuck': p.pose='walk'; if(walkTo(p,dt,1.0)){p.st='buck';p.tm=1.8;p.wt=Math.random();p.fx=tr.fdir||1;p.back=false;} break;
     case 'buck':{p.pose=p.type==='saw'?'saw':'chop';p.fx=tr.fdir||1;p.back=false;p.wt+=dt/0.95;tr.buck=Math.min(1,(tr.buck||0)+dt/1.8);
       if(p.type==='saw'&&Math.random()<dt*16){const c=trunkMid(tr),b=P(c[0],c[1],3);emitP(b[0],b[1],'saw');}
-      p.tm-=dt;if(p.tm<=0){tr.down=0;tr.buck=0;tr.stump=40;tr.claim=null;tr.planted=false;p.tree=null;const lg=LANDINGS[p.zone];p.ti=lg.i+(Math.random()-.5)*.9;p.tj=lg.j+.4+(Math.random()-.5)*.6;p.st='carry';}
+      p.tm-=dt;if(p.tm<=0){tr.down=0;tr.buck=0;tr.stump=1;tr.claim=null;tr.planted=false;p.tree=null;const lg=LANDINGS[p.zone];p.ti=lg.i+(Math.random()-.5)*.9;p.tj=lg.j+.4+(Math.random()-.5)*.6;p.st='carry';}
       break;}
     case 'carry': p.pose='carry'; if(walkTo(p,dt,.82)){const lg=LANDINGS[p.zone];lg.n=Math.min(10,lg.n+1);const q=P(lg.i,lg.j,6);for(let k=0;k<5;k++)emitP(q[0],q[1],'dust');
         if(Math.random()<.4){p.st='rest';p.tm=2.2;p.pose='brow';}else p.st='pick';} break;
@@ -3331,13 +3520,6 @@ function sfxSoft(){/* reserved */}
 function stepForeman(p,dt){
   if(p.st==='walk'){p.pose='walk';if(walkTo(p,dt,.7)){p.st='check';p.tm=3+Math.random()*3;p.pose=Math.random()<.65?'clip':'point';p.back=p.pose==='point';if(p.pose==='point')p.fx=Math.random()<.5?1:-1;}}
   else {p.tm-=dt;if(p.tm<=0){const W=[[.4,2.7],[-2.3,4.4],[2.2,1.4],[-.9,2.2]];const w=W[Math.floor(Math.random()*W.length)];p.ti=w[0];p.tj=w[1];p.st='walk';}}
-}
-function stepPlanter(p,dt){
-  if(p.st==='find'){const c=zoneTrees('T').filter(t=>t.stump>0&&!t.planted&&!t.claim);if(c.length){c.sort((a,b)=>Math.hypot(a.i-p.i,a.j-p.j)-Math.hypot(b.i-p.i,b.j-p.j));const t=c[0];t.planted=true;p.tree=t;p.ti=t.i;p.tj=t.j-.48;p.st='walk';}
-    else {p.st='wait';p.tm=3;p.pose='look';}}
-  else if(p.st==='walk'){p.pose='walk';if(walkTo(p,dt,.85)){p.st='plant';p.tm=2.8;p.fx=-1;p.back=false;}}
-  else if(p.st==='plant'){p.pose='plant';p.pt=1-p.tm/2.8;p.tm-=dt;if(p.tm<=0){const t=p.tree;if(t){t.stump=0;t.grow=.14;t.planted=false;}p.tree=null;p.st='find';}}
-  else {p.tm-=dt;if(p.tm<=0)p.st='find';}
 }
 function syncEntities(){
   // yard workers (v1.3 system, walking the iso lane)
@@ -3355,9 +3537,7 @@ function syncEntities(){
   if(scene._jsig!==sig){scene._jsig=sig;const old=scene.jacks;scene.jacks=want.map(w=>old.find(o=>o.id===w.id)||mkJack(w.id,w.type,w.zone));
     for(const o of old) if(!scene.jacks.includes(o)&&o.tree){o.tree.claim=null;}}
   if(!scene.foreman){scene.foreman={look:mkLook(4242,{role:'foreman',female:false}),i:.4,j:2.7,ti:.4,tj:2.7,st:'check',tm:2,ph:0,fx:1,back:false,pose:'clip'};}
-  const wantPl=S.collectors.lumberjack>=2;
-  if(wantPl&&!scene.planter) scene.planter={look:mkLook(5151,{role:'planter',female:true}),i:2,j:1.5,ti:2,tj:1.5,st:'find',tm:0,ph:0,fx:1,back:false,pose:'stand'};
-  if(!wantPl&&scene.planter){if(scene.planter.tree) scene.planter.tree.planted=false;scene.planter=null;}
+  syncPlanters();
   if(!scene.campers){scene.campers=[{look:mkLook(6001,{role:'casual',female:false}),pose:'sitdrink',o:[-.12,.2],fx:1,ph:0},{look:mkLook(6002,{role:'casual',female:true}),pose:'sit',o:[.22,-.14],fx:-1,ph:2},
     {look:mkLook(6003,{role:'saw',female:false}),pose:'drink',o:[.62,.1],fx:-1,ph:4}];}
   // log trucks
@@ -3392,14 +3572,14 @@ function updateEntities(dt){
   // forest crew
   for(const p of scene.jacks){stepJack(p,dt);}
   if(scene.foreman) stepForeman(scene.foreman,dt);
-  if(scene.planter) stepPlanter(scene.planter,dt);
+  forestVisTick(dt);
   for(const k in LANDINGS){const lg=LANDINGS[k];lg.dec=(lg.dec||0)+dt;if(lg.dec>9){lg.dec=0;if(lg.n>2) lg.n--;}}
   for(const tr of scene.dynTrees){
     if(tr.shake>0) tr.shake=Math.max(0,tr.shake-dt*2.8);
     if(tr.fall>0){tr.fall+=dt/1.35;if(tr.fall>=1){tr.fall=0;tr.down=1;const c=trunkMid(tr);const p=P(c[0],c[1]);for(let k=0;k<16;k++) emitP(p[0]+(Math.random()-.5)*40,p[1],'dust');}}
-    else if(tr.down){ if(!tr.claim){tr.down=0;tr.stump=40;} }
-    else if(tr.stump>0){tr.stump-=dt*(seasonIdx()===0?2.2:1);if(tr.stump<=0){tr.stump=0;tr.grow=.14;}}   // v2.3: spring regrowth
-    else if(tr.grow<1){tr.grow=Math.min(1,tr.grow+dt*(seasonIdx()===0?.1:.055));}
+    else if(tr.down){ if(!tr.claim){tr.down=0;tr.stump=1;} }
+    else if(tr.stump>0){}   // v2.7: a stump stays until a planter (or slow natural regrowth) puts a sapling on it
+    else if(tr.grow<1){const sap=tr.grow<.4,cap=sap?.38:.96;tr.grow=Math.min(Math.max(tr.grow,cap),tr.grow+dt*growMult()*(sap?.24/GROW_SAP:.54/GROW_YOUNG));}
   }
   for(const h of scene.harvesters){h.ph+=dt;const dir=Math.cos(h.ph*.25)>=0?1:-1;const y=dir>0?Math.PI/2:-Math.PI/2;h.yaw=h.yaw===undefined?y:angLerp(h.yaw,y,Math.min(1,dt*2.5));}
   for(const d of scene.drones) d.ph+=dt;
@@ -3449,6 +3629,8 @@ function emitP(x,y,type){
   else if(type==='saw'){p.vx=(R()-.5)*50;p.vy=-15-R()*25;p.g=60;p.life=p.max=.5+R()*.4;p.col='rgba(238,214,160,';p.size=1.2+R()*1.4;p.type='dust';}
   else if(type==='bark'){p.vx=20+R()*40;p.vy=-30-R()*30;p.g=180;p.life=p.max=.6;p.col='#6a4424';p.size=2;}
   else if(type==='poof'){const a=R()*TAU,s=30+R()*60;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s*.5-10;p.g=-8;p.life=p.max=.9+R()*.5;p.col='rgba(245,235,215,';p.size=5+R()*6;}
+  else if(type==='soil'){p.vx=8+R()*30;p.vy=-30-R()*35;p.g=220;p.life=p.max=.5+R()*.25;p.col=['#5a3f22','#6a4a2a','#7d5a34'][R()*3|0];p.size=1.6+R()*1.2;p.type='chip';}
+  else if(type==='seed'){p.vx=(R()-.5)*10;p.vy=10+R()*12;p.g=60;p.life=p.max=.6+R()*.3;p.col=['#c8a26a','#8a6a3a','#e8d8a0'][R()*3|0];p.size=1.2;p.type='chip';}
   else if(type==='spark'){const a=R()*TAU,s=40+R()*120;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s-30;p.g=90;p.life=p.max=1;p.col='spark';p.size=2;}
   scene.particles.push(p);
 }
@@ -3458,7 +3640,7 @@ function buildPoof(id){const L=LOTS[id];if(!L) return;scene.buildAnim[id]=0;cons
 /* ---------------- golden logs ---------------- */
 const golden={cur:null,timer:35,sparks:[]};
 function goldenSize(){return Math.max(16,Math.min(30,10+scene.cam.z*14));}
-function safeRect(){const tb=($('topbar').offsetHeight||50)+28;const bot=Math.min(sheetTop(),scene.h-($('bottombar').offsetHeight||70))-26;return [36,tb,scene.w-36,Math.max(tb+40,bot)];}
+function safeRect(){const sb=$('subbar'),tb=Math.max(($('topbar').offsetHeight||50)+28,sb?sb.getBoundingClientRect().bottom+10:0);const bot=Math.min(sheetTop(),scene.h-($('bottombar').offsetHeight||70))-26;return [36,tb,scene.w-36,Math.max(tb+40,bot)];}
 function spawnGolden(){
   const [x0,y0,x1,y1]=safeRect(); const vis=[];
   for(const t of scene.trees){const [x,y]=P(t.i,t.j,48*t.s);const s=w2s(x,y);if(s[0]>x0&&s[0]<x1&&s[1]>y0&&s[1]<y1) vis.push(t);}
@@ -3715,7 +3897,7 @@ function drawScene(dt){
   const hp=(p,o)=>{const [x,y]=P(p.i,p.j);if(!inView(x,y,40)) return;objs.push({k:p.i+p.j+.01,f:()=>human(ctx,x,y,Object.assign({look:p.look,fx:p.fx,back:p.back,pose:p.pose,ph:p.ph,t:p.wt},o||{}))});};
   for(const p of scene.jacks) hp(p);
   if(scene.foreman) hp(scene.foreman);
-  if(scene.planter) hp(scene.planter,{t:scene.planter.pt||0});
+  for(const p of scene.planters||[]) hp(p,{t:p.wt});
   // log landings (piles grow as crews deliver)
   for(const k in LANDINGS){const lg=LANDINGS[k];const [x,y]=P(lg.i,lg.j);if(!inView(x,y,60)) continue;objs.push({k:lg.i+lg.j,f:()=>drawLanding(ctx,lg)});}
   // tea break by the campfire
@@ -3737,7 +3919,7 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView);
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView);
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
@@ -3756,6 +3938,7 @@ function drawScene(dt){
     if(Math.random()<dt*2){emitP(x,y-40,'spark');}}
   for(const h of scene.helis){const T=16,tt=(h.ph%T)/T;const A=P(-14,-1),B=P(3.2,3.6);let e,carry;if(tt<.5){e=tt*2;carry=true;}else{e=1-(tt-.5)*2;carry=false;}const s=e*e*(3-2*e);
     const x=A[0]+(B[0]-A[0])*s,y=A[1]+(B[1]-A[1])*s;heli(ctx,x,y,74,h.ph,carry);}
+  forestAir(ctx,dt);
   // smoke & particles (world space)
   for(const s of scene.smoke){const k2=s.life/s.max,r=s.kind==='exh'?1.6+k2*6:3+k2*11;const a=(1-k2)*(s.kind==='dark'?.55:s.kind==='grey'?.42:.5);
     ctx.fillStyle=s.kind==='dark'?`rgba(70,64,60,${a})`:s.kind==='grey'||s.kind==='exh'?`rgba(140,138,135,${s.kind==='exh'?a*.75:a})`:`rgba(250,250,248,${a})`;ctx.beginPath();ctx.arc(s.x,s.y,r,0,TAU);ctx.fill();}
@@ -3772,7 +3955,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){
@@ -4958,6 +5141,140 @@ function drawTradeMap(cv){
       ctx.fillStyle='#e8473c';ctx.font='900 9px system-ui';ctx.fillText('📈 SPIKE',x,y+26);}
   }
 }
+/* ===================== v2.7 SCENE: planting crew, saplings, tree nursery, seed drones =====================
+   The 90-odd "dynamic" trees in the two logging zones mirror the forest stock: each tree is a stump, a sapling, a young or a grown tree,
+   and a slow reconcile nudges them (always forward around the cycle grown → stump → sapling → young → grown) toward the logical mix. */
+const NURSERY={ci:8.35,cj:-6.45,i0:7.2,i1:9.6,j0:-7.4,j1:-5.6};
+function dynClass(t){if(t.stump>0||t.down||t.fall>0) return 'st';if((t.grow===undefined?1:t.grow)>=1) return 'm';return t.grow<.4?'s':'y';}
+let _fvAcc=0;
+function forestVisTick(dt){
+  for(const p of scene.planters||[]) stepPlanterV(p,dt);
+  for(const d of scene.sdrones||[]) d.ph+=dt;
+  _fvAcc+=dt; if(_fvAcc<.35) return; _fvAcc=0;
+  const F=S.forest,T=scene.dynTrees; if(!F||!T.length) return;
+  const P=Math.max(1,F.m+F.y+F.s+F.st), N=T.length, tg={st:Math.round(N*F.st/P),s:Math.round(N*F.s/P),y:Math.round(N*F.y/P)}; tg.m=N-tg.st-tg.s-tg.y;
+  const by={m:[],st:[],s:[],y:[]}; for(const t of T) by[dynClass(t)].push(t);
+  const crew=(scene.planters||[]).length, tol={m:1,st:1+(crew?3:0),s:1,y:1};
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  // grown → stump (the logical forest was felled faster than the crews on screen)
+  if(by.m.length>tg.m+tol.m){const c=by.m.filter(t=>!t.claim&&!t.shake);if(c.length){const t=pick(c);t.stump=1;t.planted=false;const p=P_(t);for(let k=0;k<6;k++) emitP(p[0]+(Math.random()-.5)*16,p[1],'dust');}}
+  // stump → sapling (planting / natural regrowth that no crew member is showing)
+  if(by.st.length>tg.st+tol.st){const c=by.st.filter(t=>t.stump>0&&!t.planted&&!t.down&&!(t.fall>0));if(c.length){const t=pick(c);t.stump=0;t.grow=.14;}}
+  // sapling → young, young → grown: only plants that have finished their visible stage move on
+  if(by.s.length>tg.s+tol.s){const c=by.s.filter(t=>t.grow>=.37);if(c.length){c.sort((a,b)=>b.grow-a.grow);c[0].grow=.42;}}
+  if(by.y.length>tg.y+tol.y){const c=by.y.filter(t=>t.grow>=.9);if(c.length){c.sort((a,b)=>b.grow-a.grow);c[0].grow=1;}}
+}
+function P_(t){return P(t.i,t.j);}
+/* ---------- planting crew figures ---------- */
+function syncPlanters(){
+  const pl=S.planters||{}, nP=Math.min(2,pl.planter||0), nT=Math.min(2,pl.team||0)*2, want=[];
+  for(let k=0;k<nP;k++) want.push({id:'p'+k,kind:'planter'});
+  for(let k=0;k<nT;k++) want.push({id:'t'+k,kind:'team'});
+  if((pl.nursery||0)>0) want.push({id:'n0',kind:'nursery'});
+  const sig=want.map(w=>w.id).join(',');
+  if(scene._plsig!==sig){scene._plsig=sig;const old=scene.planters||[];
+    scene.planters=want.map((w,k)=>old.find(o=>o.id===w.id)||mkPlanterV(w,k));
+    for(const o of old) if(!scene.planters.includes(o)&&o.tree) o.tree.planted=false;}
+  const nd=Math.min(2,pl.sdrone||0); scene.sdrones=scene.sdrones||[]; while(scene.sdrones.length<nd) scene.sdrones.push({k:scene.sdrones.length,ph:Math.random()*20}); scene.sdrones.length=nd;
+}
+function mkPlanterV(w,k){const lg=w.kind==='nursery'?{i:NURSERY.i0+.6,j:NURSERY.j1+.55}:LANDINGS[k%2?'L':'T'];
+  return {id:w.id,kind:w.kind,look:mkLook(8100+k*37+(w.kind==='team'?500:0),{role:'planter',vest:w.kind==='team'?['#e8742a','#f2d21a'][k%2]:null}),
+    i:lg.i+(Math.random()-.5)*1.4,j:lg.j+(Math.random()-.5)*1.4,ti:0,tj:0,st:'find',tm:Math.random()*2,ph:Math.random()*6,fx:1,back:false,pose:'stand',tree:null,wt:0};}
+function stepPlanterV(p,dt){
+  if(p.kind==='nursery'){ // tends the seedling beds outside the greenhouse
+    if(p.st==='walk'){p.pose='walk';if(walkTo(p,dt,.6)){p.st='water';p.tm=3+Math.random()*2;p.fx=1;p.back=false;}}
+    else {p.pose='water';p.tm-=dt;if(p.tm<=0){p.ti=NURSERY.i0+.4+Math.random()*1.8;p.tj=NURSERY.j1+.5+Math.random()*.25;p.st='walk';}}
+    return;}
+  switch(p.st){
+    case 'find':{p.tm-=dt;if(p.tm>0){p.pose='look';break;}
+      const c=scene.dynTrees.filter(t=>t.stump>0&&!t.planted&&!t.claim&&!t.down&&!(t.fall>0));
+      if(!c.length){p.st='find';p.tm=2.5+Math.random()*2;p.pose='look';break;}
+      c.sort((a,b)=>Math.hypot(a.i-p.i,a.j-p.j)-Math.hypot(b.i-p.i,b.j-p.j));const t=c[Math.floor(Math.random()*Math.min(2,c.length))];
+      t.planted=true;p.tree=t;p.ti=t.i-.5;p.tj=t.j+.08;p.st='walk';break;}
+    case 'walk': p.pose='walk'; if(walkTo(p,dt,.9)){p.st='dig';p.tm=2.6;p.wt=0;p.fx=1;p.back=false;} break;
+    case 'dig':{p.pose='dig';p.fx=1;const u0=p.wt%1;p.wt+=dt/1.3;const u1=p.wt%1;
+      if(u1<u0||(u0<.72&&u1>=.72)){const t=p.tree;if(t){const q=P(t.i,t.j);for(let k=0;k<5;k++) emitP(q[0]-2+(Math.random()-.5)*6,q[1]-1,'soil');}}
+      p.tm-=dt;if(p.tm<=0){p.st='plant';p.tm=1.4;p.wt=0;} break;}
+    case 'plant': p.pose='plant';p.wt=1-p.tm/1.4;p.tm-=dt;
+      if(p.tm<=0){const t=p.tree;if(t&&t.stump>0){t.stump=0;t.grow=.14;}if(t) t.planted=false;p.st='water';p.tm=1.8;p.wt=0;} break;
+    case 'water': p.pose='water'; p.tm-=dt; if(p.tm<=0){p.tree=null;p.st='find';p.tm=.3+Math.random()*.6;} break;
+  }
+}
+/* ---------- tree nursery: clearing, greenhouse, seedling beds ---------- */
+function forestGround(ctx){
+  const {i0,i1,j0,j1}=NURSERY;
+  fillP(ctx,[P(i0-.75,j0-.6),P(i1+.75,j0-.6),P(i1+.75,j1+1.35),P(i0-.75,j1+1.35)],SEAS===3?'#e6ecef':'#b9a37a');
+  fillP(ctx,[P(i0-.55,j0-.4),P(i1+.55,j0-.4),P(i1+.55,j1+1.15),P(i0-.55,j1+1.15)],SEAS===3?'#eef2f4':'#c9b48a');
+  // gravel path from the clearing toward the logging road
+  fillP(ctx,[P(i1+.55,j1+.5),P(i1+2.4,j1+.5),P(i1+2.4,j1+.95),P(i1+.55,j1+.95)],SEAS===3?'#eef2f4':'#c9b48a');
+}
+function seedBed(ctx,i0,j0,i1,j1,seed){
+  box(ctx,i0,j0,i1,j1,0,2.2,'#8a5a2c',{top:SEAS===3?'#f4f8fb':'#5a3f22',nosnow:true,hl:false});
+  if(SEAS===3) return;
+  const R=rng(seed);const pal=TREE_PAL[S.tree]||TREE_PAL[0];
+  for(let a=0;a<3;a++) for(let b=0;b<5;b++){const i=i0+.18+(i1-i0-.36)*b/4,j=j0+.15+(j1-j0-.3)*a/2;const [x,y]=P(i,j,2.2);const g=.15+R()*.22;
+    drawSapling(ctx,x,y,{grow:g,var:R(),s:1},pal,S.tree);}
+}
+function greenhouse(ctx){
+  const {i0,i1,j0,j1}=NURSERY, jc=(j0+j1)/2, H=13, R=21, glass='rgba(200,236,246,.42)', frame='#f4f6f2', night=isNight();
+  box(ctx,i0,j0,i1,j1,0,1.6,'#9a958a',{hl:false});   // concrete plinth
+  // inside: benches with green trays (seen through the glass)
+  for(const jj of [j0+.35,j1-.55]){box(ctx,i0+.2,jj,i1-.2,jj+.22,1.6,6,'#7a5a3a',{top:'#4f8a3a',hl:false,nosnow:true});
+    for(let k=0;k<8;k++){const [x,y]=P(i0+.35+k*(i1-i0-.6)/7,jj+.11,6.2);ell(ctx,x,y-1.2,1.8,1.4,k%2?'#6ab84a':'#4f9a3a');}}
+  if(night){const g=ctx.createRadialGradient(...P((i0+i1)/2,jc,8),2,...P((i0+i1)/2,jc,8),60);g.addColorStop(0,'rgba(255,236,170,.45)');g.addColorStop(1,'rgba(255,236,170,0)');ctx.fillStyle=g;fillP(ctx,[P(i0,j0,1.6),P(i1,j0,1.6),P(i1,j1,1.6),P(i0,j1,1.6)],g);}
+  const wall=(pts)=>{fillP(ctx,pts,night?'rgba(255,236,170,.32)':glass,'rgba(255,255,255,.65)',.8);};
+  // back walls first, then roof, then front walls
+  wall([P(i0,j0,1.6),P(i1,j0,1.6),P(i1,j0,H),P(i0,j0,H)]);
+  wall([P(i0,j0,1.6),P(i0,j1,1.6),P(i0,j1,H),P(i0,jc,R),P(i0,j0,H)]);
+  fillP(ctx,[P(i0,j0,H),P(i1,j0,H),P(i1,jc,R),P(i0,jc,R)],SEAS===3?'rgba(244,248,251,.9)':(night?'rgba(255,236,170,.3)':'rgba(215,240,250,.5)'),frame,.9);
+  wall([P(i0,j1,1.6),P(i1,j1,1.6),P(i1,j1,H),P(i0,j1,H)]);
+  wall([P(i1,j0,1.6),P(i1,j1,1.6),P(i1,j1,H),P(i1,jc,R),P(i1,j0,H)]);
+  fillP(ctx,[P(i0,j1,H),P(i1,j1,H),P(i1,jc,R),P(i0,jc,R)],SEAS===3?'rgba(244,248,251,.95)':(night?'rgba(255,236,170,.34)':'rgba(225,245,252,.55)'),frame,.9);
+  // white mullions + glare
+  ctx.strokeStyle=frame;ctx.lineWidth=.9;ctx.beginPath();
+  for(let k=1;k<6;k++){const i=i0+(i1-i0)*k/6;let a=P(i,j1,1.6),b=P(i,j1,H),c=P(i,jc,R);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);}
+  for(let k=1;k<4;k++){const j=j0+(j1-j0)*k/4;const a=P(i1,j,1.6),b=P(i1,j,j<jc?H+(R-H)*(j-j0)/(jc-j0):H+(R-H)*(j1-j)/(j1-jc));ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}
+  {const a=P(i0,j1,7),b=P(i1,j1,7);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);const c=P(i0,jc,R),d=P(i1,jc,R);ctx.moveTo(c[0],c[1]);ctx.lineTo(d[0],d[1]);}
+  ctx.stroke();
+  if(!night&&SEAS!==3){ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2.2;ctx.beginPath();const a=P(i0+.4,j1-.1,H+5),b=P(i0+1.1,j1-.6,R-1);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}
+  // door on the +i gable + sign
+  fillP(ctx,fq('I',i1+.01,jc-.32,jc+.32,1.6,10),'rgba(120,160,120,.55)',frame,.9);
+  fillP(ctx,fq('J',j1+.02,i0+.25,i0+1.35,H+.5,H+4.5),'#2f5a22','#f4f6f2',.7);
+  ctx.save();fxf(ctx,'J',j1+.02,i0+.25,H+2.5);ctx.fillStyle='#eaf6dc';ctx.font='900 5.2px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('NURSERY',17.6,0);ctx.restore();
+}
+function forestDraw(ctx,objs,inView){
+  const {i0,i1,j0,j1}=NURSERY,[nx,ny]=P(NURSERY.ci,NURSERY.cj);
+  if(inView(nx,ny,140)){
+    const own=(S.planters&&S.planters.nursery)||0;
+    if(own) objs.push({k:i0+j0+.4,f:()=>greenhouse(ctx)});
+    else objs.push({k:i0+j0,f:()=>{const e=[[i0,j0],[i1,j0],[i1,j1],[i0,j1]].map(([i,j])=>P(i,j));ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(90,140,70,.7)';ctx.lineWidth=2;pth(ctx,e);ctx.stroke();ctx.restore();}});
+    const beds=own?3:1;for(let b=0;b<beds;b++){const bi=i0+.1+b*.82;objs.push({k:bi+j1+.9,f:()=>seedBed(ctx,bi,j1+.55,bi+.68,j1+1.05,77+b)});}
+  }
+}
+/* ---------- seed drones (air) ---------- */
+function seedDrone(ctx,x,y,z,ph){
+  ell(ctx,x+2,y+1,9,3.6,'rgba(25,35,10,.18)');const yy=y-z;
+  ctx.strokeStyle='#7a828a';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x-9,yy-3);ctx.lineTo(x+9,yy+3);ctx.moveTo(x+9,yy-3);ctx.lineTo(x-9,yy+3);ctx.stroke();
+  for(const [dx,dy] of [[-9,-3],[9,3],[9,-3],[-9,3]]){ell(ctx,x+dx,yy+dy-1.2,5.2,1.6,`rgba(210,225,235,${.55+.25*Math.sin(ph*60+dx)})`);ctx.fillStyle='#3a3f46';ctx.fillRect(x+dx-.8,yy+dy-1.6,1.6,1.6);}
+  ctx.fillStyle='#2f5a3a';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-5,yy-3,10,5.4,1.5);else ctx.rect(x-5,yy-3,10,5.4);ctx.fill();
+  ctx.fillStyle='#7cc04f';ctx.fillRect(x-3,yy+2.2,6,3.2);ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(x-4.2,yy-2.4,3,1);
+  ctx.fillStyle=Math.sin(ph*6)>0?'#ff5a4a':'#7a2a2a';ctx.fillRect(x+3.6,yy-2.6,1.4,1.2);
+}
+function forestAir(ctx,dt){
+  for(const d of scene.sdrones||[]){const a=d.ph*.32+d.k*2.6, i=-.4+Math.cos(a)*5.8+d.k*1.5, j=1.8+Math.sin(a)*3.2-d.k*.8;const [x,y]=P(i,j);const z=40+Math.sin(d.ph*1.7)*3;
+    seedDrone(ctx,x,y,z,d.ph);if(Math.random()<dt*5) emitP(x+(Math.random()-.5)*4,y-z+6,'seed');}
+}
+/* ---------- warning bubble over the logging zone ---------- */
+function forestOverlays(ctx){
+  const F=S.forest;if(!F) return; const e=forestEff();
+  const [nx,ny]=P(NURSERY.ci,NURSERY.cj,26),ns=w2s(nx,ny);
+  if(!((S.planters&&S.planters.nursery)>0)&&scene.cam.z>=scene.cam.fitZ*.8&&ns[0]>-60&&ns[0]<scene.w+60&&ns[1]>-30&&ns[1]<scene.h+30){
+    const p=PMAP.nursery,c=plCost('nursery',1),vis=(S.totalEarned>=p.cost*.3);
+    pill(ctx,ns[0],ns[1],vis?`🏡 Tree Nursery · ${fmt(c)}`:'🔒 Tree Nursery',{fs:10,bg:vis?(S.coins>=c?'rgba(40,120,70,.88)':'rgba(30,70,90,.78)'):'rgba(43,27,14,.55)'});}
+  if(e<.5&&(F.D||0)>0){const p=P(-.6,2.6,58),s=w2s(p[0],p[1]);if(s[0]>-80&&s[0]<scene.w+80&&s[1]>-200&&s[1]<scene.h){const top=($('topbar').offsetHeight||50)+62;if(s[1]<top) s[1]=top;s[0]=Math.max(130,Math.min(scene.w-130,s[0]));
+    const k=.5+.5*Math.sin(scene.t*4);pill(ctx,s[0],s[1],'⚠ Forest depleted, hire planters!',{fs:11,bg:`rgba(196,70,61,${.82+.15*k})`});
+    ctx.fillStyle=`rgba(196,70,61,${.82+.15*k})`;ctx.beginPath();ctx.moveTo(s[0]-6,s[1]+9);ctx.lineTo(s[0]+6,s[1]+9);ctx.lineTo(s[0],s[1]+16);ctx.closePath();ctx.fill();}}
+}
 
 /* ===================== MAIN RENDER (HUD + open sheet) ===================== */
 let chopRateDisplay=0;
@@ -4974,10 +5291,10 @@ function render(){
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
 }
-function rebuildAll(){cSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';M=computeMods();render();}
+function rebuildAll(){cSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -5005,6 +5322,7 @@ function setupUI(){
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
   setupPremiumUI(); setupWx(); setupRndUI();
+  $('forestChip').onclick=()=>{if(curSheet==='crew') closeSheet(); else openSheet('crew');};
   updateMuteBtn();
 }
 function dockSale(v){scene.earnAcc+=0;const p=P(DOCK.ci+.4,DOCK.cj+.2,74);scene.floats.push({x:p[0],y:p[1]-14,text:'+'+fmt(v),coin:true,t:0,dur:1.4,big:true});scene.lastEarned=S.totalEarned;}
@@ -5024,7 +5342,8 @@ function loop(){
 function welcomeBack(elapsed,r){
   const capped=elapsed>OFFLINE_CAP;
   const lines=RES.filter(x=>r.p[x.id]>0.5).map(x=>`<div>${x.icon} ${x.name} produced</div><div>${fmt(r.p[x.id])}</div>`).join('');
-  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.
+  const pl=r.planted>0.5?`<br>🌱 Your planters put <b>${fmt(r.planted)}</b> saplings in the ground; the forest now stands at <b>${Math.round((1-S.forest.st/forestPlots())*100)}%</b> covered.`:'';
+  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}
     ${lines?`<div class="gainlist">${lines}</div>`:''}`,[{label:'Back to work!',cls:'gold'}]);
 }
 function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yardSigV='';scene._fsig='';scene.lastEarned=S.totalEarned;}
@@ -5055,7 +5374,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   forestScreen:()=>{const [tb,bb]=barH();for(let y=tb+60;y<scene.h-bb-40;y+=23) for(let x=40;x<scene.w-40;x+=29){const h=hitTest(x,y);if(h.type==='forest'&&!(golden.cur&&Math.hypot(x-golden.cur.x,y-golden.cur.y)<80)) return [x,y];} return null;},
   // v2.1 entity helpers
   LANDINGS,
-  forestPeople:()=>{const [tb,bb]=barH();const all=[...scene.jacks,...(scene.foreman?[scene.foreman]:[]),...(scene.planter?[scene.planter]:[])];
+  forestPeople:()=>{const [tb,bb]=barH();const all=[...scene.jacks,...(scene.foreman?[scene.foreman]:[]),...(scene.planters||[])];
     return all.map(p=>{const q=P(p.i,p.j);const s=w2s(q[0],q[1]);return {st:p.st,type:p.type||'crew',pose:p.pose,i:p.i,j:p.j,sx:s[0],sy:s[1],vis:s[0]>8&&s[0]<scene.w-8&&s[1]>tb+20&&s[1]<scene.h-bb-4};});},
   vehicles:()=>({log:scene.logTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,done:!!v.done,i:v.i,j:v.j,yaw:v.yaw})),dock:scene.dockTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,i:v.i,j:v.j,yaw:v.yaw})),forklifts:scene.forklifts.length,harvesters:scene.harvesters.length}),
   // v2.2 premium / orders / storage helpers
@@ -5071,6 +5390,8 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   // v2.4 managers / fire helpers
   MANAGERS,RARITY,SKILLS,portraitSVG,mgrLvl,hireMgr,levelMgr,mgrHireCost,mgrUpCost,mgrSpd,mgrIn,mgrOut,mgrSto,mgrOrders,startFire,tapFire,fireRisk,buyStation,stationCost,stationLvl,onFire,STATION,
   fireScreen:bid=>{const L=LOTS[bid];return L.top?w2s(L.top[0],L.top[1]):null;},stationScreen:()=>{const p=P(STATION.ci,STATION.cj,12);return w2s(p[0],p[1]);},
+  // v2.7 forest / planting crew helpers
+  PLANTERS,PMAP,buyPlanter,plCost,plRate,plantCap,fellDemand,forestPlots,forestEff,growMult,logRatePot:()=>{M=computeMods();return logRatePot();},forestState,FELL,FOREST_BASE,LAND_PER,planterPeople:()=>scene.planters||[],forestScreenAt:(i,j)=>{const p=P(i,j);return w2s(p[0],p[1]);},
   get cam(){return scene.cam;}};
 init();
 })();

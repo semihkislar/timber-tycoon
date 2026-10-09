@@ -39,7 +39,7 @@ with sync_playwright() as p:
     pg.evaluate(MID); pg.wait_for_timeout(300)
     fp=pg.evaluate('TT.forestPeople()')
     ok(len([q for q in fp if q['type']=='axe'])==8 and len([q for q in fp if q['type']=='saw'])==5,'mid-game crew 8 axe + 5 chainsaw (cap)')
-    ok(pg.evaluate('!!TT.scene.foreman && !!TT.scene.planter'),'foreman and planter present')
+    ok(pg.evaluate('!!TT.scene.foreman && (TT.scene.planters||[]).length>0'),'foreman and planter present')
     seen=set(); poses=set(); fell=0; stumps=0; n0=pg.evaluate('TT.LANDINGS.T.n+TT.LANDINGS.L.n'); nmax=n0
     dockLegs=set(); logUnload=False; logLoads=[]
     for k in range(40):
