@@ -67,7 +67,7 @@ with sync_playwright() as p:
     ok(pg.evaluate('TT.rates.furniture.p')>0,'furniture produced from chairs+planks')
     # market sheet: tapping the dock opens it
     pg.click('#shClose'); pg.wait_for_timeout(200)
-    tap_lot(pg,'dock'); ok(pg.evaluate('TT.curSheet')=='market','dock tap opens market')
+    tap_lot(pg,'dock'); cs=pg.evaluate('TT.curSheet'); ok(cs=='market',f'dock tap opens market (got {cs})')
     pg.wait_for_timeout(200); ok(pg.locator('#mktBody tr').count()>=5,'market rows rendered')
     pg.click('#shClose'); pg.wait_for_timeout(200); pg.evaluate('(()=>{const c=TT.cam,p=TT.P(TT.YARD.ci,TT.YARD.cj,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'); pg.wait_for_timeout(150)  # v2.7: the yard can sit under the HUD chips after a sheet pans the camera
     tap_lot(pg,'yard'); ok(pg.evaluate('TT.curSheet') in ('crew',None),'yard tap handled')

@@ -57,7 +57,7 @@ Steady-scene benchmark (`tools/bench.py`, late game, no sheets open): day/fit **
 Screenshots: `screenshot-assets-before.png`, `screenshot-assets-after.png`, `screenshot-assets-compare.png` (side by side), refreshed `screenshot.png`.
 
 ### Tests
-- New `test/v28.py`: layout/no-404 checks, v2.7 → v2.8 save migration, atlas, sprite-cache hit rate and budget, bounded shade cache, particle caps, 4 Hz HUD, hidden-tab pause + catch-up + save on hide, release snapshot, and a **long-session perf test**. The perf test fast-forwards ~2 game hours (`V28_LONG_SEC=300`, default 150 s ≈ 1 h) and asserts frame cost stays flat and the post-GC heap does not grow.
+- New `test/v28.py`: layout/no-404 checks, v2.7 → v2.8 save migration, atlas, sprite-cache hit rate and budget, bounded shade cache, particle caps, 4 Hz HUD, hidden-tab pause + catch-up + save on hide, release snapshot, and a **long-session perf test**. The perf test fast-forwards ~2 game hours (default `V28_LONG_SEC=300` ≈ 2 game hours) and asserts frame cost stays flat and the post-GC heap does not grow.
 - Fixed two timing races in `functional.py` / `v27.py` (now read values in one evaluate).
 
 ## [2.7] — 2026-10-09

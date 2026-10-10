@@ -52,9 +52,10 @@ with sync_playwright() as p:
     pg.evaluate('TT.openSheet("bld","sawmill")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(100)
     ok(pg.evaluate('TT.curSheet') is None,'tapping empty ground closes the sheet')
     for lot,sheet in [('yard','crew'),('dock','market')]:
+        pg.evaluate('TT.fitCamera(true)')   # opening a sheet may pan the camera; start each tap from the fitted view
         pg.wait_for_function('Math.abs(TT.cam.y-TT.cam.ty)<0.5&&Math.abs(TT.cam.x-TT.cam.tx)<0.5',timeout=5000)
         pt=pg.evaluate(f'TT.lotScreen("{lot}")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(120)
-        ok(pg.evaluate('TT.curSheet')==sheet,f'{lot} tap opens {sheet}')
+        cs=pg.evaluate('TT.curSheet'); ok(cs==sheet,f'{lot} tap opens {sheet}'+('' if cs==sheet else f' (got {cs}, hit {pg.evaluate(f"TT.hitTest({pt[0]},{pt[1]})")}, cam {pg.evaluate("[TT.cam.x,TT.cam.tx,TT.cam.y,TT.cam.ty,TT.cam.z,TT.cam.tz]")}, pt {pt})'))
         pg.evaluate('TT.closeSheet()')
     pt=pg.evaluate('TT.forestScreen()'); c0=pg.evaluate('TT.S.clicks'); pg.mouse.click(pt[0],pt[1])
     ok(pg.evaluate('TT.S.clicks')==c0+1,'forest tap chops')

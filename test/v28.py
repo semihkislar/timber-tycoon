@@ -8,7 +8,7 @@ sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import BASE,URL
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OLD=BASE+'releases/timber-tycoon-v2.7.html'
-LONG=int(os.environ.get('V28_LONG_SEC','150'))   # real seconds of fast-forwarded play (24 game-s per real s => ~1 h at 150, 2 h at 300)
+LONG=int(os.environ.get('V28_LONG_SEC','300'))   # real seconds of fast-forwarded play (~2 game hours at 300; set lower for quick runs)
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
