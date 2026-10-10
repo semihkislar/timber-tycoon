@@ -17,6 +17,7 @@ function render(){
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
   renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
+  mobileRender();
 }
 function rebuildAll(){cSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
@@ -47,6 +48,7 @@ function setupUI(){
   window.addEventListener('beforeunload',()=>save(true));
   setupPremiumUI(); setupWx(); setupRndUI();
   $('forestChip').onclick=()=>{if(curSheet==='crew') closeSheet(); else openSheet('crew');};
+  setupMobile();
   updateMuteBtn();
 }
 function dockSale(v){scene.earnAcc+=0;const p=P(DOCK.ci+.4,DOCK.cj+.2,74);scene.floats.push({x:p[0],y:p[1]-14,text:'+'+fmt(v),coin:true,t:0,dur:1.4,big:true});scene.lastEarned=S.totalEarned;}
@@ -122,5 +124,8 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   // v2.7 forest / planting crew helpers
   PLANTERS,PMAP,buyPlanter,plCost,plRate,plantCap,fellDemand,forestPlots,forestEff,growMult,logRatePot:()=>{M=computeMods();return logRatePot();},forestState,FELL,FOREST_BASE,LAND_PER,planterPeople:()=>scene.planters||[],forestScreenAt:(i,j)=>{const p=P(i,j);return w2s(p[0],p[1]);},
   SPR,sprClear,shadeCacheSize:()=>_sh.size,
+  // v2.9 mobile / camera helpers
+  GI,flyTo,flyToWorld,camLimits,camBusy,camOut,focusLot,JUMPS,jumpTo,toggleJump,attentionList,nextAttention,autoFocus,SH,shSnaps,setSheetState,applySheetState,
+  HOLD,buyMaxBld,toggleHud,railMode,compactMode,haptic,prefs,viewBand,sceneTapAt:(x,y)=>handleTap(x,y),get ground(){return scene.gl;},
   get cam(){return scene.cam;}};
 init();

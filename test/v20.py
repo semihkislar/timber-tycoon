@@ -89,11 +89,11 @@ with sync_playwright() as p:
     ok(all(ins),f'fit shows every lot {ins}')
     # --- world entities ---
     pg.evaluate('TT.S.coins=1e15;TT.buyCollector("lumberjack",20);TT.buyCollector("truck",3);for(const b of ["sawmill","chipper","kiln","carpentry","pellet","paper","furniture"]) TT.buyBuilding(b,15);'); pg.wait_for_timeout(2500)
-    e=pg.evaluate('({w:TT.scene.workers.length,f:(TT.scene.forklifts||[]).length,t:(TT.scene.dockTrucks||TT.scene.trucks||[]).length,p:TT.scene.particles.length,ch:TT.scene.chunks.size,fps:TT.scene.fps,ms:TT.scene.frameMs})')
+    e=pg.evaluate('({w:TT.scene.workers.length,f:(TT.scene.forklifts||[]).length,t:(TT.scene.dockTrucks||TT.scene.trucks||[]).length,p:TT.scene.particles.length,ch:TT.scene.chunks.size,cm:TT.scene.chunkMax||42,fps:TT.scene.fps,ms:TT.scene.frameMs})')
     print('entities',e)
     ok(e['w']>=7,'yard workers walking for each building')
     ok(e['p']<=400,'particles capped')
-    ok(e['ch']<=42,'ground chunk cache bounded')
+    ok(e['ch']<=e['cm']<=160,f"ground chunk cache bounded ({e['ch']} <= {e['cm']}, v2.9: sized to the viewport + pan margin)")
     ok(e['ms']<16,f"frame time {e['ms']:.1f}ms")
     ok(pg.evaluate('TT.scene.fps')>40,f"fps {pg.evaluate('TT.scene.fps'):.0f}")
     # pauses when hidden

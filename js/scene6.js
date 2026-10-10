@@ -3,12 +3,9 @@
 /* ---------------- camera & input ---------------- */
 function w2s(x,y){const c=scene.cam;return [(x-c.x)*c.z+scene.w/2,(y-c.y)*c.z+scene.h/2];}
 function s2w(x,y){const c=scene.cam;return [c.x+(x-scene.w/2)/c.z,c.y+(y-scene.h/2)/c.z];}
-function clampCam(){const c=scene.cam;c.z=Math.max(c.minZ,Math.min(c.maxZ,c.z));c.tz=Math.max(c.minZ,Math.min(c.maxZ,c.tz));
-  for(const k of ['x','tx']) scene.cam[k]=Math.max(-760,Math.min(760,scene.cam[k]));
-  for(const k of ['y','ty']) scene.cam[k]=Math.max(-260,Math.min(1160,scene.cam[k]));}
-function barH(){return [$('topbar').offsetHeight||50,$('bottombar').offsetHeight||70];}
+function barH(){return [$('topbar').offsetHeight||50,typeof railMode==='function'&&railMode()?0:($('bottombar').offsetHeight||70)];}
 function fitCamera(instant){
-  const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h;
+  const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h; if(instant){c.fly=null;c.vx=c.vy=0;}
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
@@ -18,57 +15,44 @@ function fitCamera(instant){
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
   if(instant){c.x=c.tx;c.y=c.ty;c.z=c.tz;}
 }
-function zoomAt(sx,sy,nz){const c=scene.cam;const [wx,wy]=s2w(sx,sy);c.z=Math.max(c.minZ,Math.min(c.maxZ,nz));c.x=wx-(sx-scene.w/2)/c.z;c.y=wy-(sy-scene.h/2)/c.z;c.tx=c.x;c.ty=c.y;c.tz=c.z;clampCam();}
-function focusLot(id){
-  const L=LOTS[id]; if(!L) return; const c=scene.cam;
-  const [tb]=barH(); const top=tb+20, bot=sheetTop()-16;
-  const [wx,wy]=P(L.ci,L.cj,30); const s=w2s(wx,wy);
-  if(s[1]>top+70&&s[1]<bot-40&&s[0]>50&&s[0]<scene.w-50) return;
-  const ty=top+(bot-top)*.5;
-  c.ty=wy-(ty-scene.h/2)/c.z; if(s[0]<50||s[0]>scene.w-50) c.tx=wx; clampCam();
-}
-const ptrs=new Map(); let drag=null, pinch=null;
-function setupInput(){
-  const cv=scene.canvas;
-  cv.addEventListener('pointerdown',e=>{
-    try{cv.setPointerCapture(e.pointerId);}catch(_){}
-    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(ptrs.size===1){drag={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false,t:performance.now()};}
-    else if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:scene.cam.z};if(drag) drag.moved=true;}
-  });
-  cv.addEventListener('pointermove',e=>{
-    const p=ptrs.get(e.pointerId);
-    if(!p){updateHover(e.clientX,e.clientY);return;}
-    p.x=e.clientX;p.y=e.clientY;
-    if(ptrs.size>=2&&pinch){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);zoomAt((a.x+b.x)/2,(a.y+b.y)/2,pinch.z*d/Math.max(10,pinch.d));return;}
-    if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-      if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>7){drag.moved=true;cv.classList.add('dragging');}
-      if(drag.moved){const c=scene.cam;c.x-=dx/c.z;c.y-=dy/c.z;c.tx=c.x;c.ty=c.y;clampCam();}
-      drag.x=e.clientX;drag.y=e.clientY;}
-  });
-  const end=e=>{
-    const had=ptrs.has(e.pointerId); ptrs.delete(e.pointerId);
-    if(ptrs.size<2) pinch=null;
-    if(had&&drag&&ptrs.size===0){ if(!drag.moved&&e.type==='pointerup') sceneTap(e.clientX,e.clientY); drag=null; cv.classList.remove('dragging'); }
-  };
-  cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
-  cv.addEventListener('pointerleave',()=>{if(!ptrs.size){scene.hover=null;cv.classList.remove('pointer');}});
-  cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,scene.cam.z*Math.exp(-e.deltaY*.0016));},{passive:false});
-  window.addEventListener('keydown',e=>{if(e.key==='Escape') closeSheet();});
+/* v2.9: fly the camera so the lot sits in the visible band above the sheet (smooth, eased) */
+function focusLot(id,force){
+  const L=id==='yard'?YARD:id==='dock'?DOCK:LOTS[id]; if(!L) return; const c=scene.cam;
+  const [top,bot]=viewBand(); const [wx,wy]=P(L.ci,L.cj,30); const s=w2s(wx,wy);
+  const [x0,x1]=viewBandX();
+  if(!force&&!c.fly&&s[1]>top+60&&s[1]<bot-30&&s[0]>x0+50&&s[0]<x1-50) return;
+  // phones zoom in a little (the sheet covers half the screen); desktop keeps the zoom and only re-centres what is needed
+  const z=scene.w<700?Math.max(c.tz,Math.min(c.maxZ,c.fitZ*1.4)):Math.max(c.tz,Math.min(c.maxZ,c.fitZ*.95));
+  const sy=(top+bot)/2, sx=(x0+x1)/2, tx=force||z!==c.tz||s[0]<x0+50||s[0]>x1-50?wx-(sx-scene.w/2)/z:c.tx;
+  flyTo(tx,wy-(sy-scene.h/2)/z,z);
 }
 function updateHover(x,y){const h=hitTest(x,y);const on=h.type!=='none'||h.type==='office'||(golden.cur&&Math.hypot(x-golden.cur.x,y-golden.cur.y)<Math.max(30,goldenSize()*2));
   scene.hover=h.type==='bld'||h.type==='yard'||h.type==='dock'?h.id:(h.type==='office'?'office':null); scene.canvas.classList.toggle('pointer',!!on);}
+/* v2.9: generous hit areas. Exact polygon hits win (nearest object centre first when polygons overlap); otherwise a building,
+   the office or the fire station within HIT_PAD screen px of its outline still counts, nearest outline first */
+const HIT_PAD=12;
+function polyDist(pts,x,y){let d=1e9;for(let a=0,b=pts.length-1;a<pts.length;b=a++){const [xa,ya]=pts[b],[xb,yb]=pts[a];const dx=xb-xa,dy=yb-ya,l=dx*dx+dy*dy||1;
+  let t=((x-xa)*dx+(y-ya)*dy)/l;t=t<0?0:t>1?1:t;d=Math.min(d,Math.hypot(xa+t*dx-x,ya+t*dy-y));}return d;}
+function lotCenter(L){let y0=1e9,y1=-1e9,x0=1e9,x1=-1e9;for(const [x,y] of L.hit){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}return [(x0+x1)/2,(y0+y1)/2];}
 function hitTest(sx,sy){
   const [wx,wy]=s2w(sx,sy);
   if(OFFICE.hit&&pip(OFFICE.hit,wx,wy)) return {type:'office'};
-  let best=null;
-  for(const L of [...Object.values(LOTS),YARD,DOCK]){if(L.prem&&!S.premium.lvl) continue;if(L.hit&&pip(L.hit,wx,wy)&&(!best||L.ci+L.cj>best.ci+best.cj)) best=L;}
-  if(best) return {type:best.id==='yard'?'yard':best.id==='dock'?'dock':'bld',id:best.id};
+  const cands=[...Object.values(LOTS),YARD,DOCK].filter(L=>L.hit&&!(L.prem&&!S.premium.lvl));
+  const res=L=>({type:L.id==='yard'?'yard':L.id==='dock'?'dock':'bld',id:L.id});
+  let best=null,bd=1e9;
+  for(const L of cands){if(!pip(L.hit,wx,wy)) continue;const [cx,cy]=lotCenter(L);const d=Math.hypot(cx-wx,cy-wy)-(L.ci+L.cj)*.01;if(d<bd){bd=d;best=L;}}
+  if(best) return res(best);
   if(STATION.hit&&pip(STATION.hit,wx,wy)) return {type:'station'};
   {const [gi,gj]=toGrid(wx,wy);if(gi>=14.2&&gi<=19.6&&gj>=-1.4&&gj<=3.5&&campusOpen()) return {type:'campus'};
     if(gi>=32.4&&gi<=37&&gj>=11.5&&gj<=17.2&&(harborOpen()||harborAvail())) return {type:'harbor'};}
   {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
     if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
+  // padded pass
+  const pad=HIT_PAD/scene.cam.z; let pb=null,pd=pad;
+  for(const L of cands){const d=polyDist(L.hit,wx,wy);if(d<pd){pd=d;pb=res(L);}}
+  if(OFFICE.hit){const d=polyDist(OFFICE.hit,wx,wy);if(d<pd){pd=d;pb={type:'office'};}}
+  if(STATION.hit){const d=polyDist(STATION.hit,wx,wy);if(d<pd){pd=d;pb={type:'station'};}}
+  if(pb) return pb;
   const [gi,gj]=toGrid(wx,wy);
   for(const d of [0,.7,1.4,2.1]) if(isForestPt(gi+d,gj+d)) return {type:'forest',i:gi,j:gj};
   return {type:'none'};
@@ -111,7 +95,7 @@ function resizeScene(){
   scene.dpr=dpr; scene.w=window.innerWidth; scene.h=window.innerHeight;
   scene.canvas.width=Math.round(scene.w*dpr); scene.canvas.height=Math.round(scene.h*dpr);
   scene.canvas.style.width=scene.w+'px'; scene.canvas.style.height=scene.h+'px';
-  const r=document.documentElement.style; r.setProperty('--tb',(($('topbar').offsetHeight)||52)+'px'); r.setProperty('--bb',(($('bottombar').offsetHeight)||76)+'px');
+  const r=document.documentElement.style; r.setProperty('--tb',(($('topbar').offsetHeight)||52)+'px'); r.setProperty('--bb',(typeof railMode==='function'&&railMode()?0:(($('bottombar').offsetHeight)||76))+'px');
   const keep=scene._fitted&&Math.abs(scene.cam.z-scene.cam.fitZ)>1e-3;
   fitCamera(!keep); if(!scene._fitted) scene._fitted=true;
   scene.bg=null;
@@ -134,9 +118,7 @@ function sceneLoop(now){
 }
 function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
-  const c=scene.cam, k=1-Math.exp(-dt*9);
-  if(!drag||!drag.moved){c.x+=(c.tx-c.x)*k;c.y+=(c.ty-c.y)*k;c.z+=(c.tz-c.z)*k;
-    if(Math.abs(c.tx-c.x)*c.z<.01&&Math.abs(c.ty-c.y)*c.z<.01&&Math.abs(c.tz-c.z)<2e-5){c.x=c.tx;c.y=c.ty;c.z=c.tz;}}
+  camUpdate(dt);
   updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;

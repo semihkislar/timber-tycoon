@@ -43,7 +43,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(1200)
     S=E(pg,'TT.S')
-    ok(S['version']=='2.8','v2.7 save migrated to 2.8')
+    ok(float(S['version'])>=2.8,'v2.7 save migrated to current (>=2.8)')
     ok(S['collectors']['lumberjack']==old['collectors']['lumberjack'] and S['planters']['team']==old['planters']['team'] and S['buildings']['sawmill']['lvl']==old['buildings']['sawmill']['lvl'],'crew, planters and buildings kept')
     ok(abs(S['forest']['m']-old['forest']['m'])/max(1,old['forest']['m'])<.2,'forest stock kept')
     ok(E(pg,'!!TT.SPR.atlas'),'tree atlas loaded at runtime')
@@ -71,7 +71,7 @@ with sync_playwright() as p:
     ok(earned_hidden==0,'hidden tab: simulation paused')
     E(pg,'(()=>{window.__h=false;document.dispatchEvent(new Event("visibilitychange"));})()'); pg.wait_for_timeout(400)
     ok(E(pg,'TT.S.totalEarned-window.__t0')>0,'visible again: elapsed time caught up')
-    ok(E(pg,'JSON.parse(localStorage.getItem("timberTycoon_save_v1")).version')=='2.8','saved when the tab was hidden')
+    ok(float(E(pg,'JSON.parse(localStorage.getItem("timberTycoon_save_v1")).version'))>=2.8,'saved when the tab was hidden')
     # art pass functions exist and are cached
     ok(E(pg,'["lampPostRaw","cargoIconRaw","drawTreeRaw","humanRaw","logTruckRaw","boxTruckRaw"].every(f=>typeof window[f]==="function")'),'raw draw functions + cached wrappers present')
 

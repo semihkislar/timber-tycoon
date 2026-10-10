@@ -195,8 +195,9 @@ with sync_playwright() as p:
 
     # --- mobile ---
     ctx,pg=fresh((390,844)); E(pg,MID); E(pg,"TT.buyBuilding('lab',1);TT.S.rp=50;TT.doResearch('science');TT.buyHarbor();TT.openRoute('ist')"); pg.wait_for_timeout(400)
-    bb=E(pg,"[...document.querySelectorAll('button.bb')].filter(e=>e.offsetParent).map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.width]})")
-    ok(len(bb)==9 and min(x[0] for x in bb)>=0 and max(x[1] for x in bb)<=390 and min(x[2] for x in bb)>=36,f'mobile: {len(bb)} bottom buttons fit')
+    bb=E(pg,"[...document.querySelectorAll('button.bb')].filter(e=>e.offsetParent).map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.width,r.height,e.dataset.s]})")
+    E(pg,"TT.openSheet('more')"); tiles=E(pg,"[...document.querySelectorAll('#moreGrid .mtile')].map(e=>e.dataset.s)"); E(pg,"TT.closeSheet()")
+    ok(len(bb)==5 and min(x[0] for x in bb)>=0 and max(x[1] for x in bb)<=390 and min(x[2] for x in bb)>=48 and len(bb)-1+len(tiles)==9 and 'rnd' in tiles,f'mobile: {len(bb)} bottom buttons fit, More has {tiles}')
     lab=E(pg,"[...document.querySelectorAll('button.bb .l')].map(e=>e.scrollWidth<=e.parentElement.clientWidth+1)")
     ok(all(lab),'mobile: bottom labels not clipped')
     E(pg,"TT.openResearch()"); pg.wait_for_timeout(400)

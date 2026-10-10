@@ -5,6 +5,66 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.9] — 2026-10-10
+
+**Mobile-first controls**: the game is now designed for a phone in portrait first (360–430 px), with a usable landscape layout, and desktop keeps working as before.
+
+### Camera & gestures (`js/input.js`, new)
+- One **Pointer Events** layer for touch, pen and mouse (`touch-action:none` on the canvas).
+- **One-finger pan with momentum**: the release velocity (last ~110 ms of the gesture) carries on with friction. Holding still before lifting gives no fling. A tap during a glide only stops it.
+- **Pinch zoom anchored at the pinch midpoint**. The midpoint also pans, so two fingers can zoom and move at once. Past the zoom limits it resists and springs back on release.
+- **Double-tap open ground** zooms ×2 toward that point; a second double-tap flies back out to the fit view. Taps on buildings, trees, fires and golden logs still act immediately, so rapid chopping is unaffected.
+- **Rubber-band soft bounds** sized to the world (`CAM_WORLD`, limits depend on zoom and viewport). Dragging past the edge is progressively resisted and springs back.
+- **Tap vs drag threshold**: 10 px for touch, 8 px for pen, 5 px for mouse. Taps longer than 650 ms count as long presses, not taps. Gesture timing uses the events' own timestamps, so a slow frame can't turn a tap into a long press.
+- **Smooth eased fly-to** (`flyTo` / `flyToWorld`, cubic in-out, 320–900 ms by distance) frames targets in the visible band between the HUD and the bottom bar or open sheet. In landscape it frames them between the rail and the side sheet.
+- **Generous hit areas**: when hit polygons overlap, the nearest object centre wins. A tap up to 12 screen px outside a building, office or fire-station outline still counts.
+- **No accidental browser gestures**: `viewport-fit=cover`, no user scaling, fixed `html`/`body` with `overscroll-behavior:none`, and non-passive `touchmove` guard outside scrollable areas. This blocks pull-to-refresh, iOS bounce and page pinch. `gesturestart` and `dblclick` are cancelled, and text selection, the long-press callout and tap highlight are off. Safe-area insets are applied on all edges.
+- Desktop: mouse drag (with momentum), wheel / trackpad-pinch zoom at the cursor, arrow keys pan, `+`/`-` zoom.
+
+### Keeping 60 fps while panning and zooming
+- **Pan-margin ground layer**: the ground is composed once with a margin around the viewport (256 css px, capped at half a chunk of world). Panning at a fixed zoom only shifts the blit. Before, every pan frame redrew all ground chunks scaled (the v2.8 limitation).
+- **While zooming**, sprites and buildings missing at the new scale blit their last cached frame scaled. The ground layer is drawn scaled too. Sharp versions are rendered once the zoom settles: at most 4 building re-renders per frame, a few new sprites per frame, and new chunks only where no fallback exists.
+- **Chunk cache sized to the viewport** (was a fixed 42). Wide or zoomed-out views (landscape phones) used to thrash it, re-rendering chunks every frame at ~300 ms/frame. They now stay at ~1.6 ms of JS per frame.
+- `tools/panbench.py` (new): real CDP touch input on an emulated Pixel 7, late game. Frame cost includes raster flush, headless software rendering:
+
+| gesture | v2.8 avg / p95 / max | v2.9 avg / p95 / max | frames over 16.7 ms |
+|---|---|---|---|
+| 4 s one-finger pan | 15.5 / 25.4 / **115** ms | 14.0 / 19.4 / **35** ms | 35 % → 19 % (with 28 % more frames rendered) |
+| 3 s pinch in/out | 22.1 / 45.7 / **131** ms | 19.2 / 25.3 / **54** ms | p95 and hitches down; most pinch frames still above 16.7 ms in software raster |
+
+### Navigation without swiping (`js/mobile.js`, new)
+- **📍 Quick-jump chips**: Forest, Log Yard, Factory, Premium, Harbour, R&D, Dock. Each is a 46 px chip in a scrollable row above the bottom bar that flies the camera there. Locked areas show 🔒 and still fly to the empty plot.
+- **⚠️ Needs-attention button** with a count badge. It cycles through fires, full storage, starved buildings and affordable builds/upgrades, in that order. Each tap opens the building sheet, flies the camera and shows a short tip ("⚠ Kiln: starved for Logs 2/5").
+- **Auto-focus on events** (Settings toggle, on by default): new fires, golden logs and client orders fly the camera there when off screen. It never interrupts you: it is skipped for 6 s after you touch the camera, during a gesture or with a full-height sheet.
+- The building sheet's **‹ › arrows** fly the camera to the next building.
+
+### Mobile-first UI
+- **Bottom bar**: 5 thumb targets on phones (Crew, Market, Orders, Upgrades, **More**), each at least 56 px tall. **More** opens a sheet of large tiles for Staff, R&D, Trophies, Replant and Settings, and shows a red dot when any of them has news. Desktop keeps the full bar.
+- **Draggable bottom sheets** with **half** (~52 % of the screen) and **full** snap points. Drag the header, tap it, or use ▴/▾ to switch. A downward swipe or fast flick closes the sheet; from full it drops to half. Pulling the content down while it is scrolled to the top drags the sheet. Content scrolls natively with momentum (`touch-action:pan-y`, `overscroll-behavior:contain`) and never pans the scene or the page.
+- **Compact top HUD**: coins, income and logs. Tap the numbers or ▾ to show seeds, the scene label and the weather/calendar widget.
+- **Bigger text and targets** in sheets: 15 px body text, ≥44 px buttons, 44 px prev/next arrows, larger segmented controls and switches.
+- **Hold-to-repeat** on Build/Upgrade, Hire (collectors and planters) and storage buttons. It starts after 420 ms, speeds up to ~20 buys per second and stops on release; the release never buys an extra one. A new **Max** button buys as many levels as you can afford and shows how many (+N).
+- **Haptic feedback** via `navigator.vibrate` on taps, buys, snaps, fires and the attention button. It can be turned off in Settings.
+- **Toasts** sit under the HUD, at most two at a time on phones, so they never cover the bottom controls or action buttons. The order card and daily chip moved left of the action buttons.
+- **Landscape phones** (height ≤ 520 px): the bottom bar becomes a left **rail**, and sheets open as a **right side panel**. The camera frames targets between the two.
+
+### Installable (PWA)
+- `manifest.webmanifest` (fullscreen, any orientation) with icons generated from the in-game logo (`python3 tools/build_icons.py` → `assets/icon-192/512/180.png`, maskable 512).
+- `sw.js`: **network-first for every request**, so a new GitHub Pages deploy shows up on the next load; the cache is only an offline fallback. It skips `releases/` snapshots and other origins. It is only registered over https and never from a release snapshot.
+
+### Saves
+- v2.8 → v2.9: new `prefs` (`autoFocus`, `haptics`, both on), kept through Replant. No gameplay or balance changes.
+
+### Tests
+- New `test/v29.py` (140 checks) on **iPhone 13** and **Pixel 7** emulation (`hasTouch`, real CDP touch events):
+  - touch: pan with momentum and friction, no fling after holding still, rubber band and spring-back, pinch anchored at the midpoint (0 px drift) with spring-back at the limit, double-tap zoom in/out, tap vs 7 px wobble vs drag, generous hit area
+  - navigation: quick-jump chips, needs-attention cycling, ‹ › framing, auto-focus on/off/after-touch
+  - sheets: half→full→half→closed by drag, header tap, content scroll not moving the camera or page, pull-down at the top
+  - no page scroll or browser zoom; hold-to-repeat (one tap = one level, hold = many, stops on release); Buy max; haptics on/off; toasts clear of the controls
+  - pan render path (ground layer reused, sprite caches hit); landscape rail and side sheet; desktop mouse, wheel, click and keys; v2.8 → v2.9 save migration; PWA files; no 404s or console errors
+- Updated for the new phone layout: v23 (weather widget lives in the expanded HUD), v24/v25/v26 (5 bottom buttons + More instead of 8–9 squeezed ones), v20 (chunk-cache bound follows the viewport). v28 version checks are now forward-compatible.
+- Screenshots: `screenshot-mobile.png`, `screenshot-mobile-sheet.png`, `screenshot-mobile-jump.png`, `screenshot-mobile-landscape.png` (made by `python3 test/shot_mobile.py`) and a refreshed `screenshot.png`.
+
 ## [2.8] — 2026-10-10
 
 **Performance & assets**: no more stutter in long sessions, a multi-file project layout, sprite caching and an art pass.

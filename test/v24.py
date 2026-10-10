@@ -162,8 +162,10 @@ with sync_playwright() as p:
     ctx.close()
     # --- mobile: 8 bottom buttons fit ---
     ctx,pg=fresh((390,844)); pg.evaluate(MID); pg.wait_for_timeout(300)
-    bb=pg.evaluate("[...document.querySelectorAll('button.bb')].filter(e=>e.offsetParent).map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.width]})")
-    ok(len(bb)>=8 and min(x[0] for x in bb)>=0 and max(x[1] for x in bb)<=390 and min(x[2] for x in bb)>=40,f'mobile: {len(bb)} bottom buttons fit')
+    # v2.9: phones show 5 big thumb targets; the rest are in the 'More' sheet
+    bb=pg.evaluate("[...document.querySelectorAll('button.bb')].filter(e=>e.offsetParent).map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.width,r.height,e.dataset.s]})")
+    pg.evaluate("TT.openSheet('more')"); tiles=pg.evaluate("[...document.querySelectorAll('#moreGrid .mtile')].map(e=>e.dataset.s)"); pg.evaluate("TT.closeSheet()")
+    ok(len(bb)==5 and bb[-1][4]=='more' and min(x[0] for x in bb)>=0 and max(x[1] for x in bb)<=390 and min(x[2] for x in bb)>=48 and min(x[3] for x in bb)>=48 and len(bb)-1+len(tiles)>=8 and 'staff' in tiles,f'mobile: {len(bb)} bottom buttons fit + More {tiles}')
     ctx.close()
     bad=[e for e in errs if 'favicon' not in e]
     ok(not bad,'no console errors/warnings '+json.dumps(bad[:4]))

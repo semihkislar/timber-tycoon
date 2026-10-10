@@ -15,7 +15,6 @@ with sync_playwright() as p:
     jobs=[
         ('screenshot-early.png', {'width':1280,'height':800}, 45, None),
         ('screenshot.png', {'width':1280,'height':800}, 2400, None),
-        ('screenshot-mobile.png', {'width':430,'height':900}, 1100, None),
         ('screenshot-sheet.png', {'width':430,'height':900}, 1100, 'sawmill'),
         ('screenshot-sheet-desktop.png', {'width':1280,'height':800}, 1500, 'kiln'),
         ('screenshot-forest.png', {'width':1280,'height':800}, 1500, '@forest'),

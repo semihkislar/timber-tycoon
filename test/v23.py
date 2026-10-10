@@ -99,6 +99,7 @@ with sync_playwright() as p:
     ctx.close()
     # --- mobile ---
     ctx=b.new_context(viewport={'width':390,'height':844},device_scale_factor=2,is_mobile=True,has_touch=True); pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(600)
+    pg.evaluate('TT.toggleHud(true)'); pg.wait_for_timeout(200)   # v2.9: compact HUD; the weather widget lives in the expanded HUD
     bb=pg.locator('#wxChip').bounding_box(); ok(bb and bb['x']>=0 and bb['x']+bb['width']<=390 and bb['y']<140,'mobile: widget fits under the top bar')
     ctx.close()
     errs=[e for e in errs if 'favicon' not in e]

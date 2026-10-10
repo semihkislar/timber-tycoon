@@ -7,15 +7,18 @@
    - Pre-rendered PNG atlases in assets/ (tools/build_assets.py) are used for any key they contain. */
 /* offscreen canvases are not DOM nodes (thousands of cached sprites used to inflate the node count) */
 function mkCanvas(w,h){if(typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(Math.max(1,w),Math.max(1,h));const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
-const SPR={map:new Map(),px:0,budget:20e6,pool:[],hits:0,miss:0,direct:0,frameMiss:0,maxMiss:24,on:true,atlas:null,atlasFrames:null,atlasScale:2,atlasHits:0,stable:false};
+const SPR={map:new Map(),px:0,budget:20e6,pool:[],hits:0,miss:0,direct:0,frameMiss:0,maxMiss:24,on:true,atlas:null,atlasFrames:null,atlasScale:2,atlasHits:0,stable:false,last:new Map(),scaled:0};
 /* Blits are only fast when they are unscaled and land on whole device pixels (a scaled or sub-pixel drawImage resamples every
    pixel and costs ~7x more in software rasterisers). Sprites are therefore rendered at the exact current device scale and blitted
    with an identity transform at rounded positions. While the camera zooms, cache misses draw directly instead. */
-function sprFrame(){SPR.frameMiss=0;const c=scene.cam;SPR.stable=Math.abs(c.z-c.tz)<1e-4;}
+function sprFrame(){SPR.frameMiss=0;SPR.liveRe=0;const c=scene.cam;SPR.stable=Math.abs(c.z-c.tz)<1e-4&&!camZooming();}
+/* v2.9: while a pinch / wheel / fly-to zoom is in progress, cache misses blit the most recent cached frame of the same sprite
+   scaled (one resampled drawImage) instead of re-running the vector drawing; sharp sprites are rendered once the zoom settles */
+function camZooming(){return !!(scene.zoomUntil&&performance.now()<scene.zoomUntil);}
 function sprCanvas(w,h){let c=null;for(let k=SPR.pool.length-1;k>=0;k--){const p=SPR.pool[k];if(p.width>=w&&p.height>=h&&p.width*p.height<=w*h*2){c=p;SPR.pool.splice(k,1);break;}}
   if(!c) c=mkCanvas(w,h);const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.globalAlpha=1;g.globalCompositeOperation='source-over';return c;}
-function sprEvict(){while(SPR.px>SPR.budget&&SPR.map.size){const k=SPR.map.keys().next().value,e=SPR.map.get(k);SPR.map.delete(k);SPR.px-=e.c.width*e.c.height;if(SPR.pool.length<96) SPR.pool.push(e.c);}}
-function sprClear(){for(const e of SPR.map.values()) if(SPR.pool.length<96) SPR.pool.push(e.c);SPR.map.clear();SPR.px=0;LIVE.clear();PILLS.clear();}
+function sprEvict(){while(SPR.px>SPR.budget&&SPR.map.size){const k=SPR.map.keys().next().value,e=SPR.map.get(k);SPR.map.delete(k);if(SPR.last.get(e.base)===e) SPR.last.delete(e.base);SPR.px-=e.c.width*e.c.height;if(SPR.pool.length<96) SPR.pool.push(e.c);}}
+function sprClear(){for(const e of SPR.map.values()) if(SPR.pool.length<96) SPR.pool.push(e.c);SPR.map.clear();SPR.last.clear();SPR.px=0;LIVE.clear();PILLS.clear();}
 function blit(ctx,c,w,h,m,x,y){ // x,y = top-left in the current (scale-only) transform
   const dx=Math.round(m.a*x+m.e),dy=Math.round(m.d*y+m.f);ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(c,0,0,w,h,dx,dy,w,h);ctx.setTransform(m);}
 /* draw `fn(g,0,0)` (anchor at the origin) through the cache; box = [x0,y0,x1,y1] around the anchor in world units */
@@ -24,16 +27,18 @@ function sprite(ctx,key,x,y,box,fn){
   const m=ctx.getTransform();
   if(m.b!==0||m.c!==0||Math.abs(m.a-m.d)>1e-6){fn(ctx,x,y);SPR.direct++;return;}
   const sc=m.a, k=key+'@'+sc.toFixed(4); let e=SPR.map.get(k);
-  if(e){SPR.map.delete(k);SPR.map.set(k,e);SPR.hits++;}
+  if(e){SPR.map.delete(k);SPR.map.set(k,e);SPR.hits++;if(SPR.last.get(key)!==e) SPR.last.set(key,e);}
   else{
-    if(!SPR.stable||SPR.frameMiss>=SPR.maxMiss){SPR.direct++;fn(ctx,x,y);return;}
+    if(!SPR.stable){const l=SPR.last.get(key);
+      if(l){const r=sc/l.sc,ax=m.a*x+m.e,ay=m.d*y+m.f;ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(l.c,0,0,l.w,l.h,ax+l.ox*r,ay+l.oy*r,l.w*r,l.h*r);ctx.setTransform(m);SPR.scaled++;return;}}
+    if(SPR.frameMiss>=(SPR.stable?SPR.maxMiss:8)){SPR.direct++;fn(ctx,x,y);return;}   // while zooming a few new sprites are still cached so later frames can scale them
     SPR.frameMiss++;SPR.miss++;
     // render with the anchor's sub-pixel phase baked in so the blit lands on whole pixels
     const ax=m.a*x+m.e, ay=m.d*y+m.f, fx=ax-Math.floor(ax), fy=ay-Math.floor(ay);
     const w=Math.max(1,Math.ceil((box[2]-box[0])*sc)+1),h=Math.max(1,Math.ceil((box[3]-box[1])*sc)+1);
     const c=sprCanvas(w,h),g=c.getContext('2d');const ox=Math.floor(box[0]*sc),oy=Math.floor(box[1]*sc);
     g.setTransform(sc,0,0,sc,fx-ox,fy-oy);fn(g,0,0);
-    e={c,w,h,ox,oy};SPR.map.set(k,e);SPR.px+=c.width*c.height;sprEvict();
+    e={c,w,h,ox,oy,sc,base:key};SPR.map.set(k,e);SPR.last.set(key,e);SPR.px+=c.width*c.height;sprEvict();
   }
   const dx=Math.floor(m.a*x+m.e)+e.ox,dy=Math.floor(m.d*y+m.f)+e.oy;
   ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(e.c,0,0,e.w,e.h,dx,dy,e.w,e.h);ctx.setTransform(m);
@@ -90,9 +95,14 @@ function liveSprite(ctx,id,box,sig,fps,fn){
   const pos=fx.toFixed(3)+','+fy.toFixed(3);
   const stale=!e||e.sig!==sig||e.sc!==sc||e.pos!==pos||e.bw!==box[2]-box[0]||e.bh!==box[3]-box[1];
   const due=stale||scene.t-e.t>=1/fps||scene.t<e.t;
-  if(stale&&!SPR.stable){if(e) e.sig=null; return fn(ctx);}         // zooming: draw directly
+  // zooming, or (v2.9) too many buildings went stale at once after a zoom: scale the last frame, re-render a few per frame
+  const scaleOnly=e&&e.sc&&e.w&&e.sig===sig&&e.bw===box[2]-box[0]&&e.bh===box[3]-box[1];
+  if(stale&&(!SPR.stable||(scaleOnly&&SPR.liveRe>=4))){
+    if(e&&e.sc&&e.w){const r=sc/e.sc;ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(e.c,0,0,e.w,e.h,m.a*box[0]+m.e,m.d*box[1]+m.f,e.w*r,e.h*r);ctx.setTransform(m);
+      for(const q of e.lq) scene.lq.push(q);SPR.scaled++;return e.ret;}
+    return fn(ctx);}
   if(due&&(stale||SPR.frameMiss<SPR.maxMiss)){
-    SPR.frameMiss++;
+    SPR.frameMiss++;if(stale) SPR.liveRe++;
     const w=Math.max(1,Math.ceil((box[2]-box[0])*sc)+1),h=Math.max(1,Math.ceil((box[3]-box[1])*sc)+1);
     if(!e){e={c:mkCanvas(1,1),t:scene.t-Math.random()/fps,lq:[]};LIVE.set(id,e);}
     if(e.c.width!==w||e.c.height!==h){e.c.width=w;e.c.height=h;}

@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#7a4e2a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Timber Tycoon">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
 <title>Timber Tycoon — Idle Lumber Empire</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,12 +19,13 @@
 <div id="vignette"></div>
 <header id="topbar">
   <div class="brand"><span class="ic" id="logoIcon"></span><span class="bt">Timber <b>Tycoon</b></span><span class="version-badge" id="verBadge">v2.1</span></div>
-  <div class="chips">
+  <div class="chips" id="hudChips" title="Tap for more stats">
     <div class="hc coin" title="Coins"><span class="ic" id="kCoins"></span><span class="v" id="hCoins">0</span></div>
     <div class="hc inc" title="Income per second"><span class="v" id="hIncome">0/s</span></div>
     <div class="hc" title="Logs per second"><span class="ic" id="kLogs"></span><span class="v" id="hLogs">0/s</span></div>
     <div class="hc seeds" title="Seeds (prestige)"><span class="ic" id="kSeeds"></span><span class="v" id="hSeeds">0</span></div>
   </div>
+  <button class="tb-btn" id="hudX" title="More stats" aria-expanded="false">▾</button>
   <button class="tb-btn" id="muteBtn" title="Toggle sound">🔇</button>
 </header>
 <div id="subbar"><div class="scene-label" id="sceneLabel">🌲 Pine Forest</div>
@@ -24,19 +33,26 @@
   <div id="wxChip" class="wx" title="Season, weather and time of day (tap for details)"><span class="wx-dial" id="wxDial"><i id="wxSun"></i></span><span class="wx-s" id="wxS">🌸</span><span class="wx-t"><b id="wxT1">Spring · Day 1</b><small id="wxT2">⛅ Fair</small></span><span class="wx-clk" id="wxClk">07:10</span></div>
   <div id="events"></div></div>
 <div id="wxPop" class="hidden"></div>
+<div id="fabs">
+  <button class="fab attn" id="attnBtn" title="Next building needing attention"><span class="fi">⚠️</span><b id="attnN">0</b></button>
+  <button class="fab" id="jumpBtn" title="Jump to a location" aria-expanded="false"><span class="fi">📍</span></button>
+</div>
+<div id="jumpBar" class="hscroll" aria-hidden="true"></div>
+<div id="attnTip" class="hidden"></div>
 <nav id="bottombar">
   <button class="bb" data-s="crew" id="bbCrew"><span class="dot hidden" id="crewDot"></span><span class="bi"></span><span class="l">Crew</span></button>
   <button class="bb" data-s="market" id="bbMarket"><span class="bi"></span><span class="l">Market</span></button>
   <button class="bb" data-s="ord" id="bbOrd"><span class="dot hidden" id="ordDot"></span><span class="bi"></span><span class="l">Orders</span></button>
-  <button class="bb" data-s="staff" id="bbStaff"><span class="dot hidden" id="staffDot"></span><span class="bi"></span><span class="l">Staff</span></button>
-  <button class="bb hidden" data-s="rnd" id="bbRnd"><span class="dot hidden" id="rndDot"></span><span class="bi"></span><span class="l">R&amp;D</span></button>
+  <button class="bb ovf" data-s="staff" id="bbStaff"><span class="dot hidden" id="staffDot"></span><span class="bi"></span><span class="l">Staff</span></button>
+  <button class="bb ovf hidden" data-s="rnd" id="bbRnd"><span class="dot hidden" id="rndDot"></span><span class="bi"></span><span class="l">R&amp;D</span></button>
   <button class="bb" data-s="upg" id="bbUpg"><span class="dot hidden" id="upgDot"></span><span class="bi"></span><span class="l">Upgrades</span></button>
-  <button class="bb" data-s="ach" id="bbAch"><span class="dot hidden" id="achDot"></span><span class="bi"></span><span class="l">Trophies</span></button>
-  <button class="bb" data-s="co" id="bbCo"><span class="dot hidden" id="coDot"></span><span class="bi"></span><span class="l">Replant</span></button>
-  <button class="bb" data-s="set" id="bbSet"><span class="bi"></span><span class="l">Settings</span></button>
+  <button class="bb ovf" data-s="ach" id="bbAch"><span class="dot hidden" id="achDot"></span><span class="bi"></span><span class="l">Trophies</span></button>
+  <button class="bb ovf" data-s="co" id="bbCo"><span class="dot hidden" id="coDot"></span><span class="bi"></span><span class="l">Replant</span></button>
+  <button class="bb ovf" data-s="set" id="bbSet"><span class="bi"></span><span class="l">Settings</span></button>
+  <button class="bb more-btn" data-s="more" id="bbMore"><span class="dot hidden" id="moreDot"></span><span class="bi"></span><span class="l">More</span></button>
 </nav>
 <section id="sheet" aria-hidden="true">
-  <div class="sh-head"><h3><span class="sh-ic" id="shIc"></span><span id="shTitle">Building</span></h3><button class="sh-x" id="shClose" title="Close">✕</button></div>
+  <div class="sh-head" id="shHead"><span class="sh-grab" aria-hidden="true"></span><h3><span class="sh-ic" id="shIc"></span><span id="shTitle">Building</span></h3><button class="sh-sz" id="shSize" title="Expand / collapse">⤢</button><button class="sh-x" id="shClose" title="Close">✕</button></div>
   <div class="sh-body" id="shBody">
     <div class="pane" id="pane-bld">
       <div class="bp-top"><div class="bp-ic" id="bpIc"></div><div class="bp-meta"><div class="bp-name"><span id="bpName"></span><span class="lv" id="bpLv"></span></div><div class="bp-desc" id="bpDesc"></div></div>
@@ -48,7 +64,7 @@
         <div class="io" id="bpIo"></div>
         <div class="brow"><span class="seg mult"><button data-m="1" class="on">×1</button><button data-m="10">×10</button><button data-m="max">Max</button></span>
           <label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
-        <button class="btn buy big" id="bpBuy"></button>
+        <div class="buyrow"><button class="btn buy big hold" id="bpBuy"></button><button class="btn gold bmax" id="bpMax" title="Buy as many levels as you can afford">Max</button></div>
         <div class="pbar"><i id="bpPbar"></i></div>
         <div class="fire-note hidden" id="bpFire"></div>
         <div class="bmgr hidden" id="bpMgr"></div>
@@ -102,9 +118,12 @@
       <h4>📊 Company stats</h4>
       <div class="kv" id="statsKv"></div>
     </div>
+    <div class="pane" id="pane-more"><div class="more-grid" id="moreGrid"></div></div>
     <div class="pane" id="pane-set">
       <div class="setrow"><span>Sound effects<small>Chops, coins and unlock chimes</small></span><label class="sw"><input type="checkbox" id="sndToggle"><span class="tr"></span></label></div>
-      <div class="setrow"><span>Camera<small>Drag to pan, scroll or pinch to zoom</small></span><button class="btn wood small" id="fitBtn">⤢ Fit factory</button></div>
+      <div class="setrow"><span>Camera<small>Drag to pan (it glides), pinch or scroll to zoom, double-tap open ground to zoom in/out</small></span><button class="btn wood small" id="fitBtn">⤢ Fit factory</button></div>
+      <div class="setrow"><span>Auto-focus on events<small>Fly the camera to fires, new orders and golden logs</small></span><label class="sw"><input type="checkbox" id="afToggle"><span class="tr"></span></label></div>
+      <div class="setrow"><span>Haptic feedback<small>Short vibrations on taps and buys (where supported)</small></span><label class="sw"><input type="checkbox" id="hapToggle"><span class="tr"></span></label></div>
       <div class="setrow"><span>Save game<small>Autosaves every 10s; progress continues offline (up to 8h)</small></span><button class="btn wood small" id="saveBtn">💾 Save</button></div>
       <div class="setrow"><span>Reset<small>Wipe everything, including Seeds and trophies</small></span><button class="btn red small" id="resetBtn">⟲ Reset</button></div>
       <div class="legend" style="text-align:center">Timber Tycoon <span id="footerVer">v2.1</span></div>
@@ -125,6 +144,7 @@
 <script src="js/forest.js"></script>
 <script src="js/scene1.js"></script>
 <script src="js/sprites.js"></script>
+<script src="js/input.js"></script>
 <script src="js/scene2.js"></script>
 <script src="js/scene3.js"></script>
 <script src="js/scene4.js"></script>
@@ -135,6 +155,7 @@
 <script src="js/scene9.js"></script>
 <script src="js/scene10.js"></script>
 <script src="js/scene11.js"></script>
+<script src="js/mobile.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -127,31 +127,50 @@ function getChunk(cx,cy,cs,allowRender){
   const g=cv.getContext('2d'); g.setTransform(cs,0,0,cs,(-cx*CHUNK+pad)*cs,(-cy*CHUNK+pad)*cs);
   drawGround(g,cx*CHUNK-pad,cy*CHUNK-pad,(cx+1)*CHUNK+pad,(cy+1)*CHUNK+pad);
   c={cv,pad,cs}; scene.chunks.set(key,c);
-  while(scene.chunks.size>42){const k=scene.chunks.keys().next().value;scene.chunks.delete(k);}
+  while(scene.chunks.size>(scene.chunkMax||42)){const k=scene.chunks.keys().next().value;scene.chunks.delete(k);}
   return c;
 }
 /* v2.8: when the camera is still, the visible ground (chunks are drawn scaled, i.e. resampled) is composed once into a
    screen-sized layer and blitted unscaled every frame; it is rebuilt when the camera moves or any chunk is re-rendered. */
+/* v2.9 ground layer: rendered once with a margin around the viewport; panning at a fixed zoom only shifts the blit (no chunk
+   redraw until the margin runs out), and while zooming the layer is drawn scaled until the zoom settles and it is rebuilt sharp */
 function drawGroundLayer(ctx,vx0,vy0,vx1,vy1,force){
-  const c=scene.cam,cv=scene.canvas, still=SPR.on&&!force&&Math.abs(c.x-c.tx)*c.z<.02&&Math.abs(c.y-c.ty)*c.z<.02&&Math.abs(c.z-c.tz)<1e-4;
-  if(!still){scene.gv=null;drawChunks(ctx,vx0,vy0,vx1,vy1,force);return;}
-  const sig=c.x+','+c.y+','+c.z+','+cv.width+','+cv.height+','+scene.chunkTier+','+(S.tree*10+SEAS);
-  let G=scene.gl; if(!G){G=scene.gl={c:document.createElement('canvas'),sig:''};}
-  if(G.sig!==sig||G.gen!==scene.chunkGen){
-    if(G.c.width!==cv.width||G.c.height!==cv.height){G.c.width=cv.width;G.c.height=cv.height;}
-    const g=G.c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(ctx.getTransform());
-    drawChunks(g,vx0,vy0,vx1,vy1,false);G.sig=sig;G.gen=scene.chunkGen;}
-  const m=ctx.getTransform();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(G.c,0,0);ctx.setTransform(m);
+  const c=scene.cam,cv=scene.canvas,dpr=scene.dpr;
+  if(!SPR.on||force){drawChunks(ctx,vx0,vy0,vx1,vy1,force);return;}
+  const s=dpr*c.z, e=dpr*(scene.w/2-c.x*c.z), f=dpr*(scene.h/2-c.y*c.z);
+  const key=cv.width+','+cv.height+','+(S.tree*10+SEAS)+','+scene.chunkGen;
+  let G=scene.gl; if(!G){G=scene.gl={c:mkCanvas(1,1),s:0,e:0,f:0,key:'',builds:0};}
+  const W=G.c.width,H=G.c.height, same=G.s&&Math.abs(s-G.s)<1e-9;
+  let dx=e-G.e, dy=f-G.f;
+  const covers=same&&dx<=.5&&dy<=.5&&dx+W>=cv.width-.5&&dy+H>=cv.height-.5;
+  const m=ctx.getTransform();
+  if(!(covers&&G.key===key)){
+    if(SPR.stable){
+      // margin: 256 css px, but never more than half a chunk of world (zoomed-out views would otherwise need far more chunks)
+      const M=Math.round(Math.min(256*dpr,.5*CHUNK*s)), nw=cv.width+2*M, nh=cv.height+2*M;
+      scene.chunkMax=Math.max(42,Math.ceil((Math.ceil(nw/(CHUNK*s))+1)*(Math.ceil(nh/(CHUNK*s))+1)*1.5)+8);
+      if(G.c.width!==nw||G.c.height!==nh){G.c.width=nw;G.c.height=nh;}
+      const g=G.c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,nw,nh);g.setTransform(s,0,0,s,e+M,f+M);
+      drawChunks(g,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false);
+      G.s=s;G.e=e+M;G.f=f+M;G.key=key;G.builds++;dx=-M;dy=-M;
+    } else if(G.s){
+      const r=s/G.s, x0=e-r*G.e, y0=f-r*G.f;
+      if(x0<=.5&&y0<=.5&&x0+W*r>=cv.width-.5&&y0+H*r>=cv.height-.5){ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(G.c,x0,y0,W*r,H*r);ctx.setTransform(m);scene.groundScaled=(scene.groundScaled||0)+1;return;}
+      drawChunks(ctx,vx0,vy0,vx1,vy1,false);return;
+    } else {drawChunks(ctx,vx0,vy0,vx1,vy1,false);return;}
+  }
+  ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(G.c,Math.round(dx),Math.round(dy));ctx.setTransform(m);
 }
 function drawChunks(ctx,vx0,vy0,vx1,vy1,force){
   if(scene.chunkTier!==S.tree*10+SEAS){scene.chunks.clear();scene.chunkTier=S.tree*10+SEAS;force=true;}
-  const cs=chunkScale(); let budget=force?99:2;
+  const cs=chunkScale(), zooming=!force&&camZooming(); let budget=force?99:zooming?1:2;   // v2.9: while zooming only render chunks that have no fallback at all
   for(let cy=Math.floor(vy0/CHUNK);cy<=Math.floor(vy1/CHUNK);cy++) for(let cx=Math.floor(vx0/CHUNK);cx<=Math.floor(vx1/CHUNK);cx++){
     let c=getChunk(cx,cy,cs,false);
     if(!c){
       // fallback to any cached resolution of this chunk while the sharp one renders
       let fb=null; for(const s of [2.5,2,1.5,1.25,1,.75,.5]){fb=getChunk(cx,cy,s,false); if(fb) break;}
-      if(budget>0||!fb){c=getChunk(cx,cy,cs,true);budget--;} else c=fb;
+      if(!fb&&zooming&&budget<=0) continue;   // filled in over the next frames (only at the far edge of a zoom-out)
+      if(fb&&(zooming||budget<=0)) c=fb; else if(budget>0||!fb){c=getChunk(cx,cy,cs,true);budget--;} else c=fb;
     }
     ctx.drawImage(c.cv,cx*CHUNK-c.pad,cy*CHUNK-c.pad,c.cv.width/c.cs,c.cv.height/c.cs);
   }

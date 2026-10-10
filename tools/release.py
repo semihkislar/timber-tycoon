@@ -8,6 +8,7 @@ ver=re.search(r"const VERSION='([\d.]+)'",open(R+'/js/logic_a.js').read()).group
 dst=f'{R}/releases/v{ver}'
 shutil.rmtree(dst,ignore_errors=True); os.makedirs(dst)
 shutil.copy(R+'/index.html',dst+'/index.html')
+if os.path.exists(R+'/manifest.webmanifest'): shutil.copy(R+'/manifest.webmanifest',dst+'/manifest.webmanifest')   # v2.9 (sw.js is not copied: snapshots never register it)
 for d in ('css','js','assets'): shutil.copytree(f'{R}/{d}',f'{dst}/{d}')
 # versions.html: every release, newest first
 rel={}
