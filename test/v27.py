@@ -3,8 +3,9 @@
 # scene planters / saplings / nursery / seed drones, perf, mobile, no console errors)
 from playwright.sync_api import sync_playwright
 import time
-URL='file:///workspace/lumber-idle/lumber-idle.html'
-OLD='file:///workspace/lumber-idle/releases/timber-tycoon-v2.6.html'
+import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from _server import BASE,URL
+OLD=BASE+'releases/timber-tycoon-v2.6.html'
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg)
@@ -26,7 +27,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=E(pg,'TT.S')
-    ok(S['version']=='2.7','v2.6 save migrated to 2.7')
+    ok(float(S['version'])>=2.7,'v2.6 save migrated to 2.7')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==3,'collectors, buildings, golden kept')
     d=E(pg,'({D:TT.fellDemand(),cap:TT.plantCap(),eff:TT.forestEff(),m:TT.S.forest.m,P:TT.forestPlots(),pl:TT.S.planters})')
     ok(d['cap']>=d['D']*1.0,f"migrated crew covers felling demand ({d['cap']:.2f} vs {d['D']:.2f}, {d['pl']})")
@@ -36,7 +37,7 @@ with sync_playwright() as p:
 
     # --- fresh game ---
     ctx,pg=fresh()
-    ok(E(pg,'TT.VERSION')=='2.7','VERSION is 2.7')
+    ok(float(E(pg,'TT.VERSION'))>=2.7,'VERSION is 2.7')
     ok(E(pg,'TT.S.planters.planter')==1,'first planter is free')
     ok(E(pg,'TT.S.forest.m')>=1150 and E(pg,'TT.forestEff()')==1,'fresh forest is full')
     c0=E(pg,'TT.plCost("planter",1)'); ok(c0<=100,f'second planter is cheap ({c0:.0f})')
@@ -54,7 +55,7 @@ with sync_playwright() as p:
     # --- depletion lowers log output; 0 trees -> trickle ---
     ctx,pg=fresh()
     E(pg,'(()=>{TT.S.coins=1e12;TT.buyCollector("lumberjack",40);TT.buyCollector("chainsaw",30);TT.buyCollector("truck",20);TT.simulate(.5,.25);})()')
-    pot=E(pg,'TT.logRatePot()'); full=E(pg,'TT.logRate()')
+    pot,full=E(pg,'[TT.logRatePot(),TT.logRate()]')
     ok(abs(full-pot)/pot<1e-6,'full forest: logRate = potential')
     E(pg,'(()=>{const F=TT.S.forest;F.st+=F.m-20;F.m=20;TT.simulate(.25,.25);})()')
     half=E(pg,'TT.logRate()'); eff=E(pg,'TT.forestEff()')

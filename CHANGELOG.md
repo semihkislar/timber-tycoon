@@ -5,6 +5,61 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.8] — 2026-10-10
+
+**Performance & assets**: no more stutter in long sessions, a multi-file project layout, sprite caching and an art pass.
+
+### Profiling (what was wrong)
+Measured with Playwright + CDP (`tools/profile.py`): a late-game save (40 min of greedy bot play) fast-forwarded for **2.5 game hours** with the balance bot (24 game-s per real s, Crew/Market/Orders/… sheets opening and closing) while the scene rendered in real time. Every ~12 s: frame cost incl. raster flush, post-GC heap, DOM nodes, listeners, scene/save array sizes, save size/time. GC pauses came from CDP tracing windows at the start and end, plus a heap-snapshot constructor diff.
+- **Root cause of the stutter: a memory leak in `shade()`.** The colour-shade cache was keyed by the raw float factor. Animated faces (vehicles, people, building parts) pass a new float every frame, so the cache grew by **~1,000 strings per second, without bound**. The heap snapshot diff: +866K strings / +34 MB in 7 minutes. Post-GC heap went 11 → 68 MB, and the longest GC pause tripled (9 → 27 ms). Over a 1–2 hour real session that means hundreds of MB and ever-longer GC hitches.
+  Side bug: `rgb()` inputs came out as `rgb(NaN,…)` and were silently dropped.
+- **Frame cost was dominated by rasterising vector paths every frame** (~70 % of main-thread time showed up as raster, not JS): ~50 people, ~90 trees, all buildings and vehicles were redrawn path by path at 60 fps. Scaled or sub-pixel `drawImage` was ~7× slower than integer-aligned blits (micro-benchmarked).
+- Not the cause (measured): save size (8.5 KB, 0.1 ms stringify), event/order/trade arrays (all capped), particles/smoke (capped), DOM listeners (stable), HUD DOM updates (< 0.3 ms per render).
+- Also found: **opening the Market sheet after buying Steel Spades crashed** (`baseUpgPrice` stub lacked `plantT`). Fixed.
+
+### Before → after (same 2.5-game-hour session, headless Chromium, 1280×800, software raster)
+| metric | v2.7 | v2.8 |
+|---|---|---|
+| post-GC heap, start → end | 11.2 → **68.0 MB** (growing ~8 MB per real minute) | 8.9 → **10.6 MB** (flat) |
+| longest GC pause (8 s trace, end of session) | 26.9 ms | 11.1 ms |
+| major GC time (8 s trace, end) | 27 ms | 11 ms |
+| frame cost incl. raster, avg (first → last third) | 29.7 → 27.2 ms | 20.1 → 19.9 ms |
+| frame cost p95 | 34.3 → 30.0 ms | 24.8 → 24.6 ms |
+
+Steady-scene benchmark (`tools/bench.py`, late game, no sheets open): day/fit **22.7 → 13.2 ms**, day/zoomed **17.8 → 11.9 ms**, night/fit **26.2 → 17.5 ms**, night/zoomed **23.2 → 15.1 ms** per frame, i.e. ~1.7× faster.
+
+### Changed: project layout (no longer a single HTML file)
+- `index.html`: slim shell (markup only). `css/style.css`: all styles. `js/*.js`: the game as **ordered classic scripts** sharing one global scope, no bundler. Load order is the `<script>` list in `index.html`: logic → ui → systems → `scene1.js` → `sprites.js` → `scene2…11.js` → `main.js`.
+- `assets/atlas-trees.png` + `.json`: pre-rendered 2× tree atlas (484 frames: 5 tree tiers × 4 seasons × 11 colour variants, growth stages, stumps). It is built by `python3 tools/build_assets.py`, which runs the game's own `drawTreeRaw` in headless Chromium and packs the frames. The atlas is optional at runtime (`?noatlas` disables it).
+- **Releases**: `python3 tools/release.py` copies a full playable snapshot into `releases/v<VERSION>/` and regenerates `versions.html` (newest first). Single-file releases v1.0–v2.7 stay as they are. `lumber-idle.html` now redirects to `index.html`.
+- Tests load `index.html` over a local HTTP server (`test/_server.py`, started automatically on a free port). Migration tests open the old single-file releases on the same origin.
+- `src/` and `src/build.sh` are gone: edit `js/`, `css/` and `index.html` directly.
+
+### Performance
+- `shade()` cache: factors quantised to 1/128 and stored in a bounded `Map`. It parses `#rgb`, `#rrggbb` and `rgb()`.
+- **Sprite cache** (`js/sprites.js`): people (pose × 12-frame walk cycle × facing × cargo), trees/saplings/stumps, vehicles (64 headings × bounce/load/doors; exhaust points re-based) and cargo icons are rendered once at the exact device scale. They are then blitted unscaled on whole pixels. LRU with a 20 MP budget, canvas pool, OffscreenCanvas, and at most 24 new sprites per frame (direct drawing while zooming).
+- **Live building sprites**: each building is cached in its own canvas and re-rendered at 15 fps while running (3 fps idle), or immediately on level/season/weather/zoom change. Window-light quads are replayed and emitters get the skipped dt, so smoke/particle rates are unchanged.
+- **Static ground layer**: with a still camera the visible ground is composed once into a screen-sized layer (invalidated on camera move or chunk re-render). The camera snaps when its easing is below 0.01 px.
+- **Light map** at 0.4× resolution, rebuilt every other frame, upscaled once, then multiplied with an unscaled blit.
+- Labels/pills cached as bitmaps. Particles and smoke pooled with in-place compaction (no per-frame arrays). Floats capped at 60. Lamps culled off-screen.
+- HUD/DOM updates throttled to ~4 Hz, with dirty checks (forest card). Autosave every 30 s plus on tab hide/pagehide (was 10 s).
+- **Hidden tabs do no simulation work**. On return the elapsed time is caught up through the offline simulation.
+
+### Art pass (worst-looking assets, redrawn)
+1. **Broadleaf trees**: dark outline, shaded/lit leaf clusters, highlight clusters, leaf texture, visible branches, bark-shaded trunk with root flare.
+2. **Conifers**: scalloped needle tiers with outline, shadow side, underside band, needle strokes, layered snow caps in winter.
+3. **Stumps**: outlined, with root flare, bark ridges, growth rings and a crack. **Saplings**: mulch ring and outlined canopy.
+4. **Helicopter**: shaded rounded fuselage, glass cockpit with glare, tapered tail boom with fin and tail rotor, skids, twin-blade rotor disc, strapped log bundle.
+5. **Drone**: shaded body, outlined arms, motion-blurred rotors, camera gimbal.
+6. **Cargo icons** (conveyors, pallets): small outlined isometric objects (log bundle with end grain, plank stack, chip heap, chair, labelled crates) instead of flat rectangles.
+7. **Street lamps**: cast-iron post with base, curved arm and glass lantern.
+
+Screenshots: `screenshot-assets-before.png`, `screenshot-assets-after.png`, `screenshot-assets-compare.png` (side by side), refreshed `screenshot.png`.
+
+### Tests
+- New `test/v28.py`: layout/no-404 checks, v2.7 → v2.8 save migration, atlas, sprite-cache hit rate and budget, bounded shade cache, particle caps, 4 Hz HUD, hidden-tab pause + catch-up + save on hide, release snapshot, and a **long-session perf test**. The perf test fast-forwards ~2 game hours (`V28_LONG_SEC=300`, default 150 s ≈ 1 h) and asserts frame cost stays flat and the post-GC heap does not grow.
+- Fixed two timing races in `functional.py` / `v27.py` (now read values in one evaluate).
+
 ## [2.7] — 2026-10-09
 
 **Planting crew**: the forest is now a resource. Loggers use up grown trees, and you hire planters to put saplings back on the stumps.

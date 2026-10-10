@@ -1,7 +1,9 @@
 import json,sys
 from playwright.sync_api import sync_playwright
 import os
-URL=os.environ.get("URL","file:///workspace/lumber-idle/lumber-idle.html")
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from _server import BASE
+URL=os.environ.get("URL",BASE+"index.html")
 dur=int(sys.argv[1]) if len(sys.argv)>1 else 2400
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page()

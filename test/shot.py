@@ -6,7 +6,8 @@
 # v2.7: planting crew among saplings/stumps + nursery greenhouse, depleted forest with warning
 import sys
 from playwright.sync_api import sync_playwright
-URL='file:///workspace/lumber-idle/lumber-idle.html'
+import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from _server import BASE,URL
 OUT=sys.argv[1] if len(sys.argv)>1 else '/workspace/lumber-idle/'
 CLEAN='document.querySelectorAll(".toast,#fxLayer *").forEach(t=>t.remove());'
 with sync_playwright() as p:

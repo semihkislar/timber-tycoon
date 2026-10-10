@@ -1,8 +1,9 @@
 # v2.4 tests: managers (hire/level costs, skills, persistence, offline), fire (start, pause, taps, burn-out, station truck, risk), UI, v2.3 save migration
 from playwright.sync_api import sync_playwright
 import json
-URL='file:///workspace/lumber-idle/lumber-idle.html'
-OLD='file:///workspace/lumber-idle/releases/timber-tycoon-v2.3.html'
+import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from _server import BASE,URL
+OLD=BASE+'releases/timber-tycoon-v2.3.html'
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg)

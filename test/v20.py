@@ -1,7 +1,8 @@
 # v2.0 tests: isometric scene, hit-testing, camera, sheets, v1.3 save migration, perf
 from playwright.sync_api import sync_playwright
-URL='file:///workspace/lumber-idle/lumber-idle.html'
-OLD='file:///workspace/lumber-idle/releases/timber-tycoon-v1.3.html'
+import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from _server import BASE,URL
+OLD=BASE+'releases/timber-tycoon-v1.3.html'
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg)

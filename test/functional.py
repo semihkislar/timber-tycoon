@@ -1,7 +1,8 @@
 # v2.0 functional test: scene-first UI (tap forest, sheets, building lots)
 import json,time
 from playwright.sync_api import sync_playwright
-URL='file:///workspace/lumber-idle/lumber-idle.html'
+import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from _server import BASE,URL
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg)
@@ -46,7 +47,7 @@ with sync_playwright() as p:
     r=pg.evaluate('({p:TT.rates.planks.p, c:TT.rates.logs.c})'); ok(r['p']>0.3 and r['c']>0.6,'planks produced & logs consumed')
     pg.evaluate('TT.S.autosell.planks=false'); pg.evaluate('TT.simulate(20)')
     ok(pg.evaluate('TT.S.res.planks')>5,'planks stock accumulates')
-    v=pg.evaluate('TT.sellAll("planks")'); ok(v>0 and pg.evaluate('TT.S.res.planks')==0,'manual sell all planks')
+    v,left=pg.evaluate('[TT.sellAll("planks"),TT.S.res.planks]'); ok(v>0 and left==0,'manual sell all planks')
     pg.evaluate('TT.S.autosell.planks=true')
     # on/off from the sheet
     pg.locator('#pane-bld label.sw:not(:has(#bpStKeep))').click(); pg.evaluate('TT.simulate(2)')
