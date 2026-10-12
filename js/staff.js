@@ -162,17 +162,19 @@ function updateStaff(){
   if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=MANAGERS.filter(m=>mgrLvl(m.bid)).length;
     const fl=Object.keys(S.fires);
     let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
-    h+=`<h4>👔 Managers <span class="mg-count">${n}/${MANAGERS.length} hired</span></h4><div class="list">`+MANAGERS.map(m=>mgrCardHtml(m)).join('')+`</div>`;
-    h+=`<div class="legend">Every building has one unique manager. They boost speed, add their special skill, keep working offline and stay with you through Replant. Levels 6–10 also cost Seeds.</div>`;
     h+=`<h4>🚒 Fire Safety</h4><div class="stn-hero"><div class="ph-ic">${UI_ICONS.fire}</div><div style="flex:1"><div class="ph-t">${l?`Fire Station · Lv ${l}`:'Fire Station'}</div>
       <div class="legend" style="margin:2px 0 0" id="stnTx"></div><div class="stn-stats">🧯 ${S.fireStats.n} fires put out (${S.fireStats.tap} by hand) · Kiln risk <span id="stnRisk"></span></div></div></div>
-      <button class="btn red big" id="stnBuy"></button>`;
+      <button class="btn red big" id="stnBuy"></button><div class="legend stn-need hidden" id="stnNeed"></div>`;
+
+        h+=`<h4>👔 Managers <span class="mg-count">${n}/${MANAGERS.length} hired</span></h4><div class="list">`+MANAGERS.map(m=>mgrCardHtml(m)).join('')+`</div>`;
+    h+=`<div class="legend">Every building has one unique manager. They boost speed, add their special skill, keep working offline and stay with you through Replant. Levels 6–10 also cost Seeds.</div>`;
     $('staffBody').innerHTML=h; wireMgrCards($('staffBody'));
     $('stnBuy').onclick=()=>{if(buyStation()){staffSig='';render();}};
   }
   const l=stationLvl(),c=stationCost(),b=$('stnBuy');
   const bh=l>=STATION_MAX?'Fire Station at max level':costBtnHtml(l?`⬆ Fire Station Lv ${l+1}`:'🚒 Build the Fire Station',c);
   if(b._h!==bh){b.innerHTML=bh;b._h=bh;} b.disabled=l>=STATION_MAX||S.coins+1e-9<c;
+  const nd=$('stnNeed'),short=l<STATION_MAX&&S.coins+1e-9<c,nt=short?`Need 🪙 ${fmt(c-S.coins)} more`:'';if(nd){nd.classList.toggle('hidden',!short);if(nd._t!==nt){nd.textContent=nt;nd._t=nt;}}
   const tx=l?`A red fire truck races to every fire after <b>${stationDelay()}s</b> and sprays ${stationSpray().toFixed(1)}/s. Fire risk −${l*10}%.`:`Fires break out now and then (kilns most of all). Tap the flames 12× to put one out, or build a fire station to answer every fire automatically. An unattended fire pauses the building for ${FIRE_BURN}s.`;
   const te=$('stnTx'); if(te._t!==tx){te.innerHTML=tx;te._t=tx;}
   const rk=fireRisk('kiln'); $('stnRisk').textContent=S.buildings.kiln.lvl?(rk>0?'≈ 1 per '+fmtTime(1/rk):'none'):'—';

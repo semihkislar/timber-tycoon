@@ -32,7 +32,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg,'mig '); pg.goto(URL); pg.wait_for_timeout(1200)
     S=E(pg,'TT.S')
-    ok(E(pg,'TT.VERSION')=='2.10' and ver(S['version'])==(2,10) and ver('2.10')>ver('2.9'),f"v2.9 save migrated to 2.10 ({S['version']})")
+    ok(ver(E(pg,'TT.VERSION'))>=(2,10) and ver(S['version'])==ver(E(pg,'TT.VERSION')) and ver('2.10')>ver('2.9'),f"v2.9 save migrated to {E(pg,'TT.VERSION')} ({S['version']})")
     ok('power' not in old and S['power']['lvl']==0 and S['power']['fuel']=='mix' and S['power']['on'] is True,f"power plant added with defaults ({S['power']})")
     ok(S['buildings']['sawmill']['lvl']==25 and S['buildings']['kiln']['lvl']==3 and S['collectors']['lumberjack']==old['collectors']['lumberjack'] and S['prefs']['haptics'] is False,'buildings, crew and prefs kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.05,'coins kept')

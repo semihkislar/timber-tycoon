@@ -54,6 +54,7 @@ function attentionList(){
   }
   // v2.10 power plant: out of fuel / low fuel / affordable build or upgrade
   if(pwLvl()&&pwState().on!==false){const s=pwStatus();if(s.k==='nofuel'||s.k==='low') out.push({id:'power',k:'power',p:2,t:s.k==='nofuel'?'⛔ Power Plant: no fuel running':'⚠ Power Plant: low on fuel',open:()=>{openSheet('power');focusLot('power',true);}});}
+  if(stationVisible()&&stationLvl()<STATION_MAX&&S.coins+1e-9>=stationCost()) out.push({id:'station',k:'upg',p:3,t:`🚒 Fire Station: ${stationLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('staff');const b=document.getElementById('shBody');if(b) b.scrollTop=0;}});
   if(pwUnlocked()&&pwLvl()<PW_MAX&&S.coins+1e-9>=pwCost()) out.push({id:'power',k:'upg',p:3,t:`⬆ Power Plant: ${pwLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('power');focusLot('power',true);}});
   out.sort((a,b)=>a.p-b.p); return out;
 }

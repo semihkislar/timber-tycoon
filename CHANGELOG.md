@@ -5,6 +5,42 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.10.1] — 2026-10-10
+
+Bug-fix release: the fire station is easy to build again, and the chimneys and smoke are redrawn.
+
+### Fixed
+- **"I can't build the fire station."** The build button worked, but it was buried. Tapping the station lot (or opening Staff from More) opened the Staff sheet at the top. The **Fire Safety** block came after all 15 manager cards, about 2,800 px down on a phone, below a half-height sheet. Nothing on screen showed where the button was.
+  - **Fire Safety is now the first block** in the Staff sheet. The Build/Upgrade button is on screen as soon as the sheet opens, on desktop and on phones.
+  - When you can't afford it yet, the button now says **"Need 🪙 X more"** instead of just being greyed out.
+  - The **needs-attention** button now lists "🚒 Fire Station: build affordable" and opens the Staff sheet at the station.
+- Checked every other buildable with real touch taps on iPhone 13 and Pixel 7, and with a mouse on desktop: production buildings, Research Lab, Premium Area, Harbour, Power Plant and planters (nursery). All of them build with one tap, and none needed a fix.
+- **Chimney smoke was emitted about 4× too rarely.** Buildings are redrawn in throttled live sprites (about 15 fps), but smoke emission was tied to the frame time. Emission now uses real time per chimney.
+- The power plant's red aviation light sat in the middle of the flue. It now sits on the rim.
+
+### Art: chimneys (`js/chimney.js`, new)
+- One shared, high-quality chimney renderer replaces the flat boxes and plain cylinders on the sawmill, carpentry, furniture factory, chipper vent, kiln, paper mill stacks, Gift Box Atelier and power plant.
+  - **Square brick/stone stacks**: lit left face, dark right face, staggered brick courses, a corbelled cap and a dark flue opening.
+  - Square stacks have a **soot gradient** near the top and **lead flashing** that follows the roof slope. They are seated on the real roof surface (new `gableZ` / `roofSeat`), so they no longer float or poke through. A soft ambient-occlusion shadow sits on the roof.
+  - **Round stacks** (kiln, paper mill, power plant, chipper) have a cylindrical shade, brick courses or metal bands, an optional taper, a thick rim and an elliptical dark opening. The power plant keeps its red/white aviation bands, ladder and platform ring.
+  - Snow caps in winter.
+- Each chimney is **pre-rendered once into an offscreen sprite** (2×/3×/4× by zoom) and stamped with `drawImage`, so rebuilding a building's cache costs one blit per chimney.
+
+### Art: smoke
+- Puffs are soft, pre-rendered **multi-lobe sprites** instead of flat discs. Each puff fades in, rises with a slowing climb, grows, wobbles, **drifts with the wind** and fades out.
+- Puffs are **tinted by time of day**: darker and cooler at night. Smoke kinds keep their colour (grey, dark kiln smoke, light, steam).
+- Smoke is still fully pooled, including vehicle exhaust, which used to allocate a new object per puff. The perf test stays flat.
+
+### Tests
+- New `test/v2101.py` (48 checks):
+  - On desktop, iPhone 13 and Pixel 7 (real CDP touch), the fire station builds via the scene lot with the button on screen without scrolling, and via More → Staff.
+  - The shortfall note shows when you can't afford it, and the attention entry is listed.
+  - Every other buildable builds by tap.
+  - Chimney sprites are cached with no per-frame rebuilds, and smoke stays pooled.
+  - The release snapshot runs.
+- `test/v210.py` accepts patch versions (≥ 2.10).
+- `tools/shot_chimneys.py` makes the close-up chimney screenshots.
+
 ## [2.10] — 2026-10-12
 
 **Biomass Power Plant**: a new late-game building in a forest clearing east of the factory. It burns part of the factory's pellets and charcoal to power every building.

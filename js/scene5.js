@@ -204,7 +204,7 @@ function updateEntities(dt){
   // particles
   // v2.8: in-place compaction + object pools (no new arrays / objects per frame)
   {const A=scene.particles;let n=0;for(let k=0;k<A.length;k++){const p=A[k];p.life-=dt;if(p.life<=0){if(P_POOL.length<400) P_POOL.push(p);continue;}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;A[n++]=p;}A.length=n;}
-  {const A=scene.smoke;let n=0;for(let k=0;k<A.length;k++){const s=A[k];s.life+=dt;if(s.life>=s.max){if(S_POOL.length<200) S_POOL.push(s);continue;}s.x+=s.vx*dt;s.y+=s.vy*dt;s.vx+=dt*3;A[n++]=s;}A.length=n;}
+  {const A=scene.smoke;let n=0;for(let k=0;k<A.length;k++){const s=A[k];if(!smokeStep(s,dt)){if(S_POOL.length<200) S_POOL.push(s);continue;}A[n++]=s;}A.length=n;}   // v2.10.1: drift with wind, slowing rise
   {const A=scene.floats;let n=0;for(let k=0;k<A.length;k++){const f=A[k];if((f.t+=dt)<f.dur) A[n++]=f;}A.length=n;if(n>60) A.splice(0,n-60);}
   scene.axes=scene.axes.filter(a=>(a.t+=dt)<.35);
 }
@@ -222,7 +222,7 @@ function emitP(x,y,type){
   else if(type==='spark'){const a=R()*TAU,s=40+R()*120;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s-30;p.g=90;p.life=p.max=1;p.col='spark';p.size=2;}
   scene.particles.push(p);
 }
-function emitSmoke(x,y,kind){if(scene.smoke.length>160) return;const s=S_POOL.pop()||{};s.x=x+(Math.random()-.5)*3;s.y=y;s.vx=3+Math.random()*5;s.vy=-13-Math.random()*7;s.life=0;s.max=2.4+Math.random()*1.2;s.kind=kind;scene.smoke.push(s);}
+function emitSmoke(x,y,kind){if(scene.smoke.length>160) return;const s=S_POOL.pop()||{};s.x=x+(Math.random()-.5)*3;s.y=y;s.vx=2+Math.random()*4;s.vy=-20-Math.random()*9;s.life=0;s.max=2.8+Math.random()*1.6;s.kind=kind;s.sz=.75+Math.random()*.55;s.ph=Math.random()*6.28;scene.smoke.push(s);}
 function buildPoof(id){const L=LOTS[id];if(!L) return;scene.buildAnim[id]=0;const p=P(L.ci,L.cj,10);for(let k=0;k<26;k++) emitP(p[0]+(Math.random()-.5)*80,p[1]+(Math.random()-.5)*30,'poof');}
 
 /* ---------------- golden logs ---------------- */
@@ -300,7 +300,7 @@ function drawGolden(ctx,dt){
   golden.sparks=golden.sparks.filter(p=>{p.life-=dt*1.4;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=90*dt; if(p.life<=0) return false;
     ctx.fillStyle=`rgba(255,${200+Math.floor(55*p.life)},90,${p.life})`; ctx.fillRect(p.x-2,p.y-2,4,4); return true;});
 }
-function exhaust(st,v){if(!st) return;const rate=v.accel?9:v.v>.1?4:1.6;if(Math.random()<rate*scene.dtF){if(scene.smoke.length>160) return;scene.smoke.push({x:st[0],y:st[1],vx:2+Math.random()*3,vy:-9-Math.random()*5,life:0,max:1+Math.random()*.6,kind:'exh'});}}
+function exhaust(st,v){if(!st) return;const rate=v.accel?9:v.v>.1?4:1.6;if(Math.random()<rate*scene.dtF){if(scene.smoke.length>160) return;const s=S_POOL.pop()||{};s.x=st[0];s.y=st[1];s.vx=2+Math.random()*3;s.vy=-9-Math.random()*5;s.life=0;s.max=1+Math.random()*.6;s.kind='exh';s.sz=1;s.ph=Math.random()*6.28;scene.smoke.push(s);}}
 function drawLanding(ctx,lg){const n=lg.n;const V=VF(lg.i,lg.j,-Math.PI/4,0);
   const R=[[-.18,0],[0,0],[.18,0],[.36,0],[-.09,1],[.09,1],[.27,1],[0,2],[.18,2],[.09,3]];
   shadowAt(ctx,lg.i,lg.j,22,8,.18);

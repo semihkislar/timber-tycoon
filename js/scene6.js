@@ -71,7 +71,7 @@ function sceneTap(sx,sy){
   } else if(h.type==='yard') openSheet('crew');
   else if(h.type==='dock') openSheet('market');
   else if(h.type==='prem') openSheet('prem');
-  else if(h.type==='station') openSheet('staff');
+  else if(h.type==='station'){openSheet('staff');const sb=$('shBody');if(sb) sb.scrollTop=0;}
   else if(h.type==='power'){openSheet('power');focusLot('power');}
   else if(h.type==='office') openDaily();
   else if(h.type==='campus') openResearch();
@@ -193,8 +193,7 @@ function drawScene(dt){
     const x=A[0]+(B[0]-A[0])*s,y=A[1]+(B[1]-A[1])*s;heli(ctx,x,y,74,h.ph,carry);}
   forestAir(ctx,dt);
   // smoke & particles (world space)
-  for(const s of scene.smoke){const k2=s.life/s.max,r=s.kind==='exh'?1.6+k2*6:3+k2*11;const a=(1-k2)*(s.kind==='dark'?.55:s.kind==='grey'?.42:.5);
-    ctx.fillStyle=s.kind==='dark'?`rgba(70,64,60,${a})`:s.kind==='grey'||s.kind==='exh'?`rgba(140,138,135,${s.kind==='exh'?a*.75:a})`:`rgba(250,250,248,${a})`;ctx.beginPath();ctx.arc(s.x,s.y,r,0,TAU);ctx.fill();}
+  drawSmoke(ctx);   // v2.10.1: soft layered puffs (js/chimney.js)
   for(const p of scene.particles){const k2=p.life/p.max;
     if(p.col==='spark'){ctx.fillStyle=`rgba(120,255,240,${k2})`;ctx.fillRect(p.x-1,p.y-1,2,2);continue;}
     if(p.type==='dust'||p.type==='poof'){ctx.fillStyle=p.col+(k2*.7)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.size*(1.6-k2*.6),0,TAU);ctx.fill();continue;}

@@ -23,14 +23,11 @@ function powerGround(ctx){
   fillP(ctx,[P(20.0,-.9),P(20.8,-.9),P(20.8,8.8),P(20.0,8.8)],SEAS===3?'#e6ecef':'rgba(120,150,70,.35)');
 }
 /* ---------- parts ---------- */
-function pwChimney(ctx,i,j,r,h,lv10){
-  const n=7,seg=h/n;let top=null;
-  for(let k=0;k<n;k++){const red=k>=n-2?(k%2===0):false;top=cyl(ctx,i,j,r*(1-.06*k/n),k*seg,seg+.5,red?'#c8402c':'#e6e1d6');}
-  const [x,y]=P(i,j,h),rx=r*.94*45.25*.78,ry=r*.94*22.63*.78;ell(ctx,x,y,rx,ry,'#2a2624');
-  // ladder + platform ring
-  ctx.strokeStyle='rgba(60,60,60,.55)';ctx.lineWidth=.7;ctx.beginPath();const a=P(i,j+r*.9,6),b=P(i,j+r*.9,h-6);ctx.moveTo(a[0]-2,a[1]);ctx.lineTo(b[0]-2,b[1]);ctx.moveTo(a[0]+1,a[1]);ctx.lineTo(b[0]+1,b[1]);
-  for(let z=8;z<h-6;z+=3){const q=P(i,j+r*.9,z);ctx.moveTo(q[0]-2,q[1]);ctx.lineTo(q[0]+1,q[1]);}ctx.stroke();
-  {const [px,py]=P(i,j,h*.62);ctx.strokeStyle='#5a5f66';ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(px,py,r*45.25*1.25,r*22.63*1.25,0,0,Math.PI);ctx.stroke();}
+function pwChimney(ctx,i,j,r,h,lv10){   // v2.10.1: one cached round stack, red/white aviation bands, ladder + platform ring
+  const seg=h/7,bands=[[h-seg,h,'#c8402c'],[h-3*seg,h-2*seg,'#c8402c']];
+  const top=rstack(ctx,i,j,{r,z0:0,top:h,style:'white',taper:.08,bands,ring:h*.62,bandStep:seg});
+  ctx.strokeStyle='rgba(60,60,60,.55)';ctx.lineWidth=.7;ctx.beginPath();const a=P(i,j+r*.9,6),b=P(i,j+r*.9,h*.62);ctx.moveTo(a[0]-2,a[1]);ctx.lineTo(b[0]-2,b[1]);ctx.moveTo(a[0]+1,a[1]);ctx.lineTo(b[0]+1,b[1]);
+  for(let z=8;z<h*.62;z+=3){const q=P(i,j+r*.9,z);ctx.moveTo(q[0]-2,q[1]);ctx.lineTo(q[0]+1,q[1]);}ctx.stroke();
   if(lv10){const [gx,gy]=P(i,j,h-2);ctx.strokeStyle='#f5c84c';ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(gx,gy+1,r*45.25,r*22.63,0,0,Math.PI);ctx.stroke();}
   return top;
 }
@@ -193,7 +190,7 @@ function powerFx(ctx){
   const chs=PW_CH.slice(0,l>=7?2:1);
   for(const [i,j,r,h] of chs){const [x,y]=P(i,j,h);
     if(run>.05&&Math.random()<dt*(3+5*run)) emitSmoke(x+(Math.random()-.5)*4,y-3,run>.6?'grey':'dark');
-    const on=Math.floor(scene.t*1.4+i)%2===0;ell(ctx,x,y-1.5,1.6,1.6,on?'#ff4a3a':'#8a1e14');}
+    const on=Math.floor(scene.t*1.4+i)%2===0;ell(ctx,x+r*45.25*1.02,y+.5,1.5,1.5,on?'#ff4a3a':'#8a1e14');}
   if(l>=3&&run>.05){const {ci,cj,r,h}=PW_CT,[x,y]=P(ci,cj,h);for(let k=0;k<2;k++) if(Math.random()<dt*(4+8*run)) emitSmoke(x+(Math.random()-.5)*r*60,y-2,'white');}
 }
 function powerOverlays(ctx){

@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.10';
+const VERSION='2.10.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;

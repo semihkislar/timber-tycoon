@@ -11,7 +11,11 @@ function bricks(ctx,B,f,z0,z1){planks(ctx,B,f,z0,z1,4,'rgba(80,30,15,.25)');cons
 function hazard(ctx,B,f,z0,z1){const K=fK(B,f);for(let k=0;k<10;k++){const q0=k/10,q1=(k+.5)/10;fillP(ctx,fq(f,K,fA(B,f,q0),fA(B,f,q1),z0,z1),'#f2c230');fillP(ctx,fq(f,K,fA(B,f,q1),fA(B,f,(k+1)/10),z0,z1),'#3a3a3a');}}
 function doorOn(ctx,B,f,q0,q1,z1,col,frame){const K=fK(B,f);fillP(ctx,fq(f,K,fA(B,f,q0),fA(B,f,q1),0,z1),frame||'#6a4024');fillP(ctx,fq(f,K,fA(B,f,q0+.025),fA(B,f,q1-.025),0,z1-2),col||'#3a2414');}
 function winOn(ctx,B,f,q,w,z,h,lit){const K=fK(B,f);const a0=fA(B,f,q),a1=fA(B,f,q+w);win(ctx,f,K,Math.min(a0,a1),Math.abs(a1-a0),z,h,lit);}
-function chimneySmoke(x,y,kind,rate){if(Math.random()<rate*scene.dtF) emitSmoke(x,y,kind);}
+/* v2.10.1: building drawers run inside throttled live sprites (≈15 fps), so emit by real time since this chimney's
+   last call (not by frame dt) — otherwise chimneys puffed ~4x too rarely. */
+const CH_LAST=new Map();
+function chimneySmoke(x,y,kind,rate){const k=(x|0)*8192+(y|0),t=scene.t,l=CH_LAST.get(k);CH_LAST.set(k,t);if(CH_LAST.size>400) CH_LAST.clear();
+  let d=l===undefined?scene.dtF:Math.min(.3,Math.max(0,t-l));let n=rate*d;while(n>0){if(Math.random()<Math.min(1,n)) emitSmoke(x,y,kind);n-=1;}}
 function flag(ctx,x,y,col){ctx.strokeStyle='#5a5a5a';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-22);ctx.stroke();const w=Math.sin(scene.t*4)*1.5;
   ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y-22);ctx.quadraticCurveTo(x+6,y-23+w,x+12,y-20+w);ctx.lineTo(x+12,y-14+w);ctx.quadraticCurveTo(x+6,y-17+w,x,y-15);ctx.closePath();ctx.fill();}
 function goldTrim(ctx,B,z){ctx.strokeStyle='#f5c84c';ctx.lineWidth=2;const a=P(B.i0,B.j1,z),b=P(B.i1,B.j1,z),c=P(B.i1,B.j0,z);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.stroke();}
@@ -30,10 +34,10 @@ function bSawmill(ctx,L,B,run,t){
   doorOn(ctx,B,lf,.1,.55,h-8,'#2e1d10','#7a4a26');
   winOn(ctx,B,of,.18,.22,h-17,10,true);winOn(ctx,B,of,.6,.22,h-17,10,true);
   if(ms>=2){winOn(ctx,B,lf,.68,.2,h-15,9,true);}
-  const top=gable(ctx,B.i0,B.j0,B.i1,B.j1,h,20+ms,lf==='I'?'i':'j',roof,wall);
-  // chimney
-  const ci=B.i0+B.bs*.3,cj=B.j0+B.bs*.3; box(ctx,ci-.16,cj-.16,ci+.16,cj+.16,h,top+8,'#7a7470',{});
-  const cp=P(ci,cj,top+9); if(run) chimneySmoke(cp[0],cp[1],'grey',1.6);
+  const ax=lf==='I'?'i':'j',top=gable(ctx,B.i0,B.j0,B.i1,B.j1,h,20+ms,ax,roof,wall);
+  // chimney (v2.10.1: seated on the roof slope)
+  const ci=B.i0+B.bs*.3,cj=B.j0+B.bs*.3,cr=.17;
+  const cp=stack(ctx,ci,cj,{r:cr,top:top+9,base:roofSeat(B,h,20+ms,ax,ci,cj,cr),style:'brick'}); if(run) chimneySmoke(cp[0],cp[1],'grey',1.6);
   if(ms>=3){const vi=(B.i0+B.i1)/2,vj=(B.j0+B.j1)/2;box(ctx,vi-.22,vj-.22,vi+.22,vj+.22,top-4,top+6,'#e8d2a8',{});gable(ctx,vi-.22,vj-.22,vi+.22,vj+.22,top+6,6,lf==='I'?'i':'j',roof,'#e8d2a8',.06);}
   // saw blade spinning in the opening
   ctx.save();fxf(ctx,lf,fK(B,lf)+(lf==='I'?.06:0),fA(B,lf,.32),9);
@@ -67,7 +71,7 @@ function bChipper(ctx,L,B,run,t){
   ctx.rotate(run?-t*9:0);ctx.strokeStyle='#c9d2da';ctx.lineWidth=2;ctx.beginPath();for(let k=0;k<4;k++){const an=k/4*TAU;ctx.moveTo(0,0);ctx.lineTo(Math.cos(an)*7,Math.sin(an)*7);}ctx.stroke();
   ctx.fillStyle='#f2c230';ctx.beginPath();ctx.arc(0,0,2.4,0,TAU);ctx.fill();ctx.restore();
   // vent pipe
-  const vp=cyl(ctx,B.i0+.45,B.j0+.45,.13,h,18+ms*2,'#a8b4be');
+  const vp=rstack(ctx,B.i0+.45,B.j0+.45,{r:.13,z0:h+1.5,top:h+18+ms*2,style:'metal',bandStep:6});
   if(run) chimneySmoke(vp[0],vp[1],'steam',1.2);
   if(run&&Math.random()<scene.dtF*8){const p=fPt(B,lf,.74,6,.1);emitP(p[0],p[1],'chip');}
   if(ms>=4) flag(ctx,...P(B.i1,B.j0,h),'#3aa0d8');
@@ -77,7 +81,7 @@ function bChipper(ctx,L,B,run,t){
 function bKiln(ctx,L,B,run,t){
   const lf=L.face,of=lf==='I'?'J':'I',ms=B.ms,wall='#b9603f',h=24+ms*3;
   // tall chimney behind
-  const top=cyl(ctx,B.i0+.42,B.j0+.42,.26,0,h+40+ms*5,'#a8503a','#3a2a24');
+  const top=rstack(ctx,B.i0+.42,B.j0+.42,{r:.26,z0:0,top:h+40+ms*5,style:'redbrick',taper:.12});
   box(ctx,B.i0,B.j0,B.i1,B.j1,0,h,wall,{});
   bricks(ctx,B,lf,0,h);bricks(ctx,B,of,0,h);
   // glowing arches
@@ -109,9 +113,9 @@ function bCarpentry(ctx,L,B,run,t){
   winOn(ctx,B,lf,.42,.18,h*.55+4,9,true);winOn(ctx,B,lf,.72,.18,h*.55+4,9,true);
   winOn(ctx,B,of,.12,.18,5,9,true);winOn(ctx,B,of,.42,.18,5,9,true);winOn(ctx,B,of,.72,.18,5,9,true);
   if(ms>=2){winOn(ctx,B,of,.3,.18,h*.55+4,8,true);winOn(ctx,B,of,.6,.18,h*.55+4,8,true);}
-  const top=gable(ctx,B.i0,B.j0,B.i1,B.j1,h,20+ms,lf==='I'?'i':'j','#5e9a4a',wall);
-  const ci=B.i1-B.bs*.3,cj=B.j0+B.bs*.3; box(ctx,ci-.15,cj-.15,ci+.15,cj+.15,h+4,top+4,'#9a948c',{});
-  const cp=P(ci,cj,top+5); if(run) chimneySmoke(cp[0],cp[1],'light',.9);
+  const ax=lf==='I'?'i':'j',top=gable(ctx,B.i0,B.j0,B.i1,B.j1,h,20+ms,ax,'#5e9a4a',wall);
+  const ci=B.i1-B.bs*.3,cj=B.j0+B.bs*.3,cr=.15;
+  const cp=stack(ctx,ci,cj,{r:cr,top:top+5,base:roofSeat(B,h,20+ms,ax,ci,cj,cr),style:'stone'}); if(run) chimneySmoke(cp[0],cp[1],'light',.9);
   // workbench with a chair on the lane side
   const wb=lf==='J'?[B.i0+B.bs*.62,B.j1+.55]:[B.i1+.55,B.j0+B.bs*.62];
   box(ctx,wb[0]-.32,wb[1]-.18,wb[0]+.32,wb[1]+.18,0,7,'#a86a38',{});
@@ -145,8 +149,8 @@ function bPellet(ctx,L,B,run,t){
 }
 function bPaper(ctx,L,B,run,t){
   const lf=L.face,of=lf==='I'?'J':'I',ms=B.ms,wall='#e6dfcf',h=28+ms*4;
-  const s1=cyl(ctx,B.i0+.4,B.j0+.4,.2,0,h+30+ms*4,'#e8e4dc','#555');
-  const s2=cyl(ctx,B.i0+.4,B.j0+1.1,.2,0,h+24+ms*4,'#e8e4dc','#555');
+  const s1=rstack(ctx,B.i0+.4,B.j0+.4,{r:.2,z0:0,top:h+30+ms*4,style:'white',taper:.06,bandStep:10});
+  const s2=rstack(ctx,B.i0+.4,B.j0+1.1,{r:.2,z0:0,top:h+24+ms*4,style:'white',taper:.06,bandStep:10});
   for(const s of [s1,s2]){ctx.fillStyle='#d84a3a';ctx.fillRect(s[0]-9,s[1]+4,18,4);}
   box(ctx,B.i0,B.j0,B.i1,B.j1,0,h,wall,{});
   planks(ctx,B,lf,0,h,7,'rgba(90,80,60,.15)');planks(ctx,B,of,0,h,7,'rgba(90,80,60,.15)');
@@ -184,7 +188,7 @@ function bFurniture(ctx,L,B,run,t){
   // sofa display on the lane side
   const sp=lf==='I'?[B.i1+.6,B.j0+B.bs*.78]:[B.i0+B.bs*.78,B.j1+.6];
   box(ctx,sp[0]-.25,sp[1]-.42,sp[0]+.25,sp[1]+.42,0,6,'#4a8ac8',{});box(ctx,sp[0]-.25,sp[1]-.42,sp[0]-.08,sp[1]+.42,6,12,'#3a7ab8',{});
-  const cp=P(B.i0+.5,B.j0+.5,top);if(run) chimneySmoke(cp[0],cp[1]-2,'light',.8);
+  const cp=stack(ctx,B.i0+.45,B.j0+.45,{r:.16,top:top+10,base:[h,h,h],style:'brick'});if(run) chimneySmoke(cp[0],cp[1],'light',.8);
   if(ms>=4) flag(ctx,...P(B.i1,B.j0,top),'#e85a9a');
   if(ms>=6) goldTrim(ctx,B,h);
   return top+14;

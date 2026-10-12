@@ -166,7 +166,7 @@ function premBuilding(kind){
     // roof features
     if(kind==='cabinetry') top=sawtooth(ctx,B.i0+.1,B.j0+.1,B.i1-.1,B.j1-.1,h,8,3,'j','#2a201a',WALNUT);
     else {ctx.strokeStyle=GOLD;ctx.lineWidth=1.3;pth(ctx,[P(B.i0,B.j0,h),P(B.i1,B.j0,h),P(B.i1,B.j1,h),P(B.i0,B.j1,h)]);ctx.stroke();}
-    if(kind==='atelier'){const ci=B.i0+.45,cj=B.j0+.45;box(ctx,ci-.16,cj-.16,ci+.16,cj+.16,h,h+16,'#5a2a1e',{});const cp=P(ci,cj,h+16);ell(ctx,cp[0],cp[1],4,2,run?'#ff9a3a':'#3a2a22');if(run) chimneySmoke(cp[0],cp[1]-2,'grey',1.1);}
+    if(kind==='atelier'){const ci=B.i0+.45,cj=B.j0+.45;const cp=stack(ctx,ci,cj,{r:.16,top:h+17,base:[h,h,h],style:'darkbrick'});if(run){ell(ctx,cp[0],cp[1]+1,3.2,1.4,'rgba(255,150,60,.55)');chimneySmoke(cp[0],cp[1],'grey',1.1);}}
     if(kind==='parquet'){for(let k=0;k<3;k++){const a=B.i0+.25+k*.1;box(ctx,a,B.j0+.3+k*.08,a+.9,B.j0+.48+k*.08,h+k*2.5,h+2.5+k*2.5,['#b8763a','#8a5428','#a06830'][k],{hl:false});}}
     if(kind==='stationer'){const p=P((B.i0+B.i1)/2,(B.j0+B.j1)/2,h);ctx.save();ctx.translate(p[0],p[1]-6);ctx.rotate(-.5);ctx.fillStyle='#1a1a1e';rr(ctx,-3,-20,6,24,2);ctx.fill();ctx.fillStyle=GOLD;ctx.fillRect(-3,-12,6,2);ctx.beginPath();ctx.moveTo(-3,4);ctx.lineTo(3,4);ctx.lineTo(0,11);ctx.closePath();ctx.fill();ctx.restore();}
     if(big){const p=P((B.i0+B.i1)/2,(B.j0+B.j1)/2,h+2);ctx.fillStyle=GOLD;ctx.beginPath();ctx.moveTo(p[0]-9,p[1]);ctx.lineTo(p[0]-9,p[1]-7);ctx.lineTo(p[0]-4.5,p[1]-3);ctx.lineTo(p[0],p[1]-10);ctx.lineTo(p[0]+4.5,p[1]-3);ctx.lineTo(p[0]+9,p[1]-7);ctx.lineTo(p[0]+9,p[1]);ctx.closePath();ctx.fill();ctx.strokeStyle='#8a6a10';ctx.lineWidth=1;ctx.stroke();
