@@ -4,8 +4,8 @@
    half/full snap points, compact HUD, hold-to-repeat + Buy max, haptics, landscape rail layout and PWA registration. */
 UI_ICONS.more=`<svg viewBox="0 0 32 32"><rect x="3" y="3" width="11" height="11" rx="3" fill="#5fb441"/><rect x="18" y="3" width="11" height="11" rx="3" fill="#3e86c8"/><rect x="3" y="18" width="11" height="11" rx="3" fill="#f5b52e"/><rect x="18" y="18" width="11" height="11" rx="3" fill="#e85a4a"/><path d="M21 23.5h5M23.5 21v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 SHEETS.more={title:'More',icon:'more'};
-const OVF=['staff','rnd','ach','co','set'];
-const OVF_LBL={staff:['Staff','Managers & fire station'],rnd:['R&D','Research & trade'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
+const OVF=['staff','rnd','power','ach','co','set'];
+const OVF_LBL={staff:['Staff','Managers & fire station'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
 function prefs(){if(!S.prefs||typeof S.prefs!=='object') S.prefs={autoFocus:true,haptics:true};return S.prefs;}
 function haptic(ms){try{if(prefs().haptics&&navigator.vibrate) navigator.vibrate(ms||8);}catch(_){}}
 function railMode(){return window.matchMedia('(max-height:520px) and (orientation:landscape)').matches;}
@@ -20,6 +20,7 @@ const JUMPS=[
   {id:'prem',ic:'💎',l:'Premium',pt:()=>P(25,4.6,20),z:1.6,lock:()=>!S.premium.lvl},
   {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
   {id:'rnd',ic:'🔬',l:'R&D',pt:()=>P(16.9,1,20),z:1.7,lock:()=>!campusOpen()},
+  {id:'power',ic:'⚡',l:'Power',pt:()=>P(PWZ.ci,PWZ.cj,24),z:1.6,lock:()=>!pwVisible()},
   {id:'dock',ic:'🚚',l:'Dock',pt:()=>P(DOCK.ci,DOCK.cj,20),z:1.7},
 ];
 let jumpSig='';
@@ -51,6 +52,9 @@ function attentionList(){
       if(bs.f<0.6){out.push({id:b.id,k:'starved',p:2,t:`⚠ ${b.name}: starved for ${RMAP[bs.lim]?RMAP[bs.lim].name:'input'}`});continue;}}
     if(bVisible(b)&&bldUnlocked(b.id)&&S.coins+1e-9>=bulkCost(b.cost,b.scale,st.lvl,1)) out.push({id:b.id,k:'upg',p:3,t:`⬆ ${b.name}: ${st.lvl?'upgrade':'build'} affordable`});
   }
+  // v2.10 power plant: out of fuel / low fuel / affordable build or upgrade
+  if(pwLvl()&&pwState().on!==false){const s=pwStatus();if(s.k==='nofuel'||s.k==='low') out.push({id:'power',k:'power',p:2,t:s.k==='nofuel'?'⛔ Power Plant: no fuel running':'⚠ Power Plant: low on fuel',open:()=>{openSheet('power');focusLot('power',true);}});}
+  if(pwUnlocked()&&pwLvl()<PW_MAX&&S.coins+1e-9>=pwCost()) out.push({id:'power',k:'upg',p:3,t:`⬆ Power Plant: ${pwLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('power');focusLot('power',true);}});
   out.sort((a,b)=>a.p-b.p); return out;
 }
 function updateAttn(){
@@ -65,7 +69,7 @@ function updateAttn(){
 function nextAttention(){
   const L=attentionList(); if(!L.length){attnTip('✔ Everything is running smoothly');return null;}
   attnIdx=(attnIdx+1)%L.length; const a=L[attnIdx]; GI.touchedAt=camNow();
-  openSheet('bld',a.id); focusLot(a.id,true); attnTip(`${a.t} <small>${attnIdx+1}/${L.length}</small>`); haptic(a.k==='fire'?[10,40,10]:8);
+  if(a.open) a.open(); else {openSheet('bld',a.id); focusLot(a.id,true);} attnTip(`${a.t} <small>${attnIdx+1}/${L.length}</small>`); haptic(a.k==='fire'?[10,40,10]:8);
   return a;
 }
 let attnT=0;

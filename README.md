@@ -13,6 +13,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `assets/`: pre-rendered sprite atlases (`atlas-trees.png` + `.json`) and PWA icons (`icon-*.png`)
 - `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
 - `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
+- `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
 - `manifest.webmanifest` + `sw.js` (v2.9): installable PWA; the service worker is network-first for everything and ignores `releases/`
 - `releases/`: every release. v1.0–v2.7 are single HTML files; v2.8+ are folder snapshots `releases/vX.Y/`
 - `tools/`: build, profiling and release scripts
@@ -22,7 +23,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - Run locally: `python3 -m http.server` in the repo root, then open http://localhost:8000/ (module-free, but needs http:// for the atlas fetch).
 - Edit `js/`, `css/` and `index.html` directly. There is no build step for the game itself.
 - After changing tree art, rebuild the atlas: `python3 tools/build_assets.py`
-- Tests: `python3 test/v29.py` (phone emulation, touch gestures) and `python3 test/v28.py` (layout + long-session perf), plus the older `test/v*.py` and `test/functional.py`. Balance: `python3 test/balance.py`
+- Tests: `python3 test/v210.py` (power plant), `python3 test/v29.py` (phone emulation, touch gestures) and `python3 test/v28.py` (layout + long-session perf), plus the older `test/v*.py` and `test/functional.py`. Balance: `python3 test/balance.py`
 - Screenshots: `python3 test/shot.py` (desktop + feature shots, `ONLY=name` to filter) and `python3 test/shot_mobile.py` (phone portrait/sheet/jump/landscape)
 - PWA icons: `python3 tools/build_icons.py` (from the in-game logo). When releasing, bump `CACHE` in `sw.js` to the new version.
 - Phone UX rules (v2.9): ≥44–48 px touch targets, phones (≤720 px) show 5 bottom buttons + More, landscape phones (height ≤520 px) use the left rail + right side sheet; test both with `test/v29.py`.

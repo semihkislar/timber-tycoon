@@ -166,6 +166,7 @@ function isForestPt(i,j){
   if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
   if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;
   if(i>=6.2&&i<10.6&&j>=-8.4&&j<-4.4) return false;   // v2.7: tree-nursery clearing
+  if(i>=20.7&&i<28&&j>=-7.6&&j<-.6) return false;     // v2.10: power-plant clearing
   if(i>=32&&j>=16.8&&j<20.4) return false;
   return true;
 }

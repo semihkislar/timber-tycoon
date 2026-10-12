@@ -11,3 +11,7 @@ _srv=S(('127.0.0.1',int(os.environ.get('TT_PORT','0'))),functools.partial(Q,dire
 threading.Thread(target=_srv.serve_forever,daemon=True).start()
 BASE=f'http://127.0.0.1:{_srv.server_address[1]}/'
 URL=BASE+'index.html'
+
+def ver(s):
+    '''version string -> comparable tuple ("2.10" > "2.9"; float() would read 2.10 as 2.1)'''
+    return tuple(int(x) for x in str(s).split('.'))

@@ -2,6 +2,7 @@
 from playwright.sync_api import sync_playwright
 import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import BASE,URL
+from _server import ver
 OLD=BASE+'releases/timber-tycoon-v2.2.html'
 FAILS=[]
 def ok(c,msg):
@@ -29,7 +30,7 @@ with sync_playwright() as p:
     old=pg.evaluate('JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=pg.evaluate('TT.S')
-    ok(S['version']>='2.3','v2.2 save migrated to 2.3+')
+    ok(ver(S['version'])>=(2,3),'v2.2 save migrated to 2.3+')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==4 and S['orders']['done']==3 and S['storage'].get('sawmill')==2,'collectors, buildings, orders, storage kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.02,'coins kept')
     ok(S['wx']['w']=='clear' and pg.evaluate('TT.seasonIdx()')==0 and 6.5<pg.evaluate('TT.dayPhase()*24')<9,'world clock initialised: spring, fair weather, morning')

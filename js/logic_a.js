@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.9';
+const VERSION='2.10';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -208,6 +208,9 @@ const ACH=[
   {id:'daily3',t:'silver',e:'🔥',n:'Three-Day Grind',d:'Reach a 3-day contract streak',p:()=>[(S.daily&&S.daily.bestStreak)||0,3]},
   {id:'daily7',t:'gold',e:'📆',n:'Week Warrior',d:'Reach a 7-day contract streak',p:()=>[(S.daily&&S.daily.bestStreak)||0,7]},
   {id:'daily25',t:'gold',e:'📬',n:'Contract Ace',d:'Complete 25 daily contracts',p:()=>[(S.daily&&S.daily.total)||0,25]},
+  // v2.10 power plant
+  {id:'power1',t:'bronze',e:'⚡',n:'Lights On',d:'Build the Biomass Power Plant',p:()=>[(S.power&&S.power.lvl)>0?1:0,1]},
+  {id:'power10',t:'gold',e:'🔌',n:'Grid Tycoon',d:'Upgrade the Power Plant to Lv 10',p:()=>[(S.power&&S.power.lvl)||0,10]},
 ];
 
 /* ===================== STATE ===================== */
@@ -220,7 +223,7 @@ function freshState(keep){
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
-    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true}};   // v2.7: one free planter, a full forest
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -273,6 +276,10 @@ function migrateSave(o){
   // v2.8 -> v2.9: mobile preferences (auto-focus camera on events, haptic feedback)
   if(!o.prefs||typeof o.prefs!=='object') o.prefs={autoFocus:true,haptics:true};
   if(typeof o.prefs.autoFocus!=='boolean') o.prefs.autoFocus=true; if(typeof o.prefs.haptics!=='boolean') o.prefs.haptics=true;
+  // v2.9 -> v2.10: biomass power plant
+  if(!o.power||typeof o.power!=='object') o.power={lvl:0,on:true,fuel:'mix',eff:0,burn:{}};
+  if(typeof o.power.lvl!=='number') o.power.lvl=0; if(typeof o.power.on!=='boolean') o.power.on=true; if(!['mix','pellets','charcoal'].includes(o.power.fuel)) o.power.fuel='mix';
+  if(typeof o.power.eff!=='number') o.power.eff=0; if(!o.power.burn||typeof o.power.burn!=='object') o.power.burn={};
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -296,6 +303,7 @@ function computeMods(){
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
   if(S.wx) applyWorldMods(m);
   applyResearch(m);
+  if(typeof pwBoost==='function'&&S.power&&S.power.lvl) m.bldAll*=1+pwBoost();   // v2.10 power plant
   if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
   m.ach=1+ACH_BONUS*achCount();
   m.rep=(1+0.1*S.seeds)*m.ach;
@@ -347,6 +355,7 @@ function tick(dt,offline){
     bstat[b.id]={f,lim:full?null:lim,speed:sp,full};
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
+  if(typeof powerTick==='function') powerTick(demand,dt,fl);   // v2.10: the power plant takes its fuel before auto-sell
   orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt);
   let earned=0;
   for(const r of RES){
@@ -442,6 +451,7 @@ function doPrestige(){
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
+  keep.power={lvl:pwLvl(),on:S.power?S.power.on!==false:true,fuel:(S.power&&S.power.fuel)||'mix',eff:0,burn:{}};   // v2.10: the plant stays built
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);

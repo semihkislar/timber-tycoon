@@ -44,6 +44,8 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         const l=T.mgrLvl(m.bid); if(!l) cands.push({k:'m:'+m.id,cost:T.mgrHireCost(m),gain:pr*.15,do:()=>T.hireMgr(m.id)});
         else if(l<10){const c=T.mgrUpCost(m,l); if(S.seeds>=c.seeds+5||!c.seeds) cands.push({k:'m:'+m.id+l,cost:c.coins,gain:pr*.05,do:()=>T.levelMgr(m.id)});}}
       if(T.buyStation&&window.BOT_STATION!==false&&T.stationLvl()<5&&S.buildings.kiln.lvl) cands.push({k:'f:station'+T.stationLvl(),cost:T.stationCost(),gain:Math.max(T.coinRate,1)*0.03,do:()=>T.buyStation()});
+      // v2.10: power plant (each level +5% to every building while fuelled)
+      if(T.buyPower&&window.BOT_POWER!==false&&T.pwUnlocked()&&T.pwLvl()<T.PW_MAX){const pc=T.pwCost(); if(pc<S.totalEarned*3) cands.push({k:'pw:'+(T.pwLvl()+1),cost:pc,gain:Math.max(T.coinRate,1)*.04,do:()=>T.buyPower()});}
       // v2.5: harbour levels + trade routes (research is bought outside this loop)
       if(T.buyHarbor&&window.BOT_V25!==false&&window.BOT_TRADE!==false&&T.harborAvail()&&T.harborLvl()<5){const hc=T.harborCost(); if(hc<S.totalEarned*3) cands.push({k:'h:harbor'+(T.harborLvl()+1),cost:hc,gain:Math.max(T.coinRate,1)*(T.harborLvl()?.04:.1),do:()=>T.buyHarbor()});}
       if(T.openRoute&&window.BOT_V25!==false&&T.harborLvl()) for(const c of T.CITIES){if(T.routeOpen(c.id)||c.cost>S.totalEarned*3) continue; cands.push({k:'r:'+c.id,cost:c.cost,gain:Math.max(T.coinRate,1)*.06,do:()=>T.openRoute(c.id)});}

@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright
 import sys,os,json,math
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import BASE,URL
+from _server import ver
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAILS=[]
 def ok(c,msg):
@@ -128,7 +129,7 @@ with sync_playwright() as p:
         E(pg,'TT.fitCamera(true)'); settle(pg,700)
         T.tap(*E(pg,"(()=>{const r=document.getElementById('jumpBtn').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")); pg.wait_for_timeout(350)
         chips=E(pg,"[...document.querySelectorAll('#jumpBar .jchip')].map(e=>{const r=e.getBoundingClientRect();return [e.dataset.j,r.height,r.bottom]})")
-        ok([c[0] for c in chips]==['forest','yard','factory','prem','harbor','rnd','dock'] and min(c[1] for c in chips)>=44 and E(pg,"document.body.classList.contains('jump-on')"),f'{tag}: quick-jump chips shown ({[c[0] for c in chips]})')
+        ok([c[0] for c in chips if c[0]!='power']==['forest','yard','factory','prem','harbor','rnd','dock'] and min(c[1] for c in chips)>=44 and E(pg,"document.body.classList.contains('jump-on')"),f'{tag}: quick-jump chips shown ({[c[0] for c in chips]})')
         bbtop=E(pg,"document.getElementById('bottombar').getBoundingClientRect().top")
         ok(max(c[2] for c in chips)<=bbtop,f'{tag}: chips sit above the bottom bar')
         # scroll the chip row to Dock and tap it
@@ -276,7 +277,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg,'mig'); pg.goto(URL); pg.wait_for_timeout(1200)
     S=E(pg,'TT.S')
-    ok(S['version']=='2.9' and 'prefs' not in old,'v2.8 save migrated to 2.9')
+    ok(ver(S['version'])>=(2,9) and 'prefs' not in old,'v2.8 save migrated to 2.9')
     ok(S['prefs']=={'autoFocus':True,'haptics':True},f"prefs added with defaults ({S['prefs']})")
     ok(S['collectors']['lumberjack']==old['collectors']['lumberjack'] and S['planters']['team']==old['planters']['team'] and S['buildings']['sawmill']['lvl']==old['buildings']['sawmill']['lvl'] and S['buildings']['chipper']['lvl']==5,'crew, planters and buildings kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.05,'coins kept')

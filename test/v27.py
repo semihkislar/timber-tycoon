@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 import time
 import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import BASE,URL
+from _server import ver
 OLD=BASE+'releases/timber-tycoon-v2.6.html'
 FAILS=[]
 def ok(c,msg):
@@ -27,7 +28,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=E(pg,'TT.S')
-    ok(float(S['version'])>=2.7,'v2.6 save migrated to 2.7')
+    ok(ver(S['version'])>=(2,7),'v2.6 save migrated to 2.7')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==3,'collectors, buildings, golden kept')
     d=E(pg,'({D:TT.fellDemand(),cap:TT.plantCap(),eff:TT.forestEff(),m:TT.S.forest.m,P:TT.forestPlots(),pl:TT.S.planters})')
     ok(d['cap']>=d['D']*1.0,f"migrated crew covers felling demand ({d['cap']:.2f} vs {d['D']:.2f}, {d['pl']})")
@@ -37,7 +38,7 @@ with sync_playwright() as p:
 
     # --- fresh game ---
     ctx,pg=fresh()
-    ok(float(E(pg,'TT.VERSION'))>=2.7,'VERSION is 2.7')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,7),'VERSION is 2.7')
     ok(E(pg,'TT.S.planters.planter')==1,'first planter is free')
     ok(E(pg,'TT.S.forest.m')>=1150 and E(pg,'TT.forestEff()')==1,'fresh forest is full')
     c0=E(pg,'TT.plCost("planter",1)'); ok(c0<=100,f'second planter is cheap ({c0:.0f})')

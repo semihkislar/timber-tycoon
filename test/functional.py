@@ -3,6 +3,7 @@ import json,time
 from playwright.sync_api import sync_playwright
 import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import BASE,URL
+from _server import ver
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg)
@@ -19,7 +20,7 @@ with sync_playwright() as p:
     pg.on('console',lambda m: errs.append(m.text) if m.type in('error','warning') else None); pg.on('pageerror',lambda e: errs.append(str(e)))
     pg.goto(URL); pg.wait_for_timeout(600)
     ok(pg.title().startswith('Timber Tycoon'),'title')
-    ok(float(pg.evaluate('TT.VERSION'))>=2.0,'version >= 2.0')
+    ok(ver(pg.evaluate('TT.VERSION'))>=(2,0),'version >= 2.0')
     # chop by tapping the forest in the scene
     tap_forest(pg,25)
     S=pg.evaluate('TT.S'); ok(S['clicks']==25,f"25 forest taps registered ({S['clicks']})")

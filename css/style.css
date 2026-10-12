@@ -525,3 +525,31 @@ body.sheet-on #fabs,body.sheet-on #jumpBar,body.sheet-on #attnTip{opacity:0;poin
   #dailyChip{left:calc(var(--rail) + 10px);transform:none;top:auto;bottom:130px}
 }
 .btn.bmax:disabled{background:linear-gradient(180deg,#d9c7a6,#c6b08a);color:#8a7656;text-shadow:none;box-shadow:0 3px 0 #a8916b}
+/* ===== v2.10 power plant sheet ===== */
+.pw-hero{display:flex;gap:10px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:12px;background:linear-gradient(160deg,#eef6e4,#dbeccb);border:1.5px solid #9cc47e}
+.pw-hero .ph-ic svg{width:46px;height:46px}
+.pw-hero .ph-t{color:#2a5a32;font-weight:900;font-size:16px}
+.pw-meter{display:flex;align-items:center;gap:10px;margin:4px 0 6px}
+.pw-gauge{flex:1;height:14px;border-radius:8px;background:#e3d3b4;box-shadow:inset 0 1px 2px rgba(0,0,0,.2);overflow:hidden}
+.pw-gauge i{display:block;height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#f5c84c,#8fd14f);transition:width .4s}
+.pw-gauge.low i{background:linear-gradient(90deg,#e8742a,#f5c84c)}
+.pw-gauge.nofuel i,.pw-gauge.off i{background:#b9a888}
+.pw-num{text-align:center;min-width:64px;line-height:1.05}
+.pw-num b{display:block;font-size:18px;font-weight:900;color:var(--ink)}
+.pw-num small{font-size:10.5px;font-weight:700;color:var(--ink2)}
+.pw-status{font-size:12.5px;font-weight:800;padding:6px 9px;border-radius:10px;margin-bottom:8px;background:#e8f4dc;color:#2a5a32}
+.pw-status.low{background:#fff0d6;color:#8a4a10}
+.pw-status.nofuel{background:#ffe2d6;color:#9a2a14}
+.pw-status.off{background:#ece4d4;color:var(--ink2)}
+.pw-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.pw-l{font-size:12px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.6px}
+.pw-row .sw{margin-left:auto}
+.pw-kv{display:grid;gap:4px;margin-bottom:10px;padding:8px 10px;border-radius:12px;background:#fff8ea;border:1.5px solid var(--line)}
+.pw-kv div{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--ink2)}
+.pw-kv b{color:var(--ink);text-align:right}
+.pw-perks{display:grid;gap:4px}
+.pw-perk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--ink2);padding:5px 8px;border-radius:9px;background:#f3e4c8;opacity:.75}
+.pw-perk b{min-width:40px;color:var(--ink2)}
+.pw-perk.on{background:#e3f1d4;opacity:1;color:#2a5a32}
+.pw-perk.on b{color:#2a5a32}
+.pw-perk.on b::before{content:'✔ '}

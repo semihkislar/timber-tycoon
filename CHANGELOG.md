@@ -5,6 +5,31 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.10] — 2026-10-12
+
+**Biomass Power Plant**: a new late-game building in a forest clearing east of the factory. It burns part of the factory's pellets and charcoal to power every building.
+
+### Gameplay (`js/power.js`, new)
+- Unlocks once a **Pellet Press** is built. Building it costs 250K; each of the 10 levels costs ×5 more (Lv 10 ≈ 488B).
+- Each level gives **+5% production to all buildings**, up to **+50% at Lv 10**. The bonus scales with how well the plant is fuelled (0–100% efficiency, smoothed over a few seconds).
+- It burns 16.5% (Lv 1) to 30% (Lv 10) of the Pellet Press + Kiln output. Fuel modes: **Mix** (default, falls back on the other fuel), **Pellets** only, **Charcoal** only. An on/off switch keeps all your pellets and charcoal for selling.
+- Status shows **Running / Low fuel / No fuel / Off**. Low and no fuel appear in the needs-attention list, and that entry opens the power sheet and frames the plant.
+- Perks shown in the sheet: Lv 1 boiler house, turbine hall, chimney and substation; Lv 3 cooling tower; Lv 5 twin fuel silos; Lv 7 second chimney; Lv 10 gold trim and ★ flag.
+- **Kept through Replant** like the fire station and harbour. Upgrade and hire costs still reset as before.
+- Two new trophies: **Lights On** (build the plant) and **Grid Tycoon** (Lv 10).
+- Offline earnings include the boost. Saves from v2.9 and older load with the plant unbuilt.
+
+### Scene (`js/scene12.js`, new)
+- Detailed isometric plant: brick boiler house with a "TIMBER POWER" band, ribbed steel turbine hall with a roof sign and roller door, banded chimneys with smoke, a hyperboloid cooling tower with steam, fuel silos, a fenced substation, and a power line on wooden poles with sagging wires and gold energy pulses into the factory.
+- Gravel clearing and access road to the highway. Lit windows, floodlights and blinking red aviation lights at night. Before it is built, a pegged plot with a price pill shows where it will go.
+- Tap the plant to open its sheet. New ⚡ quick-jump chip and a **Power** button (More menu on phones). The camera's world bounds were widened so the plant can be framed.
+- The plant is a cached sprite (re-rendered only when its level, season or lights change): about 4.3 ms per frame with it on screen, same as v2.9.
+
+### Tests
+- `test/v210.py` (new): migration, unlock and costs, burn share, boost, fuel modes, no-fuel and attention, off switch, max level, trophies, offline, save, Replant, scene taps, sheet buttons, frame cost, jump framing, phone More menu, release snapshot, no 404s or console errors.
+- Version checks in the tests now compare version tuples (`ver()` in `test/_server.py`), so "2.10" sorts after "2.9".
+- New screenshots: `screenshot-power.png`, `screenshot-power-night.png`, `screenshot-mobile-power.png`.
+
 ## [2.9] — 2026-10-10
 
 **Mobile-first controls**: the game is now designed for a phone in portrait first (360–430 px), with a usable landscape layout, and desktop keeps working as before.

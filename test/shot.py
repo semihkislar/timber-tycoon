@@ -4,6 +4,7 @@
 # v2.5: research tree, trade map, harbour (ship + train), R&D campus, mobile research
 # v2.6: daily contracts sheet, contract office, mobile daily
 # v2.7: planting crew among saplings/stumps + nursery greenhouse, depleted forest with warning
+# v2.10: biomass power plant (day + night close-ups, phone with the power sheet)
 import sys
 from playwright.sync_api import sync_playwright
 import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
@@ -41,10 +42,13 @@ with sync_playwright() as p:
         ('screenshot-mobile-daily.png', {'width':430,'height':900}, 2400, '@mdaily'),
         ('screenshot-planters.png', {'width':1280,'height':800}, 2400, '@planters'),
         ('screenshot-depleted.png', {'width':1280,'height':800}, 1500, '@depleted'),
+        ('screenshot-power.png', {'width':1280,'height':800}, 2400, '@power'),
+        ('screenshot-power-night.png', {'width':1280,'height':800}, 2400, '@powernight'),
+        ('screenshot-mobile-power.png', {'width':430,'height':900}, 2400, '@mpower'),
     ]
     D=420
     # (clock seconds, weather) per shot; default = spring, late morning, fair
-    WORLD={'@night':(D*.93,'clear'),'@mnight':(D*.95,'snow',9),'@winter':(D*9+D*.46,'snow'),'@autumn':(D*6+D*.715,'wind'),'@rain':(D*1+D*.56,'rain'),'@firenight':(D*.95,'clear')}
+    WORLD={'@night':(D*.93,'clear'),'@mnight':(D*.95,'snow',9),'@winter':(D*9+D*.46,'snow'),'@autumn':(D*6+D*.715,'wind'),'@rain':(D*1+D*.56,'rain'),'@firenight':(D*.95,'clear'),'@powernight':(D*.94,'clear')}
     def world(pg,sheet):
         c,w=WORLD.get(sheet,(D*.45,'clear'))[:2]; extra=WORLD.get(sheet,(0,0,0))[2] if len(WORLD.get(sheet,()))>2 else 0
         pg.evaluate(f"(()=>{{TT.setClock({c+extra*D});TT.setWeather('{w}',900);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']=1;TT.scene.wet={1 if w=='rain' else 0};if('{sheet}' in {{'@night':1,'@winter':1,'@autumn':1,'@rain':1,'@mnight':1,'@research':1,'@trade':1,'@harbour':1,'@campus':1,'@mres':1,'@daily':1,'@office':1,'@mdaily':1}}){{TT.S.orders.active=null;TT.S.orders.offer=null;TT.S.orders.next=TT.S.time+999;TT.scene.orderEv=null;}}if(!'{sheet}'.startsWith('@fire')){{TT.S.fires={{}};TT.S.fireCool=TT.S.time+9999;}}}})()")
@@ -99,6 +103,10 @@ with sync_playwright() as p:
     FOCUS['@planters']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=2.3;const p=TT.P(4.9,-4.5,6);c.x=c.tx=p[0];c.y=c.ty=p[1];})()'''
     FOCUS['@depleted']='''(()=>{const c=TT.cam;c.z=c.tz=Math.min(c.maxZ,c.fitZ*1.5);const p=TT.P(3,-1.5,0);c.x=c.tx=p[0];c.y=c.ty=p[1]+40;})()'''
     FOCUS['@office']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.85;const p=TT.P(24.2,24.5,8);c.x=c.tx=p[0];c.y=c.ty=p[1];TT.closeSheet();})()'''
+    POWER_SETUP='''(()=>{const c0=TT.S.coins;TT.S.coins=1e30;while(TT.pwLvl()<7) if(!TT.buyPower()) break;TT.S.coins=c0;TT.simulate(12);})()'''
+    FOCUS['@power']='''(()=>{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3.2);c.z=c.tz=1.95;const p=TT.P(23.6,-2.6,24);c.x=c.tx=p[0];c.y=c.ty=p[1];TT.closeSheet();})()'''
+    FOCUS['@powernight']=FOCUS['@power']
+    FOCUS['@mpower']='''(()=>{TT.openSheet('power');TT.focusLot('power',true);})()'''
     import os
     ONLY=[x for x in os.environ.get('ONLY','').split(',') if x]
     for name,vp,sec,sheet in jobs:
@@ -122,6 +130,7 @@ with sync_playwright() as p:
         if sheet in ('@fire','@firenight','@staff','@mstaff'): pg.evaluate(MGR_SETUP); pg.wait_for_timeout(600)
         if sheet in ('@research','@trade','@harbour','@campus','@mres'): pg.evaluate(TECH_SETUP); pg.wait_for_timeout(2500)
         if sheet in ('@daily','@office','@mdaily'): pg.evaluate(DAILY_SETUP); pg.wait_for_timeout(800)
+        if sheet in ('@power','@powernight','@mpower'): pg.evaluate(POWER_SETUP); pg.wait_for_timeout(1500)
         if sheet=='@office': pg.evaluate('TT.closeSheet()')
         if sheet=='@planters':
             pg.evaluate('''(()=>{const c0=TT.S.coins;TT.S.coins=1e30;const need={planter:4,team:3,nursery:1,sdrone:2};for(const k in need) if((TT.S.planters[k]||0)<need[k]) TT.buyPlanter(k,need[k]-(TT.S.planters[k]||0));TT.S.coins=c0;
@@ -151,7 +160,7 @@ with sync_playwright() as p:
                 for k in range(80):
                     if pg.evaluate('TT.vehicles().dock.some(d=>d.li===3&&d.load>.35)'): break
                     pg.wait_for_timeout(250)
-            pg.evaluate(FOCUS[sheet]); pg.wait_for_timeout(1400 if sheet=='@forest' else 300)
+            pg.evaluate(FOCUS[sheet]); pg.wait_for_timeout(1400 if sheet in ('@forest','@mpower') else 300)
         elif sheet:
             pt=pg.evaluate(f'TT.lotScreen("{sheet}")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(900)
         else: pg.wait_for_timeout(700)

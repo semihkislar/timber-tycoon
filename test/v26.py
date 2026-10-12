@@ -4,6 +4,7 @@ from playwright.sync_api import sync_playwright
 import json
 import sys,os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import BASE,URL
+from _server import ver
 OLD=BASE+'releases/timber-tycoon-v2.5.html'
 FAILS=[]
 def ok(c,msg):
@@ -28,7 +29,7 @@ with sync_playwright() as p:
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); pg.close(run_before_unload=False)
     pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(900)
     S=E(pg,'TT.S')
-    ok(float(S['version'])>=2.6,'v2.5 save migrated to 2.6+')
+    ok(ver(S['version'])>=(2,6),'v2.5 save migrated to 2.6+')
     ok(S['collectors']==old['collectors'] and S['buildings']['sawmill']['lvl']==30 and S['golden']==4,'collectors, buildings, golden kept')
     ok(S['research']=={'science':1} and abs(S['rp']-40)<1e-6 and S['trade']['lvl']==1,'research / RP / trade kept')
     ok(S['daily']['offers']==[] and S['daily']['active']==[] and S['daily']['streak']==0 and S['daily']['total']==0,'daily state initialised empty')
@@ -37,7 +38,7 @@ with sync_playwright() as p:
 
     # --- fresh game: daily gated ---
     ctx,pg=fresh()
-    ok(float(E(pg,'TT.VERSION'))>=2.6,'VERSION is 2.6+')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,6),'VERSION is 2.6+')
     ok(not E(pg,'TT.dailyOpen()'),'daily gated on fresh game')
     ok(not E(pg,'TT.makeDailyOffers()'),'no offers before unlock')
     E(pg,"TT.S.coins=1e6;TT.buyBuilding('sawmill',1);TT.S.totalEarned=100")
