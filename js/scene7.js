@@ -265,22 +265,9 @@ function convObjs(objs,inView){
 }
 /* ---------- stockpiles (stock areas) ---------- */
 function palletStack(ctx,i0,j0,sz,res,frac,lvl,full,isInput){
-  box(ctx,i0,j0,i0+sz,j0+sz,0,2.5,'#b88a52',{hl:false,lw:.7});
-  const g=sz<.6?2:3, cell=sz/g, layers=1+Math.min(3,Math.floor((lvl+1)/2)), hz=sz<.6?5:6.5;
-  const rack=lvl>=2, zr=2.5+layers*hz+(rack?layers*1.2:0);
-  if(rack){for(const [a,b] of [[i0,j0],[i0+sz,j0],[i0,j0+sz]]){const p=P(a,b,0);ctx.fillStyle='#2f6fb0';ctx.fillRect(p[0]-.9,p[1]-zr,1.8,zr);}}
-  const n=Math.max(0,Math.min(g*g*layers,Math.round(frac*g*g*layers)));
-  const col=RCOL[res]||'#c98a4a';
-  if(res==='logs'){const k=Math.max(1,Math.round(frac*6));logPile(ctx,i0+sz*.5,j0+sz*.18,'i',Math.min(6,k),sz*.95);}
-  else for(let q=0;q<n;q++){const L=Math.floor(q/(g*g)),r=q%(g*g),a=r%g,b=Math.floor(r/g);
-    const z0=2.5+L*(hz+(rack?1.2:0)), x=i0+a*cell+.03, y=j0+b*cell+.03;
-    box(ctx,x,y,x+cell-.06,y+cell-.06,z0,z0+hz-.6,col,{hl:false,lw:.6,top:shade(col,1.25)});
-    if(L===0&&rack){const p0=P(i0,j0+sz,z0+hz),p1=P(i0+sz,j0+sz,z0+hz);}}
-  if(rack){for(let L=1;L<=layers;L++){const z=2.5+L*(hz+1.2)-.6;ctx.strokeStyle='#e8742a';ctx.lineWidth=1.3;ctx.beginPath();const a=P(i0,j0+sz,z),b=P(i0+sz,j0+sz,z),c=P(i0+sz,j0,z);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.stroke();}
-    const p=P(i0+sz,j0+sz,0);ctx.fillStyle='#2f6fb0';ctx.fillRect(p[0]-.9,p[1]-zr,1.8,zr);}
-  if(lvl>=4){const z=zr+3;fillP(ctx,[P(i0-.05,j0-.05,z),P(i0+sz+.05,j0-.05,z),P(i0+sz+.05,j0+sz+.05,z),P(i0-.05,j0+sz+.05,z)],lvl>=6?'#3a3430':'#5a6470',lvl>=6?GOLD:'rgba(0,0,0,.3)');}
-  if(full){const p=P(i0+sz*.5,j0+sz,zr+(lvl>=4?10:6));ctx.fillStyle='#c4463d';rr(ctx,p[0]-11,p[1]-6,22,10,3);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
-    ctx.fillStyle='#fff';ctx.font='900 7px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('FULL',p[0],p[1]-1);}
+  // v2.11: fancy rack + real goods; frac is already a stockStep (0..4) when called from stockObj
+  const step=typeof frac==='number'&&frac<=4&&Number.isInteger(frac)?frac:stockStep(frac);
+  palletStackFancy(ctx,i0,j0,sz,res,step,lvl,full);
 }
 function stockGeom(L){
   if(L.prem){const B=lotBox(L),sz=.42;return {inp:[B.i1+.1,L.cj-.47,sz],out:[B.i1+.1,L.cj+.05,sz]};}
@@ -290,17 +277,29 @@ function stockGeom(L){
 function stockVals(id){
   const b=BMAP[id],st=S.buildings[id],bs=bstat[id],ok=st.on&&bs.f>.01; const out=Object.keys(b.out)[0], inp=Object.keys(b.inp)[0];
   const caps=scene._caps||{}; const cap=caps[out]||Infinity; const stock=cap<Infinity?S.res[out]/cap:0;
-  const wob=.5+.5*Math.sin(scene.t*.5+L_HASH(id));
-  const of=bs.full?1:Math.min(1,stock+(ok?.14+.12*wob:0));
-  const inf=!st.on?.25:bs.lim===inp?Math.max(.05,bs.f*.5):Math.min(1,.42+.38*bs.f+.1*wob);
+  // v2.11: no per-frame wobble — fill is quantised into stockStep so liveSprites stay cached
+  const of=bs.full?1:Math.min(1,stock+(ok?.2:0));
+  const inf=!st.on?.25:bs.lim===inp?Math.max(.05,bs.f*.5):Math.min(1,.45+.4*bs.f);
   return {out,inp,of,inf,full:!!(bs.full&&st.on),lvl:stoLvl(id)};
 }
 function L_HASH(id){let h=0;for(const c of id) h=h*31+c.charCodeAt(0);return (h%100)/10;}
 function stockObj(ctx,L){
   const st=S.buildings[L.id]; if(!st.lvl) return null;
   const G=stockGeom(L); const m=P(G.out[0],G.out[1]); const [sx,sy]=w2s(m[0],m[1]); if(sx<-80||sx>scene.w+80||sy<-80||sy>scene.h+120) return null;
-  return {k:G.inp[0]+G.inp[1]+G.inp[2],f:()=>{const v=stockVals(L.id);palletStack(ctx,G.inp[0],G.inp[1],G.inp[2],v.inp,v.inf,v.lvl,false,true);palletStack(ctx,G.out[0],G.out[1],G.out[2],v.out,v.of,v.lvl,v.full,false);
-    const fl=scene.stoFlash&&scene.stoFlash.id===L.id?scene.stoFlash:null; if(fl){const p=P(G.out[0]+.5,G.out[1]+.5,30);ctx.globalAlpha=Math.max(0,1-fl.t/1.4);pill(ctx,p[0],p[1]-fl.t*20,'📦 Lv '+v.lvl,{bg:'#2f6fb0',fs:10});ctx.globalAlpha=1;}}};
+  return {k:G.inp[0]+G.inp[1]+G.inp[2],f:()=>{
+    const v=stockVals(L.id); const is=stockStep(v.inf), os=stockStep(v.of);
+    const sz=G.inp[2];
+    // one live sprite covering both racks; rebuild only when either step / lvl / season / FULL changes
+    const i0=Math.min(G.inp[0],G.out[0])-.1, j0=Math.min(G.inp[1],G.out[1])-.1;
+    const i1=Math.max(G.inp[0],G.out[0])+sz+.1, j1=Math.max(G.inp[1],G.out[1])+sz+.1;
+    const box=[Math.floor((i0-j1)*32-24),Math.floor((i0+j0)*16-55),Math.ceil((i1-j0)*32+24),Math.ceil((i1+j1)*16+18)];
+    const sig=v.inp+'|'+v.out+'|'+is+'|'+os+'|'+v.lvl+'|'+SEAS+'|'+(v.full?1:0);
+    liveSprite(ctx,'sto:'+L.id,box,sig,.1,g=>{
+      palletStackFancy(g,G.inp[0],G.inp[1],sz,v.inp,is,v.lvl,false);
+      palletStackFancy(g,G.out[0],G.out[1],sz,v.out,os,v.lvl,v.full);
+    });
+    const fl=scene.stoFlash&&scene.stoFlash.id===L.id?scene.stoFlash:null; if(fl){const p=P(G.out[0]+.5,G.out[1]+.5,30);ctx.globalAlpha=Math.max(0,1-fl.t/1.4);pill(ctx,p[0],p[1]-fl.t*20,'📦 Lv '+v.lvl,{bg:'#2f6fb0',fs:10});ctx.globalAlpha=1;}
+  }};
 }
 /* ---------- draw everything premium ---------- */
 function premDraw(ctx,objs,inView){

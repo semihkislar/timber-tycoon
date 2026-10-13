@@ -7,7 +7,7 @@
    - Pre-rendered PNG atlases in assets/ (tools/build_assets.py) are used for any key they contain. */
 /* offscreen canvases are not DOM nodes (thousands of cached sprites used to inflate the node count) */
 function mkCanvas(w,h){if(typeof OffscreenCanvas!=='undefined') return new OffscreenCanvas(Math.max(1,w),Math.max(1,h));const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
-const SPR={map:new Map(),px:0,budget:20e6,pool:[],hits:0,miss:0,direct:0,frameMiss:0,maxMiss:24,on:true,atlas:null,atlasFrames:null,atlasScale:2,atlasHits:0,stable:false,last:new Map(),scaled:0};
+const SPR={map:new Map(),px:0,budget:20e6,pool:[],hits:0,miss:0,direct:0,frameMiss:0,maxMiss:12,on:true,atlas:null,atlasFrames:null,atlasScale:2,atlasHits:0,stable:false,last:new Map(),scaled:0};
 /* Blits are only fast when they are unscaled and land on whole device pixels (a scaled or sub-pixel drawImage resamples every
    pixel and costs ~7x more in software rasterisers). Sprites are therefore rendered at the exact current device scale and blitted
    with an identity transform at rounded positions. While the camera zooms, cache misses draw directly instead. */

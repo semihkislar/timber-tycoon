@@ -5,6 +5,31 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.11] — 2026-10-13
+
+**Factory facelift**: the core production buildings around the plaza get real materials, level-tier evolution, and stock yards that show what you actually have stored.
+
+### Art: buildings (`js/facade.js`, new · `js/scene4.js`)
+- Shared material helpers at the quality bar set by the v2.10.1 chimneys:
+  - **Plank / brick / corrugated-metal walls** with kerfs, mortar courses and rib highlights.
+  - **Shingle / tile / corrugated roofs** with lit and shaded slopes, a ridge cap and denser texture; winter snow still covers them.
+  - **Framed windows** (sill + muntins) that glow at night, **roller / wood doors**, soft contact shadows and a side **sign band**.
+- Every plaza building (sawmill, chipper, kiln, carpentry, pellet press, paper mill, furniture factory) was redrawn with those materials.
+
+### Level-tier evolution
+Milestones are still Lv 10 / 25 / 50 / 100 / 200 / 400. From Lv 25 a building grows a lean-to wing; from Lv 50 it gains rooftop vents; from Lv 100 it adds solar panels and a flag; Lv 400 keeps the gold trim. Progress on the plaza is visible without opening a sheet.
+
+### Art: stock yards (`js/scene7.js`)
+- Side racks are steel frames with wooden shelves and a corrugated back, not empty orange crates.
+- Fill is drawn as the real goods (log piles, plank stacks, chip mounds, charcoal/pellet sacks, paper reams, chair crates, branded furniture crates) and **quantised into 5 steps** (`stockStep`) so the live-sprite cache is only rebuilt when the step, level, season or "FULL" flag changes — not every frame.
+
+### Perf
+- Buildings stay on the existing live-sprite path (re-render on level-tier / season / lights / running at 8 fps). Stock yards are one live sprite per building, keyed by fill step — no per-frame wobble.
+- `tools/bench.py` late-game frame cost (avg ms): day-fit 15.8→15.9, day-zoom 13.3→14.5, night-fit 19.5→20.1, night-zoom 17.5→16.7. The v2.8 long-session test stays flat (p95 &lt; 40 ms, heap stable).
+
+### Tests
+- New `test/v211.py`: version, v2.10.1 save load, milestone / stockStep thresholds, cache stability, taps on desktop + iPhone 13 + Pixel 7, release snapshot, no 404s or console errors.
+
 ## [2.10.1] — 2026-10-10
 
 Bug-fix release: the fire station is easy to build again, and the chimneys and smoke are redrawn.
