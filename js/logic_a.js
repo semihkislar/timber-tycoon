@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.12';
+const VERSION='2.13';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -227,7 +227,8 @@ function freshState(keep){
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}},
-    builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0}};   // v2.7: one free planter, a full forest
+    builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
+    ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -238,7 +239,7 @@ let S=freshState();
 let M=null;
 const bstat={}; BUILDINGS.forEach(b=>bstat[b.id]={f:0,lim:null,speed:0});
 const rates={}; RES.forEach(r=>rates[r.id]={p:0,c:0,s:0,d:0});
-let coinRate=0, chopRateEma=0;
+let coinRate=0, chopRateEma=0; const SOLD_TMP={};
 let offlineAcc=null;
 let dispCoins=0, lastDispCoins=-1;
 let prevBldSig='', prevTree=-1;
@@ -284,6 +285,8 @@ function migrateSave(o){
   if(!o.power||typeof o.power!=='object') o.power={lvl:0,on:true,fuel:'mix',eff:0,burn:{}};
   if(typeof o.power.lvl!=='number') o.power.lvl=0; if(typeof o.power.on!=='boolean') o.power.on=true; if(!['mix','pellets','charcoal'].includes(o.power.fuel)) o.power.fuel='mix';
   if(typeof o.power.eff!=='number') o.power.eff=0; if(!o.power.burn||typeof o.power.burn!=='object') o.power.burn={};
+  // v2.12 -> v2.13: shipping yard (docks, forklifts, contracts)
+  if(!o.ship||typeof o.ship!=='object') o.ship={dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}};
   // v2.11 -> v2.12: builders' yard (construction crews)
   if(!o.builders||typeof o.builders!=='object') o.builders={lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0};
   {const B=o.builders;if(typeof B.lvl!=='number') B.lvl=0;if(typeof B.on!=='boolean') B.on=true;if(!['ms','cheap','low'].includes(B.plan)) B.plan='ms';
@@ -315,6 +318,7 @@ function computeMods(){
   applyResearch(m);
   if(typeof pwBoost==='function'&&S.power&&S.power.lvl) m.bldAll*=1+pwBoost();   // v2.10 power plant
   if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
+  if(S.ship&&S.ship.dock>1) m.priceAll*=1+.02*(S.ship.dock-1);   // v2.13 export premium (shipping dock)
   m.ach=1+ACH_BONUS*achCount();
   m.rep=(1+0.1*S.seeds)*m.ach;
   return m;
@@ -367,14 +371,15 @@ function tick(dt,offline){
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
   if(typeof powerTick==='function') powerTick(demand,dt,fl);   // v2.10: the power plant takes its fuel before auto-sell
   orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt);
-  let earned=0;
+  let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
     if(!S.autosell[r.id]) continue;
     const reserve=(demand[r.id]/dt)*Math.max(BUFFER_SEC,dt*1.5);
     const sell=S.res[r.id]-reserve;
-    if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*price(r.id);}
+    if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*price(r.id);sold[r.id]=sell;}
   }
   if(earned>0) earn(earned);
+  if(typeof shipTick==='function') shipTick(dt,sold,earned,offline);   // v2.13 shipping yard
   if(!offline){
     const a=Math.min(1,dt/1.5);
     for(const r of RES){const R=rates[r.id],F=fl[r.id];
@@ -463,6 +468,7 @@ function doPrestige(){
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
   keep.power={lvl:pwLvl(),on:S.power?S.power.on!==false:true,fuel:(S.power&&S.power.fuel)||'mix',eff:0,burn:{}};   // v2.10: the plant stays built
+  keep.ship=typeof shKeep==='function'?shKeep():S.ship;   // v2.13: docks, forklifts and crane are kept through Replant
   {const B=S.builders||{};keep.builders={lvl:B.lvl||0,on:B.on!==false,plan:B.plan||'ms',budget:B.budget||.25,off:Object.assign({},B.off||{}),jobs:[],stats:Object.assign({lv:0,spent:0,jobs:0},B.stats||{}),seq:B.seq||0,cool:0};}   // v2.12: the yard stays built, jobs are dropped
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;

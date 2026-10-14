@@ -4,8 +4,8 @@
    half/full snap points, compact HUD, hold-to-repeat + Buy max, haptics, landscape rail layout and PWA registration. */
 UI_ICONS.more=`<svg viewBox="0 0 32 32"><rect x="3" y="3" width="11" height="11" rx="3" fill="#5fb441"/><rect x="18" y="3" width="11" height="11" rx="3" fill="#3e86c8"/><rect x="3" y="18" width="11" height="11" rx="3" fill="#f5b52e"/><rect x="18" y="18" width="11" height="11" rx="3" fill="#e85a4a"/><path d="M21 23.5h5M23.5 21v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 SHEETS.more={title:'More',icon:'more'};
-const OVF=['staff','rnd','power','build','ach','co','set'];
-const OVF_LBL={staff:['Staff','Managers & fire station'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
+const OVF=['ship','staff','rnd','power','build','ach','co','set'];
+const OVF_LBL={ship:['Shipping','Docks, forklifts & contracts'],staff:['Staff','Managers & fire station'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
 function prefs(){if(!S.prefs||typeof S.prefs!=='object') S.prefs={autoFocus:true,haptics:true};return S.prefs;}
 function haptic(ms){try{if(prefs().haptics&&navigator.vibrate) navigator.vibrate(ms||8);}catch(_){}}
 function railMode(){return window.matchMedia('(max-height:520px) and (orientation:landscape)').matches;}
@@ -57,6 +57,7 @@ function attentionList(){
   if(pwLvl()&&pwState().on!==false){const s=pwStatus();if(s.k==='nofuel'||s.k==='low') out.push({id:'power',k:'power',p:2,t:s.k==='nofuel'?'⛔ Power Plant: no fuel running':'⚠ Power Plant: low on fuel',open:()=>{openSheet('power');focusLot('power',true);}});}
   if(stationVisible()&&stationLvl()<STATION_MAX&&S.coins+1e-9>=stationCost()) out.push({id:'station',k:'upg',p:3,t:`🚒 Fire Station: ${stationLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('staff');const b=document.getElementById('shBody');if(b) b.scrollTop=0;}});
   if(pwUnlocked()&&pwLvl()<PW_MAX&&S.coins+1e-9>=pwCost()) out.push({id:'power',k:'upg',p:3,t:`⬆ Power Plant: ${pwLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('power');focusLot('power',true);}});
+  if(S.ship&&S.ship.offer&&!S.ship.contract) out.push({id:'ship',k:'upg',p:3,t:`📜 Export contract offer from ${cityOf(S.ship.offer.city).name}`,open:()=>{openSheet('ship');focusLot('dock');}});
   if(byUnlocked()&&byLvl()<BY_MAX&&S.coins+1e-9>=byCost()) out.push({id:'build',k:'upg',p:3,t:`🏗️ Builders' Yard: ${byLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('build');focusLot('build',true);}});   // v2.12
   out.sort((a,b)=>a.p-b.p); return out;
 }

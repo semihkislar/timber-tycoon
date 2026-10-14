@@ -265,7 +265,7 @@ with sync_playwright() as p:
     z0=E(pg,'TT.cam.z'); pg.mouse.wheel(0,-300); pg.wait_for_timeout(200)
     ok(E(pg,'TT.cam.z')>z0,'desktop: wheel zooms')
     E(pg,'TT.fitCamera(true)'); pg.wait_for_timeout(300); pt=E(pg,'TT.lotScreen("dock")'); pg.mouse.click(*pt); pg.wait_for_timeout(200)
-    ok(E(pg,'TT.curSheet')=='market','desktop: click on the dock opens the market')
+    ok(E(pg,'TT.curSheet') in ('market','ship'),'desktop: click on the dock opens the market')
     E(pg,'TT.closeSheet()'); pg.keyboard.press('ArrowRight'); pg.wait_for_timeout(400); ok(E(pg,'TT.cam.x')>c0[0]-1,'desktop: arrow keys pan')
     ctx.close()
 

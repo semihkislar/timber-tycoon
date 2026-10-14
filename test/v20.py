@@ -52,7 +52,7 @@ with sync_playwright() as p:
     ok(pg.evaluate(f'TT.hitTest({pt[0]},{pt[1]}).type')=='none','lane is not a building')
     pg.evaluate('TT.openSheet("bld","sawmill")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(100)
     ok(pg.evaluate('TT.curSheet') is None,'tapping empty ground closes the sheet')
-    for lot,sheet in [('yard','crew'),('dock','market')]:
+    for lot,sheet in [('yard','crew'),('dock','ship')]:
         pg.evaluate('TT.fitCamera(true)')   # opening a sheet may pan the camera; start each tap from the fitted view
         pg.wait_for_function('Math.abs(TT.cam.y-TT.cam.ty)<0.5&&Math.abs(TT.cam.x-TT.cam.tx)<0.5',timeout=5000)
         pt=pg.evaluate(f'TT.lotScreen("{lot}")'); pg.mouse.click(pt[0],pt[1]); pg.wait_for_timeout(120)

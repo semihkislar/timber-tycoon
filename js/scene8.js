@@ -81,6 +81,7 @@ function collectLights(){
   for(const v of scene.premTrucks||[]) vehLights(out,v,1.62,-1.64);
   if(scene.client&&scene.client.veh) vehLights(out,scene.client.veh,1.08,-1.06);
   for(const f of scene.forklifts) vehLights(out,f,.55,null,true);
+  fvLights(out);
   if(scene.pfork) vehLights(out,scene.pfork,.55,null,true);
   staffLights(out); techLights(out); powerLights(out); byLights(out);
   if(OFFICE.top){const [x,y]=P(OFFICE.ci,OFFICE.cj+0.4,0);out.push({x,y,rx:40,ry:20,c:'warm',a:.7});const [lx,ly]=P(OFFICE.ci,OFFICE.cj+.5,20);out.push({x:lx,y:ly-7,rx:12,ry:12,c:'warm',a:.9,core:1});}

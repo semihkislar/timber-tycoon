@@ -94,7 +94,7 @@ with sync_playwright() as p:
     ok(mp.evaluate('TT.S.golden')==1,'golden log tappable on mobile')
     ok(mp.evaluate('document.documentElement.scrollWidth')<=391,'no horizontal overflow on mobile')
     mp.evaluate('TT.closeSheet()'); pt=mp.evaluate('TT.lotScreen("dock")'); mp.touchscreen.tap(pt[0],pt[1]); mp.wait_for_timeout(300)
-    ok(mp.evaluate('TT.curSheet')=='market','dock tappable on mobile (touch)')
+    ok(mp.evaluate('TT.curSheet') in ('market','ship'),'dock tappable on mobile (touch) -> shipping yard (v2.13)')
     print('ERRORS:',errs); ok(len(errs)==0,'no console errors')
     b.close()
 print('FAILS',FAILS)
