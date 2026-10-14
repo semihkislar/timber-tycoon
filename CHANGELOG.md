@@ -5,6 +5,44 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.12] — 2026-10-14
+
+**Builders' Yard**: construction crews that upgrade your buildings on their own.
+
+### Gameplay (`js/builders.js`, new)
+- Unlocks once 3 production buildings are built, and shows in the scene from 2. Building it costs 25K, and each of the 6 levels costs ×12 more.
+- Crews in yellow trucks go out to the factory, put up scaffolding, work for a few seconds and then pay the **normal price** for the levels.
+  - Per job: up to 3 levels at Lv 1, rising to 100 at Lv 6.
+  - Crews: 1 at Lv 1, rising to 4 at Lv 6.
+  - Job time: 18 s at Lv 1, falling to 11 s at Lv 6.
+- **Plans**:
+  - ⭐ Milestones: the next ×2 milestone that is cheapest to reach.
+  - 🪙 Cheapest: always the cheapest next level.
+  - ⚖️ Lowest level: lifts the lowest-level building first.
+- **Budget**: crews never spend more than 10 / 25 / 50 / 100% of your coins at the moment they pay. Nothing is reserved until a job finishes, so buying by hand costs exactly the same.
+- **Exclusions and pauses**: you can exclude single buildings or switch the yard off. Burning buildings are skipped. Crews also work offline.
+- **Replant**: the yard and its settings are kept. Building levels and costs reset as before, and running jobs are dropped.
+- **Perks by level**:
+  - Lv 2: tower crane.
+  - Lv 3: two-storey site office.
+  - Lv 4: floodlight mast.
+  - Lv 5: cement silo.
+  - Lv 6: gold trim and the ★ flag.
+- Two new trophies: **Hard Hats On** (build the yard) and **Skyline** (crews build 1,000 levels).
+- On mobile the yard has a **More → Builders** entry, a jump chip and a needs-attention entry ("Builders' Yard: build affordable").
+
+### Scene (`js/scene13.js`, new)
+- The yard sits at the bottom of the lane: gravel pad, fence, portacabin, material stacks and sign. The static part is cached as one live sprite. The crane slews and is drawn every frame.
+- Crew trucks drive up the lane and back out. Builders appear on scaffolding at the building they're working on.
+
+### Tests
+- New `test/v212.py`. It covers:
+  - save migration from v2.11 and v2.10.1, unlock and costs
+  - plans, budget, paying on completion, opt-outs, the off switch, fires and the crew cap
+  - offline building and Replant
+  - scene, sheet, taps on desktop, iPhone 13 and Pixel 7, and the release snapshot
+- `test/v211.py` now compares versions as tuples.
+
 ## [2.11] — 2026-10-13
 
 **Factory facelift**: the core production buildings around the plaza get real materials, level-tier evolution, and stock yards that show what you actually have stored.

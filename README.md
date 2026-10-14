@@ -14,6 +14,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
 - `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
 - `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
+- `js/builders.js` + `js/scene13.js` (v2.12): Builders' Yard (construction crews that auto-upgrade buildings: plans, budget, sheet UI) and its scene (yard, crane, crew trucks, scaffolding)
 - `js/chimney.js` (v2.10.1): shared high-quality chimney renderer (square + round stacks seated on roofs, cached sprites) and the soft layered smoke puffs
 - `js/facade.js` (v2.11): factory facelift helpers — plank/brick/metal walls, shingle/tile/corrugated roofs, framed windows, roller doors, contact shadows, level-tier extras, and stock-yard goods with quantised fill steps
 - `manifest.webmanifest` + `sw.js` (v2.9): installable PWA; the service worker is network-first for everything and ignores `releases/`

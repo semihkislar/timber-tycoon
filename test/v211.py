@@ -27,7 +27,7 @@ with sync_playwright() as p:
     ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
     ctx.add_init_script('try{localStorage.clear()}catch(e){}'); pg=ctx.new_page(); watch(pg)
     pg.goto(URL); pg.wait_for_timeout(1200)
-    ok(E(pg,'TT.VERSION')=='2.11',f"VERSION==2.11 ({E(pg,'TT.VERSION')})")
+    ok(ver(E(pg,'TT.VERSION'))>=(2,11),f"VERSION>=2.11 ({E(pg,'TT.VERSION')})")
     ok(E(pg,'typeof stockStep==="function"&&typeof roofGable==="function"&&typeof palletStackFancy==="function"&&typeof wallPlank==="function"&&typeof tierExtras==="function"'),'facade helpers loaded')
 
     # 2) old v2.10.1 save loads and migrates
