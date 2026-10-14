@@ -5,6 +5,33 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.13] — 2026-10-14
+
+**Shipping Yard, new forest machines, staff cost rebalance.**
+
+### Shipping (`js/shipping.js`, new)
+- New Shipping Yard sheet (tap the dock, or the Shipping button): a departures board with loading bays, per-bay load bars and departure timers.
+- Upgrades: Dock level (1–10, +2% export premium per level, 2 bays at Lv 4 and 3 at Lv 8), forklift count (2–6), forklift speed (5 levels), and a gantry crane (3 levels) for faster loading and bigger contract rewards.
+- Forklifts are twice as fast by default (base speed 1.7 → 3.4) and get faster with upgrades.
+- Export contracts to trade-map cities: accept, skip or abandon. A harbour route to the city gives +25% reward.
+- Load bar and timer drawn over the docked truck. The UI is mobile-friendly, with 44 px buttons and a More-menu entry.
+
+### Forest machines (`js/forestveh.js`, new)
+- The harvester has been redrawn (articulated 8-wheel, cab, boom, felling head).
+- New forwarder whose log bunk shows its load, and a new skidder.
+- The log-truck crane has been redrawn.
+- All machines are cached per heading, with night lights and beacons.
+
+### Staff
+- Audit: level costs grew ×3.2 per level while the benefit was linear, and Legendary managers cost ×4 for ×2 effect.
+- Level cost is now ×2.2 per level. Rarity cost now matches rarity power. Seeds are needed from Lv 7 instead of Lv 6.
+- Each card shows "Next level: +X% ≈ +Y/s · pays back in T".
+- The Replant cost reset is unchanged.
+- The full staff system (roles, wages, training, specialists) is designed in `docs/staff-system-v2.14.md` and planned for v2.14.
+
+### Compatibility
+- v2.12 saves migrate automatically (`ship` state is added). Shipping levels survive a Replant.
+
 ## [2.12] — 2026-10-14
 
 **Builders' Yard**: construction crews that upgrade your buildings on their own.

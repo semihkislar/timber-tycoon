@@ -71,7 +71,7 @@ function sceneTap(sx,sy){
     if(!st.lvl&&bVisible(b)&&S.coins+1e-9>=bulkCost(b.cost,b.scale,0,1)){buyBuilding(h.id,1);render();}
     openSheet('bld',h.id);
   } else if(h.type==='yard') openSheet('crew');
-  else if(h.type==='dock') openSheet('market');
+  else if(h.type==='dock'){openSheet('ship');focusLot('dock');}
   else if(h.type==='prem') openSheet('prem');
   else if(h.type==='station'){openSheet('staff');const sb=$('shBody');if(sb) sb.scrollTop=0;}
   else if(h.type==='power'){openSheet('power');focusLot('power');}
@@ -164,8 +164,7 @@ function drawScene(dt){
   for(const v of scene.logTrucks){if(v.done||v.i===undefined) continue;const [x,y]=P(v.i,v.j);if(!inView(x,y,110)) continue;
     const unloading=v.li===0&&v.legs[0].pa.tot-v.s<.05&&v.v===0;let boom=null;if(unloading){const ph=(v.unload||0)/.85;if(ph<6) boom={t:ph%1,carry:(ph%1)<.5&&v.load>0};}
     objs.push({k:v.i+v.j,f:()=>{const st=logTruck(ctx,v.i,v.j,v.yaw,{col:v.col,load:v.load,boom,brake:v.brake,bounce:vehBounce(v)});exhaust(st,v);}});}
-  for(const h of scene.harvesters){const i=-1.2+h.k*2.2, j=13.6+h.k*1.4+Math.sin(h.ph*.25)*1.4;const [x,y]=P(i,j);if(!inView(x,y,80)) continue;
-    objs.push({k:i+j,f:()=>harvesterV(ctx,i,j,h.yaw||0,h.ph)});}
+  fvObjs(ctx,objs,inView); shipCrane(ctx,objs);   // v2.13 forest machines (js/forestveh.js)
   for(const w of scene.workers){const f=w.p<1?w.p:2-w.p;const [i,j,di,dj]=pathAt(w.path,f);const [x,y]=P(i,j);if(!inView(x,y,30)) continue;
     const sg=w.p<1?1:-1,sdx=(di-dj)*sg,sdy=(di+dj)*sg;const carrying=w.p<1&&!w.idle;
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:sdx>=0?1:-1,back:sdy<0,pose:w.idle?'stand':carrying?'box':'walk',ph:w.ph,cargo:carrying?w.res:null,zz:w.idle})});}
@@ -271,7 +270,7 @@ function drawOverlays(ctx){
     for(const [L,txt,id] of [[YARD,'Log Yard','yard'],[DOCK,'Shipping','dock']]){if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const hov=scene.hover===id;
       pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
   }
-  premOverlays(ctx,showTags);
+  premOverlays(ctx,showTags); shipOverlay(ctx,showTags);
   // floating numbers
   for(const f of scene.floats){const k=f.t/f.dur;const [sx,sy]=w2s(f.x,f.y);const y=sy-k*(f.big?60:44);ctx.globalAlpha=k<.7?1:1-(k-.7)/.3;
     const fs=f.big?20:f.timber?17:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;

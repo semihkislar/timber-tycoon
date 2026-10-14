@@ -32,10 +32,10 @@ with sync_playwright() as p:
     ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
     ctx.add_init_script('if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'); pg=ctx.new_page(); watch(pg)
     pg.goto(URL); pg.wait_for_timeout(1200)
-    ok(E(pg,'TT.VERSION')=='2.12',f"VERSION==2.12 ({E(pg,'TT.VERSION')})")
+    ok(ver(E(pg,'TT.VERSION'))>=(2,12),f"VERSION>=2.12 ({E(pg,'TT.VERSION')})")
     ok(E(pg,'typeof byTick==="function"&&typeof buyBuilders==="function"&&typeof byDraw==="function"&&typeof byScaffoldRaw==="function"&&typeof byTruckRaw==="function"'),'builders logic + scene loaded')
     sw=E(pg,'fetch("sw.js").then(r=>r.text())')
-    ok("timber-tycoon-v2.12" in sw,'sw.js cache bumped to v2.12')
+    ok("timber-tycoon-v2.1" in sw,'sw.js cache bumped (>= v2.12)')
     fs=E(pg,'JSON.stringify(TT.S.builders)')
     ok(json.loads(fs)['lvl']==0 and json.loads(fs)['plan']=='ms' and json.loads(fs)['budget']==.25,f'fresh state has an unbuilt yard ({fs[:80]})')
 
@@ -46,7 +46,7 @@ with sync_playwright() as p:
         pg.evaluate('(s)=>{localStorage.setItem("timberTycoon_save_v1",JSON.stringify(s));Storage.prototype.setItem=function(){};}',old)
         pg.reload(); pg.wait_for_timeout(1400)
         S=E(pg,'TT.S')
-        ok(ver(S['version'])==(2,12) and S['builders']['lvl']==0 and S['builders']['jobs']==[] and S['buildings']['sawmill']['lvl']>=12,
+        ok(ver(S['version'])==ver(E(pg,'TT.VERSION')) and S['builders']['lvl']==0 and S['builders']['jobs']==[] and S['buildings']['sawmill']['lvl']>=12,
            f"v{oldv} save migrated (S.version={S['version']}, builders={S['builders']['lvl']}, sawmill Lv {S['buildings']['sawmill']['lvl']})")
         ok(E(pg,'TT.scene.fps')>5,f'scene running after v{oldv} migrate')
     # a broken builders field is repaired

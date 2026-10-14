@@ -352,8 +352,8 @@ function logTruckRaw(ctx,i,j,yaw,o){
   const bm=o.boom; const base=VL(V,.05,0,38+V.dz);
   let g; if(bm){const k=bm.t;const out=Math.sin(Math.min(1,k)*Math.PI);g=[lerp(-.8,-.45,out),lerp(0,-2.0,out),lerp(30,24,out)];}else g=[-.35,0,41];
   const G=VL(V,g[0],g[1],g[2]+V.dz), E=VL(V,lerp(.05,g[0],.45),lerp(0,g[1],.45),Math.max(g[2],38)+15+V.dz);
-  const col0=VL(V,.05,0,10.5+V.dz);ctx.lineCap='round';limb(ctx,[col0,base],3.2,'#c8961e');limb(ctx,[base,E],2.8,'#e8b52a');limb(ctx,[E,G],2.2,'#e8b52a');ctx.lineCap='butt';
-  ell(ctx,E[0],E[1],1.6,1.6,'#a87a14');
+  vbox(ctx,V,-.04,.14,-.1,.1,10.5,38,'#c8961e',{edge:false});   // v2.13: crane pillar + hydraulic booms
+  fvBoom(ctx,base,E,3,'#e8b52a',true);fvBoom(ctx,E,G,2.3,'#e8b52a',false);
   if(bm&&bm.carry){const W2=VF(V.i+g[0]*V.fi+g[1]*V.si,V.j+g[0]*V.fj+g[1]*V.sj,Math.atan2(V.fj,V.fi),0);vlog(ctx,W2,-.85,.85,0,g[2]-6+V.dz,4.2,'#8a5a2c');}
   ctx.strokeStyle='#2a2a2e';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(G[0]-3,G[1]+1);ctx.lineTo(G[0]-2,G[1]+5);ctx.moveTo(G[0]+3,G[1]+1);ctx.lineTo(G[0]+2,G[1]+5);ctx.stroke();
   return stack;

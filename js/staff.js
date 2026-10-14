@@ -45,8 +45,16 @@ function mgrIn(bid){return 1-mgrSkill(bid,'thrift');}
 function mgrOut(bid){return 1+mgrSkill(bid,'double');}
 function mgrSto(bid){return 1+mgrSkill(bid,'storage');}
 function mgrOrders(){let b=0;for(const m of MANAGERS) if(m.skill==='orders') b+=mgrSkill(m.bid,'orders');return 1+b;}
-function mgrHireCost(m){return BMAP[m.bid].cost*1000*RARITY[m.r].cm;}
-function mgrUpCost(m,l){return {coins:mgrHireCost(m)*Math.pow(3.2,l),seeds:l>=5?l-3:0};}
+/* v2.13 rebalance: level-ups ×2.2 (was ×3.2: Lv 10 cost 35,000× the hire, now ~1,200×), rarity cost = rarity power
+   (was ×1.6/×2.5/×4 cost for ×1.3/×1.6/×2 effect, so rarer managers were worse value per coin), Seeds only from Lv 7. */
+const MGR_UP=2.2;
+function mgrHireCost(m){return BMAP[m.bid].cost*1000*RARITY[m.r].rm;}
+function mgrUpCost(m,l){return {coins:mgrHireCost(m)*Math.pow(MGR_UP,l),seeds:l>=6?l-5:0};}
+/* value of a building's output per second at the current speed (for the cost-vs-benefit line) */
+function bldValueRate(bid){const b=BMAP[bid],st=bstat[bid];if(!b||!st||!S.buildings[bid].lvl) return 0;let v=0;for(const k in b.out) v+=b.out[k]*(st.speed||0)*(st.f||0)*price(k);return v;}
+/* what hiring / the next level adds: speed ratio, ≈coins/s and payback time */
+function mgrGain(m){const l=mgrLvl(m.bid),R=RARITY[m.r].rm;const sp=L=>L?(1.02+.01*L)*(1+(m.skill==='speed'?mgrSkillV('speed',L,R):0)):1;
+  const r=sp(l+1)/sp(l),v=bldValueRate(m.bid)*(r-1),c=l?mgrUpCost(m,l).coins:mgrHireCost(m);return {pct:(r-1)*100,v,pay:v>0?c/v:Infinity};}
 function mgrAvail(m){const b=BMAP[m.bid];return S.buildings[m.bid].lvl>0&&(!b.premium||S.premium.lvl>0);}
 function hireMgr(id){const m=MGR_MAP[id];if(!m||mgrLvl(m.bid)||!mgrAvail(m)) return false;const c=mgrHireCost(m);if(S.coins+1e-9<c) return false;
   S.coins-=c;S.mgr[m.id]=1;M=computeMods();sfx('unlock');scene.mgrPoof=m.bid;
@@ -148,9 +156,10 @@ function mgrBtnHtml(m){const l=mgrLvl(m.bid);if(!mgrAvail(m)&&!l) return {h:`�
 function mgrCardHtml(m,compact){const R=RARITY[m.r],sk=SKILLS[m.skill],l=mgrLvl(m.bid);
   return `<div class="mgr-card${l?' hired':''}${compact?' compact':''}" data-id="${m.id}" style="--rc:${R.c}"><div class="mg-p">${portraitSVG(m,compact?50:58)}</div>
     <div class="mg-b"><div class="mg-n">${m.name} <span class="mg-r">${R.n}</span></div><div class="mg-s">${compact?'':`${BMAP[m.bid].icon} ${BMAP[m.bid].name} · `}<span class="mg-lv">${l?'Lv '+l:'from '+m.from}</span></div>
-    <div class="mg-k">${sk.e} <b>${sk.n}</b>: <span class="mg-kd"></span></div></div><button class="btn buy small mg-btn"></button></div>`;}
+    <div class="mg-k">${sk.e} <b>${sk.n}</b>: <span class="mg-kd"></span></div><div class="mg-g"></div></div><button class="btn buy small mg-btn"></button></div>`;}
 function mgrCardUpdate(el){const m=MGR_MAP[el.dataset.id],l=mgrLvl(m.bid),R=RARITY[m.r];
   const kd=`${SKILLS[m.skill].d(Math.max(1,l),R.rm)}${l?` · +${Math.round(((1.04+.02*l)-1)*100)}% speed`:''}`;const ke=el.querySelector('.mg-kd');if(ke._t!==kd){ke.textContent=kd;ke._t=kd;}
+  {const g=mgrGain(m),ge=el.querySelector('.mg-g');if(ge){const gt=l>=MGR_MAX?'Max level':`${l?'Next level':'Hire'}: +${g.pct.toFixed(1)}% speed${g.v>0?` ≈ +${fmt(g.v)}/s · pays back in ${isFinite(g.pay)?fmtTime(g.pay):'—'}`:''}${m.skill!=='speed'?' + skill':''}`;if(ge._t!==gt){ge.textContent=gt;ge._t=gt;}}}
   el.classList.toggle('hired',!!l);el.querySelector('.mg-lv').textContent=l?'Lv '+l+(l>=MGR_MAX?' ★':''):'from '+m.from;
   const b=mgrBtnHtml(m),bt=el.querySelector('.mg-btn');if(bt._h!==b.h){bt.innerHTML=b.h;bt._h=b.h;}bt.disabled=b.dis;}
 function wireMgrCards(root){root.querySelectorAll('.mgr-card').forEach(el=>{el.querySelector('.mg-btn').onclick=e=>{e.stopPropagation();const m=MGR_MAP[el.dataset.id];

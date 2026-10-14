@@ -134,10 +134,10 @@ function syncEntities(){
   const nc=Math.min(2,S.collectors.heli); while(scene.helis.length<nc) scene.helis.push({k:scene.helis.length,ph:scene.helis.length*7}); scene.helis.length=nc;
   // forklifts: carry finished goods (or raw logs early on) down the lane to the dock
   const built=MAIN_BLD.filter(b=>S.buildings[b.id].lvl>0);
-  const nf=built.length?Math.min(4,Math.ceil(built.length*.6)):(totCol()>0?1:0);
+  const nf=built.length?((S.ship&&S.ship.fork)||2):(totCol()>0?1:0);   // v2.13: the forklift fleet is an upgrade
   const fsig=nf+'|'+built.map(b=>b.id).join(',');
   if(scene._fsig!==fsig){scene._fsig=fsig;scene.forklifts=[];
-    for(let k=0;k<nf;k++){const src=built.length?built[(built.length-1-k)%built.length].id:null;scene.forklifts.push(mkForklift(src,k));}}
+    for(let k=0;k<nf;k++){const src=built.length?built[(built.length-1-(k%built.length))%built.length].id:null;scene.forklifts.push(mkForklift(src,k));}}
   if(!scene.dockTrucks.length) scene.dockTrucks.push(mkDockTruck(true),mkDockTruck('q'));
   if(!scene.dockHand) scene.dockHand={look:mkLook(7007,{role:'worker',vest:'#4ac0a0'}),p:0,ph:0};
 }
@@ -153,7 +153,7 @@ function updateEntities(dt){
     const f=bstat[w.bid].f, slow=f<0.985?0.35+0.65*f:1;
     w.p=(w.p+dt*1.25*w.sp*slow/w.path.tot)%2; w.ph+=dt*9*slow;
   }
-  for(const fl of scene.forklifts){fl.p=(fl.p+dt*1.7/fl.path.tot)%2;const f=fl.p<1?fl.p:2-fl.p;const q=pathAt(fl.path,f);const sg=fl.p<1?1:-1;
+  for(const fl of scene.forklifts){fl.p=(fl.p+dt*shForkSpeed()/fl.path.tot)%2;const f=fl.p<1?fl.p:2-fl.p;const q=pathAt(fl.path,f);const sg=fl.p<1?1:-1;
     fl.i=q[0];fl.j=q[1];if(Math.abs(q[2])+Math.abs(q[3])>1e-6){const y=Math.atan2(q[3]*sg,q[2]*sg);fl.yaw=fl.yaw===undefined?y:angLerp(fl.yaw,y,Math.min(1,dt*7));}fl.ph=(fl.ph||0)+dt*6;}
   // forest crew
   for(const p of scene.jacks){stepJack(p,dt);}
@@ -167,6 +167,7 @@ function updateEntities(dt){
     else if(tr.stump>0){}   // v2.7: a stump stays until a planter (or slow natural regrowth) puts a sapling on it
     else if(tr.grow<1){const sap=tr.grow<.4,cap=sap?.38:.96;tr.grow=Math.min(Math.max(tr.grow,cap),tr.grow+dt*growMult()*(sap?.24/GROW_SAP:.54/GROW_YOUNG));}
   }
+  fvUpdate(dt);
   for(const h of scene.harvesters){h.ph+=dt;const dir=Math.cos(h.ph*.25)>=0?1:-1;const y=dir>0?Math.PI/2:-Math.PI/2;h.yaw=h.yaw===undefined?y:angLerp(h.yaw,y,Math.min(1,dt*2.5));}
   for(const d of scene.drones) d.ph+=dt;
   for(const h of scene.helis) h.ph+=dt;
