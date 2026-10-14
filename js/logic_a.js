@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.11';
+const VERSION='2.12';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -211,6 +211,9 @@ const ACH=[
   // v2.10 power plant
   {id:'power1',t:'bronze',e:'⚡',n:'Lights On',d:'Build the Biomass Power Plant',p:()=>[(S.power&&S.power.lvl)>0?1:0,1]},
   {id:'power10',t:'gold',e:'🔌',n:'Grid Tycoon',d:'Upgrade the Power Plant to Lv 10',p:()=>[(S.power&&S.power.lvl)||0,10]},
+  // v2.12 builders' yard
+  {id:'build1',t:'bronze',e:'🏗️',n:'Hard Hats On',d:"Build the Builders' Yard",p:()=>[(S.builders&&S.builders.lvl)>0?1:0,1]},
+  {id:'build1k',t:'gold',e:'🏙️',n:'Skyline',d:'Let your crews build 1,000 building levels',p:()=>[(S.builders&&S.builders.stats&&S.builders.stats.lv)||0,1000]},
 ];
 
 /* ===================== STATE ===================== */
@@ -223,7 +226,8 @@ function freshState(keep){
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
-    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}}};   // v2.7: one free planter, a full forest
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}},
+    builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -280,6 +284,12 @@ function migrateSave(o){
   if(!o.power||typeof o.power!=='object') o.power={lvl:0,on:true,fuel:'mix',eff:0,burn:{}};
   if(typeof o.power.lvl!=='number') o.power.lvl=0; if(typeof o.power.on!=='boolean') o.power.on=true; if(!['mix','pellets','charcoal'].includes(o.power.fuel)) o.power.fuel='mix';
   if(typeof o.power.eff!=='number') o.power.eff=0; if(!o.power.burn||typeof o.power.burn!=='object') o.power.burn={};
+  // v2.11 -> v2.12: builders' yard (construction crews)
+  if(!o.builders||typeof o.builders!=='object') o.builders={lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0};
+  {const B=o.builders;if(typeof B.lvl!=='number') B.lvl=0;if(typeof B.on!=='boolean') B.on=true;if(!['ms','cheap','low'].includes(B.plan)) B.plan='ms';
+    if(![.1,.25,.5,1].includes(B.budget)) B.budget=.25;if(!B.off||typeof B.off!=='object'||Array.isArray(B.off)) B.off={};if(!Array.isArray(B.jobs)) B.jobs=[];
+    if(!B.stats||typeof B.stats!=='object') B.stats={lv:0,spent:0,jobs:0};for(const k of ['lv','spent','jobs']) if(typeof B.stats[k]!=='number') B.stats[k]=0;
+    if(typeof B.seq!=='number') B.seq=0;B.cool=0;}
   if(o.v===undefined) o.v=1;
   o.version=VERSION;
   return o;
@@ -375,6 +385,7 @@ function tick(dt,offline){
     for(const r of RES){offlineAcc.p[r.id]+=fl[r.id].p;offlineAcc.s[r.id]+=fl[r.id].s;}
     for(const r of RES) rates[r.id].d=demand[r.id]/dt;
   }
+  if(typeof byTick==='function') byTick(dt,offline);   // v2.12: construction crews
   orderTick(dt,offline); dailyTick(dt,offline); tradeTick(dt,offline);
   S.events=S.events.filter(e=>e.ends>S.time);
   if(offline){ if(S.nextEvent<S.time) S.nextEvent=S.time+60; }
@@ -398,7 +409,7 @@ function simulate(sec,step){
   while(t>1e-9){const d=Math.min(step,t);tick(d,false);t-=d;}
 }
 function simulateOffline(sec){
-  offlineAcc={coins:0,p:{},s:{},planted:0}; RES.forEach(r=>{offlineAcc.p[r.id]=0;offlineAcc.s[r.id]=0;});
+  offlineAcc={coins:0,p:{},s:{},planted:0,built:0}; RES.forEach(r=>{offlineAcc.p[r.id]=0;offlineAcc.s[r.id]=0;});
   const steps=Math.min(Math.ceil(sec),6000), dt=sec/steps;
   for(let i=0;i<steps;i++) tick(dt,true);
   const res=offlineAcc; offlineAcc=null; return res;
@@ -452,6 +463,7 @@ function doPrestige(){
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
   keep.power={lvl:pwLvl(),on:S.power?S.power.on!==false:true,fuel:(S.power&&S.power.fuel)||'mix',eff:0,burn:{}};   // v2.10: the plant stays built
+  {const B=S.builders||{};keep.builders={lvl:B.lvl||0,on:B.on!==false,plan:B.plan||'ms',budget:B.budget||.25,off:Object.assign({},B.off||{}),jobs:[],stats:Object.assign({lv:0,spent:0,jobs:0},B.stats||{}),seq:B.seq||0,cool:0};}   // v2.12: the yard stays built, jobs are dropped
   S=freshState(keep); M=computeMods();
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);

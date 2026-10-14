@@ -31,7 +31,7 @@ function axeAngle(u){ // two-handed swing: wind-up, strike, recoil, return
   return lerp(1.45,.35,ease((u-.69)/.31));
 }
 /* o: {look,fx(+1 right/-1 left),back,pose,ph,t,s,cargo,zz,lift}
-   poses: stand walk carry(log on shoulder) box(crate at chest) chop saw plant sit drink brow look clip point */
+   poses: stand walk carry(log on shoulder) box(crate at chest) chop saw plant sit drink brow look clip point hammer */
 function humanRaw(ctx,x,y,o){
   const L=o.look||DEF_LOOK, s=o.s||1.15, fx=o.fx||1, back=!!o.back, pose=o.pose||'stand', ph=o.ph||0, T=scene.t;
   const sit=pose==='sit'||pose==='sitdrink';
@@ -98,6 +98,17 @@ function humanRaw(ctx,x,y,o){
         ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(2.4,.6);ctx.lineTo(6.4,-1.6);ctx.stroke();ell(ctx,6.7,-1.8,.9,1.3,'#2c6a42');ctx.restore();
         const sx=5.6+Math.cos(tilt)*6.7-Math.sin(tilt)*-1.8, sy=HU.hip-1.2+Math.sin(tilt)*6.7+Math.cos(tilt)*-1.8;
         for(let k=0;k<5;k++){const f=((T*2.4+k/5+ph)%1);ell(ctx,sx+.4+f*1.2+(k%2)*.6,sy+f*(-sy),.45,.75,`rgba(150,205,255,${.9-f*.5})`);}});
+      break;}
+    case 'hammer': { // v2.12 builders: claw hammer — raise it overhead, drive the nail, small rebound; the far hand steadies the board
+      const u=((o.t!==undefined?o.t:ph/TAU)%1+1)%1;
+      const a=u<.55?lerp(.3,-1.85,ease(u/.55)):u<.66?lerp(-1.85,.62,Math.pow((u-.55)/.11,2)):u<.76?.62-.2*Math.sin((u-.66)/.1*Math.PI):lerp(.62,.3,ease((u-.76)/.24));
+      lean=.7+(a>0?.35:0); legs=stance(1.7,.4);
+      const C=[ns*2.85+lean,HU.sh+1.1], d=[Math.cos(a),Math.sin(a)], n=[-d[1],d[0]], hd=[C[0]+d[0]*6.4+.8,C[1]+d[1]*6.4];
+      hand=[[lean+3.6,HU.sh+5.4],hd];
+      props.push(()=>{const e=[hd[0]+d[0]*4.6,hd[1]+d[1]*4.6];limb(ctx,[[hd[0]-d[0]*.8,hd[1]-d[1]*.8],e],1.2,'#8a5a2c');
+        const hp=(p,q)=>[e[0]+d[0]*p+n[0]*q,e[1]+d[1]*p+n[1]*q];
+        fillP(ctx,[hp(-.7,-1.9),hp(.8,-1.9),hp(.8,1.5),hp(-.7,1.5)],'#4a525c');fillP(ctx,[hp(-.7,1.5),hp(.8,1.5),hp(.2,2.6)],'#6a7480');
+        ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(lean+3.1,HU.sh+4.4,.5,1.6);});
       break;}
     case 'sit': case 'sitdrink': {
       hipY=-7.4; legs=[[[hipF[0]-1,hipY],[hipF[0]+3.4,hipY-.4],[hipF[0]+3.8,0]],[[hipN[0]-1,hipY],[hipN[0]+3.8,hipY-.2],[hipN[0]+4.4,0]]];

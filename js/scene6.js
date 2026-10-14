@@ -9,7 +9,7 @@ function fitCamera(instant){
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=portrait?900:(hb?935:826);
+  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=portrait?900:(hb?935:(typeof byVisible==='function'&&byVisible()?905:826));
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -17,7 +17,7 @@ function fitCamera(instant){
 }
 /* v2.9: fly the camera so the lot sits in the visible band above the sheet (smooth, eased) */
 function focusLot(id,force){
-  const L=id==='yard'?YARD:id==='dock'?DOCK:id==='power'?PWZ:LOTS[id]; if(!L) return; const c=scene.cam;
+  const L=id==='yard'?YARD:id==='dock'?DOCK:id==='power'?PWZ:id==='build'?BYZ:LOTS[id]; if(!L) return; const c=scene.cam;
   const [top,bot]=viewBand(); const [wx,wy]=P(L.ci,L.cj,30); const s=w2s(wx,wy);
   const [x0,x1]=viewBandX();
   if(!force&&!c.fly&&s[1]>top+60&&s[1]<bot-30&&s[0]>x0+50&&s[0]<x1-50) return;
@@ -37,6 +37,7 @@ function lotCenter(L){let y0=1e9,y1=-1e9,x0=1e9,x1=-1e9;for(const [x,y] of L.hit
 function hitTest(sx,sy){
   const [wx,wy]=s2w(sx,sy);
   if(OFFICE.hit&&pip(OFFICE.hit,wx,wy)) return {type:'office'};
+  if(BYZ.hit&&byVisible()&&pip(BYZ.hit,wx,wy)) return {type:'build'};   // v2.12: the low yard sits in front of the furniture factory
   const cands=[...Object.values(LOTS),YARD,DOCK].filter(L=>L.hit&&!(L.prem&&!S.premium.lvl));
   const res=L=>({type:L.id==='yard'?'yard':L.id==='dock'?'dock':'bld',id:L.id});
   let best=null,bd=1e9;
@@ -54,6 +55,7 @@ function hitTest(sx,sy){
   if(OFFICE.hit){const d=polyDist(OFFICE.hit,wx,wy);if(d<pd){pd=d;pb={type:'office'};}}
   if(STATION.hit){const d=polyDist(STATION.hit,wx,wy);if(d<pd){pd=d;pb={type:'station'};}}
   if(PWZ.hit&&pwVisible()){const d=polyDist(PWZ.hit,wx,wy);if(d<pd){pd=d;pb={type:'power'};}}
+  if(BYZ.hit&&byVisible()){const d=polyDist(BYZ.hit,wx,wy);if(d<pd){pd=d;pb={type:'build'};}}
   if(pb) return pb;
   const [gi,gj]=toGrid(wx,wy);
   for(const d of [0,.7,1.4,2.1]) if(isForestPt(gi+d,gj+d)) return {type:'forest',i:gi,j:gj};
@@ -73,6 +75,7 @@ function sceneTap(sx,sy){
   else if(h.type==='prem') openSheet('prem');
   else if(h.type==='station'){openSheet('staff');const sb=$('shBody');if(sb) sb.scrollTop=0;}
   else if(h.type==='power'){openSheet('power');focusLot('power');}
+  else if(h.type==='build'){openSheet('build');focusLot('build');}
   else if(h.type==='office') openDaily();
   else if(h.type==='campus') openResearch();
   else if(h.type==='harbor') openTrade();
@@ -122,7 +125,7 @@ function sceneLoop(now){
 function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   camUpdate(dt);
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); bySceneUpdate(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -172,7 +175,7 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView);
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView);
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
@@ -207,7 +210,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx); byOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){return pillCached(ctx,x,y,txt,o);}

@@ -15,11 +15,11 @@ function render(){
   $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); updateBuilders();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }
-function rebuildAll(){cSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';pwSig='';M=computeMods();render();}
+function rebuildAll(){cSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';pwSig='';bySig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -70,8 +70,9 @@ function loop(){
 function welcomeBack(elapsed,r){
   const capped=elapsed>OFFLINE_CAP;
   const lines=RES.filter(x=>r.p[x.id]>0.5).map(x=>`<div>${x.icon} ${x.name} produced</div><div>${fmt(r.p[x.id])}</div>`).join('');
+  const bl=r.built>0?`<br>🏗️ Your builders added <b>${fmt(r.built)}</b> building level${r.built>1?'s':''}.`:'';
   const pl=r.planted>0.5?`<br>🌱 Your planters put <b>${fmt(r.planted)}</b> saplings in the ground; the forest now stands at <b>${Math.round((1-S.forest.st/forestPlots())*100)}%</b> covered.`:'';
-  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}
+  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}${bl}
     ${lines?`<div class="gainlist">${lines}</div>`:''}`,[{label:'Back to work!',cls:'gold'}]);
 }
 function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yardSigV='';scene._fsig='';scene.lastEarned=S.totalEarned;}
@@ -130,5 +131,9 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   // v2.10 power plant helpers
   PW_MAX,PW_FUELS,PW_PERKS,PWZ,pwLvl,pwCost,pwUnlocked,pwVisible,pwShare,pwEff,pwBoost,pwNeed,pwCapacity,pwStatus,buyPower,setPowerFuel,setPowerOn,openPower,
   powerScreen:()=>{const p=P(PWZ.ci,PWZ.cj,20);return w2s(p[0],p[1]);},
+  // v2.12 builders' yard helpers
+  BY_MAX,BY_LV,BY_PLANS,BY_BUDGETS,BY_PERKS,BY_WAIT,BYZ,byLvl,byCost,byUnlocked,byVisible,byCrews,byBatch,byDur,byBudget,byAfford,byPick,byStatus,byJobOf,byAllowed,
+  buyBuilders,setBuildersOn,setBuildersPlan,setBuildersBudget,setBuildersAllow,byTrucks:()=>(scene.by?scene.by.trucks:[]).map(t=>({id:t.job,bid:t.bid,li:t.li,s:t.s,v:t.v,i:t.i,j:t.j,crew:t.crew,done:!!t.done,walk:!!t.walk})),
+  byScreen:()=>{const p=P(BYZ.ci,BYZ.cj,16);return w2s(p[0],p[1]);},byPeople:()=>scene.by?scene.by.people:[],
   get cam(){return scene.cam;}};
 init();
