@@ -70,6 +70,7 @@ function drawGround(ctx,x0,y0,x1,y1){
   if(typeof techGround==='function') techGround(ctx);
   if(typeof forestGround==='function') forestGround(ctx);
   if(typeof powerGround==='function') powerGround(ctx);
+  if(typeof byGround==='function') byGround(ctx);
   for(const L of [...Object.values(LOTS),YARD,DOCK]){
     if(L.prem||L.tech) continue;
     const {ci,cj}=L; const e=2.15;

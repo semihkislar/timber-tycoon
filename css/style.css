@@ -553,3 +553,27 @@ body.sheet-on #fabs,body.sheet-on #jumpBar,body.sheet-on #attnTip{opacity:0;poin
 .pw-perk.on{background:#e3f1d4;opacity:1;color:#2a5a32}
 .pw-perk.on b{color:#2a5a32}
 .pw-perk.on b::before{content:'✔ '}
+/* ===================== v2.12 builders' yard ===================== */
+@media not all and (max-height:520px) and (orientation:landscape){#bottombar{width:min(680px,100%)}}
+.by-hero{background:linear-gradient(160deg,#fff4d2,#f6e0a4);border-color:#e0b04a}
+.by-hero .ph-t{color:#7a4e06}
+.by-crews{display:grid;gap:5px;margin-bottom:9px}
+.by-crew{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:11px;background:#fff8ea;border:1.5px solid #e8c47a;cursor:pointer}
+.by-crew.idle{background:#f3ead8;border-color:var(--line);cursor:default;opacity:.85}
+.by-crew.wait{border-color:#e8a43a;background:#fff0d6}
+.by-crew .bc-ic{font-size:20px;width:26px;text-align:center}
+.by-crew .bc-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.by-crew .bc-m b{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.by-crew .bc-m b em{font-style:normal;color:#3b7f27;margin-left:4px}
+.by-crew .bc-m small{font-size:11px;color:var(--ink2);font-weight:700}
+.by-crew .bc-bar{display:block;height:6px;border-radius:4px;background:#e3d3b4;overflow:hidden}
+.by-crew .bc-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#f5c84c,#8fd14f);transition:width .3s}
+.by-crew.wait .bc-bar i{background:#e8a43a}
+.by-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.by-chip{border:1.5px solid var(--line);background:#efe4ce;color:var(--ink2);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;opacity:.7;text-decoration:line-through;text-decoration-color:rgba(120,60,20,.5)}
+.by-chip.on{background:#fff6dc;border-color:#e0b04a;color:var(--ink);opacity:1;text-decoration:none}
+.by-chip.on::before{content:'✔ ';color:#3b7f27}
+.bby{display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 9px;border-radius:10px;background:#fff6dc;border:1.5px solid #ecd08a}
+.bby .bby-t{flex:1;font-size:12px;font-weight:800;color:#6a4206}
+.bby .sw{margin-left:auto}
+@media (pointer:coarse){.by-chip{padding:8px 12px;font-size:13px;min-height:36px}.by-crew{padding:8px 10px}}

@@ -38,7 +38,7 @@ function openSheet(name,arg){
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
-  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; dailySig=''; premSig=''; staffSig=''; resSig=''; tradeSig=''; pwSig='';
+  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; dailySig=''; premSig=''; staffSig=''; resSig=''; tradeSig=''; pwSig=''; bySig='';
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
   if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
@@ -141,7 +141,7 @@ function updateBuildingSheet(){
   const unl=bldUnlocked(b.id); if(!unl){const lt=b.id==='lab'?'🔒 Needs a Paper Mill':b.id==='boatyard'&&hasRes('boats')?'🔒 Needs the Harbour':'🔒 Research '+RNMAP[TECH_UNLOCK[b.id]].name;if(bb._h!==lt){bb.innerHTML=lt;bb._h=lt;}}
   bb.disabled=!unl||S.coins+1e-9<cost;
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
-  updateStorageBlock(b); updateBldMgr(b);
+  updateStorageBlock(b); updateBldMgr(b); if(typeof updateBldBy==='function') updateBldBy(b);
 }
 function cycleBuilding(d){
   if(!sheetBld) return; let i=BUILDINGS.findIndex(b=>b.id===sheetBld);
