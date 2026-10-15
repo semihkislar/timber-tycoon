@@ -57,11 +57,11 @@ function mgrGain(m){const l=mgrLvl(m.bid),R=RARITY[m.r].rm;const sp=L=>L?(1.02+.
   const r=sp(l+1)/sp(l),v=bldValueRate(m.bid)*(r-1),c=l?mgrUpCost(m,l).coins:mgrHireCost(m);return {pct:(r-1)*100,v,pay:v>0?c/v:Infinity};}
 function mgrAvail(m){const b=BMAP[m.bid];return S.buildings[m.bid].lvl>0&&(!b.premium||S.premium.lvl>0);}
 function hireMgr(id){const m=MGR_MAP[id];if(!m||mgrLvl(m.bid)||!mgrAvail(m)) return false;const c=mgrHireCost(m);if(S.coins+1e-9<c) return false;
-  S.coins-=c;S.mgr[m.id]=1;M=computeMods();sfx('unlock');scene.mgrPoof=m.bid;
+  S.coins-=c;S.mgr[m.id]=1;staffMigrateFromMgr();M=computeMods();sfx('unlock');scene.mgrPoof=m.bid;
   toast(`${RARITY[m.r].n==='Legendary'?'🌟':'🤝'} <b>${m.name}</b> now runs the ${BMAP[m.bid].name}! ${SKILLS[m.skill].e} ${SKILLS[m.skill].n}: ${SKILLS[m.skill].d(1,RARITY[m.r].rm)}`,4200,'ms-toast');
   checkAch&&checkAch();return true;}
 function levelMgr(id){const m=MGR_MAP[id];const l=m?mgrLvl(m.bid):0;if(!l||l>=MGR_MAX) return false;const c=mgrUpCost(m,l);if(S.coins+1e-9<c.coins||S.seeds<c.seeds) return false;
-  S.coins-=c.coins;S.seeds-=c.seeds;S.mgr[m.id]=l+1;M=computeMods();sfx('buy');scene.mgrPoof=m.bid;
+  S.coins-=c.coins;S.seeds-=c.seeds;S.mgr[m.id]=l+1;{const w=(S.staff&&S.staff.team||[]).find(x=>x.mgrId===m.id);if(w){w.skill=Math.min(5,Math.ceil((l+1)/2));}}M=computeMods();sfx('buy');scene.mgrPoof=m.bid;
   toast(`⬆ <b>${m.name}</b> → Lv ${l+1}: ${SKILLS[m.skill].d(l+1,RARITY[m.r].rm)}`);return true;}
 
 /* ---------- fire ---------- */
@@ -71,7 +71,7 @@ const STATION_COST=6e4, STATION_MAX=5;
 function stationLvl(){return (S.station&&S.station.lvl)||0;}
 function stationCost(){return STATION_COST*Math.pow(6,stationLvl());}
 function stationVisible(){return stationLvl()>0||S.buildings.kiln.lvl>0||S.fireStats.n>0;}
-function stationDelay(){const l=stationLvl();return Math.max(4,20-3*l);}
+function stationDelay(){const l=stationLvl();const cut=typeof staffFireDelayCut==='function'?staffFireDelayCut():0;return Math.max(4,20-3*l-cut);}
 function stationSpray(){return 1.5+.5*stationLvl();}
 function onFire(bid){return !!(S.fires&&S.fires[bid]);}
 function fireRisk(bid){
@@ -79,6 +79,8 @@ function fireRisk(bid){
   let r=FIRE_BASE*FIRE_RISK[bid]*(1-.1*stationLvl())*(M?M.fire:1);
   r*=1-mgrSkill(bid,'safety');
   for(const m of MANAGERS) if(m.skill==='safety'&&mgrLvl(m.bid)) r*=1-.02*mgrLvl(m.bid)*RARITY[m.r].rm;
+  if(typeof staffEngFire==='function') r*=staffEngFire(bid);
+  if(typeof staffFireCut==='function') r*=(1-staffFireCut());
   if(S.wx){const w=weatherId();if(w==='rain'||w==='snow') r*=.7;if(seasonIdx()===3) r*=1.2;}
   return r;
 }
@@ -157,44 +159,145 @@ function mgrCardHtml(m,compact){const R=RARITY[m.r],sk=SKILLS[m.skill],l=mgrLvl(
   return `<div class="mgr-card${l?' hired':''}${compact?' compact':''}" data-id="${m.id}" style="--rc:${R.c}"><div class="mg-p">${portraitSVG(m,compact?50:58)}</div>
     <div class="mg-b"><div class="mg-n">${m.name} <span class="mg-r">${R.n}</span></div><div class="mg-s">${compact?'':`${BMAP[m.bid].icon} ${BMAP[m.bid].name} · `}<span class="mg-lv">${l?'Lv '+l:'from '+m.from}</span></div>
     <div class="mg-k">${sk.e} <b>${sk.n}</b>: <span class="mg-kd"></span></div><div class="mg-g"></div></div><button class="btn buy small mg-btn"></button></div>`;}
-function mgrCardUpdate(el){const m=MGR_MAP[el.dataset.id],l=mgrLvl(m.bid),R=RARITY[m.r];
+function mgrCardUpdate(el){const m=MGR_MAP[el.dataset.id];if(!m) return;const l=mgrLvl(m.bid),R=RARITY[m.r];
   const kd=`${SKILLS[m.skill].d(Math.max(1,l),R.rm)}${l?` · +${Math.round(((1.04+.02*l)-1)*100)}% speed`:''}`;const ke=el.querySelector('.mg-kd');if(ke._t!==kd){ke.textContent=kd;ke._t=kd;}
   {const g=mgrGain(m),ge=el.querySelector('.mg-g');if(ge){const gt=l>=MGR_MAX?'Max level':`${l?'Next level':'Hire'}: +${g.pct.toFixed(1)}% speed${g.v>0?` ≈ +${fmt(g.v)}/s · pays back in ${isFinite(g.pay)?fmtTime(g.pay):'—'}`:''}${m.skill!=='speed'?' + skill':''}`;if(ge._t!==gt){ge.textContent=gt;ge._t=gt;}}}
   el.classList.toggle('hired',!!l);el.querySelector('.mg-lv').textContent=l?'Lv '+l+(l>=MGR_MAX?' ★':''):'from '+m.from;
-  const b=mgrBtnHtml(m),bt=el.querySelector('.mg-btn');if(bt._h!==b.h){bt.innerHTML=b.h;bt._h=b.h;}bt.disabled=b.dis;}
-function wireMgrCards(root){root.querySelectorAll('.mgr-card').forEach(el=>{el.querySelector('.mg-btn').onclick=e=>{e.stopPropagation();const m=MGR_MAP[el.dataset.id];
+  const b=mgrBtnHtml(m),bt=el.querySelector('.mg-btn');if(!bt) return;if(bt._h!==b.h){bt.innerHTML=b.h;bt._h=b.h;}bt.disabled=b.dis;}
+function wireMgrCards(root){root.querySelectorAll('.mgr-card').forEach(el=>{const _btn=el.querySelector('.mg-btn');if(!_btn||!el.dataset.id) return;_btn.onclick=e=>{e.stopPropagation();const m=MGR_MAP[el.dataset.id];if(!m) return;
   if(mgrLvl(m.bid)) levelMgr(m.id); else hireMgr(m.id); staffSig='';bpSig='';render();};});}
+let staffTab='team';
+function staffTabBtn(id,label){return `<button class="stab${staffTab===id?' on':''}" data-tab="${id}">${label}</button>`;}
+function staffWorkerCard(w){
+  const R=RARITY[w.rarity]||RARITY.C, role=STAFF_ROLES[w.role]||{n:w.role,e:'?',effect:()=>'—' };
+  const wage=staffWageOf(w), traits=(w.traits||[]).map(t=>STAFF_TRAITS[t]?`${STAFF_TRAITS[t].e} ${STAFF_TRAITS[t].n}`:t).join(' · ');
+  const assign=(w.role==='mill'||w.role==='engineer')?(w.assign?`${BMAP[w.assign]?BMAP[w.assign].icon+' '+BMAP[w.assign].name:w.assign}`:'<i>unassigned</i>'):(role.area||'');
+  const train=w.train?`🎓 training ${Math.max(0,Math.ceil(w.train.left))}s → ${w.train.to}`:`skill ${w.skill}${w.skill>=STAFF_SKILL_MAX?' ★':''}`;
+  const en=Math.round(w.energy||100);
+  let btns='';
+  if(w.founding&&w.mgrId){
+    const m=MGR_MAP[w.mgrId]; if(m){const b=mgrBtnHtml(m); btns=`<button class="btn buy small mg-btn staff-btn" data-mgr="${m.id}" ${b.dis?'disabled':''}>${b.h}</button>`;}
+  } else {
+    if((w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">Assign</button>`;
+    if(!w.train&&(w.skill||1)<STAFF_SKILL_MAX) btns+=`<button class="btn buy small staff-btn" data-train="${w.id}">Train 🪙 ${fmt(staffTrainCost(w))}</button>`;
+  }
+  return `<div class="mgr-card hired staff-card" data-wid="${w.id}" style="--rc:${R.c}"><div class="mg-p">${staffPortrait(w,52)}</div>
+    <div class="mg-b"><div class="mg-n">${w.founding?'⭐ ':''}${w.name} <span class="mg-r">${w.founding?'Foreman · ':''}${R.n}</span></div>
+    <div class="mg-s">${role.e} ${role.n} · ${train}${w.founding?' · wage waived':` · 🪙 ${fr(wage)}/s`}</div>
+    <div class="mg-k">${role.effect(w.skill)} · ${assign}</div>
+    <div class="mg-g">${traits||'—'}${!(S.prefs&&S.prefs.fatigue===false)&&!(w.traits||[]).includes('steady')?` · ⚡ ${en}%`:''}${staffState().unpaid&&!w.founding?' · <b style="color:#b33">unpaid 50%</b>':''}</div></div>
+    <div class="staff-actions">${btns}</div></div>`;
+}
+function staffCandCard(c){
+  const R=RARITY[c.rarity]||RARITY.C, role=STAFF_ROLES[c.role]||{n:c.role,e:'?',effect:()=>'—'};
+  const cost=staffHireCostOf({skill:c.skill,rarity:c.rarity});
+  const traits=(c.traits||[]).map(t=>STAFF_TRAITS[t]?`${STAFF_TRAITS[t].e} ${STAFF_TRAITS[t].n}`:t).join(' · ');
+  const dis=S.coins+1e-9<cost;
+  return `<div class="mgr-card staff-card" data-cid="${c.id}" style="--rc:${R.c}"><div class="mg-p">${staffPortrait(c,52)}</div>
+    <div class="mg-b"><div class="mg-n">${c.name} <span class="mg-r">${R.n}</span></div>
+    <div class="mg-s">${role.e} ${role.n} · skill ${c.skill} · wage 🪙 ${fr(staffWageOf({skill:c.skill,rarity:c.rarity}))}/s</div>
+    <div class="mg-k">${role.effect(c.skill)}</div>
+    <div class="mg-g">${traits}</div></div>
+    <button class="btn buy small mg-btn staff-btn" data-hire="${c.id}" ${dis?'disabled':''}>${costBtnHtml('🤝 Hire',cost)}</button></div>`;
+}
+function staffAssignSheet(wid){
+  const w=staffState().team.find(x=>x.id===wid); if(!w) return;
+  const bids=BUILDINGS.filter(b=>S.buildings[b.id].lvl>0);
+  let h=`<div class="assign-sheet"><div class="as-h">Assign <b>${w.name}</b> → pick a building</div><div class="list">`;
+  for(const b of bids){
+    const used=staffSlotUsed(b.id), slots=staffSlots(b.id), ok=staffCanAssign(w,b.id)||w.assign===b.id;
+    h+=`<button class="btn wood as-b staff-btn" data-as="${w.id}" data-bid="${b.id}" ${ok?'':'disabled'} style="min-height:44px">${b.icon} ${b.name} · ${used}/${slots} slots${w.assign===b.id?' · current':''}</button>`;
+  }
+  h+=`</div><button class="btn ghost staff-btn" id="asClose" style="min-height:44px;width:100%;margin-top:8px">Cancel</button></div>`;
+  const root=$('staffBody'); const box=document.createElement('div'); box.id='assignOverlay'; box.innerHTML=h; root.appendChild(box);
+  box.querySelectorAll('[data-as]').forEach(btn=>btn.onclick=()=>{staffAssign(btn.dataset.as,btn.dataset.bid); staffSig=''; render();});
+  box.querySelector('#asClose').onclick=()=>{box.remove();};
+}
 function updateStaff(){
-  const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
+  const st=staffState();
+  const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||st.candidates.some(c=>S.coins>=staffHireCostOf(c))||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
   if(curSheet!=='staff') return;
-  const sig=stationLvl()+'|'+stationVisible()+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join();
-  if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=MANAGERS.filter(m=>mgrLvl(m.bid)).length;
+  const sig=stationLvl()+'|'+stationVisible()+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)).join(',')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0);
+  if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=st.team.length;
     const fl=Object.keys(S.fires);
     let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
     h+=`<h4>🚒 Fire Safety</h4><div class="stn-hero"><div class="ph-ic">${UI_ICONS.fire}</div><div style="flex:1"><div class="ph-t">${l?`Fire Station · Lv ${l}`:'Fire Station'}</div>
       <div class="legend" style="margin:2px 0 0" id="stnTx"></div><div class="stn-stats">🧯 ${S.fireStats.n} fires put out (${S.fireStats.tap} by hand) · Kiln risk <span id="stnRisk"></span></div></div></div>
-      <button class="btn red big" id="stnBuy"></button><div class="legend stn-need hidden" id="stnNeed"></div>`;
+      <button class="btn red big" id="stnBuy" style="min-height:44px"></button><div class="legend stn-need hidden" id="stnNeed"></div>`;
 
-        h+=`<h4>👔 Managers <span class="mg-count">${n}/${MANAGERS.length} hired</span></h4><div class="list">`+MANAGERS.map(m=>mgrCardHtml(m)).join('')+`</div>`;
-    h+=`<div class="legend">Every building has one unique manager. They boost speed, add their special skill, keep working offline and stay with you through Replant. Levels 6–10 also cost Seeds.</div>`;
-    $('staffBody').innerHTML=h; wireMgrCards($('staffBody'));
+    h+=`<div class="staff-tabs">${staffTabBtn('team',`Team (${n})`)}${staffTabBtn('cand',`Candidates (${st.candidates.length})`)}${staffTabBtn('train','Training')}</div>`;
+    h+=`<div id="staffTabBody"></div>`;
+    $('staffBody').innerHTML=h;
     $('stnBuy').onclick=()=>{if(buyStation()){staffSig='';render();}};
+    $('staffBody').querySelectorAll('.stab').forEach(b=>b.onclick=()=>{staffTab=b.dataset.tab;staffSig='';render();});
+    renderStaffTab();
+  } else {
+    // light updates
+    renderStaffTabLight();
   }
   const l=stationLvl(),c=stationCost(),b=$('stnBuy');
-  const bh=l>=STATION_MAX?'Fire Station at max level':costBtnHtml(l?`⬆ Fire Station Lv ${l+1}`:'🚒 Build the Fire Station',c);
-  if(b._h!==bh){b.innerHTML=bh;b._h=bh;} b.disabled=l>=STATION_MAX||S.coins+1e-9<c;
+  if(b){const bh=l>=STATION_MAX?'Fire Station at max level':costBtnHtml(l?`⬆ Fire Station Lv ${l+1}`:'🚒 Build the Fire Station',c);
+    if(b._h!==bh){b.innerHTML=bh;b._h=bh;} b.disabled=l>=STATION_MAX||S.coins+1e-9<c;}
   const nd=$('stnNeed'),short=l<STATION_MAX&&S.coins+1e-9<c,nt=short?`Need 🪙 ${fmt(c-S.coins)} more`:'';if(nd){nd.classList.toggle('hidden',!short);if(nd._t!==nt){nd.textContent=nt;nd._t=nt;}}
-  const tx=l?`A red fire truck races to every fire after <b>${stationDelay()}s</b> and sprays ${stationSpray().toFixed(1)}/s. Fire risk −${l*10}%.`:`Fires break out now and then (kilns most of all). Tap the flames 12× to put one out, or build a fire station to answer every fire automatically. An unattended fire pauses the building for ${FIRE_BURN}s.`;
-  const te=$('stnTx'); if(te._t!==tx){te.innerHTML=tx;te._t=tx;}
-  const rk=fireRisk('kiln'); $('stnRisk').textContent=S.buildings.kiln.lvl?(rk>0?'≈ 1 per '+fmtTime(1/rk):'none'):'—';
-  document.querySelectorAll('#staffBody .mgr-card').forEach(mgrCardUpdate);
+  const tx=l?`A red fire truck races to every fire after <b>${Math.max(4,stationDelay())}s</b> and sprays ${stationSpray().toFixed(1)}/s. Fire risk −${l*10}%.`:`Fires break out now and then (kilns most of all). Tap the flames 12× to put one out, or build a fire station to answer every fire automatically. An unattended fire pauses the building for ${FIRE_BURN}s.`;
+  const te=$('stnTx'); if(te&&te._t!==tx){te.innerHTML=tx;te._t=tx;}
+  const rk=fireRisk('kiln'); const sr=$('stnRisk'); if(sr) sr.textContent=S.buildings.kiln.lvl?(rk>0?'≈ 1 per '+fmtTime(1/rk):'none'):'—';
 }
-function updateBldMgr(b){
-  const el=$('bpMgr'); if(!el) return; const m=MGR_OF[b.id]; if(!m||!S.buildings[b.id].lvl){el.classList.add('hidden');return;} el.classList.remove('hidden');
-  if(el.dataset.id!==m.id){el.dataset.id=m.id;el.innerHTML=`<h4>👔 Manager</h4>`+mgrCardHtml(m,true);wireMgrCards(el);}
-  mgrCardUpdate(el.querySelector('.mgr-card'));
-  const fb=$('bpFire'); if(fb){const f=S.fires[b.id];fb.classList.toggle('hidden',!f);if(f) fb.innerHTML=`🔥 <b>On fire!</b> Tap the flames in the scene (${Math.ceil(f.hp)} left)${f.eta>=0?(f.t<f.eta?` · 🚒 arriving in ${Math.ceil(f.eta-f.t)}s`:' · 🚒 spraying'):''}`;}
+function renderStaffTab(){
+  const body=$('staffTabBody'); if(!body) return;
+  const st=staffState();
+  if(staffTab==='team'){
+    const wage=staffWageTotal(), out=staffOutputRate(), pct=wage>0?Math.min(100,Math.max(0,out/wage*50)): (out>0?100:0);
+    let h=`<div class="profit-bar"><div class="pb-lab">Wages 🪙 ${fr(wage)}/s → staff output ≈ 🪙 ${fr(out)}/s ${st.unpaid?'· <b style="color:#b33">UNPAID (50% work)</b>':(out>=wage?'· <b style="color:#2a7a2a">profitable</b>':'')}</div>
+      <div class="pb-track"><div class="pb-fill" style="width:${pct}%"></div></div></div>`;
+    h+=`<div class="list">`+st.team.map(staffWorkerCard).join('')+`</div>`;
+    // Legacy unhired managers still available to hire (become founding foremen)
+    const open=MANAGERS.filter(m=>!mgrLvl(m.bid)&&mgrAvail(m));
+    if(open.length){h+=`<h4>👔 Available foremen <span class="mg-count">${open.length}</span></h4><div class="list">`+open.map(m=>mgrCardHtml(m)).join('')+`</div>`;}
+    // Also show hired managers that somehow lack a staff entry
+    const hired=MANAGERS.filter(m=>mgrLvl(m.bid)&&!st.team.some(w=>w.mgrId===m.id));
+    if(hired.length){h+=`<h4>👔 Managers <span class="mg-count">${hired.length}</span></h4><div class="list">`+hired.map(m=>mgrCardHtml(m)).join('')+`</div>`;}
+    h+=`<div class="legend">Founding foremen (from your old managers) keep their bonuses and pay no wage. New hires take a wage and add role bonuses. Mill workers & engineers need a building assignment.</div>`;
+    body.innerHTML=h;
+    wireMgrCards(body);
+    body.querySelectorAll('.mgr-card[data-id]').forEach(mgrCardUpdate);
+    body.querySelectorAll('[data-assign]').forEach(b=>b.onclick=e=>{e.stopPropagation();staffAssignSheet(b.dataset.assign);});
+    body.querySelectorAll('[data-train]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(staffStartTrain(b.dataset.train)){staffSig='';render();}});
+    body.querySelectorAll('[data-mgr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.mgr;if(mgrLvl(MGR_MAP[id].bid)) levelMgr(id); else hireMgr(id); staffMigrateFromMgr(); staffSig='';render();});
+  } else if(staffTab==='cand'){
+    const left=Math.max(0,(st.nextReroll||0)-(S.time||0));
+    let h=`<div class="cand-head"><span class="legend">Pool refreshes every few minutes.</span>
+      <button class="btn wood small staff-btn" id="candReroll" style="min-height:44px" ${left>0?'disabled':''}>${left>0?`Free reroll in ${fmtTime(left)}`:'🔄 Free reroll'}</button></div>`;
+    h+=`<div class="list">`+(st.candidates.length?st.candidates.map(staffCandCard).join(''):`<div class="legend">No candidates right now — wait for a refresh.</div>`)+`</div>`;
+    body.innerHTML=h;
+    const rr=$('candReroll'); if(rr) rr.onclick=()=>{if(staffRerollFree()){staffSig='';render();}};
+    body.querySelectorAll('[data-hire]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(staffHireCandidate(b.dataset.hire)){staffSig='';render();}});
+  } else {
+    const trainable=st.team.filter(w=>(w.skill||1)<STAFF_SKILL_MAX);
+    let h=`<div class="legend">Spend coins + time (offline counts) to raise skill. Soft cap at ${STAFF_SKILL_MAX}. Fast learner trait doubles speed.</div><div class="list">`;
+    if(!trainable.length) h+=`<div class="legend">Everyone is at max skill — or hire someone new.</div>`;
+    for(const w of trainable){
+      const cost=staffTrainCost(w), t=staffTrainTime(w);
+      h+=`<div class="mgr-card hired staff-card" style="--rc:${(RARITY[w.rarity]||RARITY.C).c}"><div class="mg-p">${staffPortrait(w,48)}</div>
+        <div class="mg-b"><div class="mg-n">${w.name}</div><div class="mg-s">${STAFF_ROLES[w.role].e} skill ${w.skill} → ${(w.skill||1)+1}${w.train?` · 🎓 ${Math.ceil(w.train.left)}s left`:''}</div>
+        <div class="mg-g">${w.train?'In training…':`Costs 🪙 ${fmt(cost)} · ${fmtTime(t)}`}</div></div>
+        <button class="btn buy small staff-btn" data-train="${w.id}" style="min-height:44px" ${w.train||S.coins+1e-9<cost?'disabled':''}>${w.train?'Training…':costBtnHtml('🎓 Train',cost)}</button></div>`;
+    }
+    h+=`</div>`;
+    body.innerHTML=h;
+    body.querySelectorAll('[data-train]').forEach(b=>b.onclick=()=>{if(staffStartTrain(b.dataset.train)){staffSig='';render();}});
+  }
+}
+function renderStaffTabLight(){
+  // refresh hire button disabled states & profit numbers without full rebuild when sig matches
+  if(staffTab==='cand'){
+    document.querySelectorAll('#staffTabBody [data-hire]').forEach(b=>{
+      const c=staffState().candidates.find(x=>x.id===b.dataset.hire); if(!c) return;
+      const cost=staffHireCostOf(c); b.disabled=S.coins+1e-9<cost;
+    });
+  }
 }
 function setupStaffUI(){}
+
 UI_ICONS.staff=`<svg viewBox="0 0 32 32"><circle cx="16" cy="10" r="6" fill="#f0c8a0" stroke="#6a4020" stroke-width="1.4"/><path d="M10 8 Q11 3 16 3 Q21 3 22 8 Q19 6 16 6 Q13 6 10 8Z" fill="#4a2c18"/><path d="M5 30 Q6 19 16 18 Q26 19 27 30Z" fill="#2e3a5a" stroke="#1a2236" stroke-width="1.4"/><path d="M13 18.5 L16 24 L19 18.5Z" fill="#fff"/><path d="M15.2 19.5 L16.8 19.5 L17.4 25 L16 27 L14.6 25Z" fill="#e8a020"/></svg>`;
 UI_ICONS.fire=`<svg viewBox="0 0 32 32"><rect x="2" y="13" width="20" height="11" rx="1.5" fill="#d42a1e" stroke="#7a1410" stroke-width="1.2"/><path d="M22 16 L27 16 L30 20 L30 24 L22 24Z" fill="#d42a1e" stroke="#7a1410" stroke-width="1.2"/><rect x="23.5" y="17.2" width="3.5" height="3" fill="#bfe0f0"/><rect x="3" y="10.5" width="17" height="1.6" fill="#ddd"/><path d="M4 10.5 L4 13 M8 10.5 L8 13 M12 10.5 L12 13 M16 10.5 L16 13" stroke="#999"/><rect x="24" y="11.5" width="3" height="2" fill="#4a8af0"/><circle cx="8" cy="25" r="3" fill="#222"/><circle cx="25" cy="25" r="3" fill="#222"/><rect x="2" y="19" width="20" height="1.5" fill="#fff"/></svg>`;

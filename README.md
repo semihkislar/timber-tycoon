@@ -16,6 +16,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
 - `js/shipping.js` (v2.13): Shipping Yard (loading bays, departures, export contracts, dock/forklift/crane upgrades, sheet UI)
 - `js/forestveh.js` (v2.13): cached forest machines (harvester, forwarder, skidder) with lights
+- `js/staffsys.js` (v2.14): staff system — roles, wages, rotating candidates, training, assignment, light fatigue; managers migrate to founding foremen
 - `js/builders.js` + `js/scene13.js` (v2.12): Builders' Yard (construction crews that auto-upgrade buildings: plans, budget, sheet UI) and its scene (yard, crane, crew trucks, scaffolding)
 - `js/chimney.js` (v2.10.1): shared high-quality chimney renderer (square + round stacks seated on roofs, cached sprites) and the soft layered smoke puffs
 - `js/facade.js` (v2.11): factory facelift helpers — plank/brick/metal walls, shingle/tile/corrugated roofs, framed windows, roller doors, contact shadows, level-tier extras, and stock-yard goods with quantised fill steps

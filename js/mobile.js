@@ -5,8 +5,8 @@
 UI_ICONS.more=`<svg viewBox="0 0 32 32"><rect x="3" y="3" width="11" height="11" rx="3" fill="#5fb441"/><rect x="18" y="3" width="11" height="11" rx="3" fill="#3e86c8"/><rect x="3" y="18" width="11" height="11" rx="3" fill="#f5b52e"/><rect x="18" y="18" width="11" height="11" rx="3" fill="#e85a4a"/><path d="M21 23.5h5M23.5 21v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 SHEETS.more={title:'More',icon:'more'};
 const OVF=['ship','staff','rnd','power','build','ach','co','set'];
-const OVF_LBL={ship:['Shipping','Docks, forklifts & contracts'],staff:['Staff','Managers & fire station'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
-function prefs(){if(!S.prefs||typeof S.prefs!=='object') S.prefs={autoFocus:true,haptics:true};return S.prefs;}
+const OVF_LBL={ship:['Shipping','Docks, forklifts & contracts'],staff:['Staff','Team, hires & fire'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
+function prefs(){if(!S.prefs||typeof S.prefs!=='object') S.prefs={autoFocus:true,haptics:true,fatigue:true};if(typeof S.prefs.fatigue!=='boolean') S.prefs.fatigue=true;return S.prefs;}
 function haptic(ms){try{if(prefs().haptics&&navigator.vibrate) navigator.vibrate(ms||8);}catch(_){}}
 function railMode(){return window.matchMedia('(max-height:520px) and (orientation:landscape)').matches;}
 function compactMode(){return window.innerWidth<=720||railMode();}
@@ -212,6 +212,7 @@ function setupMobile(){
   $('bpMax').onclick=()=>buyMaxBld();
   $('afToggle').onchange=()=>{prefs().autoFocus=$('afToggle').checked;save(true);};
   $('hapToggle').onchange=()=>{prefs().haptics=$('hapToggle').checked;if(prefs().haptics) haptic(15);save(true);};
+  if($('fatToggle')) $('fatToggle').onchange=()=>{prefs().fatigue=$('fatToggle').checked;save(true);};
   // building sheet prev/next fly the camera
   $('bpPrev').onclick=()=>{cycleBuilding(-1);if(sheetBld) focusLot(sheetBld,true);haptic(5);};
   $('bpNext').onclick=()=>{cycleBuilding(1);if(sheetBld) focusLot(sheetBld,true);haptic(5);};
@@ -223,7 +224,7 @@ function setupMobile(){
 function mobileRender(){
   updateAttn(); updateBuyMax(); renderMore(false);
   if(document.body.classList.contains('jump-on')) buildJumpBar();
-  if(curSheet==='set'){$('afToggle').checked=!!prefs().autoFocus;$('hapToggle').checked=!!prefs().haptics;}
+  if(curSheet==='set'){$('afToggle').checked=!!prefs().autoFocus;$('hapToggle').checked=!!prefs().haptics;if($('fatToggle')) $('fatToggle').checked=!!prefs().fatigue;}
 }
 /* ---------- PWA ---------- */
 function registerSW(){

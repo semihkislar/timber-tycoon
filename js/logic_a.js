@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.13';
+const VERSION='2.14';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -195,12 +195,12 @@ const ACH=[
   {id:'order10',t:'silver',e:'🤝',n:'Trusted Supplier',d:'Complete 10 client orders',p:()=>[(S.orders&&S.orders.done)||0,10]},
   {id:'fire1',t:'bronze',e:'🧑‍🚒',n:'Firefighter',d:'Put out a fire by tapping it',p:()=>[(S.fireStats&&S.fireStats.tap)>0?1:0,1]},
   {id:'fire10',t:'silver',e:'🚒',n:'Fire Brigade',d:'Put out 10 fires',p:()=>[(S.fireStats&&S.fireStats.n)||0,10]},
-  {id:'mgr1',t:'bronze',e:'🤝',n:'First Hire',d:'Hire a manager',p:()=>[Object.keys(S.mgr||{}).length,1]},
+  {id:'mgr1',t:'bronze',e:'🤝',n:'First Hire',d:'Hire a manager or staff',p:()=>[typeof staffHiredCount==='function'?staffHiredCount():Object.keys(S.mgr||{}).length,1]},
   {id:'res1',t:'bronze',e:'🔬',n:'Eureka!',d:'Research your first node',p:()=>[Object.keys(S.research||{}).length,1]},
   {id:'res10',t:'gold',e:'🧠',n:'Think Tank',d:'Research 10 nodes',p:()=>[Object.keys(S.research||{}).length,10]},
   {id:'trade1',t:'bronze',e:'🚢',n:'Bon Voyage',d:'Complete a trade delivery',p:()=>[(S.trade&&S.trade.stats.trips)||0,1]},
   {id:'trade6',t:'gold',e:'🌍',n:'Global Brand',d:'Open all 6 trade routes',p:()=>[Object.keys((S.trade&&S.trade.routes)||{}).length,6]},
-  {id:'mgr6',t:'gold',e:'👔',n:'Management Team',d:'Hire 6 managers',p:()=>[Object.keys(S.mgr||{}).length,6]},
+  {id:'mgr6',t:'gold',e:'👔',n:'Management Team',d:'Hire 6 staff (incl. founding foremen)',p:()=>[typeof staffHiredCount==='function'?staffHiredCount():Object.keys(S.mgr||{}).length,6]},
   {id:'plant1k',t:'silver',e:'🌱',n:'Green Thumb',d:'Plant 1,000 saplings',p:()=>[(S.forestLife&&S.forestLife.planted)||0,1000]},
   {id:'plant100k',t:'gold',e:'🌳',n:'Reforestation',d:'Plant 100,000 saplings',p:()=>[(S.forestLife&&S.forestLife.planted)||0,1e5]},
   {id:'premium',t:'gold',e:'🏛️',n:'Haute Bois',d:'Open the Premium Factory Area',p:()=>[(S.premium&&S.premium.lvl)>0?1:0,1]},
@@ -226,7 +226,7 @@ function freshState(keep){
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
-    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}},
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
@@ -287,6 +287,16 @@ function migrateSave(o){
   if(typeof o.power.eff!=='number') o.power.eff=0; if(!o.power.burn||typeof o.power.burn!=='object') o.power.burn={};
   // v2.12 -> v2.13: shipping yard (docks, forklifts, contracts)
   if(!o.ship||typeof o.ship!=='object') o.ship={dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}};
+  // v2.13 -> v2.14: staff system (roles, wages, candidates, training); migrate managers → founding foremen
+  if(typeof o.prefs.fatigue!=='boolean') o.prefs.fatigue=true;
+  if(!o.staff||typeof o.staff!=='object') o.staff={team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};
+  if(!Array.isArray(o.staff.team)) o.staff.team=[]; if(!Array.isArray(o.staff.candidates)) o.staff.candidates=[];
+  if(typeof o.staff.seq!=='number') o.staff.seq=0; if(typeof o.staff.unpaid!=='boolean') o.staff.unpaid=false;
+  if(typeof staffMigrateFromMgr==='function') staffMigrateFromMgr(o);
+  else {
+    // deferred: staffsys may not be parsed yet during early calls; main init also migrates
+    o._needStaffMig=1;
+  }
   // v2.11 -> v2.12: builders' yard (construction crews)
   if(!o.builders||typeof o.builders!=='object') o.builders={lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0};
   {const B=o.builders;if(typeof B.lvl!=='number') B.lvl=0;if(typeof B.on!=='boolean') B.on=true;if(!['ms','cheap','low'].includes(B.plan)) B.plan='ms';
@@ -319,6 +329,7 @@ function computeMods(){
   if(typeof pwBoost==='function'&&S.power&&S.power.lvl) m.bldAll*=1+pwBoost();   // v2.10 power plant
   if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
   if(S.ship&&S.ship.dock>1) m.priceAll*=1+.02*(S.ship.dock-1);   // v2.13 export premium (shipping dock)
+  if(typeof staffDockPrem==='function') m.priceAll*=1+staffDockPrem();   // v2.14 dock workers
   m.ach=1+ACH_BONUS*achCount();
   m.rep=(1+0.1*S.seeds)*m.ach;
   return m;
@@ -326,8 +337,8 @@ function computeMods(){
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
-function logRate(){return logRatePot()*forestEff();}   // v2.7: collectors can only fell grown trees
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id);}
+function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
@@ -335,7 +346,7 @@ function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 /* ===================== SIMULATION ===================== */
 function tick(dt,offline){
   M=computeMods();
-  S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline);
+  S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline); if(typeof staffTick==='function') staffTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   forestTick(dt,offline);
   const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
@@ -462,7 +473,7 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false};})(),
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
