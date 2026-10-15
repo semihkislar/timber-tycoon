@@ -1,4 +1,6 @@
-# Staff system: design for v2.14 (planned)
+> **Shipped in v2.14** (2026-10-15). This document remains the design reference.
+
+# Staff system: design for v2.14 (shipped)
 
 Semih's feedback was "personel olayını çeşitlendirip bir kurgu olmalı". It asks for a real staff system, not just a rebalance. That is too big to ship safely alongside the v2.13 vehicles and shipping work, so it is split:
 

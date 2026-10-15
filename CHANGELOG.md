@@ -5,6 +5,28 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.14] — 2026-10-15
+
+**Staff system**: roles, wages, candidates, training and light fatigue. Managers become founding foremen.
+
+### Staff (`js/staffsys.js`, new · `js/staff.js`)
+- Seven roles with area effects: Lumberjack, Driver, Mill worker, Engineer, Forklift operator, Dock worker, Firefighter.
+- Rotating candidate pool (3–5) with rarity, skill 1–5 and traits (Night owl, Fast learner, Steady, Local hero). Free reroll every 10 minutes.
+- Wages scale with skill + rarity (not headcount). Hire cost ≈ one minute of wage. If coins run out, staff work at 50% — nobody is fired.
+- Training raises skill (coins + time, offline counts) up to a soft cap of 10.
+- Mill workers & engineers assign to buildings (1 slot, 2 at ★2, 3 at ★4). Mobile uses an Assign → building-list sheet.
+- Light fatigue: energy drains while working, refills at the campfire; below 30% work at 80%. Settings toggle + Steady trait can disable it.
+- Staff sheet tabs: **Team | Candidates | Training**, with Fire Safety kept at the top. More-menu label: "Team, hires & fire".
+- Profit bar on the Team tab shows wages vs estimated staff output.
+
+### Migration & Replant
+- Existing managers become named Legendary/Epic **Foremen** (mill workers) assigned to their building. Wage waived for life. Legacy `mgr*` bonuses still apply so production does not drop.
+- Replant keeps staff and training; upgrade/hire costs still reset. Fire station kept as before.
+- Trophies `mgr1` / `mgr6` count hired staff including founding foremen.
+
+### Compatibility
+- v2.13 saves migrate automatically. `test/v28.py` perf and `test/v213.py` shipping/manager checks still pass.
+
 ## [2.13] — 2026-10-14
 
 **Shipping Yard, new forest machines, staff cost rebalance.**

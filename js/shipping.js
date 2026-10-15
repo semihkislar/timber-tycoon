@@ -25,7 +25,7 @@ function shState(){let s=S.ship;if(!s||typeof s!=='object') s=S.ship=shFresh();
 function shBays(d){d=d===undefined?S.ship.dock:d;return 1+(d>=4?1:0)+(d>=8?1:0);}
 function shPremium(d){d=d===undefined?(S.ship?S.ship.dock:1):d;return .02*(d-1);}
 /* loading factor: 1.0 with the starting 2 forklifts; the contract progress multiplier and the forklift/crane speed */
-function shLoadF(s){s=s||S.ship;return (s.fork/2)*(1+.3*s.fspd)*(1+.6*s.crane);}
+function shLoadF(s){s=s||S.ship;const base=(s.fork/2)*(1+.3*s.fspd)*(1+.6*s.crane);return typeof staffApplyLoadF==='function'?staffApplyLoadF(base):base;}
 function shForkSpeed(){const s=S.ship||shFresh();return 3.4*(1+.25*s.fspd)*(1+.15*s.crane);}   // v2.12 was a fixed 1.7
 function shCapSec(){return 18+4*(S.ship.dock-1);}            // a truck holds ~this many seconds of your sales
 function shTimer(){return Math.max(20,45-2*S.ship.dock);}     // ...and leaves after this long even if it is not full
@@ -60,7 +60,7 @@ function shAbandon(){const s=shState();if(!s.contract) return false;s.contract=n
 function shipTick(dt,sold,earned,offline){
   const s=shState();while(s.bays.length<shBays()) s.bays.push({v:0,t:0});s.bays.length=shBays();
   // bays: fill with sales (split across bays, faster with a better loading factor), depart when full or on the timer
-  const cap=Math.max(1,coinRate*shCapSec()),lf=Math.min(1,.55+.45*shLoadF()/2);
+  const cap=Math.max(1,coinRate*shCapSec()*(typeof staffApplyCap==='function'?staffApplyCap(1):1)),lf=Math.min(1,.55+.45*shLoadF()/2);
   for(const b of s.bays){b.v+=earned/s.bays.length*lf;b.t+=dt;
     if(b.v>=cap||(b.t>=shTimer()&&b.v>0)){s.stats.trucks++;b.v=0;b.t=0;if(!offline) scene.shipDeparted=(scene.shipDeparted||0)+1;}}
   // contracts

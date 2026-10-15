@@ -24,7 +24,7 @@ const SHEETS={
   set:{title:'Settings',icon:'set'},
   ord:{title:'Orders',icon:'ord'},
   prem:{title:'Premium Factory Area',icon:'prem'},
-  staff:{title:'Managers & Fire Station',icon:'staff'},
+  staff:{title:'Team, Hires & Fire',icon:'staff'},
   rnd:{title:'Research & Trade',icon:'rnd'},
 };
 function openSheet(name,arg){

@@ -79,6 +79,8 @@ function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yar
 function init(){
   loadAtlas();
   const loaded=load();
+  if(typeof staffMigrateFromMgr==='function'){staffMigrateFromMgr(); if(S._needStaffMig) delete S._needStaffMig;}
+  if(S.staff&&!(S.staff.candidates&&S.staff.candidates.length)&&typeof staffRefreshCandidates==='function') staffRefreshCandidates(false);
   M=computeMods();
   setupUI();
   initScene();
@@ -121,6 +123,10 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
 
   // v2.4 managers / fire helpers
   MANAGERS,RARITY,SKILLS,portraitSVG,mgrLvl,hireMgr,levelMgr,mgrHireCost,mgrUpCost,mgrSpd,mgrIn,mgrOut,mgrSto,mgrOrders,startFire,tapFire,fireRisk,buyStation,stationCost,stationLvl,onFire,STATION,
+  // v2.14 staff system
+  STAFF_ROLES,STAFF_TRAITS,staffState,staffFresh,staffHireCandidate,staffAssign,staffUnassign,staffStartTrain,staffMigrateFromMgr,staffRefreshCandidates,staffRerollFree,
+  staffWageOf,staffHireCostOf,staffWageTotal,staffOutputRate,staffMillSpd,staffEngIn,staffForkBonus,staffChopBonus,staffHaulBonus,staffSlots,staffCanAssign,staffAtBuilding,staffHiredCount,staffTick,
+  get staffTabCur(){return staffTab;},set staffTabCur(v){staffTab=v;},
   fireScreen:bid=>{const L=LOTS[bid];return L.top?w2s(L.top[0],L.top[1]):null;},stationScreen:()=>{const p=P(STATION.ci,STATION.cj,12);return w2s(p[0],p[1]);},
   // v2.7 forest / planting crew helpers
   PLANTERS,PMAP,buyPlanter,plCost,plRate,plantCap,fellDemand,forestPlots,forestEff,growMult,logRatePot:()=>{M=computeMods();return logRatePot();},forestState,FELL,FOREST_BASE,LAND_PER,planterPeople:()=>scene.planters||[],forestScreenAt:(i,j)=>{const p=P(i,j);return w2s(p[0],p[1]);},
