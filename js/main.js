@@ -127,6 +127,9 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   STAFF_ROLES,STAFF_TRAITS,staffState,staffFresh,staffHireCandidate,staffAssign,staffUnassign,staffStartTrain,staffMigrateFromMgr,staffRefreshCandidates,staffRerollFree,
   staffWageOf,staffHireCostOf,staffWageTotal,staffOutputRate,staffMillSpd,staffEngIn,staffForkBonus,staffChopBonus,staffHaulBonus,staffSlots,staffCanAssign,staffAtBuilding,staffHiredCount,staffTick,
   get staffTabCur(){return staffTab;},set staffTabCur(v){staffTab=v;},
+  // v2.15 staff in the world
+  SW,SW_ROLE,SW_CAP,swLook,swHit,swOpenCard,swFind,swStatus,swSync,staffOnBreak,staffBreakRate,STAFF_BREAK_AT,STAFF_BREAK_REFILL,
+  staffPeople:()=>SW.list.map(a=>{const p=P(a.i,a.j);const s=w2s(p[0],p[1]);return {wid:a.wid,role:a.role,st:a.st,pose:a.pose,rest:a.rest,i:a.i,j:a.j,sx:s[0],sy:s[1],vis:a.vis,alpha:a.alpha,seat:a.seat};}),
   fireScreen:bid=>{const L=LOTS[bid];return L.top?w2s(L.top[0],L.top[1]):null;},stationScreen:()=>{const p=P(STATION.ci,STATION.cj,12);return w2s(p[0],p[1]);},
   // v2.7 forest / planting crew helpers
   PLANTERS,PMAP,buyPlanter,plCost,plRate,plantCap,fellDemand,forestPlots,forestEff,growMult,logRatePot:()=>{M=computeMods();return logRatePot();},forestState,FELL,FOREST_BASE,LAND_PER,planterPeople:()=>scene.planters||[],forestScreenAt:(i,j)=>{const p=P(i,j);return w2s(p[0],p[1]);},

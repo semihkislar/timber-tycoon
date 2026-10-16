@@ -146,8 +146,10 @@ with sync_playwright() as p:
     pg.wait_for_timeout(4000)
     ok(pg.evaluate("!!TT.scene.ftruck&&TT.scene.ftruck.crew"),'firefighter crew out of the truck, spraying')
     pg.evaluate("TT.openSheet('staff')"); pg.wait_for_timeout(400)
-    ok(pg.evaluate("document.querySelectorAll('#staffBody .mgr-card').length")==12,'Staff panel lists all 12 managers')
-    ok(pg.evaluate("document.querySelectorAll('#staffBody .mgr-card svg').length")>=12,'each manager has a drawn portrait')
+    # v2.14+: managers became founding foremen inside the staff team; only hireable ones (available buildings) are hired
+    nm=12 if ver(pg.evaluate("TT.VERSION"))<(2,14) else pg.evaluate("Object.keys(TT.S.mgr).length")
+    ok(nm>=7 and pg.evaluate("document.querySelectorAll('#staffBody .mgr-card').length")==nm,f'Staff panel lists all {nm} hired managers')
+    ok(pg.evaluate("document.querySelectorAll('#staffBody .mgr-card svg').length")>=nm,'each manager has a drawn portrait')
     ok(pg.evaluate("document.querySelector('#staffBody .stn-hero')!==null"),'station block in the Staff panel')
     pg.evaluate("TT.closeSheet();TT.openSheet('bld','furniture')"); pg.wait_for_timeout(400)
     ok(pg.evaluate("!document.getElementById('bpMgr').classList.contains('hidden')&&document.getElementById('bpMgr').textContent.includes('Defne')"),'building sheet shows its manager (Defne at Furniture)')

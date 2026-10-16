@@ -5,6 +5,57 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.15] — 2026-10-16
+
+**Staff in the world**: your hired staff now walk and work in the factory scene. Tired workers take real campfire breaks.
+
+### Scene (`js/staffworld.js`, new)
+- Every hired staff member appears as an animated isometric worker in their own area:
+  - lumberjacks chop trees in the forest work zones (the tree shakes and throws chips)
+  - drivers direct trucks at the log yard
+  - mill workers carry goods and hammer at their assigned building; engineers inspect it with a clipboard
+  - forklift operators marshal at the Shipping Yard drop; dock workers carry crates round the dock to the truck bays
+  - firefighters stand by at the fire station
+  - unassigned mill workers and engineers wait at the log yard
+- Each role has its own hard-hat and hi-vis vest colours, plus a small role marker that shows the worker's rarity. The marker keeps a readable size when you zoom out.
+- Resting workers walk to the campfire and sit on tree-stump stools, with a 💤 marker. Long commutes fade out and back in, so nobody walks through a building.
+- Productivity bubbles: now and then a working worker shows their real effect (e.g. "🪓 +6% chop", "🔧 −10% input"). At most 3 show at once.
+- Founding foremen stay at their building as the manager, so they are drawn only once.
+
+### Tap and find
+- Tap a worker to open the Team sheet scrolled to their card. The card is highlighted, the worker gets a ring and a name tag, and the camera moves so the worker stays visible above the sheet.
+- Tap the portrait on a Team card (📍) to fly the camera to that worker. For founding foremen it flies to their building. The portrait button is at least 52 px.
+- Team cards show what each worker is doing: working, waiting for an assignment, tired (80%), or "☕ On a break at the campfire · back in 1m 7s".
+
+### Gameplay: campfire breaks (`js/staffsys.js`)
+- Below 15% energy a worker takes a real break: no output while resting, energy refills at 1.2/s (+10% with a Local hero on the team), and they return at 100%. A break lasts about 70 s.
+- In v2.14, tired workers stayed near 15% energy and worked at 80% for good. Now a long session averages about 91% output.
+- The fatigue setting and the Steady trait still turn breaks off. Wages, training, Replant (keeps staff, still resets upgrade and hire costs) and offline progress are unchanged.
+
+### Fixes
+- Building sheets threw "updateBldMgr is not defined" in v2.14, so the sheet stopped updating part-way and the fire note never showed. The sheet is restored and now shows the building's foreman card and a **Staff here** list (used/total slots, a 44 px chip per worker that opens their card, and an Assign / Team button).
+- An energy of 0 no longer reads as 100 (`w.energy||100`).
+
+### Perf
+- Workers use the cached `human()` sprites. Looks are shared per role and face, so sprite keys stay stable. Stools and markers are cached sprites, and bubbles use the cached pills.
+- At most 24 workers are drawn on desktop and 14 on phones. All workers are still simulated, which is cheap.
+- `test/v215.py`: median frame cost with 49 staff is 5.8 ms, against 5.1 ms with none. `test/v28.py` long-session perf still passes.
+
+### Compatibility
+- v2.14 saves migrate: every worker gets `brk` and a numeric energy. Tired v2.14 workers go on their first break right away. v2.13 saves still migrate managers to founding foremen.
+- `test/v213.py` and `test/v214.py` now check the `sw.js` cache version with ≥, so later releases keep passing.
+
+### Tests
+- New `test/v215.py`. It covers:
+  - version, `sw.js` and the script tag
+  - v2.14 and v2.13 save migration
+  - every role working in its area, the poses, and the role looks
+  - breaks: start, no output, a seat at the campfire, the status line, the end of the break, the return to work, the fatigue setting, the Steady trait, a long-session average and offline range
+  - tap a worker → card in view and highlighted; 📍 → camera
+  - the building sheet's Staff here list and fire note
+  - bubbles; the draw cap and frame cost with 49 staff; one seat per worker; Replant
+  - touch taps on iPhone 13 and Pixel 7, and the release snapshot
+
 ## [2.14] — 2026-10-15
 
 **Staff system**: roles, wages, candidates, training and light fatigue. Managers become founding foremen.
