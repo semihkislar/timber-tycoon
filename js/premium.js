@@ -11,8 +11,8 @@ function stoCost(id){const b=BMAP[id],l=stoLvl(id);return b.cost*5*Math.pow(5,l)
 function stockCaps(){
   const c={}; for(const r of RES) c[r.id]=0; const has={};
   for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl) continue; const sp=bSpeed(b.id), sec=stoSec(stoLvl(b.id))*mgrSto(b.id);
-    for(const k in b.out){c[k]+=b.out[k]*sp*sec;has[k]=1;}
-    if(b.id==='sawmill'&&M.sawdust){c.chips+=b.out.planks*sp*sec;has.chips=1;}}
+    for(const k in b.out){c[k]+=b.out[k]*sp*sec*(b.id==='sawmill'?sawYield():1);has[k]=1;}
+    if(b.id==='sawmill'&&M.sawdust){c.chips+=2*sp*sec;has.chips=1;}}
   for(const r of RES) c[r.id]=has[r.id]?Math.max(50,c[r.id]):Infinity;
   return c;
 }
@@ -50,7 +50,7 @@ const ORDER_OFFER_SEC=75;
 function prodRate(k){
   if(k==='logs') return logRate();
   let p=0; for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||!st.on) continue; const f=Math.max(.3,bstat[b.id].f||0);
-    if(b.out[k]) p+=b.out[k]*bSpeed(b.id)*f; if(k==='chips'&&b.id==='sawmill'&&M.sawdust) p+=b.out.planks*bSpeed(b.id)*f;}
+    if(b.out[k]) p+=b.out[k]*bSpeed(b.id)*f*(b.id==='sawmill'?sawYield():1); if(k==='chips'&&b.id==='sawmill'&&M.sawdust) p+=2*bSpeed(b.id)*f;}
   return p;
 }
 function niceNum(x){if(x<10) return Math.max(5,Math.round(x));const e=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/e)*e;}
@@ -84,7 +84,7 @@ function orderCollect(demand,dt,offline,pend){
   const o=S.orders&&S.orders.active; if(!o) return;
   const k=o.item, reserve=(demand[k]/dt)*Math.max(BUFFER_SEC,dt*1.5);
   const share=k==='logs'?0:.7*((pend&&pend[k])||0);
-  const take=Math.min(o.amt-o.got,S.res[k],Math.max(S.res[k]-reserve,share)); if(take>1e-9){S.res[k]-=take;o.got+=take;}
+  const take=Math.min(o.amt-o.got,S.res[k],Math.max(S.res[k]-reserve,priBudget(k,share,pend))); if(take>1e-9){S.res[k]-=take;o.got+=take;priTook(k,Math.max(0,take-Math.max(0,S.res[k]+take-reserve)));}
   if(o.got>=o.amt-1e-6) completeOrder(offline);
 }
 function completeOrder(offline){
@@ -208,13 +208,14 @@ function dailyCollect(demand,dt,offline,pend){
   for(const k in by){
     const list=by[k], reserve=(demand[k]/dt)*Math.max(BUFFER_SEC,dt*1.5);
     const share=k==='logs'?0:.65*((pend&&pend[k])||0);
-    let pool=Math.max(0,Math.max(S.res[k]-reserve,share));
+    const sur=Math.max(0,S.res[k]-reserve);let pool=Math.max(sur,priBudget(k,share,pend));const pool0=pool;
     for(const o of list){
       const need=o.amt-o.got; if(need<=1e-9||pool<=1e-9) continue;
       const take=Math.min(need,S.res[k],pool/list.length+1e-12,pool); if(take<=1e-9) continue;
       S.res[k]-=take; o.got+=take; pool-=take;
       if(o.got>=o.amt-1e-6) completeDaily(o,offline);
     }
+    priTook(k,Math.max(0,(pool0-pool)-sur));
   }
 }
 function completeDaily(o,offline){

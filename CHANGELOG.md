@@ -5,6 +5,44 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.15.1] — 2026-10-16
+
+**Plank balance fix**: the Sawmill now keeps up, and shortage warnings are calmer and say what to do.
+
+### Root cause
+- A simulated early/mid/late game showed no new plank sink from v2.12–v2.15. Staff only ever speed the Sawmill up, and the shipping, Builders' Yard and forklift changes don't consume planks.
+- The shortage was structural. One Sawmill (2 planks per speed unit) fed up to seven plank users (6 to 120 planks per unit, with ×4–×5 speed on premium and research buildings).
+- With upgrades spread evenly by cost, the Sawmill covered only 19% of plank demand once premium unlocked, falling to 2–4% in the late game.
+- Warnings flashed at a 1.5% shortage, once per building.
+
+### Balance
+- Sawmill: 4 logs → **3** planks (was 2). Plank price 4 → 3, so early plank income only rises about 12%.
+- **Saw yield** from Sawmill Lv 50: each milestone gives ×1.6 planks per log, plus 5% per level above 50 (×3.9 at Lv 79, ×16 at Lv 158). Log use is unchanged and the plank storage cap grows with it.
+- Leaner plank recipes:
+  - Carpentry 6 → 4
+  - Furniture 20 → 12
+  - Parquet 12 → 6
+  - Cabinets 10 → 6
+  - Plywood 10 → 6
+  - Boat Yard 30 → 18
+  - Showroom 20 → 12
+- Sawdust chips are unchanged.
+- Result: the cost-balanced simulation is now fully fed at every stage. Greedy play stays at least 99.9% fed at 10, 30, 60 and 120 minutes.
+
+### Plank allocation
+- New toggle in the shortage hint: **shared fairly** (default, the old behaviour) or **best value first**.
+- In best-value mode every consumer keeps 30% of its fair share, and the rest goes to the building that earns the most per plank.
+- Orders, daily orders and trade ships now share one priority budget, at most 80% of fresh output beyond the surplus. Before, each could take its own 65–80%.
+
+### Warnings
+- Shortages are smoothed over about 6 s, so one-tick dips stay quiet. The card status reads "Short on Planks" below 90% and "Slightly short" for small dips.
+- Attention entries are grouped per input, e.g. "🟫 Short on Planks (Carpentry 40%, Furniture 35%) · upgrade the Sawmill". Tapping it jumps to the Sawmill.
+- The building sheet shows a hint: "Sawmill makes X/s, buildings want Y/s", with an **Upgrade Sawmill →** button and the allocation toggle. The hint sits below the buy row so it never moves the buttons.
+- The Sawmill sheet shows saw yield (from Lv 40).
+
+### Tests
+- New `test/v2151.py`: greedy early/mid/late simulation plus cost-balanced premium/research states (plank supply must stay sustainable), allocation modes, priority budget, smoothed and grouped warnings, the hint jump on desktop, iPhone and Pixel, and save migration.
+
 ## [2.15] — 2026-10-16
 
 **Staff in the world**: your hired staff now walk and work in the factory scene. Tired workers take real campfire breaks.

@@ -280,6 +280,7 @@ with sync_playwright() as p:
     ok(ver(S['version'])>=(2,9) and 'prefs' not in old,'v2.8 save migrated to 2.9')
     _want={'autoFocus':True,'haptics':True}
     if ver(S['version'])>=(2,14): _want['fatigue']=True   # v2.14 added the staff-fatigue pref
+    if ver(S['version'])>=(2,15,1): _want['plankMode']='fair'   # v2.15.1 plank allocation pref
     ok(S['prefs']==_want,f"prefs added with defaults ({S['prefs']})")
     ok(S['collectors']['lumberjack']==old['collectors']['lumberjack'] and S['planters']['team']==old['planters']['team'] and S['buildings']['sawmill']['lvl']==old['buildings']['sawmill']['lvl'] and S['buildings']['chipper']['lvl']==5,'crew, planters and buildings kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.05,'coins kept')

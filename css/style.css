@@ -627,3 +627,10 @@ body.sheet-on #fabs,body.sheet-on #jumpBar,body.sheet-on #attnTip{opacity:0;poin
 .bst-chip .portrait{display:block;flex:none}
 .bst-chip b{display:block;font-size:13px}.bst-chip small{display:block;font-size:11px;color:var(--ink2)}
 .bst-team{width:100%}
+
+/* v2.15.1 shortage hint */
+.bp-short{margin:6px 0 2px;padding:8px 10px;border-radius:10px;background:#fff1e6;border:1px solid #f0b48a;font-size:13px;line-height:1.35;color:#5a3218;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bp-short>div{flex:1 1 100%}.bp-short svg{vertical-align:-4px}
+.bp-short button{min-height:40px;padding:6px 12px;border-radius:9px;border:0;font-weight:800;font-size:13px;cursor:pointer}
+.bp-short-go{background:#4fa633;color:#fff}.bp-short-mode{background:#efe2cc;color:#5a3a18}
+.bp-yield{flex:1 1 100%;font-size:12px;color:#6a4a20;margin-top:4px;text-align:center}

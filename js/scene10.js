@@ -228,7 +228,7 @@ function techOverlays(ctx){
       const txt=unl?`${b.icon} ${b.name} · ${fmt(c)}`:`🔒 ${b.icon} ${b.id==='lab'?'Needs Paper Mill':'Research '+RNMAP[TECH_UNLOCK[b.id]].name}`;
       ctx.font='800 10px system-ui,sans-serif';tags.push({x:sx,y:sy-4,w:ctx.measureText(txt).width+18,txt,bg:unl?(S.coins>=c?'rgba(40,120,70,.88)':'rgba(30,70,90,.78)'):'rgba(43,27,14,.55)'});}
     else if(showTags){const ms=msCount(st.lvl);pill(ctx,sx,sy-2,`${b.icon} Lv ${st.lvl}${ms?' '+'★'.repeat(Math.min(ms,6)):''}`,{fs:10,bg:'rgba(30,60,80,.8)',fg:ms?'#ffe27a':'#fff6e0'});
-      const bs=bstat[b.id];if(st.on&&bs&&bs.f<.7){pill(ctx,sx,sy+16,'⚠ needs '+(bs.lim?RMAP[bs.lim].name:'input'),{fs:9.5,bg:'#c4463d'});}}}
+      const bs=bstat[b.id];if(st.on&&bs&&bs.lim&&(isFinite(bs.fs)?bs.fs:bs.f)<.6){pill(ctx,sx,sy+16,'⚠ needs '+(bs.lim?RMAP[bs.lim].name:'input'),{fs:9.5,bg:'#c4463d'});}}}
   tags.sort((a,b)=>a.y-b.y);
   for(let k=1;k<tags.length;k++) for(let m=0;m<k;m++){const a=tags[m],t=tags[k];if(Math.abs(a.x-t.x)<(a.w+t.w)/2+4&&Math.abs(a.y-t.y)<21) t.y=a.y+21;}
   for(const t of tags) pill(ctx,t.x,t.y,t.txt,{fs:10,bg:t.bg});

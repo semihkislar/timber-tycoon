@@ -246,7 +246,7 @@ function drawOverlays(ctx){
       } else pill(ctx,sx,sy-4,'🔒 Earn '+fmt(b.cost*.25),{fs:10,bg:'rgba(43,27,14,.6)'});
       continue;
     }
-    const bs=bstat[b.id], starved=st.on&&bs.f<0.985, ms=msCount(st.lvl);
+    const bs=bstat[b.id], bfs=isFinite(bs.fs)?bs.fs:bs.f, starved=st.on&&!!bs.lim&&bfs<0.95, ms=msCount(st.lvl);   // v2.15.1: smoothed, small dips stay quiet
     if(showTags){
       const hov=scene.hover===b.id||sheetBld===b.id;
       const fp=L.prem?P(L.ci-.2,L.cj-.2,L.id==='showroom'?62:44):P(L.ci+(L.face==='I'?1.95:.2),L.cj+(L.face==='I'?.2:1.95),0); let [px,py]=w2s(fp[0],fp[1]); if(L.prem) px-=30*Math.max(.8,Math.min(1.4,scene.cam.z)); // v2.2: premium tags float above the roof so they never cover a name board
@@ -257,7 +257,7 @@ function drawOverlays(ctx){
     else if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
     else if(starved){
       // v2.2: mild shortages (>=70% running) get a small calm amber badge; real starvation keeps the bouncing red alert
-      const bad=bs.f<.7, R=bad?12:8.5, by=sy-8+(bad?Math.sin(t*5)*3:0);ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,R,0,TAU);ctx.fill();
+      const bad=bfs<.6, R=bad?12:8.5, by=sy-8+(bad?Math.sin(t*5)*3:0);ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,R,0,TAU);ctx.fill();
       ctx.fillStyle=bad?'#e8473c':'#e3a32a';ctx.beginPath();ctx.arc(sx,by,R,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(sx-R*.42,by+R*.75);ctx.lineTo(sx+R*.42,by+R*.75);ctx.lineTo(sx,by+R*1.33);ctx.closePath();ctx.fill();
       ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sx,by,R,0,TAU);ctx.stroke();
       ctx.fillStyle='#fff';ctx.font=`900 ${bad?15:11}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',sx,by+1);

@@ -100,7 +100,9 @@ function statusOf(b){
   if(!st.on) return {cls:'off',txt:'⏸ Off',f:0};
   if(onFire(b.id)) return {cls:'bad',txt:'🔥 On fire! Tap the flames',f:0};
   if(bs.full&&bs.f<0.985) return {cls:'bad',txt:`⛔ Storage FULL: ${RMAP[bs.full].name}`,f:bs.f};
-  if(bs.f<0.985) return {cls:'bad',txt:`⚠ Starved: ${RMAP[bs.lim]?RMAP[bs.lim].name:'input'}`,f:bs.f};
+  const fs=isFinite(bs.fs)?bs.fs:bs.f, nm=RMAP[bs.lim]?RMAP[bs.lim].name:'input';   // v2.15.1: smoothed, so a one-tick dip doesn't flash a warning
+  if(bs.lim&&fs<0.9) return {cls:'bad',txt:`⚠ Short on ${nm}`,f:bs.f};
+  if(bs.lim&&bs.f<0.985) return {cls:'',txt:`Slightly short on ${nm}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};
 }
 let bpSig='';
@@ -132,9 +134,21 @@ function updateBuildingSheet(){
   // input -> output flow
   const sp=st.lvl?bSpeed(b.id):0, f=st.lvl&&st.on?bstat[b.id].f:0;
   const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f)+' / '+fr(v*sp):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  let outsArr=Object.entries(b.out).map(([k,v])=>[k,v]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',b.out.planks]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*.5]);
+  let outsArr=Object.entries(b.out).map(([k,v])=>[k,b.id==='sawmill'?v*sawYield():v]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*.5]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  const io=ins+'<span class="arr">➜</span>'+outs; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
+  const yl=b.id==='sawmill'&&st.lvl>=40?`<div class="bp-yield">🪚 Saw yield <b>×${sawYield().toFixed(2)}</b> planks per log${st.lvl<50?' · grows from Lv 50':` · Lv ${st.lvl+1}: ×${sawYieldAt(st.lvl+1).toFixed(2)}`}</div>`:'';
+  const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
+  { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
+    let sh=$('bpShort'); if(!sh){sh=document.createElement('div');sh.id='bpShort';sh.className='bp-short';$('bpBuy').parentElement.after(sh);}   // below the buy row: never shifts the buttons under a finger
+    const bs=bstat[b.id], k=st.lvl&&st.on&&bs&&bs.lim&&(isFinite(bs.fs)?bs.fs:bs.f)<.95?bs.lim:null, si=k?shortInfo(k):null;
+    let h='';
+    if(si){h=`<div>${svgIcon(RMAP[k].svg,18)} <b>${RMAP[k].name}</b>: ${si.src?BMAP[si.src].name+' makes':'you make'} <b>${fr(si.prod)}/s</b>, buildings want <b>${fr(si.want)}/s</b>${si.users.length>1?` (${si.users.map(u=>BMAP[u].name).join(', ')})`:''}.</div>`;
+      if(si.src) h+=`<button class="bp-short-go" data-go="${si.src}">⬆ Upgrade ${BMAP[si.src].name} →</button>`;
+      if(k==='planks') h+=`<button class="bp-short-mode" data-mode="1">${S.prefs.plankMode==='value'?'Planks: best value first':'Planks: shared fairly'} ⇄</button>`;}
+    if(sh._h!==h){sh.innerHTML=h;sh._h=h;sh.classList.toggle('hidden',!h);
+      const g=sh.querySelector('[data-go]');if(g) g.onclick=()=>{openSheet('bld',g.dataset.go);if(typeof focusLot==='function') focusLot(g.dataset.go,true);};
+      const md=sh.querySelector('[data-mode]');if(md) md.onclick=()=>{togglePlankMode();bpSig='';sh._h='';};}
+  }
   const on=$('bpOn'); on.checked=st.on; on.disabled=!st.lvl; $('bpOnL').textContent=st.on?'On':'Off';
   on.parentElement.classList.toggle('hidden',!st.lvl);
   const bb=$('bpBuy'); const bh=costBtnHtml(st.lvl?`⬆ Upgrade${n>1?' +'+n:''}`:'🔨 Build',cost); if(bb._h!==bh){bb.innerHTML=bh;bb._h=bh;}
@@ -268,3 +282,9 @@ function eventIll(id){
   const map={hotel:'🪑',storm:'⛈️',termites:'🐜',boom:'📈',acorn:'🌰',print:'🗞️',cold:'❄️',frenzy:'⚡',goldrush:'💛'};
   return map[id]||'⭐';
 }
+
+/* v2.15.1 shortage helpers */
+function shortInfo(k){const src=(BUILDINGS.find(b=>b.out[k]&&S.buildings[b.id].lvl)||BUILDINGS.find(b=>b.out[k])||{}).id||null;
+  const users=BUILDINGS.filter(b=>b.inp[k]&&S.buildings[b.id].lvl&&S.buildings[b.id].on).map(b=>b.id);
+  return {src,users,prod:(rates[k]&&rates[k].p)||0,want:(rates[k]&&rates[k].d)||0};}
+function togglePlankMode(){S.prefs.plankMode=S.prefs.plankMode==='value'?'fair':'value';toast(S.prefs.plankMode==='value'?'🟫 Planks now go to the building that earns most per plank first':'🟫 Planks are now shared fairly between buildings');}

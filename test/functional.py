@@ -44,7 +44,7 @@ with sync_playwright() as p:
     ok(pg.evaluate('TT.curSheet')=='bld' and pg.evaluate('TT.sheetBld')=='sawmill','building sheet opened for sawmill')
     pg.wait_for_timeout(2500)
     st=pg.evaluate('TT.bstat.sawmill'); ok(st['f']<0.5 and st['lim']=='logs',f"sawmill starved on logs util={st['f']:.2f}")
-    ok('Starved' in pg.locator('#bpStatus').inner_text() or 'Starved' in pg.locator('#pane-bld').inner_text(),'sheet shows Starved')
+    _t=(pg.locator('#bpStatus').inner_text()+pg.locator('#pane-bld').inner_text()).lower(); ok('starved' in _t or 'short on' in _t,'sheet shows the shortage (v2.15.1: "Short on Logs")')
     r=pg.evaluate('({p:TT.rates.planks.p, c:TT.rates.logs.c})'); ok(r['p']>0.3 and r['c']>0.6,'planks produced & logs consumed')
     pg.evaluate('TT.S.autosell.planks=false'); pg.evaluate('TT.simulate(20)')
     ok(pg.evaluate('TT.S.res.planks')>5,'planks stock accumulates')
