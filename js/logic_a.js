@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.15';
+const VERSION='2.15.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -40,7 +40,7 @@ function iconHtml(id, size){return `<span class="ric" style="display:inline-flex
 /* ===================== DATA ===================== */
 const RES=[
   {id:'logs',name:'Logs',icon:'🪵',svg:'logs',price:1},
-  {id:'planks',name:'Planks',icon:'🟫',svg:'planks',price:4},
+  {id:'planks',name:'Planks',icon:'🟫',svg:'planks',price:3},
   {id:'chips',name:'Wood Chips',icon:'🍂',svg:'chips',price:2},
   {id:'charcoal',name:'Charcoal',icon:'⚫',svg:'charcoal',price:9},
   {id:'chairs',name:'Chairs',icon:'🪑',svg:'chairs',price:60},
@@ -70,24 +70,24 @@ const COLLECTORS=[
 ];
 const COL_SCALE=1.15;
 const BUILDINGS=[
-  {id:'sawmill',name:'Sawmill',icon:'🪚',svg:'sawmill',inp:{logs:4},out:{planks:2},cost:100,scale:1.19,desc:'Saws logs into planks.'},
+  {id:'sawmill',name:'Sawmill',icon:'🪚',svg:'sawmill',inp:{logs:4},out:{planks:3},cost:100,scale:1.19,desc:'Saws logs into planks.'},
   {id:'chipper',name:'Wood Chipper',icon:'🌀',svg:'chipper',inp:{logs:6},out:{chips:6},cost:1000,scale:1.19,desc:'Shreds logs into chips.'},
   {id:'kiln',name:'Charcoal Kiln',icon:'🔥',svg:'kiln',inp:{logs:10},out:{charcoal:3},cost:5000,scale:1.2,desc:'Slow-burns logs into charcoal.'},
-  {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',svg:'carpentry',inp:{planks:6},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
+  {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',svg:'carpentry',inp:{planks:4},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
   {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
   {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
-  {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{chairs:8,planks:20},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
+  {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{chairs:8,planks:12},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
   // v2.2 premium workshops (need the Premium Area; spd = base throughput multiplier)
   {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{charcoal:5,pellets:5},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs charcoal & pellets into grill gift boxes.'},
-  {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{planks:12,charcoal:3},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Planks + a charcoal-oil finish become artisan hardwood flooring.'},
+  {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{planks:6,charcoal:3},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Planks + a charcoal-oil finish become artisan hardwood flooring.'},
   {id:'stationer',name:'Stationery House',icon:'✒️',svg:'stationery',inp:{paper:8},out:{stationery:1},cost:1.2e7,scale:1.22,premium:true,spd:5,desc:'Binds fine paper into premium stationery.'},
-  {id:'cabinetry',name:'Cabinet Studio',icon:'🗄️',svg:'cabinets',inp:{chairs:2,planks:10},out:{cabinets:1},cost:4e7,scale:1.22,premium:true,spd:5,desc:'Turns chairs & planks into designer cabinets.'},
+  {id:'cabinetry',name:'Cabinet Studio',icon:'🗄️',svg:'cabinets',inp:{chairs:2,planks:6},out:{cabinets:1},cost:4e7,scale:1.22,premium:true,spd:5,desc:'Turns chairs & planks into designer cabinets.'},
   // v2.5 research buildings (tech: unlocked by the research tree; drawn on the R&D campus / harbour)
   {id:'lab',name:'Research Lab',icon:'🔬',svg:'lab',inp:{paper:6},out:{},rp:1,cost:3e6,scale:1.24,tech:true,spd:1,desc:'Turns paper into Research Points for the research tree.'},
-  {id:'plymill',name:'Plywood Mill',icon:'🟧',svg:'plywood',inp:{planks:10,glue:2},out:{plywood:2},cost:1.5e7,scale:1.22,tech:true,spd:4,desc:'Glues veneers of planks into strong plywood sheets.'},
+  {id:'plymill',name:'Plywood Mill',icon:'🟧',svg:'plywood',inp:{planks:6,glue:2},out:{plywood:2},cost:1.5e7,scale:1.22,tech:true,spd:4,desc:'Glues veneers of planks into strong plywood sheets.'},
   {id:'toyshop',name:'Toy Workshop',icon:'🧸',svg:'toys',inp:{plywood:2,paper:4},out:{toys:2},cost:8e7,scale:1.22,tech:true,spd:4,desc:'Cuts plywood into wooden toys, boxed in printed paper.'},
-  {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:12,planks:30,glue:4},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
-  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,planks:20},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
+  {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:12,planks:18,glue:4},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
+  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,planks:12},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
 ];
 const MAIN_BLD=BUILDINGS.filter(b=>!b.premium&&!b.tech), PREM_BLD=BUILDINGS.filter(b=>b.premium), TECH_BLD=BUILDINGS.filter(b=>b.tech);
 const BMAP={}; BUILDINGS.forEach(b=>BMAP[b.id]=b);
@@ -226,7 +226,7 @@ function freshState(keep){
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
-    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',eff:0,burn:{}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}}};   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
@@ -289,6 +289,7 @@ function migrateSave(o){
   if(!o.ship||typeof o.ship!=='object') o.ship={dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}};
   // v2.13 -> v2.14: staff system (roles, wages, candidates, training); migrate managers → founding foremen
   if(typeof o.prefs.fatigue!=='boolean') o.prefs.fatigue=true;
+  if(o.prefs.plankMode!=='fair'&&o.prefs.plankMode!=='value') o.prefs.plankMode='fair';   // v2.15.1
   if(!o.staff||typeof o.staff!=='object') o.staff={team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};
   if(!Array.isArray(o.staff.team)) o.staff.team=[]; if(!Array.isArray(o.staff.candidates)) o.staff.candidates=[];
   if(typeof o.staff.seq!=='number') o.staff.seq=0; if(typeof o.staff.unpaid!=='boolean') o.staff.unpaid=false;
@@ -342,11 +343,29 @@ function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAl
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
 function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1);}
+/* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),
+   so one Sawmill keeps up with the many plank-hungry buildings that come later. Inputs (logs) are unchanged. */
+function sawYieldAt(l){const ms=msCount(l);return Math.pow(1.6,Math.max(0,ms-2))*(1+Math.max(0,l-50)/20);}
+function sawYield(){return sawYieldAt(S.buildings.sawmill.lvl);}
+function bOutMult(id){return mgrOut(id)*(id==='sawmill'?sawYield():1);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 
 /* ===================== SIMULATION ===================== */
+/* v2.15.1 plank allocation. 'fair': every consumer gets the same share (old behaviour).
+   'value': every consumer keeps 30 % of a fair share, the rest goes to the best earner per plank first. */
+const PRI_TAKEN={};   // priority sinks (orders, daily, trade) share one budget per resource per tick
+function plankValue(b){let v=0;for(const k in b.out) v+=b.out[k]*(RMAP[k]?RMAP[k].price:0);let c=0;for(const k in b.inp) if(k!=='planks') c+=b.inp[k]*(RMAP[k]?RMAP[k].price:0);return (v-c)/b.inp.planks;}
+function plankAlloc(active,demand,dt){
+  if(!(S.prefs&&S.prefs.plankMode==='value')||!(demand.planks>S.res.planks)) return null;
+  const L=active.filter(([b])=>b.inp.planks).map(([b,sp])=>[b,b.inp.planks*sp*dt*mgrIn(b.id),plankValue(b)]).sort((x,y)=>y[2]-x[2]);
+  // everyone keeps 30 % of a fair share (so chair-making never stops and chained buildings keep moving), the rest goes by value
+  const tot=L.reduce((t,x)=>t+x[1],0),base=S.res.planks*.3/Math.max(1e-12,tot);let left=S.res.planks*.7;const out={};
+  for(const [b,need] of L){const g=Math.min(need*(1-base),left);out[b.id]=need>0?Math.min(1,base+g/need):1;left-=g;}return out;}
+function priBudget(k,share,pend){const p=(pend&&pend[k])||0,cap=.8*p;const s=Math.max(0,Math.min(share,cap-(PRI_TAKEN[k]||0)));return s;}
+function priTook(k,n){PRI_TAKEN[k]=(PRI_TAKEN[k]||0)+n;}
+
 function tick(dt,offline){
   M=computeMods();
   S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline); if(typeof staffTick==='function') staffTick(dt,offline);
@@ -363,24 +382,26 @@ function tick(dt,offline){
   }
   const frac={};
   for(const k in demand) frac[k]=demand[k]>0?Math.min(1,S.res[k]/demand[k]):1;
+  const pfr=plankAlloc(active,demand,dt);   // v2.15.1: per-building plank share (fair = proportional, value = best output per plank first)
+  for(const k in PRI_TAKEN) PRI_TAKEN[k]=0;
   const pend={};
   // v2.2 storage: each building's output stockpile has a capacity; when it's full the building pauses
   const caps=stockCaps(), want={}, pre=[];
   for(const [b,sp] of active){
     let f=1,lim=null;
-    for(const k in b.inp) if(frac[k]<f-1e-9){f=frac[k];lim=k;}
-    pre.push([b,sp,f,lim]); const mo=mgrOut(b.id); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f*mo;
+    for(const k in b.inp){const fk=k==='planks'&&pfr?pfr[b.id]:frac[k];if(fk<f-1e-9){f=fk;lim=k;}}
+    pre.push([b,sp,f,lim]); const mo=bOutMult(b.id); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f*mo;
   }
   const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
   for(const [b,sp,f0,lim] of pre){
     let f=f0,full=null;
     for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
-    const mi=mgrIn(b.id), mo=mgrOut(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
+    const mi=mgrIn(b.id), mo=bOutMult(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
     for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
     for(const k in b.out){const a=b.out[k]*sp*dt*f*mo;pend[k]=(pend[k]||0)+a;}
-    if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+b.out.planks*sp*dt*f;}
+    if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+2*sp*dt*f;}
     if(b.id==='kiln'&&M.tar){pend.glue=(pend.glue||0)+b.out.charcoal*sp*dt*f*mo*.5;}   // v2.5 pine tar glue
-    bstat[b.id]={f,lim:full?null:lim,speed:sp,full};
+    const o0=bstat[b.id];bstat[b.id]={f,lim:full?null:lim,speed:sp,full,fs:(o0&&isFinite(o0.fs)?o0.fs:1)+(f-(o0&&isFinite(o0.fs)?o0.fs:1))*Math.min(1,dt/6)};   // fs: smoothed (~6 s) for warnings
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
   if(typeof powerTick==='function') powerTick(demand,dt,fl);   // v2.10: the power plant takes its fuel before auto-sell
@@ -476,7 +497,7 @@ function pendingSeeds(){return seedsFor(S.totalEarned);}
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false};})(),
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false};})(),
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};

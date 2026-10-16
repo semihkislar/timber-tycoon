@@ -45,14 +45,16 @@ function toggleJump(on){const b=document.body;on=on===undefined?!b.classList.con
 /* ---------- needs attention ---------- */
 let attnIdx=-1, attnSig='';
 function attentionList(){
-  const out=[];
+  const out=[],short={};   // v2.15.1: shortages are grouped per input, pointing at the building that makes it
   for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st||!LOTS[b.id]) continue; if(LOTS[b.id].prem&&!S.premium.lvl) continue;
     if(st.lvl&&onFire(b.id)){out.push({id:b.id,k:'fire',p:0,t:`🔥 ${b.name} is on fire`});continue;}
     if(st.lvl&&st.on){const bs=bstat[b.id];
       if(bs.full&&bs.f<0.9){out.push({id:b.id,k:'full',p:1,t:`⛔ ${b.name}: storage full`});continue;}
-      if(bs.f<0.6){out.push({id:b.id,k:'starved',p:2,t:`⚠ ${b.name}: starved for ${RMAP[bs.lim]?RMAP[bs.lim].name:'input'}`});continue;}}
+      const fs=isFinite(bs.fs)?bs.fs:bs.f;if(bs.lim&&fs<0.6){(short[bs.lim]=short[bs.lim]||[]).push([b,fs]);continue;}}
     if(bVisible(b)&&bldUnlocked(b.id)&&S.coins+1e-9>=bulkCost(b.cost,b.scale,st.lvl,1)) out.push({id:b.id,k:'upg',p:3,t:`⬆ ${b.name}: ${st.lvl?'upgrade':'build'} affordable`});
   }
+  for(const k in short){const L=short[k],si=shortInfo(k),src=si.src;const who=L.length>2?`${L.length} buildings`:L.map(([b,f])=>`${b.name} ${Math.round(f*100)}%`).join(', ');
+    out.push({id:src||L[0][0].id,k:'starved',p:2,t:`${RMAP[k].icon} Short on ${RMAP[k].name} (${who})${src?` · upgrade the ${BMAP[src].name}`:''}`,open:()=>{const id=src&&S.buildings[src].lvl?src:L[0][0].id;openSheet('bld',id);focusLot(id,true);}});}
   // v2.10 power plant: out of fuel / low fuel / affordable build or upgrade
   if(pwLvl()&&pwState().on!==false){const s=pwStatus();if(s.k==='nofuel'||s.k==='low') out.push({id:'power',k:'power',p:2,t:s.k==='nofuel'?'⛔ Power Plant: no fuel running':'⚠ Power Plant: low on fuel',open:()=>{openSheet('power');focusLot('power',true);}});}
   if(stationVisible()&&stationLvl()<STATION_MAX&&S.coins+1e-9>=stationCost()) out.push({id:'station',k:'upg',p:3,t:`🚒 Fire Station: ${stationLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('staff');const b=document.getElementById('shBody');if(b) b.scrollTop=0;}});

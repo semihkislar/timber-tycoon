@@ -77,7 +77,7 @@ function departNow(id){const v=S.trade.fleet.find(x=>x.id===id);if(!v) return fa
 function tradeCollect(demand,dt,pend){
   if(!S.trade) return;
   for(const v of S.trade.fleet){if(v.state!=='load') continue;const k=v.good,reserve=(demand[k]/dt)*Math.max(BUFFER_SEC,dt*1.5);
-    const share=.8*((pend&&pend[k])||0);const take=Math.min(v.cap-v.got,S.res[k],Math.max(S.res[k]-reserve,share));if(take>1e-9){S.res[k]-=take;v.got+=take;}}
+    const share=.8*((pend&&pend[k])||0);const take=Math.min(v.cap-v.got,S.res[k],Math.max(S.res[k]-reserve,priBudget(k,share,pend)));if(take>1e-9){S.res[k]-=take;v.got+=take;priTook(k,Math.max(0,take-Math.max(0,S.res[k]+take-reserve)));}}
 }
 function tradeTick(dt,offline){
   const T=S.trade; if(!T) return;
