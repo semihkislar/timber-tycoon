@@ -1,7 +1,7 @@
 # v2.14: staff system — roles, wages, candidates, training, assignment, founding foremen migration,
 # Replant keeps staff, Fire Safety still first, mobile Staff sheet, release snapshot.
 from playwright.sync_api import sync_playwright
-import sys,os,json
+import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
 FAILS=[]
@@ -22,7 +22,8 @@ with sync_playwright() as p:
     ctx.add_init_script('if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'); pg=ctx.new_page(); watch(pg)
     pg.goto(URL); pg.wait_for_timeout(1200)
     ok(ver(E(pg,'TT.VERSION'))>=(2,14),f"VERSION>=2.14 ({E(pg,'TT.VERSION')})")
-    ok('timber-tycoon-v2.14' in E(pg,'fetch("sw.js").then(r=>r.text())'),'sw.js cache bumped to v2.14')
+    _m=re.search(r"timber-tycoon-v([\d.]+)'",E(pg,'fetch("sw.js").then(r=>r.text())'))   # v2.15: >= so later releases keep passing
+    ok(_m and ver(_m.group(1))>=(2, 14),f'sw.js cache bumped to >= v2.14 ({_m and _m.group(1)})')
     st=E(pg,'TT.S.staff')
     ok(st and isinstance(st.get('team'),list) and isinstance(st.get('candidates'),list),f'fresh state has staff structure ({st and list(st.keys())})')
     ok(E(pg,'TT.S.prefs.fatigue') is True,'prefs.fatigue defaults true')

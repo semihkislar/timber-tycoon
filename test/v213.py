@@ -2,7 +2,7 @@
 # forklift fleet/speed, gantry crane, departures, export contracts tied to the trade map), manager cost rebalance +
 # cost-vs-benefit line, v2.12 save migration, Replant keeps the yard, mobile touch (dock tap, More, Accept), snapshot.
 from playwright.sync_api import sync_playwright
-import sys,os,json
+import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
 FAILS=[]
@@ -22,7 +22,8 @@ with sync_playwright() as p:
     ctx.add_init_script('if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'); pg=ctx.new_page(); watch(pg)
     pg.goto(URL); pg.wait_for_timeout(1200)
     ok(ver(E(pg,'TT.VERSION'))>=(2,13),f"VERSION>=2.13 ({E(pg,'TT.VERSION')})")
-    ok('timber-tycoon-v2.13' in E(pg,'fetch("sw.js").then(r=>r.text())'),'sw.js cache bumped to v2.13')
+    _m=re.search(r"timber-tycoon-v([\d.]+)'",E(pg,'fetch("sw.js").then(r=>r.text())'))   # v2.15: >= so later releases keep passing
+    ok(_m and ver(_m.group(1))>=(2, 13),f'sw.js cache bumped to >= v2.13 ({_m and _m.group(1)})')
     sh=E(pg,'TT.S.ship'); ok(sh['dock']==1 and sh['fork']==2 and sh['crane']==0,f'fresh state has a Lv 1 dock with 2 forklifts ({sh})')
     # migration: a v2.12 save without ship
     old=E(pg,'JSON.parse(JSON.stringify(TT.S))'); old['version']='2.12'; old.pop('ship',None); old['buildings']['sawmill']['lvl']=9

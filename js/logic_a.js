@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.14';
+const VERSION='2.15';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -292,6 +292,9 @@ function migrateSave(o){
   if(!o.staff||typeof o.staff!=='object') o.staff={team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};
   if(!Array.isArray(o.staff.team)) o.staff.team=[]; if(!Array.isArray(o.staff.candidates)) o.staff.candidates=[];
   if(typeof o.staff.seq!=='number') o.staff.seq=0; if(typeof o.staff.unpaid!=='boolean') o.staff.unpaid=false;
+  // v2.14 -> v2.15: campfire breaks (w.brk); energy must be a number (0 used to read as 100)
+  for(const w of o.staff.team){if(!w||typeof w!=='object') continue;if(typeof w.brk!=='boolean') w.brk=false;if(typeof w.energy!=='number'||!isFinite(w.energy)) w.energy=100;}
+  o.staff.team=o.staff.team.filter(w=>w&&typeof w==='object');
   if(typeof staffMigrateFromMgr==='function') staffMigrateFromMgr(o);
   else {
     // deferred: staffsys may not be parsed yet during early calls; main init also migrates

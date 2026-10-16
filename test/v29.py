@@ -278,7 +278,9 @@ with sync_playwright() as p:
     pg=ctx.new_page(); watch(pg,'mig'); pg.goto(URL); pg.wait_for_timeout(1200)
     S=E(pg,'TT.S')
     ok(ver(S['version'])>=(2,9) and 'prefs' not in old,'v2.8 save migrated to 2.9')
-    ok(S['prefs']=={'autoFocus':True,'haptics':True},f"prefs added with defaults ({S['prefs']})")
+    _want={'autoFocus':True,'haptics':True}
+    if ver(S['version'])>=(2,14): _want['fatigue']=True   # v2.14 added the staff-fatigue pref
+    ok(S['prefs']==_want,f"prefs added with defaults ({S['prefs']})")
     ok(S['collectors']['lumberjack']==old['collectors']['lumberjack'] and S['planters']['team']==old['planters']['team'] and S['buildings']['sawmill']['lvl']==old['buildings']['sawmill']['lvl'] and S['buildings']['chipper']['lvl']==5,'crew, planters and buildings kept')
     ok(abs(S['coins']-old['coins'])/old['coins']<0.05,'coins kept')
     E(pg,'TT.prefs().autoFocus=false;TT.S.totalEarned=1e9;TT.doPrestige()'); ok(E(pg,'TT.S.prefs.autoFocus')==False,'prefs survive a replant')

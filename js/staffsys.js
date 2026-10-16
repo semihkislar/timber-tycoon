@@ -61,6 +61,12 @@ const STAFF_ENERGY_DRAIN=.08; // /s while working
 const STAFF_ENERGY_REFILL=.22;// /s when resting / campfire
 const STAFF_FATIGUE_THR=30;   // below this: 80% work
 const STAFF_FATIGUE_MULT=.8;
+/* v2.15: real campfire breaks. Below STAFF_BREAK_AT energy a worker walks to the campfire and rests (no output) until fully
+   rested, then goes back to work at 100%. (v2.14 kept tired workers hovering around 15% at 80% output forever.) */
+const STAFF_BREAK_AT=15;
+const STAFF_BREAK_REFILL=1.2;  // energy/s at the campfire (Local hero on the team: +10%)
+function staffBreakRate(){const t=staffState().team;return STAFF_BREAK_REFILL*(t.some(w=>(w.traits||[]).includes('localhero'))?1.1:1);}
+function staffOnBreak(w){return !!(w&&w.brk)&&!(S.prefs&&S.prefs.fatigue===false)&&!(w.traits||[]).includes('steady');}
 
 function staffState(){
   if(!S.staff||typeof S.staff!=='object') S.staff={team:[],candidates:[],nextRefresh:0,nextReroll:0,seq:0,unpaid:false};
@@ -107,10 +113,11 @@ function staffTrainTime(w){return 25+12*Math.max(1,w.skill);}   // seconds; Fast
 
 function staffEff(w){
   if(!w) return 0;
+  if(staffOnBreak(w)) return 0;   // v2.15: resting at the campfire
   let e=1;
   if(staffState().unpaid&&!w.founding) e*=.5;
   const fatigueOn=!(S.prefs&&S.prefs.fatigue===false);
-  if(fatigueOn&&!(w.traits||[]).includes('steady')&&(w.energy||100)<STAFF_FATIGUE_THR) e*=STAFF_FATIGUE_MULT;
+  if(fatigueOn&&!(w.traits||[]).includes('steady')&&(typeof w.energy==='number'?w.energy:100)<STAFF_FATIGUE_THR) e*=STAFF_FATIGUE_MULT;
   if((w.traits||[]).includes('nightowl')&&typeof isNight==='function'&&isNight()) e*=1.2;
   return e;
 }
@@ -233,7 +240,7 @@ function staffHireCandidate(cid){
   S.coins-=cost;
   st.candidates.splice(i,1);
   const w={id:'w'+(++st.seq),name:c.name,role:c.role,skill:c.skill,rarity:c.rarity,traits:(c.traits||[]).slice(),
-    assign:null,energy:100,founding:false,train:null,look:c.look};
+    assign:null,energy:100,brk:false,founding:false,train:null,look:c.look};
   // auto-assign area roles; mill/engineer wait for assignment
   if(STAFF_ROLES[w.role]&&STAFF_ROLES[w.role].auto) w.assign=STAFF_ROLES[w.role].area;
   st.team.push(w);
@@ -323,13 +330,15 @@ function staffTick(dt,offline){
         staffSig=''; M=computeMods();
       }
     }
-    if(!fatigueOn||(w.traits||[]).includes('steady')){w.energy=100; continue;}
-    // working → drain; otherwise campfire refill
+    if(!fatigueOn||(w.traits||[]).includes('steady')){w.energy=100; w.brk=false; continue;}
+    let en=typeof w.energy==='number'&&isFinite(w.energy)?w.energy:100;
+    // v2.15: on a campfire break → refill fast, back to work once fully rested
+    if(w.brk){en=Math.min(100,en+STAFF_BREAK_REFILL*(hero?1.1:1)*dt); if(en>=100){w.brk=false; staffSig='';} w.energy=en; continue;}
+    // working → drain; idle (unassigned) → slow refill
     const working=w.founding||w.assign||STAFF_ROLES[w.role]&&STAFF_ROLES[w.role].auto;
-    if(working&&(w.energy||100)>0) w.energy=Math.max(0,(w.energy||100)-STAFF_ENERGY_DRAIN*dt*100/100);
-    else w.energy=Math.min(100,(w.energy||100)+refill*dt);
-    // auto campfire break when very low: pause drain by boosting refill next ticks (energy still low until refilled)
-    if((w.energy||0)<15) w.energy=Math.min(100,(w.energy||0)+refill*1.5*dt);
+    if(working){en=Math.max(0,en-STAFF_ENERGY_DRAIN*dt); if(en<STAFF_BREAK_AT){w.brk=true; staffSig='';}}
+    else en=Math.min(100,en+refill*dt);
+    w.energy=en;
   }
 }
 
