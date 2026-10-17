@@ -35,10 +35,12 @@
 <div id="wxPop" class="hidden"></div>
 <div id="fabs">
   <button class="fab attn" id="attnBtn" title="Next building needing attention"><span class="fi">⚠️</span><b id="attnN">0</b></button>
+  <button class="fab" id="flowBtn" title="Supply flow view (F): see what goes where and what is short" aria-pressed="false"><span class="fi">🔀</span></button>
   <button class="fab" id="jumpBtn" title="Jump to a location" aria-expanded="false"><span class="fi">📍</span></button>
 </div>
 <div id="jumpBar" class="hscroll" aria-hidden="true"></div>
 <div id="attnTip" class="hidden"></div>
+<div id="flowLegend" class="hidden"></div>
 <nav id="bottombar">
   <button class="bb" data-s="crew" id="bbCrew"><span class="dot hidden" id="crewDot"></span><span class="bi"></span><span class="l">Crew</span></button>
   <button class="bb" data-s="market" id="bbMarket"><span class="bi"></span><span class="l">Market</span></button>
@@ -154,6 +156,7 @@
 <script src="js/power.js"></script>
 <script src="js/builders.js"></script>
 <script src="js/shipping.js"></script>
+<script src="js/flow.js"></script>
 <script src="js/scene1.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/chimney.js"></script>

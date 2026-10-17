@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#7a4e2a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Timber Tycoon">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<title>Timber Tycoon — Idle Lumber Empire</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="scene" aria-label="Your lumber factory"></canvas>
+<div id="vignette"></div>
+<header id="topbar">
+  <div class="brand"><span class="ic" id="logoIcon"></span><span class="bt">Timber <b>Tycoon</b></span><span class="version-badge" id="verBadge">v2.1</span></div>
+  <div class="chips" id="hudChips" title="Tap for more stats">
+    <div class="hc coin" title="Coins"><span class="ic" id="kCoins"></span><span class="v" id="hCoins">0</span></div>
+    <div class="hc inc" title="Income per second"><span class="v" id="hIncome">0/s</span></div>
+    <div class="hc" title="Logs per second"><span class="ic" id="kLogs"></span><span class="v" id="hLogs">0/s</span></div>
+    <div class="hc seeds" title="Seeds (prestige)"><span class="ic" id="kSeeds"></span><span class="v" id="hSeeds">0</span></div>
+  </div>
+  <button class="tb-btn" id="hudX" title="More stats" aria-expanded="false">▾</button>
+  <button class="tb-btn" id="muteBtn" title="Toggle sound">🔇</button>
+</header>
+<div id="subbar"><div class="scene-label" id="sceneLabel">🌲 Pine Forest</div>
+  <button class="fchip ok" id="forestChip" title="Grown trees (tap for Crew & Forest)"><span class="fi">🌲</span><span class="fbar"><i id="fBarI"></i></span><b id="fPct">1.2K</b></button>
+  <div id="wxChip" class="wx" title="Season, weather and time of day (tap for details)"><span class="wx-dial" id="wxDial"><i id="wxSun"></i></span><span class="wx-s" id="wxS">🌸</span><span class="wx-t"><b id="wxT1">Spring · Day 1</b><small id="wxT2">⛅ Fair</small></span><span class="wx-clk" id="wxClk">07:10</span></div>
+  <div id="events"></div></div>
+<div id="wxPop" class="hidden"></div>
+<div id="fabs">
+  <button class="fab attn" id="attnBtn" title="Next building needing attention"><span class="fi">⚠️</span><b id="attnN">0</b></button>
+  <button class="fab" id="flowBtn" title="Supply flow view (F): see what goes where and what is short" aria-pressed="false"><span class="fi">🔀</span></button>
+  <button class="fab" id="jumpBtn" title="Jump to a location" aria-expanded="false"><span class="fi">📍</span></button>
+</div>
+<div id="jumpBar" class="hscroll" aria-hidden="true"></div>
+<div id="attnTip" class="hidden"></div>
+<div id="flowLegend" class="hidden"></div>
+<nav id="bottombar">
+  <button class="bb" data-s="crew" id="bbCrew"><span class="dot hidden" id="crewDot"></span><span class="bi"></span><span class="l">Crew</span></button>
+  <button class="bb" data-s="market" id="bbMarket"><span class="bi"></span><span class="l">Market</span></button>
+  <button class="bb" data-s="ord" id="bbOrd"><span class="dot hidden" id="ordDot"></span><span class="bi"></span><span class="l">Orders</span></button>
+  <button class="bb ovf" data-s="ship" id="bbShip"><span class="dot hidden" id="shipDot"></span><span class="bi"></span><span class="l">Shipping</span></button>
+  <button class="bb ovf" data-s="staff" id="bbStaff"><span class="dot hidden" id="staffDot"></span><span class="bi"></span><span class="l">Staff</span></button>
+  <button class="bb ovf hidden" data-s="rnd" id="bbRnd"><span class="dot hidden" id="rndDot"></span><span class="bi"></span><span class="l">R&amp;D</span></button>
+  <button class="bb ovf hidden" data-s="power" id="bbPower"><span class="dot hidden" id="powerDot"></span><span class="bi"></span><span class="l">Power</span></button>
+  <button class="bb ovf hidden" data-s="build" id="bbBuild"><span class="dot hidden" id="buildDot"></span><span class="bi"></span><span class="l">Builders</span></button>
+  <button class="bb" data-s="upg" id="bbUpg"><span class="dot hidden" id="upgDot"></span><span class="bi"></span><span class="l">Upgrades</span></button>
+  <button class="bb ovf" data-s="ach" id="bbAch"><span class="dot hidden" id="achDot"></span><span class="bi"></span><span class="l">Trophies</span></button>
+  <button class="bb ovf" data-s="co" id="bbCo"><span class="dot hidden" id="coDot"></span><span class="bi"></span><span class="l">Replant</span></button>
+  <button class="bb ovf" data-s="set" id="bbSet"><span class="bi"></span><span class="l">Settings</span></button>
+  <button class="bb more-btn" data-s="more" id="bbMore"><span class="dot hidden" id="moreDot"></span><span class="bi"></span><span class="l">More</span></button>
+</nav>
+<section id="sheet" aria-hidden="true">
+  <div class="sh-head" id="shHead"><span class="sh-grab" aria-hidden="true"></span><h3><span class="sh-ic" id="shIc"></span><span id="shTitle">Building</span></h3><button class="sh-sz" id="shSize" title="Expand / collapse">⤢</button><button class="sh-x" id="shClose" title="Close">✕</button></div>
+  <div class="sh-body" id="shBody">
+    <div class="pane" id="pane-bld">
+      <div class="bp-top"><div class="bp-ic" id="bpIc"></div><div class="bp-meta"><div class="bp-name"><span id="bpName"></span><span class="lv" id="bpLv"></span></div><div class="bp-desc" id="bpDesc"></div></div>
+        <div class="bp-nav"><button id="bpPrev" title="Previous building">‹</button><button id="bpNext" title="Next building">›</button></div></div>
+      <div id="bpLocked" class="lockmsg hidden"></div>
+      <div id="bpMain">
+        <div class="ms" id="bpMs" title="Milestones: each one doubles this building's speed and hires a yard worker"><span class="stars" id="bpStars"></span><span class="mbar"><i id="bpMbar"></i></span><span class="mtx" id="bpMtx"></span></div>
+        <div class="bstatus" id="bpStatus"><div class="bar" id="bpBar"><i id="bpBi"></i></div><span class="chip" id="bpChip"></span></div>
+        <div class="io" id="bpIo"></div>
+        <div class="brow"><span class="seg mult"><button data-m="1" class="on">×1</button><button data-m="10">×10</button><button data-m="max">Max</button></span>
+          <label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
+        <div class="buyrow"><button class="btn buy big hold" id="bpBuy"></button><button class="btn gold bmax" id="bpMax" title="Buy as many levels as you can afford">Max</button></div>
+        <div class="pbar"><i id="bpPbar"></i></div>
+        <div class="fire-note hidden" id="bpFire"></div>
+        <div class="bby hidden" id="bpBy"></div>
+        <div class="bmgr hidden" id="bpMgr"></div>
+        <div class="stor hidden" id="bpStor">
+          <div class="stor-h"><b>📦 Stock area</b><span class="lv" id="bpStLv"></span><span class="chip" id="bpStChip"></span>
+            <label class="sw" title="Turn auto-sell off for this building's output to stockpile it (for orders)"><input type="checkbox" id="bpStKeep"><span class="tr"></span><span id="bpStKeepL">Keep stock</span></label></div>
+          <div class="bar" id="bpStBar"><i id="bpStBi"></i></div>
+          <div class="legend" id="bpStTx"></div>
+          <button class="btn wood" id="bpStBuy" style="width:100%;margin-top:6px"></button>
+        </div>
+      </div>
+    </div>
+    <div class="pane" id="pane-crew">
+      <div class="forest-card ok" id="forestCard"></div>
+      <h4>Wood collectors <span class="seg mult"><button data-m="1" class="on">×1</button><button data-m="10">×10</button><button data-m="max">Max</button></span></h4>
+      <div class="list" id="colList"></div>
+      <h4>Planting crew</h4>
+      <div class="legend" style="margin:0 0 6px">Loggers can only fell <b>grown</b> trees. Planters put saplings on stumps; saplings grow into young and then grown trees (fastest in spring, slowest in winter). Every planter also tends new forest land.</div>
+      <div class="list" id="plList"></div>
+      <h4>Wood type</h4>
+      <div class="legend" style="margin:0 0 6px">Harvesting rarer wood multiplies the sale price of <b>everything</b> you sell.</div>
+      <div class="list" id="treeList"></div>
+    </div>
+    <div class="pane" id="pane-market">
+      <table class="mkt"><thead><tr><th>Item</th><th>Stock</th><th class="hm">Made/s</th><th class="hm">Used/s</th><th>Price</th><th>Auto</th><th></th></tr></thead><tbody id="mktBody"></tbody></table>
+      <div class="legend">Trucks at the shipping dock haul your goods away. Auto-sell sells surplus only and always keeps a ~2s buffer for downstream buildings.</div>
+    </div>
+    <div class="pane" id="pane-ord"><div id="ordBody"></div></div>
+    <div class="pane" id="pane-prem"><div id="premBody"></div></div>
+    <div class="pane" id="pane-staff"><div id="staffBody"></div></div>
+    <div class="pane" id="pane-power"><div id="powerBody"></div></div>
+    <div class="pane" id="pane-build"><div id="buildBody"></div></div>
+    <div class="pane" id="pane-ship"><div id="shipBody"></div></div>
+    <div class="pane" id="pane-rnd">
+      <div class="seg" id="rndTabs" style="margin-bottom:8px"><button data-t="res" class="on">🔬 Research</button><button data-t="trade">🌍 Trade</button></div>
+      <div id="rndRes"></div>
+      <div id="rndTrade" class="hidden"><canvas id="tradeMap" style="width:100%;border-radius:12px;display:block;margin-bottom:8px;background:#7eb8e0"></canvas><div id="tradeBody"></div></div>
+    </div>
+    <div class="pane" id="pane-upg"><div class="list" id="upgList"></div><div class="legend" id="upgOwned"></div></div>
+    <div class="pane" id="pane-ach">
+      <div class="trophy-head"><span id="achHeadMedal"></span><div style="flex:1"><div class="big" id="achCount">0 / 0</div><div class="legend" style="margin-top:3px" id="achBonus">Each trophy: +2% to all production, forever.</div><div class="pbar"><i id="achBar"></i></div></div></div>
+      <div class="ach-grid" id="achGrid"></div>
+      <div class="legend" style="margin-top:8px">✨ Watch the forest for <b>Golden Logs</b>: tap one before it vanishes for a lucky bonus. Trophies survive replanting.</div>
+    </div>
+    <div class="pane" id="pane-co">
+      <div class="prestige-box">
+        <div style="font-weight:900;font-size:16px">🌱 Replant the Forest</div>
+        <div class="legend" style="margin:4px 0 8px">Sell the company and replant everything. You keep <b>Seeds</b>: each gives <b>+10%</b> to all collectors, chopping and building speed, forever.</div>
+        <div>You would gain</div>
+        <div class="big" id="pGain">0</div>
+        <div class="legend" id="pNext"></div>
+        <button class="btn gold" id="prestigeBtn" style="margin-top:8px">🌱 Replant the Forest</button>
+      </div>
+      <h4>📊 Company stats</h4>
+      <div class="kv" id="statsKv"></div>
+    </div>
+    <div class="pane" id="pane-more"><div class="more-grid" id="moreGrid"></div></div>
+    <div class="pane" id="pane-set">
+      <div class="setrow"><span>Sound effects<small>Chops, coins and unlock chimes</small></span><label class="sw"><input type="checkbox" id="sndToggle"><span class="tr"></span></label></div>
+      <div class="setrow"><span>Camera<small>Drag to pan (it glides), pinch or scroll to zoom, double-tap open ground to zoom in/out</small></span><button class="btn wood small" id="fitBtn">⤢ Fit factory</button></div>
+      <div class="setrow"><span>Auto-focus on events<small>Fly the camera to fires, new orders and golden logs</small></span><label class="sw"><input type="checkbox" id="afToggle"><span class="tr"></span></label></div>
+      <div class="setrow"><span>Haptic feedback<small>Short vibrations on taps and buys (where supported)</small></span><label class="sw"><input type="checkbox" id="hapToggle"><span class="tr"></span></label></div>
+      <div class="setrow"><span>Staff fatigue<small>Energy drains while working; below 30% staff work at 80%. Steady trait ignores this.</small></span><label class="sw"><input type="checkbox" id="fatToggle"><span class="tr"></span></label></div>
+      <div class="setrow"><span>Save game<small>Autosaves every 10s; progress continues offline (up to 8h)</small></span><button class="btn wood small" id="saveBtn">💾 Save</button></div>
+      <div class="setrow"><span>Reset<small>Wipe everything, including Seeds and trophies</small></span><button class="btn red small" id="resetBtn">⟲ Reset</button></div>
+      <div class="legend" style="text-align:center">Timber Tycoon <span id="footerVer">v2.1</span></div>
+    </div>
+  </div>
+</section>
+<div id="orderCard" class="hidden"></div>
+<div id="toasts"></div>
+<div id="modalRoot"></div>
+<div id="fxLayer"></div>
+<script src="js/logic_a.js"></script>
+<script src="js/logic_b.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/premium.js"></script>
+<script src="js/world.js"></script>
+<script src="js/staff.js"></script>
+<script src="js/staffsys.js"></script>
+<script src="js/research.js"></script>
+<script src="js/forest.js"></script>
+<script src="js/power.js"></script>
+<script src="js/builders.js"></script>
+<script src="js/shipping.js"></script>
+<script src="js/flow.js"></script>
+<script src="js/scene1.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/chimney.js"></script>
+<script src="js/forestveh.js"></script>
+<script src="js/facade.js"></script>
+<script src="js/input.js"></script>
+<script src="js/scene2.js"></script>
+<script src="js/scene3.js"></script>
+<script src="js/scene4.js"></script>
+<script src="js/scene5.js"></script>
+<script src="js/scene6.js"></script>
+<script src="js/scene7.js"></script>
+<script src="js/scene8.js"></script>
+<script src="js/scene9.js"></script>
+<script src="js/scene10.js"></script>
+<script src="js/scene11.js"></script>
+<script src="js/scene12.js"></script>
+<script src="js/scene13.js"></script>
+<script src="js/staffworld.js"></script>
+<script src="js/mobile.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
