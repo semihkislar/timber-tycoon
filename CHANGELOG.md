@@ -5,6 +5,25 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.16] — 2026-10-17
+
+**Supply flow view**: an isometric overlay that shows the whole production chain at a glance.
+
+### New: Supply flow (`js/flow.js`)
+- Tap the new **🔀** button (or press **F**) to turn it on.
+- Animated arcs rise over the roofs from each producer (or the Log Yard for logs) to every building that uses its goods. Up to 6 more arcs run from the factory to the Shipping dock for the goods that earn the most when sold.
+- Arc width follows the flow rate, and moving dashes and arrowheads show the direction. Each arc has a rate label such as "🟫 255/s"; labels never overlap.
+- Colours show health from the smoothed v2.15.1 shortage value: resource colour = fed, amber = low, red = short, green = sold.
+- A legend at the top counts the short links. Buildings stay tappable with the view on.
+- Mobile-friendly: 52 px button and the legend fits phone screens.
+
+### Compatibility
+- Purely visual: the save format is unchanged (the on/off choice lives in localStorage `tt_flow`). v2.15.1 saves load as before.
+- The Replant cost reset is unchanged.
+
+### Tests
+- New `test/v216.py`: toggle (button and F key), legend, edges (Log Yard → Sawmill, Sawmill → Carpentry, sold → dock), red link when starved, pixels change, persistence, save untouched, tapping, Replant, overlay draw cost, v2.15.1 save migration, iPhone 13 and Pixel 7, snapshot.
+
 ## [2.15.1] — 2026-10-16
 
 **Plank balance fix**: the Sawmill now keeps up, and shortage warnings are calmer and say what to do.

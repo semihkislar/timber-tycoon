@@ -14,6 +14,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
 - `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
 - `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
+- `js/flow.js` (v2.16): Supply flow view (isometric producer → consumer arcs with rates and health colours, 🔀 button / F key)
 - `js/shipping.js` (v2.13): Shipping Yard (loading bays, departures, export contracts, dock/forklift/crane upgrades, sheet UI)
 - `js/forestveh.js` (v2.13): cached forest machines (harvester, forwarder, skidder) with lights
 - `js/staffsys.js` (v2.14): staff system — roles, wages, rotating candidates, training, assignment, light fatigue; managers migrate to founding foremen
