@@ -60,7 +60,7 @@ function loop(){
   if(document.hidden) return;   // v2.8: no tick/DOM work while hidden; the elapsed time is caught up (offline sim) on return
   const now=Date.now(); let dt=(now-lastNow)/1000; lastNow=now;
   if(dt>15){
-    const r=simulateOffline(Math.min(dt,OFFLINE_CAP)); if(r.coins>0) toast(`⏱️ Caught up ${fmtTime(dt)}: +🪙${fmt(r.coins)}`);
+    const r=simulateOffline(Math.min(dt,offCap())); if(r.coins>0) toast(`⏱️ Caught up ${fmtTime(dt)}: +🪙${fmt(r.coins)}`);
   } else if(dt>0){ while(dt>0){const d=Math.min(dt,0.25);tick(d,false);dt-=d;} }
   chopRateEma*=0.9; chopRateDisplay+=(chopRateEma-chopRateDisplay)*0.2;
   if(now-lastAchAt>1000){lastAchAt=now;checkAch();}
@@ -68,11 +68,11 @@ function loop(){
   if(now-lastSaveAt>30000){lastSaveAt=now;save(true);}
 }
 function welcomeBack(elapsed,r){
-  const capped=elapsed>OFFLINE_CAP;
+  const capped=elapsed>offCap();
   const lines=RES.filter(x=>r.p[x.id]>0.5).map(x=>`<div>${x.icon} ${x.name} produced</div><div>${fmt(r.p[x.id])}</div>`).join('');
   const bl=r.built>0?`<br>🏗️ Your builders added <b>${fmt(r.built)}</b> building level${r.built>1?'s':''}.`:'';
   const pl=r.planted>0.5?`<br>🌱 Your planters put <b>${fmt(r.planted)}</b> saplings in the ground; the forest now stands at <b>${Math.round((1-S.forest.st/forestPlots())*100)}%</b> covered.`:'';
-  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at 8h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}${bl}
+  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at ${Math.round(offCap()/3600)}h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}${bl}
     ${lines?`<div class="gainlist">${lines}</div>`:''}`,[{label:'Back to work!',cls:'gold'}]);
 }
 function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yardSigV='';scene._fsig='';scene.lastEarned=S.totalEarned;}
@@ -86,7 +86,7 @@ function init(){
   initScene();
   if(loaded){
     const elapsed=(Date.now()-S.lastSave)/1000;
-    if(elapsed>10){const sec=Math.min(elapsed,OFFLINE_CAP);const r=simulateOffline(sec);welcomeBack(elapsed,r);}
+    if(elapsed>10){const sec=Math.min(elapsed,offCap());const r=simulateOffline(sec);welcomeBack(elapsed,r);}
     tick(0.1,false);
     checkAch(true);
   }

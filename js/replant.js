@@ -99,7 +99,7 @@ function rpKeep(g){return {legacy:(S.legacy||0)+g,shop:Object.assign({},S.shop||
 function rpMigrate(o){
   if(typeof o.legacy==='number') return;
   const seeds=Math.max(0,o.seeds||0);let spent=0;
-  try{for(const n of RNODES) if(o.research&&o.research[n.id]) spent+=n.seeds||0;}catch(_){}
+  try{for(const k in OLD_RES_SEEDS) if(o.research&&o.research[k]) spent+=OLD_RES_SEEDS[k];}catch(_){}
   try{for(const m of MANAGERS){const l=(o.mgr&&o.mgr[m.id])||0;for(let k=6;k<l;k++) spent+=k-5;}}catch(_){}
   o.legacy=seeds+spent;   // every Seed ever earned counts towards the Legacy
   o.shop=o.shop||{};

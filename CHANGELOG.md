@@ -5,6 +5,29 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.19] — 2026-10-19
+
+**Research 2.0**: the research tree no longer finishes in your second run. It is now a long, permanent track that grows with your Forest Legacy. Design + audit: `docs/research-v2.19.md`.
+
+### New: a deep tree (`js/research.js`)
+- **67 nodes in 5 branches** (🔬 Science · 🌲 Forestry · 🪚 Milling · 🪑 Craft · ⚓ Logistics) and **5 tiers**.
+- **Tiers open with Forest Legacy**: II at 25, III at 150, IV at 800, V at 2500 plus a line at Lv 200. Some nodes also need a milestone (Drone Fleet, Sawmill Lv 100, harbour Lv 3, Premium Area, …).
+- **Costs grow**: base × tier factor × (+6% for every node already researched).
+- **♾️ Repeatable nodes** in every branch (Applied Research, Forest Yield, Throughput, Craftsmanship, Market Reach): cost ×1.6 per level, effect +5% × level^0.7.
+- New effects: offline cap +2 h / +4 h, Power Plant boost +25% / +50%, client orders & daily contracts pay +20% / +30%, trade speed, collector and mill boosts, premium prices.
+- **No Seeds in research** any more; Seeds belong to the Seed Shop.
+- The lab costs 500K (was 3M) so research starts in your first run. RP grows only ~Legacy^0.3, so Replanting can't rush the tree.
+- Research and unspent RP are still kept through Replant.
+
+### UI (mobile first)
+- R&D → Research: lab card, overall progress with the next tier gate, 5 branch chips (ready dot), tier sections with lock reasons, 44 px node rows; tap a row to open it inline with the Research button.
+
+### Saves
+- Researched nodes stay researched. The Seeds you once paid for Automation (5) and Masterworks (10) are refunded to your Seed Shop wallet.
+
+### Tests
+- New `test/v219.py` (+ `test/sim_v219_hook.js`): tree shape, gates, cost growth, repeatables, effects and hooks, Replant keeps research, v2.18 / v2.17 migration, a 12-run pacing sim (≤ 35% after 5 runs), iPhone 13 / Pixel 7, snapshot. `test/v25.py` / `test/v27.py` updated for the new tree.
+
 ## [2.18] — 2026-10-18
 
 **Replant 2.0**: the prestige module is rebuilt. Replanting no longer turns the next run into hundreds of free levels; every run starts fast and still matters. Design + audit: `docs/replant-v2.18.md`.

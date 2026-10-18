@@ -693,3 +693,24 @@ body.flow-on #flowBtn{background:linear-gradient(180deg,#ffe68a,#f2b83a)}
 .rp-cf{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .rp-cf-col{padding:8px 10px;border-radius:12px;font-size:12.5px}.rp-cf-col ul{margin:4px 0 0;padding-left:16px}.rp-cf-col li{margin:2px 0}
 .rp-cf-col.reset{background:#fbe9e2;border:1.5px solid #e9b8a6}.rp-cf-col.keep{background:#e8f4dc;border:1.5px solid #b9d79a}
+/* v2.19 Research 2.0: branch chips + tier lists (mobile first) */
+.res-prog{display:flex;align-items:center;gap:8px;margin:2px 0 8px;font-size:12px;color:var(--ink2)}
+.res-prog .pbar{flex:0 0 34%}
+.rbranch{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px}
+.rb{position:relative;min-height:52px;border-radius:12px;border:1.5px solid var(--line);background:#fffaf0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 2px;cursor:pointer;font:inherit;color:var(--ink)}
+.rb.on{border-color:var(--bc);background:color-mix(in srgb,var(--bc) 14%,#fffaf0);box-shadow:0 0 0 1.5px var(--bc) inset}
+.rb-i{font-size:17px;line-height:1}.rb-n{font-size:10.5px;font-weight:900}.rb-c{font-size:10px;font-weight:800;color:var(--ink2)}
+.rb-dot{position:absolute;top:4px;right:5px;width:8px;height:8px;border-radius:50%;background:#e8a020;box-shadow:0 0 0 2px #fff}
+.rlist{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.rt-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin:6px 2px 0;color:var(--ink)}
+.rt-h span{font-size:11px;font-weight:800;color:#3d8a4a}.rt-h.lock span{color:#a0703a}
+.rlist .rn{position:relative;width:auto;height:auto;min-height:46px;grid-template-columns:28px 1fr auto;grid-template-rows:1fr;padding:6px 10px 6px 6px;column-gap:8px;font:inherit;color:var(--ink);text-align:left}
+.rlist .rn .ri{font-size:19px;grid-row:1}
+.rlist .rn .rt{font-size:13px;line-height:1.2}
+.rlist .rn .rt em{font-style:normal;font-size:11px;color:#3f7fb8}
+.rlist .rn .rc{font-size:12px}
+.rlist .rn.rep{border-style:dashed}
+.rlist .res-detail{flex-wrap:wrap;margin:-2px 0 2px 14px}
+.rlist .res-detail .rd-top{display:flex;gap:10px;flex:1 1 220px;align-items:flex-start}
+.rlist .res-detail .btn{min-height:44px;flex:1 1 160px}
+.rd-tier{font-size:10.5px;font-weight:800;color:var(--ink2)}

@@ -93,7 +93,7 @@ with sync_playwright() as p:
     ok(E(pg,'TT.plRate("planter")')>=r0*1.99,'spades double planter rate')
     ok(E(pg,'TT.growMult()')>=g0*2.2,'fertilizer + irrigation speed growth')
     ok(E(pg,'TT.fellDemand()')<d0*.7,'better saplings: each tree yields more logs')
-    node=E(pg,'TT.RNODES.find(n=>n.id==="genetics")'); ok(node is not None and node['req']==['labx'],'research node: Tree Genetics')
+    node=E(pg,'TT.RNODES.find(n=>n.id==="genetics")'); ok(node is not None and node['req']==['felling'],'research node: Tree Genetics')
     E(pg,'TT.S.research=TT.S.research||{};TT.S.research.genetics=1'); ok(E(pg,'(TT.logRate(),TT.growMult())')>E(pg,'(delete TT.S.research.genetics,TT.logRate(),TT.growMult())')*1.2,'Tree Genetics speeds growth')
     ctx.close()
 

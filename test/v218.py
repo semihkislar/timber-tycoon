@@ -67,11 +67,11 @@ with sync_playwright() as p:
     ctx,pg,errs,bad=page()
     o=E(pg,'''(()=>{const o=JSON.parse(JSON.stringify(S));o.version='2.17';delete o.legacy;delete o.shop;delete o.run;delete o.rpStats;delete o.runCS;o.seeds=20;o.prestiges=3;
       o.research=Object.assign({},o.research,{automation:1});o.totalEarned=5e8;o.lastSave=Date.now();return o;})()''')
-    sp=E(pg,"RNODES.find(n=>n.id==='automation').seeds")
+    sp=E(pg,"OLD_RES_SEEDS.automation")
     init='if(!sessionStorage.getItem("_m")){sessionStorage.setItem("_m","1");localStorage.setItem("timberTycoon_save_v1",%s)}'%json.dumps(json.dumps(o))
     ctx.close(); ctx,pg,errs,bad=page(init=init)
     r=E(pg,'({L:S.legacy,s:S.seeds,old:S.oldRep,rep:M.legacy,cs:cs(),mig:S.rpStats.migrated,v:S.version})')
-    ok(r['L']==20+sp and r['s']==20 and abs(r['old']-3)<1e-9 and abs(r['rep']-3)<1e-9 and r['cs']==1,f'v2.17 save: Legacy = seeds + spent ({20+sp}), run keeps its old ×3 bonus, costs unscaled ({r})')
+    ok(r['L']==20+sp and r['s']==20+sp and abs(r['old']-3)<1e-9 and abs(r['rep']-3)<1e-9 and r['cs']==1,f'v2.17 save: Legacy = seeds + spent ({20+sp}), Seeds refunded (v2.19), run keeps its old ×3 bonus, costs unscaled ({r})')
     r=E(pg,CLEAN+'S.totalEarned=Math.max(S.totalEarned,1e9);TT.doPrestige();({L:S.legacy,old:S.oldRep,rep:M.legacy,lm:legacyMult()})')
     ok(not r['old'] and abs(r['rep']-r['lm'])<1e-9 and r['lm']>3,f'after the first Replant the migrated save uses the Legacy curve (no drop) ({r})')
     ok(not errs and not bad,f'migration: no errors / 404s ({errs[:3]} {bad[:3]})'); ctx.close()

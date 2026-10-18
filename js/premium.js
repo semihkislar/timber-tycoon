@@ -67,7 +67,7 @@ function makeOrder(forceItem){
   const p=(rates[r.id]&&rates[r.id].p>.02)?Math.min(p0,rates[r.id].p):p0;
   const amt=niceNum(Math.max(5,p*dur*(.25+Math.random()*.15)));
   const cands=CLIENTS.filter(c=>c.likes.includes(r.id)); const cl=(cands.length?cands:CLIENTS)[Math.floor(Math.random()*(cands.length||CLIENTS.length))];
-  let reward=Math.max(amt*price(r.id)*1.8,coinRate*dur*.25,50)*(r.premium?1.25:1)*mgrOrders(); reward=niceNum(reward);
+  let reward=Math.max(amt*price(r.id)*1.8,coinRate*dur*.25,50)*(r.premium?1.25:1)*mgrOrders()*(M.orderPay||1); reward=niceNum(reward);
   let bonus=null; const rr=Math.random();
   if(r.premium&&rr<.2&&S.totalEarned>=1e7) bonus={type:'seeds',n:1};
   else if(rr<(r.premium?.45:.25)) bonus={type:'boost',id:'viprush'};
@@ -173,7 +173,7 @@ function makeDailyContract(diff,used){
   const baseDur=[150,210,270][Math.floor(Math.random()*3)];
   const dur=Math.round(baseDur*diff.time);
   const amt=niceNum(Math.max(5,p*dur*(.22+Math.random()*.12)*diff.amt));
-  let reward=Math.max(amt*price(r.id)*1.55,coinRate*dur*.22,40)*diff.pay*streakMult()*mgrOrders();
+  let reward=Math.max(amt*price(r.id)*1.55,coinRate*dur*.22,40)*diff.pay*streakMult()*mgrOrders()*(M.orderPay||1);
   reward=niceNum(reward);
   let bonus=null;
   if(diff.id==='hard'){const rr=Math.random(); if(rr<.22&&S.totalEarned>=5e6) bonus={type:'seeds',n:1}; else if(rr<.5) bonus={type:'boost',id:'viprush'};}
