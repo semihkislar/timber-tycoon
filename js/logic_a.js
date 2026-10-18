@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.18';
+const VERSION='2.19';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -83,7 +83,7 @@ const BUILDINGS=[
   {id:'stationer',name:'Stationery House',icon:'✒️',svg:'stationery',inp:{paper:8},out:{stationery:1},cost:1.2e7,scale:1.22,premium:true,spd:5,desc:'Binds fine paper into premium stationery.'},
   {id:'cabinetry',name:'Cabinet Studio',icon:'🗄️',svg:'cabinets',inp:{chairs:2,planks:6},out:{cabinets:1},cost:4e7,scale:1.22,premium:true,spd:5,desc:'Turns chairs & planks into designer cabinets.'},
   // v2.5 research buildings (tech: unlocked by the research tree; drawn on the R&D campus / harbour)
-  {id:'lab',name:'Research Lab',icon:'🔬',svg:'lab',inp:{paper:6},out:{},rp:1,cost:3e6,scale:1.24,tech:true,spd:1,desc:'Turns paper into Research Points for the research tree.'},
+  {id:'lab',name:'Research Lab',icon:'🔬',svg:'lab',inp:{paper:6},out:{},rp:1,cost:5e5,scale:1.24,tech:true,spd:1,desc:'Turns paper into Research Points for the research tree.'},
   {id:'plymill',name:'Plywood Mill',icon:'🟧',svg:'plywood',inp:{planks:6,glue:2},out:{plywood:2},cost:1.5e7,scale:1.22,tech:true,spd:4,desc:'Glues veneers of planks into strong plywood sheets.'},
   {id:'toyshop',name:'Toy Workshop',icon:'🧸',svg:'toys',inp:{plywood:2,paper:4},out:{toys:2},cost:8e7,scale:1.22,tech:true,spd:4,desc:'Cuts plywood into wooden toys, boxed in printed paper.'},
   {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:12,planks:18,glue:4},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
@@ -318,6 +318,7 @@ function migrateSave(o){
   for(const k of ['picks','switches']) if(typeof o.specStats[k]!=='number') o.specStats[k]=0;
   if(o.v===undefined) o.v=1;
   if(typeof rpMigrate==='function') rpMigrate(o);   // v2.18 Replant 2.0
+  if(typeof resMigrate==='function') resMigrate(o);   // v2.19 Research 2.0 (refund research Seeds)
   o.version=VERSION;
   return o;
 }
@@ -340,7 +341,7 @@ function computeMods(){
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
   if(S.wx) applyWorldMods(m);
   applyResearch(m);
-  if(typeof pwBoost==='function'&&S.power&&S.power.lvl) m.bldAll*=1+pwBoost();   // v2.10 power plant
+  if(typeof pwBoost==='function'&&S.power&&S.power.lvl) m.bldAll*=1+pwBoost()*(m.pw||1);   // v2.10 power plant
   if(S.premium&&S.premium.lvl>1) for(const r of RES) if(r.premium) m.price[r.id]*=1+PREM_LVL_BONUS*(S.premium.lvl-1);
   if(S.ship&&S.ship.dock>1) m.priceAll*=1+.02*(S.ship.dock-1);   // v2.13 export premium (shipping dock)
   if(typeof staffDockPrem==='function') m.priceAll*=1+staffDockPrem();   // v2.14 dock workers

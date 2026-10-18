@@ -92,7 +92,7 @@ In an 18-run sim late runs hit the 90-min cap with ~230 Seeds/run — that plate
 * **Second prestige "Timber Dynasty"** at L ≈ 5000: converts Legacy into Dynasty crowns (log curve) that multiply the Legacy exponent; resets the shop.
 * Seed Shop: offline-cap item, auto-buyer item, "keep one manager tier".
 
-## 4. Research 2.0 plan (v2.19)
+## 4. Research 2.0 plan (v2.19) — shipped, see `docs/research-v2.19.md`
 
 **Audit.** 15 nodes, 27,075 RP in total. The lab starts ~55 min into a fresh run, 13/15 nodes are done by ~140 min, the last two only need
 5 + 10 Seeds. Research persists through Replant, so the whole tree is finished by run 2 and never matters again.

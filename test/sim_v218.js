@@ -2,7 +2,7 @@
 (o)=>{
   window.toast=()=>{};window.sfx=()=>{};window.confettiBurst=()=>{};window.milestoneHit=()=>{};window.save=()=>{};window.rebuildAll=()=>{};
   const H=o.hook?eval('('+o.hook+')'):{gain:()=>pendingSeeds(),cur:()=>S.seeds,prestige:()=>doPrestige(),spend:()=>{},want:(g,c,T)=>g>=Math.max(1,Math.ceil(c*0.5))&&T>=120};
-  const buy=()=>{for(let g=0;g<20&&forestEff()<.97;g++){let bi=null,bc=Infinity;for(const p of PLANTERS){const c=plCost(p.id,1)/p.rate;if(c<bc){bc=c;bi=p.id;}}if(plCost(bi,1)>S.coins||!buyPlanter(bi,1)) break;}
+  const buy=()=>{if(H.hold&&H.hold()) return 0;for(let g=0;g<20&&forestEff()<.97;g++){let bi=null,bc=Infinity;for(const p of PLANTERS){const c=plCost(p.id,1)/p.rate;if(c<bc){bc=c;bi=p.id;}}if(plCost(bi,1)>S.coins||!buyPlanter(bi,1)) break;}
     let n=0;for(let g=0;g<200;g++){let best=null,bc=Infinity;
       for(const b of BUILDINGS){if(!bldUnlocked(b.id)) continue;const c=bulkCost(b.cost,b.scale,S.buildings[b.id].lvl,1);if(c<bc){bc=c;best=()=>buyBuilding(b.id,1);}}
       for(const c of COLLECTORS){const k=bulkCost(c.cost,COL_SCALE,S.collectors[c.id],1);if(k<bc){bc=k;best=()=>buyCollector(c.id,1);}}
