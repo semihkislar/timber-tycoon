@@ -133,7 +133,7 @@ function updateBuildingSheet(){
   const chip=$('bpChip'); chip.className='chip '+s.cls; chip.textContent=st.lvl&&st.on?`${(s.f*100).toFixed(0)}% · ${s.txt}`:s.txt;
   // input -> output flow
   const sp=st.lvl?bSpeed(b.id):0, f=st.lvl&&st.on?bstat[b.id].f:0;
-  const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f)+' / '+fr(v*sp):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
+  const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f*bInMult(b.id))+' / '+fr(v*sp*bInMult(b.id)):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,b.id==='sawmill'?v*sawYield():v]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*.5]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   const yl=b.id==='sawmill'&&st.lvl>=40?`<div class="bp-yield">🪚 Saw yield <b>×${sawYield().toFixed(2)}</b> planks per log${st.lvl<50?' · grows from Lv 50':` · Lv ${st.lvl+1}: ×${sawYieldAt(st.lvl+1).toFixed(2)}`}</div>`:'';
@@ -155,7 +155,7 @@ function updateBuildingSheet(){
   const unl=bldUnlocked(b.id); if(!unl){const lt=b.id==='lab'?'🔒 Needs a Paper Mill':b.id==='boatyard'&&hasRes('boats')?'🔒 Needs the Harbour':'🔒 Research '+RNMAP[TECH_UNLOCK[b.id]].name;if(bb._h!==lt){bb.innerHTML=lt;bb._h=lt;}}
   bb.disabled=!unl||S.coins+1e-9<cost;
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
-  updateStorageBlock(b); updateBldMgr(b); if(typeof updateBldBy==='function') updateBldBy(b);
+  updateStorageBlock(b); if(typeof updateBldSpec==='function') updateBldSpec(b); updateBldMgr(b); if(typeof updateBldBy==='function') updateBldBy(b);
 }
 function cycleBuilding(d){
   if(!sheetBld) return; let i=BUILDINGS.findIndex(b=>b.id===sheetBld);

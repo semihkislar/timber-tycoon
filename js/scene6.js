@@ -250,9 +250,10 @@ function drawOverlays(ctx){
     if(showTags){
       const hov=scene.hover===b.id||sheetBld===b.id;
       const fp=L.prem?P(L.ci-.2,L.cj-.2,L.id==='showroom'?62:44):P(L.ci+(L.face==='I'?1.95:.2),L.cj+(L.face==='I'?.2:1.95),0); let [px,py]=w2s(fp[0],fp[1]); if(L.prem) px-=30*Math.max(.8,Math.min(1.4,scene.cam.z)); // v2.2: premium tags float above the roof so they never cover a name board
-      const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'');
+      const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'')+(typeof specTag==='function'?specTag(b.id):'');   // v2.17: line icon
       pill(ctx,px,py+2,txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
     }
+    {const rt=typeof specRetool==='function'?specRetool(b.id):0;if(rt>0&&!S.fires[b.id]) pill(ctx,sx,sy-30,'🔧 Retooling '+Math.ceil(rt)+'s',{fs:10.5,bg:'#5b6067',fg:'#fff',stroke:'#c9d0d8',padX:12,padY:7});}   // v2.17
     if(S.fires[b.id]){} // v2.4: the fire pill replaces status badges
     else if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
     else if(starved){

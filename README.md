@@ -14,6 +14,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
 - `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
 - `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
+- `js/spec.js` (v2.17): line specialisations — ⚡ High-speed / ♻️ Lean / 💎 Master craft from Lv 50 (tiers at 50/100/200), advisor, retool on switch, building-sheet block and the scene banner
 - `js/flow.js` (v2.16): Supply flow view (isometric producer → consumer arcs with rates and health colours, 🔀 button / F key)
 - `js/shipping.js` (v2.13): Shipping Yard (loading bays, departures, export contracts, dock/forklift/crane upgrades, sheet UI)
 - `js/forestveh.js` (v2.13): cached forest machines (harvester, forwarder, skidder) with lights
@@ -31,7 +32,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - Run locally: `python3 -m http.server` in the repo root, then open http://localhost:8000/ (module-free, but needs http:// for the atlas fetch).
 - Edit `js/`, `css/` and `index.html` directly. There is no build step for the game itself.
 - After changing tree art, rebuild the atlas: `python3 tools/build_assets.py`
-- Tests: `python3 test/v215.py` (staff in the world), `python3 test/v214.py` (staff system), `python3 test/v213.py` (shipping), `python3 test/v212.py` (builders), `python3 test/v211.py` (factory facelift), `python3 test/v2101.py` (fire station + chimneys), `python3 test/v210.py` (power plant), `python3 test/v29.py` (phone emulation, touch gestures) and `python3 test/v28.py` (layout + long-session perf), plus the older `test/v*.py` and `test/functional.py`. Balance: `python3 test/balance.py`
+- Tests: `python3 test/v217.py` (line specialisations), `python3 test/v216.py` (supply flow), `python3 test/v215.py` (staff in the world), `python3 test/v214.py` (staff system), `python3 test/v213.py` (shipping), `python3 test/v212.py` (builders), `python3 test/v211.py` (factory facelift), `python3 test/v2101.py` (fire station + chimneys), `python3 test/v210.py` (power plant), `python3 test/v29.py` (phone emulation, touch gestures) and `python3 test/v28.py` (layout + long-session perf), plus the older `test/v*.py` and `test/functional.py`. Balance: `python3 test/balance.py`
 - Screenshots: `python3 test/shot.py` (desktop + feature shots, `ONLY=name` to filter) and `python3 test/shot_mobile.py` (phone portrait/sheet/jump/landscape), plus per-feature scripts such as `python3 test/shot_staff_v215.py`
 - PWA icons: `python3 tools/build_icons.py` (from the in-game logo). When releasing, bump `CACHE` in `sw.js` to the new version.
 - Phone UX rules (v2.9): ≥44–48 px touch targets, phones (≤720 px) show 5 bottom buttons + More, landscape phones (height ≤520 px) use the left rail + right side sheet; test both with `test/v29.py`.

@@ -202,6 +202,7 @@ function updateEntities(dt){
   // build anims, milestone flash
   for(const k in scene.buildAnim){scene.buildAnim[k]+=dt*1.6;if(scene.buildAnim[k]>=1) delete scene.buildAnim[k];}
   if(scene.msFlash){scene.msFlash.t-=dt;if(scene.msFlash.t<=0) scene.msFlash=null;}
+  if(typeof specFrame==='function') specFrame(dt);   // v2.17 banner pop
   // particles
   // v2.8: in-place compaction + object pools (no new arrays / objects per frame)
   {const A=scene.particles;let n=0;for(let k=0;k<A.length;k++){const p=A[k];p.life-=dt;if(p.life<=0){if(P_POOL.length<400) P_POOL.push(p);continue;}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;A[n++]=p;}A.length=n;}

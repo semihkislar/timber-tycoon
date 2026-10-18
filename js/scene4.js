@@ -274,6 +274,7 @@ function drawLot(ctx,L){
   const D=scene.dn, sig=st.lvl+'|'+(run?1:0)+'|'+(st.on?1:0)+'|'+SEAS+'|'+Math.round((scene.wet||0)*4)+'|'+Math.round(D.lights*8)+'|'+msOf(id)+'|'+(scene.hover===id?1:0)+'|'+S.tree;
   const H=(anim!==undefined&&anim<1)?BDRAW[id](ctx,L,B,run,scene.t):liveSprite(ctx,'lot:'+id,bx,sig,run?8:2,g=>BDRAW[id](g,L,B,run,scene.t));
   ctx.restore();
+  if(typeof specBanner==='function') specBanner(ctx,L,B);   // v2.17 specialisation banner
   L.hit=boxHit(B.i0-.1,B.j0-.1,B.i1+.15,B.j1+.15,H);
   L.top=P(L.ci,L.cj,H+4); L.H=H;
   if(!st.on){ctx.fillStyle='rgba(40,40,60,.32)';pth(ctx,boxHit(B.i0,B.j0,B.i1,B.j1,Math.min(H,B.ms*4+40)));ctx.fill();}

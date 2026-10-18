@@ -5,6 +5,45 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.17] — 2026-10-18
+
+**Line specialisations**: from Lv 50, every production building can run one of three specialised lines. It's a real choice about where your chain needs help.
+
+### New: Specialisations (`js/spec.js`)
+- At **Lv 50 (★3)** a 🎛️ Specialisation block opens in the building sheet with three lines:
+  - ⚡ **High-speed line**: +40% speed, but each item takes +15% input.
+  - ♻️ **Lean line**: −20% input per item. This helps when the building's inputs are short (for example planks for the Carpentry).
+  - 💎 **Master craft**: the building's goods sell for +25%. That includes orders, daily contracts and trade, which all pay from the price.
+- **Tiers grow with the building**: I at Lv 50, II at Lv 100 (×1.6 speed / −30% input / +40% price) and III at Lv 200 (×1.8 / −40% / +60%). The sheet shows ◆◇◇ and the level for the next tier.
+- **Advisor**: a 💡 hint suggests a line and says why ("it is short on Logs", "Furniture Factory wants more Chairs", "100% of its goods are sold"). Each option shows a live estimate, e.g. "≈ +229 Chairs/s", "saves ≈ 458 Planks/s" or "≈ +🪙12K/s at today's sales".
+- **First pick is free and instant.** Switching later **retools** the line for 30 s at 25% speed. It needs a second tap ("Tap again") so a stray tap never costs you, and offline time counts toward the retool.
+- Premium and R&D buildings can specialise too. The Research Lab can't, because it makes no goods.
+
+### Scene
+- Every specialised building gets a **cloth banner on a steel post** at its front corner. The banner is blue ⚡, green ♻️ or gold 💎, with a vector emblem, a gold hem, 1–3 gold tier pips, a gold finial and snow on the arm in winter. It turns grey with a wrench while retooling and pops up when you pick a line.
+- The level tag shows the line icon (e.g. "Lv 120 ★★★★ ⚡"). A "🔧 Retooling 23s" tag floats over a building while it retools.
+- Banners are cached sprites (one blit each, about 10 µs).
+
+### Also
+- Needs-attention lists "🎛️ Sawmill: pick a specialisation" for every unpicked Lv 50+ building and opens the sheet at the block.
+- The Lv 50 / 100 / 200 milestone toasts announce the unlock or the new tier.
+- Two new trophies: **Specialist** (specialise a line) and **Master Lines** (3 lines at Specialisation III).
+- The building sheet's input rates now include input savings (manager thrift and lean lines). So does the supply flow view.
+
+### Compatibility
+- **Replant**: your picks are remembered and switch back on once a building reaches Lv 50 again. A running retool is dropped. Building levels and upgrade/hire costs reset exactly as before.
+- v2.16 and older saves load with no specialisations (`S.spec = {}`). Malformed entries are dropped.
+
+### Tests
+- New `test/v217.py`. It covers:
+  - version, `sw.js` and the script tag
+  - lock below Lv 50, the teaser, and the tiers
+  - tap pick, effects (×1.4 / ×1.15, Lean ×0.8 with 20% fewer logs used in the sim, Craft ×1.25 price) and Tier II
+  - the two-tap switch, the retool (25%, countdown, finish, offline)
+  - the advisor, the attention entry, the milestone toast, trophies, the banner sprite and its cost
+  - Replant, v2.16 save migration plus malformed entries
+  - iPhone 13 and Pixel 7 taps, and the snapshot
+
 ## [2.16] — 2026-10-17
 
 **Supply flow view**: an isometric overlay that shows the whole production chain at a glance.
@@ -741,7 +780,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 - v1.2 saves load cleanly; milestones come from existing building levels, so older empires get their stars (and the new trophies) straight away
 
 ### Next ideas
-- Research tree / skill points spent on specialisations
+- ~~Research tree / skill points spent on specialisations~~ → research tree shipped in [2.5], line specialisations in [2.17]
 - ~~Daily contracts (deliver X chairs in Y minutes for a reward)~~ → shipped in [2.6]
 - Seasonal visuals (autumn/winter forest) and weather in the scene
 - Market cart / delivery truck carrying finished goods off-screen
@@ -766,7 +805,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 
 ### Next ideas
 - Worker carriers walking logs between buildings in the scene (Lumber Inc. style)
-- Research tree / skill points spent on specialisations
+- ~~Research tree / skill points spent on specialisations~~ → research tree shipped in [2.5], line specialisations in [2.17]
 - ~~Daily contracts (deliver X chairs in Y minutes for a reward)~~ → shipped in [2.6]
 - Seasonal visuals (autumn/winter forest) and weather in the scene
 - Building-level milestones (×2 speed at levels 25/50/100)

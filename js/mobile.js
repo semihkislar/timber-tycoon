@@ -61,6 +61,7 @@ function attentionList(){
   if(pwUnlocked()&&pwLvl()<PW_MAX&&S.coins+1e-9>=pwCost()) out.push({id:'power',k:'upg',p:3,t:`⬆ Power Plant: ${pwLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('power');focusLot('power',true);}});
   if(S.ship&&S.ship.offer&&!S.ship.contract) out.push({id:'ship',k:'upg',p:3,t:`📜 Export contract offer from ${cityOf(S.ship.offer.city).name}`,open:()=>{openSheet('ship');focusLot('dock');}});
   if(byUnlocked()&&byLvl()<BY_MAX&&S.coins+1e-9>=byCost()) out.push({id:'build',k:'upg',p:3,t:`🏗️ Builders' Yard: ${byLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('build');focusLot('build',true);}});   // v2.12
+  if(typeof specPending==='function') for(const b of specPending()) out.push({id:b.id,k:'spec',p:3,t:`🎛️ ${b.name}: pick a specialisation`,open:()=>{openSheet('bld',b.id);focusLot(b.id,true);setTimeout(()=>{const e=document.getElementById('bpSpec');if(e&&e.scrollIntoView) e.scrollIntoView({block:'nearest',behavior:'smooth'});},60);}});   // v2.17
   out.sort((a,b)=>a.p-b.p); return out;
 }
 function updateAttn(){
