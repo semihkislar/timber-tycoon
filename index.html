@@ -117,14 +117,20 @@
       <div class="legend" style="margin-top:8px">✨ Watch the forest for <b>Golden Logs</b>: tap one before it vanishes for a lucky bonus. Trophies survive replanting.</div>
     </div>
     <div class="pane" id="pane-co">
-      <div class="prestige-box">
-        <div style="font-weight:900;font-size:16px">🌱 Replant the Forest</div>
-        <div class="legend" style="margin:4px 0 8px">Sell the company and replant everything. You keep <b>Seeds</b>: each gives <b>+10%</b> to all collectors, chopping and building speed, forever.</div>
-        <div>You would gain</div>
-        <div class="big" id="pGain">0</div>
-        <div class="legend" id="pNext"></div>
-        <button class="btn gold" id="prestigeBtn" style="margin-top:8px">🌱 Replant the Forest</button>
+      <div class="rp-tabs" id="rpTabs" role="tablist"><button data-t="replant" class="on">🌱 Replant</button><button data-t="shop">🛒 Seed Shop<span class="dot hidden" id="rpShopDot"></span></button><button data-t="goals">🎯 Goals</button></div>
+      <div class="rp-pane" id="rpReplant">
+        <div class="prestige-box rp-box">
+          <div class="rp-legacy" id="rpLegacy"></div>
+          <div>You would gain</div>
+          <div class="big" id="pGain">0</div>
+          <div class="legend" id="pNext"></div>
+          <div class="rp-advice" id="rpAdvice"></div>
+          <button class="btn gold rp-go" id="prestigeBtn">🌱 Review &amp; Replant</button>
+        </div>
+        <div class="rp-explain legend">Seeds you earn grow your <b>Forest Legacy</b> forever (a production bonus that never goes down, even when you spend Seeds). Spend Seeds in the <b>Seed Shop</b>. Each Replant prices the new run in your forest's value, so it starts faster but never trivially.</div>
       </div>
+      <div class="rp-pane hidden" id="rpShop"><div class="rp-wallet" id="rpWallet"></div><div class="rp-list" id="rpShopList"></div></div>
+      <div class="rp-pane hidden" id="rpGoals"><div class="legend" id="rpGoalsHead"></div><div class="rp-list" id="rpGoalList"></div></div>
       <h4>📊 Company stats</h4>
       <div class="kv" id="statsKv"></div>
     </div>
@@ -159,6 +165,7 @@
 <script src="js/shipping.js"></script>
 <script src="js/flow.js"></script>
 <script src="js/spec.js"></script>
+<script src="js/replant.js"></script>
 <script src="js/scene1.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/chimney.js"></script>

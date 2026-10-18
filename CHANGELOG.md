@@ -5,6 +5,28 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.18] — 2026-10-18
+
+**Replant 2.0**: the prestige module is rebuilt. Replanting no longer turns the next run into hundreds of free levels; every run starts fast and still matters. Design + audit: `docs/replant-v2.18.md`.
+
+### New: Forest Legacy, Seed Shop, run goals (`js/replant.js`)
+- **🌳 Forest Legacy**: every Seed you ever earn counts, it never goes down. Production bonus ×(1 + 0.1·L^0.8).
+- **🌱 Seeds** are now a currency for the **Seed Shop**; spending them never lowers your bonus. 9 permanent items: Fertile Soil, Veteran Crews, Mill Know-how, Trusted Brand, Seed Money, Nursery Head Start, Arboretum, Premium Charter, Deep Roots.
+- **Gain** = 3·(earned / (10M × forest value))^0.4, +8% per run goal, +15% per Deep Roots level. Live preview, "next Seed at …" and an ideal-time hint (wait / keep growing / replant now).
+- **Forest value**: each new run is priced at your forest's power^0.88: building, collector, upgrade, wood, storage and premium costs, the first-Seed threshold and coin goals scale with it, so costs stay meaningful after a Replant.
+- **12 run goals** (earn 100K…10T, Carpentry, Sawmill Lv 25, Furniture Factory, Lv 50, Premium Area, Research Lab, Lv 100).
+- **Confirm sheet**: gain, Legacy and bonus before → after, two columns *Resets* / *Stays*. After replanting the Seed Shop opens if you can afford something.
+- Mobile-first Replant sheet with three tabs (Replant · Seed Shop · Goals), 44 px touch targets.
+
+### Saves
+- Old saves migrate fairly: Legacy = Seeds held + Seeds already spent (research, managers); your Seeds stay spendable; the run in progress keeps its old bonus until the next Replant.
+
+### Tests
+- New `test/v218.py` (+ `test/sim_v218.js`): formulas, cost scaling, shop, goals, keep/reset list, confirm sheet, v2.17 migration, an 8-run pacing sim, iPhone 13 / Pixel 7, snapshot. Old suites updated where costs now follow the forest value.
+
+### Next
+- v2.19 Research 2.0 (deeper tree gated by Legacy, repeatable nodes) — plan in the design doc.
+
 ## [2.17] — 2026-10-18
 
 **Line specialisations**: from Lv 50, every production building can run one of three specialised lines. It's a real choice about where your chain needs help.

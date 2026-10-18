@@ -243,7 +243,7 @@ function drawOverlays(ctx){
         pill(ctx,sx,sy-14+bob,`${b.name}`,{bg:can?'#4fa633':'rgba(43,27,14,.82)',fs:11,stroke:can?'#c9f59e':null});
         pill(ctx,sx,sy+6+bob,fmt(cost),{icon:'coin',bg:can?'#fff6e0':'rgba(255,246,224,.85)',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});
         if(can){ctx.fillStyle='#4fa633';ctx.beginPath();const ay=sy-34+Math.sin(t*5)*4;ctx.moveTo(sx-7,ay-8);ctx.lineTo(sx+7,ay-8);ctx.lineTo(sx,ay);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();}
-      } else pill(ctx,sx,sy-4,'🔒 Earn '+fmt(b.cost*.25),{fs:10,bg:'rgba(43,27,14,.6)'});
+      } else pill(ctx,sx,sy-4,'🔒 Earn '+fmt(b.cost*cs()*.25),{fs:10,bg:'rgba(43,27,14,.6)'});
       continue;
     }
     const bs=bstat[b.id], bfs=isFinite(bs.fs)?bs.fs:bs.f, starved=st.on&&!!bs.lim&&bfs<0.95, ms=msCount(st.lvl);   // v2.15.1: smoothed, small dips stay quiet

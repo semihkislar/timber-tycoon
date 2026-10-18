@@ -103,7 +103,7 @@ with sync_playwright() as p:
     txt=pg3.locator('.modal').inner_text(); ok('capped at 8h' in txt,'offline cap 8h noted')
     pg3.locator('.modal button').click()
     # prestige via Replant sheet
-    pg3.evaluate('TT.S.totalEarned=Math.max(TT.S.totalEarned,4e7)')
+    pg3.evaluate('TT.S.totalEarned=Math.max(TT.S.totalEarned,4e7);rpTick()')   # v2.18: settle run goals so the gain is stable
     pg3.click('#bottombar [data-s=co]'); pg3.wait_for_timeout(300)
     g=pg3.evaluate('TT.pendingSeeds()')
     pg3.click('#prestigeBtn'); pg3.wait_for_timeout(200); pg3.locator('.modal button.red').click(); pg3.wait_for_timeout(400)

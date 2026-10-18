@@ -12,7 +12,7 @@ function render(){
     lastDispCoins=target;}
   $('hIncome').textContent='+'+fr(coinRate)+'/s';
   $('hLogs').textContent=fr(logRate()+chopRateDisplay*chopPower())+'/s';
-  $('hSeeds').textContent=S.seeds+(S.seeds?` (+${S.seeds*10}%)`:'');
+  $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
   renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); updateBuilders(); updateShip(); updateFlowLegend();
@@ -42,8 +42,8 @@ function setupUI(){
   $('sndToggle').onchange=()=>{S.muted=!$('sndToggle').checked;updateMuteBtn();save(true);};
   $('fitBtn').onclick=()=>{fitCamera(false);};
   $('resetBtn').onclick=()=>confirmModal('Reset everything?','This permanently wipes your save, including Seeds. This cannot be undone.','Wipe save',hardReset);
-  $('prestigeBtn').onclick=()=>{const g=pendingSeeds(); if(g<1) return;
-    confirmModal('🌱 Replant the Forest?',`You will sell the company and start over with <b>+${g} Seeds</b> (total ${S.seeds+g}, giving <b>+${(S.seeds+g)*10}%</b> production).<br><br>Coins, stock, collectors, buildings, upgrades and trees reset.`,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();}});};
+  $('prestigeBtn').onclick=()=>rpConfirm();   // v2.18 Replant 2.0 confirm sheet (js/replant.js)
+  setupReplantUI();
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
   setupPremiumUI(); setupWx(); setupRndUI();

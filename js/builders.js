@@ -29,7 +29,7 @@ function byBatch(l){l=l===undefined?byLvl():l;return l?BY_LV[l].batch:0;}
 function byDur(l){l=l===undefined?byLvl():l;return l?BY_LV[l].dur:0;}
 function byBudget(){const B=S.builders;return Math.max(0,S.coins)*(B?B.budget:.25);}
 /* levels of b (owned `lvl`) that fit in `cash` */
-function byAfford(b,lvl,cash){if(!(cash>0)) return 0;const n=Math.floor(Math.log(cash*(b.scale-1)/(b.cost*Math.pow(b.scale,lvl))+1)/Math.log(b.scale)+1e-9);
+function byAfford(b,lvl,cash){if(!(cash>0)) return 0;const n=Math.floor(Math.log(cash*(b.scale-1)/(b.cost*cs()*Math.pow(b.scale,lvl))+1)/Math.log(b.scale)+1e-9);
   return Math.max(0,n);}
 function byAllowed(id){const B=S.builders;return !(B&&B.off&&B.off[id]);}
 function byEligible(b){const st=S.buildings[b.id];if(!st||!st.lvl) return false;if(b.premium&&!(S.premium&&S.premium.lvl>0)) return false;
