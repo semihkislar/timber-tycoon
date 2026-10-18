@@ -5,6 +5,31 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.20] — 2026-10-19
+
+**Factory tiers**: the yard now reads as one chain, raw → processed → finished. Each building belongs to a tier and is fed only by the tier before it. Design: `docs/tiers-v2.20.md`.
+
+### New: three tiers (`js/tiers.js`)
+- **Phase 1 · Primary** (right side of the lane, logs only): Sawmill, **Veneer Peeler (new, 4 logs → 3 veneer + 1 bark, 60K)**, Wood Chipper, Charcoal Kiln.
+- **Phase 2 · Secondary** (left side + Plywood Mill, phase-1 goods only): Carpentry, Pellet Press, Paper Mill, Furniture Factory (planks + veneer), Plywood Mill (veneer + glue).
+- **Phase 3 · Premium** (Premium Area, Toy Workshop, Boat Yard, phase-2 goods only): Gift Box Atelier (pellets + paper), Parquet (plywood + paper), Cabinet Studio (chairs + plywood), Luxury Showroom (furniture + chairs), Boat Yard (plywood + chairs).
+- **Export from every tier**, and value per unit rises with each tier. The building sheet shows the processing margin (what processing earns over selling the inputs raw).
+- Planks now feed 2 buildings instead of 7, so plank shortages are gone.
+
+### Scene and UI
+- Re-layout: phase 1 on the right of the lane, phase 2 on the left, with "PHASE 1 · PRIMARY" and "PHASE 2 · SECONDARY" ground signs.
+- **Forklifts** shuttle pallets across the lane from phase 1 to phase 2 (1–2 per link, coloured by the good). The Premium conveyor carries only phase-2 goods.
+- Tier badges (I / II / III) on building sheets and in the Supply Flow view; the flow legend reads Phase 1 → Phase 2 → Premium.
+- The Market groups goods by tier.
+- Phones: the margin line sits under the Buy row, so Buy stays on screen. The camera can travel further south so a phase-1 lot can sit above an open sheet.
+- The needs-attention button opens the building it names.
+
+### Saves
+- Recipes change in place and levels are kept; the peeler starts at Lv 0. Old stock stays and can be sold. A one-time toast explains the new chain.
+
+### Tests
+- New `test/v220.py` (+ `test/sim_v220_hook.js`): tier rules (no building skips a tier), recipes, margins, layout and lot overlaps, forklifts, production, sheet/market/flow UI, Replant + research consistency, v2.19 migration, and a long shortage sim (phase-2 lines starved < 15% of samples), plus iPhone 13 / Pixel 7. Older tests updated for the new recipes and layout.
+
 ## [2.19] — 2026-10-19
 
 **Research 2.0**: the research tree no longer finishes in your second run. It is now a long, permanent track that grows with your Forest Legacy. Design + audit: `docs/research-v2.19.md`.

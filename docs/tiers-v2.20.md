@@ -48,7 +48,7 @@ selling the inputs raw. Turning a building off (or leaving auto-sell on for its 
 
 ## 3. Transport between tiers (visible)
 * **Forklifts** shuttle pallets across the lane from phase-1 buildings to the phase-2 buildings that use their goods. The number of forklifts
-  follows the flow (1–3 per link), and each carries the good's colour.
+  follows the flow (1–2 per link), and each carries the good's colour.
 * The **overhead conveyor** into the Premium Area (v2.2) now carries only phase-2 goods.
 * **Supply Flow view** (🔀): arcs are coloured by the good as before and each building gets a tier badge (I / II / III); the legend
   reads *Phase 1 → Phase 2 → Premium*. A "tier" check flags any arc that skips a tier (there are none by construction).
@@ -71,3 +71,10 @@ selling the inputs raw. Turning a building off (or leaving auto-sell on for its 
 ## 6. Follow-ups
 * A peeler manager; a phase-2 "Flooring line" if parquet should move out of the Premium Area.
 * Tier-wide upgrades (e.g. "Phase 1 automation") in the Upgrades list.
+
+## 7. Tests and perf (release check)
+* Full suite green (functional, v12 … v220). Shortage sim in `test/v220.py`: 8 runs, phase-2 lines starved of planks/veneer in **1.4 %** of samples (limit 15 %).
+* `tools/bench.py` late game, 1280×800, frame cost avg ms (v2.19 → v2.20): day-fit 12.0 → 13.6 · day-zoom 10.9 → 11.6 · night-fit 17.0 → 17.6 · night-zoom 13.1 → 14.6.
+  The extra cost is the new peeler plus up to 10 cross-lane forklifts. To keep the sprite cache warm, there are at most 2 forklifts per link, they use 16 headings and they don't bounce.
+* Phones: the processing-margin line sits under the Buy row, and the tier badge sits next to the building name, so Buy stays on screen on iPhone 13 and Pixel 7.
+  The camera may travel further south (`CAM_WORLD.y1` 1180 → 1320), so a phase-1 lot can be framed above an open sheet.

@@ -112,12 +112,13 @@ function updateBuildingSheet(){
   const sig=b.id+'|'+vis+'|'+(st.lvl>0)+'|'+(M.sawdust?1:0);
   if(sig!==bpSig){bpSig=sig;
     $('bpIc').innerHTML=svgIcon(b.svg,40); $('bpName').textContent=vis?b.name:'Unknown building';
-    $('bpDesc').innerHTML=vis?`${typeof tierBadge==='function'&&BTIER[b.id]?`<span class="tier-line t${BTIER[b.id]}">${tierBadge(b.id)} ${TIER_N[BTIER[b.id]]}</span> `:''}${b.desc} <b>${recipeStr(b)}</b><span id="bpMargin" class="bp-margin"></span>`:'';
+    {const tb=$('bpTier'),T=vis&&typeof tierBadge==='function'&&BTIER[b.id];tb.innerHTML=T?` ${tierBadge(b.id)}`:'';tb.title=T?TIER_N[BTIER[b.id]]:'';}
+    $('bpDesc').innerHTML=vis?`${b.desc} <b>${recipeStr(b)}</b>`:'';
     $('bpLocked').classList.toggle('hidden',vis); $('bpMain').classList.toggle('hidden',!vis);
     $('shTitle').textContent=vis?b.name:'Empty lot';
   }
   if(!vis){$('bpLocked').innerHTML=`🔒 This lot is still covered in brambles.<br>Earn <b>🪙 ${fmt(b.cost*cs()*0.25)}</b> in total to reveal what can be built here (now ${fmt(S.totalEarned)}).`;$('bpLv').textContent='';return;}
-  {const mg=$('bpMargin');if(mg&&typeof bMargin==='function'&&BTIER[b.id]){const v=st.lvl?bMargin(b.id):0,u=unitMargin(b.id);const tx=st.lvl?` · processing adds <b>${v>=0?'+':''}🪙${fmt(v)}/s</b> over selling its inputs raw (${u>=0?'+':''}${fmt(u,1)} per unit)`:` · +${fmt(u,1)} per unit over its inputs`;if(mg._t!==tx){mg.innerHTML=tx;mg._t=tx;}}}
+  {const mg=$('bpMargin');if(mg){mg.classList.toggle('hidden',!(typeof BTIER==='object'&&BTIER[b.id]));}if(mg&&typeof bMargin==='function'&&BTIER[b.id]){const v=st.lvl?bMargin(b.id):0,u=unitMargin(b.id);const ph=`<b class="tier-line t${BTIER[b.id]}">${TIER_N[BTIER[b.id]]}</b> · `;const tx=ph+(st.lvl?`📈 Processing adds <b>${v>=0?'+':''}🪙${fmt(v)}/s</b> over selling its inputs raw (${u>=0?'+':''}${fmt(u,1)} per unit)`:`📈 +${fmt(u,1)} per unit over the value of its inputs`);if(mg._t!==tx){mg.innerHTML=tx;mg._t=tx;}}}
   const n=qty(b.cost,b.scale,st.lvl); const cost=bulkCost(b.cost,b.scale,st.lvl,n);
   $('bpLv').textContent=st.lvl?' Lv '+st.lvl:'';
   const mc=msCount(st.lvl),nx=nextMs(st.lvl),prev=mc?MILESTONES[mc-1]:0;

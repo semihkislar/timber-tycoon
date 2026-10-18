@@ -50,7 +50,7 @@ with sync_playwright() as p:
     ok(r['ven']>0 and r['bark']>0 and r['furn']>0 and r['ply']>0,'veneer, bark, furniture and plywood are produced')
     ok(E(pg,"bMargin('furniture')")>0,'building sheet margin: furniture adds value')
     E(pg,"TT.openSheet('bld','furniture')"); pg.wait_for_timeout(400)
-    t=pg.locator('#bpDesc').inner_text(); ok('Phase 2' in t and 'processing adds' in t,f'building sheet shows the tier and the processing margin ({t[:90]})')
+    t=pg.locator('#bpDesc').inner_text()+pg.locator('#bpMargin').inner_text(); ok('Phase 2' in t and 'Processing adds' in t,f'building sheet shows the tier and the processing margin ({t[:90]})')
     E(pg,"TT.openSheet('market')"); pg.wait_for_timeout(400)
     h=E(pg,"[...document.querySelectorAll('#mktBody tr.mkt-tier b')].map(e=>e.textContent)")
     ok(h[:4]==['Raw','Phase 1 · Primary','Phase 2 · Secondary','Phase 3 · Premium'],f'market grouped by tier ({h})')
@@ -85,7 +85,7 @@ with sync_playwright() as p:
     for dev in ['iPhone 13','Pixel 7']:
         ctx,pg,errs,bad=page(dev); E(pg,CLEAN+MID+CLEAN); pg.wait_for_timeout(800)
         E(pg,"TT.openSheet('bld','peeler')"); pg.wait_for_timeout(400)
-        ok('Veneer Peeler' in pg.locator('#bpName').inner_text() and 'Phase 1' in pg.locator('#bpDesc').inner_text(),f'{dev}: peeler sheet opens with its tier')
+        ok('Veneer Peeler' in pg.locator('#bpName').inner_text() and 'Phase 1' in pg.locator('#bpMargin').inner_text() and pg.locator('#bpTier').inner_text().strip()=='I',f'{dev}: peeler sheet opens with its tier')
         E(pg,"TT.openSheet('market')"); pg.wait_for_timeout(400)
         ok(E(pg,"document.documentElement.scrollWidth<=innerWidth+1"),f'{dev}: no horizontal overflow')
         ok(not errs and not bad,f'{dev}: no errors / 404s ({errs[:3]} {bad[:3]})'); ctx.close()

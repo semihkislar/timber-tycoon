@@ -54,7 +54,7 @@ function tierLinks(){const out=[];
     for(const k in b.inp){const src=SRC_OF[k];if(!src||BTIER[src]!==1||!S.buildings[src].lvl||!LOTS[src]||!LOTS[b.id]) continue;
       const bs=bstat[b.id],rate=bs?b.inp[k]*(bs.speed||0)*(bs.f||0):0;out.push({src,dst:b.id,k,rate});}}
   return out;}
-function tierLiftsFor(rate){return rate<=0?0:rate<50?1:rate<5000?2:3;}
+function tierLiftsFor(rate){return rate<=0?0:rate<500?1:2;}   // ≤ 2 per link keeps the sprite cache warm
 function syncTierLifts(){
   const L=tierLinks(),sig=L.map(l=>l.src+'>'+l.dst+':'+tierLiftsFor(l.rate)).join(',');
   if(scene._tsig===sig) return; scene._tsig=sig; const old=scene.tierLifts||[]; scene.tierLifts=[];
@@ -66,9 +66,9 @@ function syncTierLifts(){
 function tierLiftTick(dt){if(!scene.tierLifts) scene.tierLifts=[];if(!scene._tl||scene.t-scene._tl>1.5){scene._tl=scene.t;syncTierLifts();}
   const v=(typeof shForkSpeed==='function'?shForkSpeed():1.7)*.8;
   for(const fl of scene.tierLifts){fl.p=(fl.p+dt*v/fl.path.tot)%2;const f=fl.p<1?fl.p:2-fl.p;const q=pathAt(fl.path,f),sg=fl.p<1?1:-1;
-    fl.i=q[0];fl.j=q[1];if(Math.abs(q[2])+Math.abs(q[3])>1e-6){const y=Math.atan2(q[3]*sg,q[2]*sg);fl.yaw=fl.yaw===undefined?y:angLerp(fl.yaw,y,Math.min(1,dt*7));}fl.ph=(fl.ph||0)+dt*6;}}
+    fl.i=q[0];fl.j=q[1];if(Math.abs(q[2])+Math.abs(q[3])>1e-6){const y=Math.atan2(q[3]*sg,q[2]*sg);fl.yaw=Math.round(y/(Math.PI/8))*(Math.PI/8);}fl.ph=(fl.ph||0)+dt*6;}}
 function tierLiftDraw(ctx,objs,inView){for(const fl of (scene.tierLifts||[])){if(fl.i===undefined) continue;const [x,y]=P(fl.i,fl.j);if(!inView(x,y,40)) continue;
-  objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,Math.sin(fl.ph*3)*.25)});}}
+  objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,0)});}}
 /* ---------- scene: phase signs at the head of each side of the lane ---------- */
 const TIER_SIGNS=[{i:8.7,j:6.0,t:1,txt:'PHASE 1 · PRIMARY'},{i:6.0,j:8.7,t:2,txt:'PHASE 2 · SECONDARY'}];
 function tierSignDraw(ctx,objs,inView){

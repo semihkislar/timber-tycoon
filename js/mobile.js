@@ -54,7 +54,7 @@ function attentionList(){
     if(bVisible(b)&&bldUnlocked(b.id)&&S.coins+1e-9>=bulkCost(b.cost,b.scale,st.lvl,1)) out.push({id:b.id,k:'upg',p:3,t:`⬆ ${b.name}: ${st.lvl?'upgrade':'build'} affordable`});
   }
   for(const k in short){const L=short[k],si=shortInfo(k),src=si.src;const who=L.length>2?`${L.length} buildings`:L.map(([b,f])=>`${b.name} ${Math.round(f*100)}%`).join(', ');
-    out.push({id:src||L[0][0].id,k:'starved',p:2,t:`${RMAP[k].icon} Short on ${RMAP[k].name} (${who})${src?` · upgrade the ${BMAP[src].name}`:''}`,open:()=>{const id=src&&S.buildings[src].lvl?src:L[0][0].id;openSheet('bld',id);focusLot(id,true);}});}
+    out.push({id:src&&S.buildings[src].lvl?src:L[0][0].id,k:'starved',p:2,t:`${RMAP[k].icon} Short on ${RMAP[k].name} (${who})${src?` · upgrade the ${BMAP[src].name}`:''}`,open:()=>{const id=src&&S.buildings[src].lvl?src:L[0][0].id;openSheet('bld',id);focusLot(id,true);}});}
   // v2.10 power plant: out of fuel / low fuel / affordable build or upgrade
   if(pwLvl()&&pwState().on!==false){const s=pwStatus();if(s.k==='nofuel'||s.k==='low') out.push({id:'power',k:'power',p:2,t:s.k==='nofuel'?'⛔ Power Plant: no fuel running':'⚠ Power Plant: low on fuel',open:()=>{openSheet('power');focusLot('power',true);}});}
   if(stationVisible()&&stationLvl()<STATION_MAX&&S.coins+1e-9>=stationCost()) out.push({id:'station',k:'upg',p:3,t:`🚒 Fire Station: ${stationLvl()?'upgrade':'build'} affordable`,open:()=>{openSheet('staff');const b=document.getElementById('shBody');if(b) b.scrollTop=0;}});
