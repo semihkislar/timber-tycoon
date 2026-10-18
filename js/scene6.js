@@ -176,6 +176,7 @@ function drawScene(dt){
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
+  if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}   // v2.20 factory tiers
   premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView); if(typeof swDraw==='function') swDraw(ctx,objs,inView);   // v2.15 staff in the world
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);

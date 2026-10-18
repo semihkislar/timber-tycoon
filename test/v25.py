@@ -13,7 +13,7 @@ def ok(c,msg):
     if not c: FAILS.append(msg)
 QUIET='TT.S.orders.next=1e9;TT.setWeather("clear",1e6);TT.S.wx.next=1e9;TT.S.fireCool=1e9;TT.S.nextEvent=1e12;'
 MID='''(()=>{TT.S.coins=1e15;TT.buyCollector("lumberjack",40);TT.buyCollector("chainsaw",30);TT.buyCollector("truck",20);TT.buyCollector("harvester",10);
-for(const [b,n] of [["sawmill",70],["chipper",40],["kiln",40],["carpentry",30],["pellet",30],["paper",20],["furniture",12]]) TT.buyBuilding(b,n);TT.S.coins=1e12;TT.S.time=1000;'''+QUIET+'''TT.simulate(3);})()'''
+for(const [b,n] of [["sawmill",70],["chipper",40],["kiln",40],["carpentry",30],["pellet",30],["paper",20],["furniture",12],["peeler",40]]) TT.buyBuilding(b,n);TT.S.coins=1e12;TT.S.time=1000;'''+QUIET+'''TT.simulate(3);})()'''
 with sync_playwright() as p:
     b=p.chromium.launch(); errs=[]
     def watch(pg):
@@ -76,7 +76,7 @@ with sync_playwright() as p:
     ch=E(pg,"TT.rates.charcoal.p"); gl=E(pg,"TT.rates.glue.p")
     ok(E(pg,"TT.S.res.glue")>g0 and abs(gl/ch-0.5)<0.04,f'Pine Tar Glue: kilns distil ½ glue per charcoal ({gl:.1f}/{ch:.1f})')
     E(pg,"TT.doResearch('plywood')"); ok(E(pg,"!!TT.buyBuilding('plymill',2)"),'Plywood Mill unlocked by research')
-    E(pg,"TT.S.autosell.plywood=false;TT.simulate(4,.25)"); ok(E(pg,"TT.S.res.plywood")>0,'plywood produced from planks + glue')
+    E(pg,"TT.S.autosell.plywood=false;TT.simulate(4,.25)"); ok(E(pg,"TT.S.res.plywood")>0,'plywood produced from veneer + glue (v2.20)')
     E(pg,"TT.S.seeds=4;TT.doResearch('bending');TT.doResearch('toys')")
     ok(not E(pg,"TT.doResearch('automation')"),'Automation (Tier II) locked below Forest Legacy 25')
     E(pg,"TT.S.legacy=30"); ok(E(pg,"TT.doResearch('automation')") and E(pg,"TT.S.seeds")==4,'Automation opens at Legacy 25 and costs no Seeds (v2.19)')

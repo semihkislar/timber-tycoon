@@ -112,11 +112,13 @@ function updateBuildingSheet(){
   const sig=b.id+'|'+vis+'|'+(st.lvl>0)+'|'+(M.sawdust?1:0);
   if(sig!==bpSig){bpSig=sig;
     $('bpIc').innerHTML=svgIcon(b.svg,40); $('bpName').textContent=vis?b.name:'Unknown building';
+    {const tb=$('bpTier'),T=vis&&typeof tierBadge==='function'&&BTIER[b.id];tb.innerHTML=T?` ${tierBadge(b.id)}`:'';tb.title=T?TIER_N[BTIER[b.id]]:'';}
     $('bpDesc').innerHTML=vis?`${b.desc} <b>${recipeStr(b)}</b>`:'';
     $('bpLocked').classList.toggle('hidden',vis); $('bpMain').classList.toggle('hidden',!vis);
     $('shTitle').textContent=vis?b.name:'Empty lot';
   }
   if(!vis){$('bpLocked').innerHTML=`🔒 This lot is still covered in brambles.<br>Earn <b>🪙 ${fmt(b.cost*cs()*0.25)}</b> in total to reveal what can be built here (now ${fmt(S.totalEarned)}).`;$('bpLv').textContent='';return;}
+  {const mg=$('bpMargin');if(mg){mg.classList.toggle('hidden',!(typeof BTIER==='object'&&BTIER[b.id]));}if(mg&&typeof bMargin==='function'&&BTIER[b.id]){const v=st.lvl?bMargin(b.id):0,u=unitMargin(b.id);const ph=`<b class="tier-line t${BTIER[b.id]}">${TIER_N[BTIER[b.id]]}</b> · `;const tx=ph+(st.lvl?`📈 Processing adds <b>${v>=0?'+':''}🪙${fmt(v)}/s</b> over selling its inputs raw (${u>=0?'+':''}${fmt(u,1)} per unit)`:`📈 +${fmt(u,1)} per unit over the value of its inputs`);if(mg._t!==tx){mg.innerHTML=tx;mg._t=tx;}}}
   const n=qty(b.cost,b.scale,st.lvl); const cost=bulkCost(b.cost,b.scale,st.lvl,n);
   $('bpLv').textContent=st.lvl?' Lv '+st.lvl:'';
   const mc=msCount(st.lvl),nx=nextMs(st.lvl),prev=mc?MILESTONES[mc-1]:0;
@@ -172,7 +174,9 @@ function resVisible(r){
 }
 function buildMarket(){
   const T=$('mktBody'); T.innerHTML=''; mktEls={};
-  for(const r of RES){ if(!resVisible(r)) continue;
+  const order=typeof resTier==='function'?RES.slice().sort((a,b)=>resTier(a.id)-resTier(b.id)):RES; let lastT=-1;   // v2.20: grouped by tier
+  for(const r of order){ if(!resVisible(r)) continue;
+    if(typeof resTier==='function'){const t=resTier(r.id);if(t!==lastT){lastT=t;const h=document.createElement('tr');h.className='mkt-tier t'+t;h.innerHTML=`<td colspan="7"><b>${TIER_N[t]}</b> <span>${TIER_D[t]}</span></td>`;T.appendChild(h);}}
     const tr=document.createElement('tr'); tr.dataset.id=r.id;
     tr.innerHTML=`<td class="nm"><span class="ric">${svgIcon(r.svg,20)}</span> ${r.name}</td><td class="st"></td><td class="hm pr pos"></td><td class="hm us"></td><td class="price"></td>
       <td><label class="sw" title="Auto-sell surplus"><input type="checkbox"><span class="tr"></span></label></td><td><button class="btn wood small">Sell</button></td>`;

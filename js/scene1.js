@@ -108,8 +108,9 @@ function shadowAt(ctx,i,j,rx,ry,a){const [x,y]=P(i,j,0);ctx.fillStyle=`rgba(30,4
 /* ---------------- world layout ---------------- */
 const ROWC=[9,14,19,24];
 function mkLot(id,c,side){return side==='L'?{id,ci:c-3,cj:c+3,side,face:'I'}:{id,ci:c+3,cj:c-3,side,face:'J'};}
-const LOTS={sawmill:mkLot('sawmill',9,'L'),chipper:mkLot('chipper',9,'R'),kiln:mkLot('kiln',14,'L'),carpentry:mkLot('carpentry',14,'R'),
-  pellet:mkLot('pellet',19,'L'),paper:mkLot('paper',19,'R'),furniture:mkLot('furniture',24,'L')};
+// v2.20 factory tiers: right side (R) = phase 1, logs only · left side (L) = phase 2, fed by phase 1 · Premium Area = phase 3
+const LOTS={peeler:{id:'peeler',ci:7.45,cj:1.3,side:'R',face:'J'},sawmill:mkLot('sawmill',9,'R'),chipper:mkLot('chipper',14,'R'),kiln:mkLot('kiln',19,'R'),
+  carpentry:mkLot('carpentry',9,'L'),pellet:mkLot('pellet',14,'L'),paper:mkLot('paper',19,'L'),furniture:mkLot('furniture',24,'L')};
 // v2.2 premium factory area: a fenced compound east of the yard, between the factory and the highway
 const PREM={i0:21,i1:29,j0:0,j1:9};
 function mkPLot(id,ci,cj,bs0){return {id,ci,cj,side:'P',face:'I',prem:true,bs0:bs0||1.8};}
@@ -122,16 +123,16 @@ const YARD={id:'yard',ci:4,cj:4,face:'I'}, DOCK={id:'dock',ci:27,cj:21,side:'R',
 const LOGPICK=[6.35,6.35];
 const ROAD_I=30.9;           // asphalt road centre line (runs along j)
 const DIRT_J=8;              // dirt log road centre (runs along i)
-const RCOL={logs:'#9a6234',planks:'#e0b071',chips:'#d2a35e',charcoal:'#3a3634',chairs:'#b0703c',pellets:'#8a5a34',paper:'#f6f3ea',furniture:'#d0764e',
+const RCOL={logs:'#9a6234',planks:'#e0b071',veneer:'#ecd3a2',bark:'#5e3c22',chips:'#d2a35e',charcoal:'#3a3634',chairs:'#b0703c',pellets:'#8a5a34',paper:'#f6f3ea',furniture:'#d0764e',
   giftbox:'#2a2a30',flooring:'#8a5428',stationery:'#1f3a5a',cabinets:'#4a2c1c',luxfurn:'#6a1f3a'};
-const OUT_OF={sawmill:'planks',chipper:'chips',kiln:'charcoal',carpentry:'chairs',pellet:'pellets',paper:'paper',furniture:'furniture',
+const OUT_OF={peeler:'veneer',sawmill:'planks',chipper:'chips',kiln:'charcoal',carpentry:'chairs',pellet:'pellets',paper:'paper',furniture:'furniture',
   atelier:'giftbox',parquet:'flooring',stationer:'stationery',cabinetry:'cabinets',showroom:'luxfurn'};
-const SRC_OF={planks:'sawmill',chips:'chipper',chairs:'carpentry'};
-const VEST={sawmill:'#e8742a',chipper:'#3aa0d8',kiln:'#d84a3a',carpentry:'#e8c43a',pellet:'#9a6ad8',paper:'#4ac0a0',furniture:'#e85a9a'};
+const SRC_OF={planks:'sawmill',chips:'chipper',chairs:'carpentry',veneer:'peeler',charcoal:'kiln',pellets:'pellet',paper:'paper'};
+const VEST={peeler:'#7ab04a',sawmill:'#e8742a',chipper:'#3aa0d8',kiln:'#d84a3a',carpentry:'#e8c43a',pellet:'#9a6ad8',paper:'#4ac0a0',furniture:'#e85a9a'};
 function msOf(id){return msCount(S.buildings[id].lvl);}
 function lotBox(L){
   const ms=L.id==='dock'||L.id==='yard'?0:msOf(L.id);
-  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.tech) bs=Math.min(L.bs0+.3,L.bs0+.05*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); if(L.id==='dock') bs=3.0;
+  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.tech) bs=Math.min(L.bs0+.3,L.bs0+.05*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); else if(L.id==='peeler') bs=Math.min(2.95,2.45+0.1*ms); if(L.id==='dock') bs=3.0;
   const hb=bs/2; return {i0:L.ci-hb,i1:L.ci+hb,j0:L.cj-hb,j1:L.cj+hb,bs,ms};
 }
 function doorOf(L){const b=lotBox(L);return L.face==='I'?[b.i1+.38,b.j0+b.bs*.28]:[b.i0+b.bs*.28,b.j1+.38];}

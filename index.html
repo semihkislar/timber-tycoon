@@ -60,7 +60,7 @@
   <div class="sh-head" id="shHead"><span class="sh-grab" aria-hidden="true"></span><h3><span class="sh-ic" id="shIc"></span><span id="shTitle">Building</span></h3><button class="sh-sz" id="shSize" title="Expand / collapse">⤢</button><button class="sh-x" id="shClose" title="Close">✕</button></div>
   <div class="sh-body" id="shBody">
     <div class="pane" id="pane-bld">
-      <div class="bp-top"><div class="bp-ic" id="bpIc"></div><div class="bp-meta"><div class="bp-name"><span id="bpName"></span><span class="lv" id="bpLv"></span></div><div class="bp-desc" id="bpDesc"></div></div>
+      <div class="bp-top"><div class="bp-ic" id="bpIc"></div><div class="bp-meta"><div class="bp-name"><span id="bpName"></span><span id="bpTier"></span><span class="lv" id="bpLv"></span></div><div class="bp-desc" id="bpDesc"></div></div>
         <div class="bp-nav"><button id="bpPrev" title="Previous building">‹</button><button id="bpNext" title="Next building">›</button></div></div>
       <div id="bpLocked" class="lockmsg hidden"></div>
       <div id="bpMain">
@@ -70,6 +70,7 @@
         <div class="brow"><span class="seg mult"><button data-m="1" class="on">×1</button><button data-m="10">×10</button><button data-m="max">Max</button></span>
           <label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
         <div class="buyrow"><button class="btn buy big hold" id="bpBuy"></button><button class="btn gold bmax" id="bpMax" title="Buy as many levels as you can afford">Max</button></div>
+        <div id="bpMargin" class="bp-margin legend"></div>
         <div class="pbar"><i id="bpPbar"></i></div>
         <div class="fire-note hidden" id="bpFire"></div>
         <div class="bspec hidden" id="bpSpec"></div>
@@ -186,6 +187,7 @@
 <script src="js/scene13.js"></script>
 <script src="js/staffworld.js"></script>
 <script src="js/mobile.js"></script>
+<script src="js/tiers.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
