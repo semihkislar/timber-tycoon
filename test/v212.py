@@ -131,11 +131,11 @@ with sync_playwright() as p:
     r=E(pg,f'''(()=>{{const set={SET};set({{sawmill:60,chipper:30,kiln:20}},1e12);const B=TT.S.builders;B.lvl=4;TT.setBuildersPlan('low');TT.setBuildersBudget(.5);TT.setBuildersAllow('kiln',false);
       byTick(.1,false);const jobs0=B.jobs.length;TT.S.totalEarned=1e12;const st0=B.stats.lv;const okp=TT.doPrestige();const N=TT.S.builders;
       const b=BMAP.sawmill;return {{okp,jobs0,lvl:N.lvl,plan:N.plan,budget:N.budget,off:N.off,jobs:N.jobs.length,st:N.stats.lv===st0,
-        saw:TT.S.buildings.sawmill.lvl,cost:TT.bulkCost(b.cost,b.scale,TT.S.buildings.sawmill.lvl,1),base:b.cost,mgrKept:typeof TT.S.mgr==='object'}};}})()''')
+        saw:TT.S.buildings.sawmill.lvl,cost:TT.bulkCost(b.cost,b.scale,TT.S.buildings.sawmill.lvl,1),base:b.cost*cs(),mgrKept:typeof TT.S.mgr==='object'}};}})()''')
     print('replant',r,flush=True)
     ok(r['okp'] and r['lvl']==4 and r['plan']=='low' and r['budget']==.5 and r['off'].get('kiln')==1 and r['st'],f'Replant keeps the yard, its plan/budget/opt-outs and stats ({r})')
     ok(r['jobs0']>=1 and r['jobs']==0,'Replant drops running jobs')
-    ok(r['saw']==0 and abs(r['cost']-r['base'])<1e-9,f"Replant still resets buildings and their upgrade cost ({r['saw']}, {r['cost']} == {r['base']})")
+    ok(r['saw']==0 and abs(r['cost']-r['base'])<1e-9*r['base'],f"Replant still resets buildings and their upgrade cost ({r['saw']}, {r['cost']} == {r['base']})")
     ctx.close()
 
     # 4) scene: trucks, builders, scaffolding, desktop taps + sheet controls

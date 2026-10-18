@@ -6,7 +6,7 @@ const STO_MAX=8, STO_BASE_SEC=60, STO_SPEED=.05;
 function stoLvl(id){return (S.storage&&S.storage[id])||0;}
 function stoBonus(id){return 1+STO_SPEED*stoLvl(id);}
 function stoSec(l){return STO_BASE_SEC*Math.pow(2,l);}
-function stoCost(id){const b=BMAP[id],l=stoLvl(id);return b.cost*5*Math.pow(5,l);}
+function stoCost(id){const b=BMAP[id],l=stoLvl(id);return b.cost*cs()*5*Math.pow(5,l);}
 // capacity (units) per resource = sum over built producers of (output/s at full speed) x seconds of storage
 function stockCaps(){
   const c={}; for(const r of RES) c[r.id]=0; const has={};
@@ -25,7 +25,7 @@ function buyStorage(id){
 }
 /* ---------- premium area ---------- */
 const PREM_UNLOCK=2e6, PREM_LVL_BONUS=0.25, PREM_MAX=5;
-function premCost(){const l=S.premium.lvl;return l?PREM_UNLOCK*Math.pow(12,l):PREM_UNLOCK;}
+function premCost(){const l=S.premium.lvl;return (l?PREM_UNLOCK*Math.pow(12,l):PREM_UNLOCK)*cs();}
 function premVisible(){return S.premium.lvl>0||S.totalEarned>=PREM_UNLOCK*0.25;}
 function buyPremium(){
   const l=S.premium.lvl; if(l>=PREM_MAX) return false; const c=premCost(); if(S.coins+1e-9<c) return false;

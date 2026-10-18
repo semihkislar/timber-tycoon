@@ -667,3 +667,29 @@ body.flow-on #flowBtn{background:linear-gradient(180deg,#ffe68a,#f2b83a)}
 .bspec-o:not(.on):not(.pend) .bspec-tag{background:#f3e3bd;color:#7a5410;border:1px solid #e0c890}
 .bspec-o.pend .bspec-tag{background:#e0574f;color:#fff}
 .bspec-note{margin-top:6px;font-size:11.5px;color:#7a5a30;line-height:1.35}
+/* v2.18 Replant 2.0 */
+.rp-tabs{display:flex;gap:6px;margin:0 0 10px;position:sticky;top:0;z-index:2;background:var(--paper);padding:2px 0 6px}
+.rp-tabs button{flex:1;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fffaf0;font:800 13.5px system-ui;color:var(--ink2);position:relative;cursor:pointer}
+.rp-tabs button.on{background:linear-gradient(180deg,#ffe68a,#f2b83a);color:#3a2410;border-color:#c99560}
+.rp-tabs .dot{position:absolute;top:4px;right:6px}
+.rp-box{text-align:left}.rp-box>div:nth-child(2),.rp-box .big,.rp-box #pNext{text-align:center}
+.rp-legacy{display:grid;gap:4px;margin-bottom:8px}
+.rp-l{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:6px 10px;border-radius:10px;background:#f6ecd8}.rp-l b{color:#2f6a1c}
+.rp-l.rp-old{background:#fff1e0}.rp-l.rp-old b{color:#a8641a}
+.rp-advice{margin:8px 0 2px;padding:8px 10px;border-radius:10px;font-size:13px;font-weight:700;text-align:center;background:#eef3e6;color:#3d5a26}
+.rp-advice.now{background:#dff3c8;color:#24600f;box-shadow:inset 0 0 0 2px #7ad04a}.rp-advice.wait{background:#f4ecdc;color:#7a5a30}
+.rp-go{width:100%;min-height:52px;font-size:17px;margin-top:10px}
+.rp-explain{margin:4px 2px 10px}
+.rp-wallet{padding:10px 12px;border-radius:12px;background:#eef6e4;border:1.5px solid #b9d79a;font-size:13.5px;margin-bottom:8px}
+.rp-list{display:grid;gap:8px}
+.rp-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:#fffaf0;border:1.5px solid var(--line)}
+.rp-card.max{opacity:.8}.rp-card.locked{opacity:.6}
+.rp-ic{font-size:26px;width:40px;text-align:center}.rp-tx{flex:1;min-width:0}.rp-tx .nm{font-weight:900;font-size:14.5px}.rp-tx .nm small{font-weight:700;color:var(--ink2)}
+.rp-tx .ds{font-size:12.5px;color:var(--ink2);line-height:1.3}
+.rp-card .btn{min-height:44px;min-width:86px;white-space:nowrap}
+.rp-goal{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:#fffaf0;border:1.5px solid var(--line);font-size:13.5px}
+.rp-goal .e{font-size:20px;width:28px;text-align:center}.rp-goal .g{flex:1}.rp-goal .pbar{height:6px;margin-top:4px}.rp-goal.done{background:#eef6e4}.rp-goal b{color:#2f6a1c}
+.rp-cf-gain{text-align:center;font-size:26px;font-weight:900;color:var(--green-d);margin:-4px 0 10px}.rp-cf-gain small{display:block;font-size:13px;color:var(--ink2);font-weight:700;margin-top:2px}
+.rp-cf{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.rp-cf-col{padding:8px 10px;border-radius:12px;font-size:12.5px}.rp-cf-col ul{margin:4px 0 0;padding-left:16px}.rp-cf-col li{margin:2px 0}
+.rp-cf-col.reset{background:#fbe9e2;border:1.5px solid #e9b8a6}.rp-cf-col.keep{background:#e8f4dc;border:1.5px solid #b9d79a}

@@ -62,14 +62,14 @@ function setMult(m){
 /* ===================== RENDER: COLLECTORS ===================== */
 const colEls={};
 let cSig='';
-function colVisible(c,i){return S.collectors[c.id]>0||S.totalEarned>=c.cost*0.3||i===0;}
+function colVisible(c,i){return S.collectors[c.id]>0||S.totalEarned>=c.cost*cs()*0.3||i===0;}
 function buildCollectors(){
   const L=$('colList'); L.innerHTML=''; let teaser=false;
   COLLECTORS.forEach((c,i)=>{
     const vis=colVisible(c,i);
     if(!vis){ if(teaser) return; teaser=true;
       const d=document.createElement('div');d.className='card locked';
-      d.innerHTML=`<div class="ic">❔</div><div><div class="nm">???</div><div class="ds">Earn 🪙 ${fmt(c.cost*0.3)} total to reveal</div></div><div></div>`;
+      d.innerHTML=`<div class="ic">❔</div><div><div class="nm">???</div><div class="ds">Earn 🪙 ${fmt(c.cost*cs()*0.3)} total to reveal</div></div><div></div>`;
       L.appendChild(d); return; }
     const d=document.createElement('div');d.className='card';d.dataset.id=c.id;
     d.innerHTML=`<div class="ic">${svgIcon(c.svg,32)}</div><div><div class="nm">${c.name}<span class="cnt"></span></div><div class="ds"></div><div class="pbar"><i></i></div></div><button class="btn buy"></button>`;
@@ -93,7 +93,7 @@ function updateCollectors(){
 }
 
 /* ===================== RENDER: BUILDING SHEET ===================== */
-function bVisible(b,i){if(b.premium) return S.premium.lvl>0; if(b.tech) return bldUnlocked(b.id)||S.buildings[b.id].lvl>0; if(i===undefined) i=BUILDINGS.indexOf(b); return S.buildings[b.id].lvl>0||S.totalEarned>=b.cost*0.25||i===0;}
+function bVisible(b,i){if(b.premium) return S.premium.lvl>0; if(b.tech) return bldUnlocked(b.id)||S.buildings[b.id].lvl>0; if(i===undefined) i=BUILDINGS.indexOf(b); return S.buildings[b.id].lvl>0||S.totalEarned>=b.cost*cs()*0.25||i===0;}
 function statusOf(b){
   const st=S.buildings[b.id],bs=bstat[b.id];
   if(!st.lvl) return {cls:'off',txt:'Not built',f:0};
@@ -116,7 +116,7 @@ function updateBuildingSheet(){
     $('bpLocked').classList.toggle('hidden',vis); $('bpMain').classList.toggle('hidden',!vis);
     $('shTitle').textContent=vis?b.name:'Empty lot';
   }
-  if(!vis){$('bpLocked').innerHTML=`🔒 This lot is still covered in brambles.<br>Earn <b>🪙 ${fmt(b.cost*0.25)}</b> in total to reveal what can be built here (now ${fmt(S.totalEarned)}).`;$('bpLv').textContent='';return;}
+  if(!vis){$('bpLocked').innerHTML=`🔒 This lot is still covered in brambles.<br>Earn <b>🪙 ${fmt(b.cost*cs()*0.25)}</b> in total to reveal what can be built here (now ${fmt(S.totalEarned)}).`;$('bpLv').textContent='';return;}
   const n=qty(b.cost,b.scale,st.lvl); const cost=bulkCost(b.cost,b.scale,st.lvl,n);
   $('bpLv').textContent=st.lvl?' Lv '+st.lvl:'';
   const mc=msCount(st.lvl),nx=nextMs(st.lvl),prev=mc?MILESTONES[mc-1]:0;
@@ -207,52 +207,40 @@ let upgSig='';
 function availUpgrades(){return UPGRADES.filter(u=>!S.upgrades[u.id]&&u.req()).sort((a,b)=>a.cost-b.cost).slice(0,10);}
 function updateUpgrades(){
   const av=availUpgrades();
-  let any=av.some(u=>S.coins>=u.cost);
+  let any=av.some(u=>S.coins>=upCost(u));
   $('upgDot').classList.toggle('hidden',!any||curSheet==='upg');
   if(curSheet!=='upg') return;
   const sig=av.map(u=>u.id).join(',');
   if(sig!==upgSig){upgSig=sig; const L=$('upgList'); L.innerHTML='';
     if(!av.length) L.innerHTML='<div class="hint">No upgrades available right now. Keep growing: upgrades appear as you expand.</div>';
     for(const u of av){const d=document.createElement('div');d.className='card';d.dataset.id=u.id;
-      d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name}</div><div class="ds">${u.desc}</div><div class="pbar"><i></i></div></div><button class="btn buy">${costBtnHtml('Buy',u.cost)}</button>`;
+      d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name}</div><div class="ds">${u.desc}</div><div class="pbar"><i></i></div></div><button class="btn buy">${costBtnHtml('Buy',upCost(u))}</button>`;
       d.querySelector('button').onclick=()=>{buyUpgrade(u.id);render();};L.appendChild(d);}
     const owned=UPGRADES.filter(u=>S.upgrades[u.id]);
     $('upgOwned').textContent=owned.length?`Owned (${owned.length}/${UPGRADES.length}): `+owned.map(u=>u.icon+' '+u.name).join(', '):'';
   }
-  $('upgList').querySelectorAll('.card').forEach(d=>{const u=UPGRADES.find(x=>x.id===d.dataset.id);const b=d.querySelector('button');b.disabled=S.coins<u.cost;d.classList.toggle('afford',!b.disabled);
-    const pb=d.querySelector('.pbar>i'); if(pb) pb.style.width=Math.min(100,S.coins/u.cost*100).toFixed(0)+'%';});
+  $('upgList').querySelectorAll('.card').forEach(d=>{const u=UPGRADES.find(x=>x.id===d.dataset.id);const b=d.querySelector('button');b.disabled=S.coins<upCost(u);d.classList.toggle('afford',!b.disabled);
+    const pb=d.querySelector('.pbar>i'); if(pb) pb.style.width=Math.min(100,S.coins/upCost(u)*100).toFixed(0)+'%';});
 }
 let treeSig='';
 function updateTrees(){
   const nx=TREES[S.tree+1];
-  $('crewDot').classList.toggle('hidden',!((nx&&S.coins>=nx.cost)||forestNeedsCrew())||curSheet==='crew');
+  $('crewDot').classList.toggle('hidden',!((nx&&S.coins>=treeCost(nx))||forestNeedsCrew())||curSheet==='crew');
   if(curSheet!=='crew') return;
-  const sig=S.tree+'|'+TREES.map(t=>S.totalEarned>=t.cost*0.2?1:0).join('');
+  const sig=S.tree+'|'+TREES.map(t=>S.totalEarned>=treeCost(t)*0.2?1:0).join('');
   if(sig!==treeSig){treeSig=sig;const L=$('treeList');L.innerHTML='';
     TREES.forEach((t,i)=>{const d=document.createElement('div');
-      const owned=i<=S.tree, next=i===S.tree+1, vis=owned||S.totalEarned>=t.cost*0.2||next;
+      const owned=i<=S.tree, next=i===S.tree+1, vis=owned||S.totalEarned>=treeCost(t)*0.2||next;
       d.className='card'+(i===S.tree?' cur':'')+(!vis?' locked':'');
       d.innerHTML=`<div class="ic"><span style="filter:${t.flt}">${vis?t.icon:'❔'}</span></div><div><div class="nm">${vis?t.name:'???'} ${i===S.tree?'<span class="cnt">· current</span>':''}</div><div class="ds">All prices ×${t.mult}</div></div>`+
-        (owned?`<span class="chip">${i===S.tree?'Harvesting':'Done'}</span>`:next?`<button class="btn buy">${costBtnHtml('Unlock',t.cost)}</button>`:`<span class="chip off">Locked</span>`);
+        (owned?`<span class="chip">${i===S.tree?'Harvesting':'Done'}</span>`:next?`<button class="btn buy">${costBtnHtml('Unlock',treeCost(t))}</button>`:`<span class="chip off">Locked</span>`);
       const b=d.querySelector('button'); if(b) b.onclick=()=>{buyTree();render();};
       L.appendChild(d);});
   }
   const b=$('treeList').querySelector('button');
-  if(b&&nx) b.disabled=S.coins<nx.cost;
+  if(b&&nx) b.disabled=S.coins<treeCost(nx);
 }
-function updateCompany(){
-  const g=pendingSeeds();
-  $('coDot').classList.toggle('hidden',!(g>=Math.max(1,Math.ceil(S.seeds*0.5)))||curSheet==='co');
-  if(curSheet!=='co') return;
-  $('pGain').textContent='+'+g+' 🌱';
-  $('prestigeBtn').disabled=g<1;
-  const nextAt=g<1?1e7:Math.pow((g+1)/3,2)*1e7;
-  $('pNext').innerHTML=g<1?`Requires 🪙 ${fmt(1e7)} earned this run (now ${fmt(S.totalEarned)}).`:`Next seed at 🪙 ${fmt(nextAt)} earned this run. New bonus: +${(S.seeds+g)*10}%`;
-  const rows=[['Seeds',`${S.seeds} 🌱 (+${S.seeds*10}%)`],['Earned this run','🪙 '+fmt(S.totalEarned)],['Lifetime earnings','🪙 '+fmt(S.lifetimeEarned)],
-    ['Logs per second',fr(logRate())],['Chops (run / lifetime)',`${fmt(S.clicks)} / ${fmt(S.lifetimeClicks)}`],['Replants',S.prestiges],
-    ['Current wood',TREES[S.tree].name],['Trophies',`${achCount()} / ${ACH.length} (+${Math.round(achCount()*ACH_BONUS*100)}%)`],['Golden logs caught',S.golden||0],['Milestone stars',`${totStars()} ⭐`],['Play time',fmtTime(S.playTime)],['Version',S.version||VERSION]];
-  const h=rows.map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join(''); const k=$('statsKv'); if(k._h!==h){k.innerHTML=h;k._h=h;}
-}
+/* v2.18: updateCompany (Replant sheet) lives in js/replant.js */
 let achSig='';
 function updateAch(){
   const n=achCount();

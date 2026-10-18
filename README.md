@@ -14,6 +14,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
 - `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
 - `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
+- `js/replant.js` (v2.18): Replant 2.0 — Forest Legacy, Seed Shop, run goals, forest-value cost scaling, ideal-time advice, confirm sheet, migration (design: `docs/replant-v2.18.md`)
 - `js/spec.js` (v2.17): line specialisations — ⚡ High-speed / ♻️ Lean / 💎 Master craft from Lv 50 (tiers at 50/100/200), advisor, retool on switch, building-sheet block and the scene banner
 - `js/flow.js` (v2.16): Supply flow view (isometric producer → consumer arcs with rates and health colours, 🔀 button / F key)
 - `js/shipping.js` (v2.13): Shipping Yard (loading bays, departures, export contracts, dock/forklift/crane upgrades, sheet UI)

@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.17';
+const VERSION='2.18';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -184,7 +184,7 @@ const ACH=[
   {id:'upg10',t:'silver',e:'⬆️',n:'Tinkerer',d:'Own 10 upgrades',p:()=>[nUpg(),10]},
   {id:'upgall',t:'gold',e:'🧰',n:'Fully Tooled',d:'Own every upgrade',p:()=>[nUpg(),UPGRADES.length]},
   {id:'replant',t:'silver',e:'🌱',n:'Replanter',d:'Replant the forest once',p:()=>[S.prestiges,1]},
-  {id:'seeds25',t:'gold',e:'🌾',n:'Seed Bank',d:'Hold 25 Seeds',p:()=>[S.seeds,25]},
+  {id:'seeds25',t:'gold',e:'🌾',n:'Seed Bank',d:'Reach a Forest Legacy of 25 Seeds',p:()=>[S.legacy||S.seeds,25]},
   {id:'gold1',t:'bronze',e:'✨',n:'Golden Find',d:'Catch a Golden Log',p:()=>[S.golden,1]},
   {id:'gold10',t:'silver',e:'🌟',n:'Gold Digger',d:'Catch 10 Golden Logs',p:()=>[S.golden,10]},
   {id:'gold50',t:'gold',e:'💫',n:'Midas Touch',d:'Catch 50 Golden Logs',p:()=>[S.golden,50]},
@@ -222,7 +222,7 @@ const ACH=[
 /* ===================== STATE ===================== */
 function freshState(keep){
   const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
-    seeds:0,prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
+    seeds:0,legacy:0,oldRep:0,shop:{},runCS:1,run:{goals:{},peak:0,start:0,charter:false},rpStats:{runs:[],best:0},prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
     storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
     wx:{clock:126,w:'clear',ends:0,next:201},
@@ -317,6 +317,7 @@ function migrateSave(o){
   if(!o.specStats||typeof o.specStats!=='object') o.specStats={picks:0,switches:0};
   for(const k of ['picks','switches']) if(typeof o.specStats[k]!=='number') o.specStats[k]=0;
   if(o.v===undefined) o.v=1;
+  if(typeof rpMigrate==='function') rpMigrate(o);   // v2.18 Replant 2.0
   o.version=VERSION;
   return o;
 }
@@ -345,7 +346,7 @@ function computeMods(){
   if(typeof staffDockPrem==='function') m.priceAll*=1+staffDockPrem();   // v2.14 dock workers
   if(typeof applySpecMods==='function') applySpecMods(m);   // v2.17 master-craft lines
   m.ach=1+ACH_BONUS*achCount();
-  m.rep=(1+0.1*S.seeds)*m.ach;
+  m.rep=(typeof rpApply==='function'?rpApply(m):1+0.1*S.seeds)*m.ach;   // v2.18 Forest Legacy (js/replant.js)
   return m;
 }
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
@@ -417,7 +418,7 @@ function tick(dt,offline){
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
   if(typeof powerTick==='function') powerTick(demand,dt,fl);   // v2.10: the power plant takes its fuel before auto-sell
-  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt);
+  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
     if(!S.autosell[r.id]) continue;
@@ -468,8 +469,13 @@ function simulateOffline(sec){
 }
 
 /* ===================== COSTS & PURCHASES ===================== */
-function bulkCost(base,scale,owned,n){return base*Math.pow(scale,owned)*(Math.pow(scale,n)-1)/(scale-1);}
-function maxAfford(base,scale,owned){const c=S.coins;const n=Math.floor(Math.log(c*(scale-1)/(base*Math.pow(scale,owned))+1)/Math.log(scale));return Math.max(0,n);}
+/* v2.18 run cost scale: everything you rebuy each run is priced in this run's 'forest value' (set at Replant from your
+   Legacy + Fertile Soil, see js/replant.js). Kept infrastructure (fire station, power plant, yards, harbour, managers) is not scaled. */
+function upCost(u){return u.cost*cs();}
+function treeCost(t){return t.cost*cs();}
+function cs(){return (S&&S.runCS>0)?S.runCS:1;}
+function bulkCost(base,scale,owned,n){base*=cs();return base*Math.pow(scale,owned)*(Math.pow(scale,n)-1)/(scale-1);}
+function maxAfford(base,scale,owned){base*=cs();const c=S.coins;const n=Math.floor(Math.log(c*(scale-1)/(base*Math.pow(scale,owned))+1)/Math.log(scale));return Math.max(0,n);}
 let buyMult=1;
 function qty(base,scale,owned){if(buyMult==='max') return Math.max(1,maxAfford(base,scale,owned));return buyMult;}
 function buyCollector(id,n){
@@ -491,12 +497,12 @@ function buyBuilding(id,n){
   return true;
 }
 function buyUpgrade(id){
-  const u=UPGRADES.find(x=>x.id===id); if(!u||S.upgrades[id]||S.coins<u.cost) return false;
-  S.coins-=u.cost; S.upgrades[id]=true; M=computeMods(); toast(`${u.icon} <b>${u.name}</b>: ${u.desc}`); sfx('buy'); return true;
+  const u=UPGRADES.find(x=>x.id===id); if(!u||S.upgrades[id]||S.coins<upCost(u)) return false;
+  S.coins-=upCost(u); S.upgrades[id]=true; M=computeMods(); toast(`${u.icon} <b>${u.name}</b>: ${u.desc}`); sfx('buy'); return true;
 }
 function buyTree(){
-  const nx=TREES[S.tree+1]; if(!nx||S.coins<nx.cost) return false;
-  S.coins-=nx.cost; S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
+  const nx=TREES[S.tree+1]; if(!nx||S.coins<treeCost(nx)) return false;
+  S.coins-=treeCost(nx); S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
 }
 function chop(){
   const n=chopPower()*chopForest(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
@@ -504,11 +510,10 @@ function chop(){
 function sellAll(id){
   const n=S.res[id]; if(n<=0) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
 }
-function seedsFor(earned){return earned<1e7?0:Math.floor(3*Math.sqrt(earned/1e7));}
-function pendingSeeds(){return seedsFor(S.totalEarned);}
+/* v2.18: seedsFor / pendingSeeds live in js/replant.js */
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
-  const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
+  const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,...rpKeep(g),lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
     firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false};})(),
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
@@ -518,9 +523,9 @@ function doPrestige(){
   keep.spec=typeof specKeep==='function'?specKeep():{}; keep.specStats=Object.assign({picks:0,switches:0},S.specStats||{});   // v2.17: picks are remembered, retooling is dropped
   keep.ship=typeof shKeep==='function'?shKeep():S.ship;   // v2.13: docks, forklifts and crane are kept through Replant
   {const B=S.builders||{};keep.builders={lvl:B.lvl||0,on:B.on!==false,plan:B.plan||'ms',budget:B.budget||.25,off:Object.assign({},B.off||{}),jobs:[],stats:Object.assign({lv:0,spent:0,jobs:0},B.stats||{}),seq:B.seq||0,cool:0};}   // v2.12: the yard stays built, jobs are dropped
-  S=freshState(keep); M=computeMods();
+  S=freshState(keep); rpStartRun(); M=computeMods();   // v2.18: Seed Shop start bonuses, fresh run goals
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
-  save(); rebuildAll(); toast(`🌱 Forest replanted! You now have <b>${S.seeds}</b> Seeds (+${S.seeds*10}% production).`);
+  save(); rebuildAll(); toast(`🌱 Forest replanted! <b>+${g}</b> Seeds · Legacy <b>${fmt(S.legacy)}</b> (production ×${legacyMult().toFixed(2)}) · ${fmt(S.seeds)} 🌱 to spend in the Seed Shop`,5200);
   confettiBurst(); sfx('unlock');
   return true;
 }

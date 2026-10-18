@@ -85,7 +85,7 @@ with sync_playwright() as p:
     t=E(pg,"(()=>{const c=TT.scene.ctx;const L=TT.LOTS.sawmill,B=lotBox(L);const t0=performance.now();for(let k=0;k<300;k++) specBanner(c,L,B);return (performance.now()-t0)/300;})()")
     ok(t<0.3,f'banner draw cost {t*1000:.0f} µs')
     # Replant: picks kept, levels/costs reset, effect returns at Lv 50
-    r=E(pg,"(()=>{S.spec.sawmill={k:'lean',rt:S.time+20};S.totalEarned=1e15;S.lifetimeEarned=1e15;TT.doPrestige(true);return {spec:S.spec.sawmill,lvl:S.buildings.sawmill.lvl,cost:Math.abs(TT.bulkCost(BMAP.sawmill.cost,BMAP.sawmill.scale,S.buildings.sawmill.lvl,1)/BMAP.sawmill.cost-1)<1e-9,spd:specSpd('sawmill'),inm:specIn('sawmill')};})()")
+    r=E(pg,"(()=>{S.spec.sawmill={k:'lean',rt:S.time+20};S.totalEarned=1e15;S.lifetimeEarned=1e15;TT.doPrestige(true);return {spec:S.spec.sawmill,lvl:S.buildings.sawmill.lvl,cost:Math.abs(TT.bulkCost(BMAP.sawmill.cost,BMAP.sawmill.scale,S.buildings.sawmill.lvl,1)/(BMAP.sawmill.cost*cs())-1)<1e-9,spd:specSpd('sawmill'),inm:specIn('sawmill')};})()")
     ok(r['spec']=={'k':'lean','rt':0} and r['lvl']==0 and r['cost'] and r['spd']==1 and r['inm']==1,f'Replant keeps the pick (retool dropped), resets levels and costs, no effect below Lv 50 ({r})')
     E(pg,"S.buildings.sawmill.lvl=50;M=computeMods()"); ok(abs(E(pg,"specIn('sawmill')")-0.8)<1e-9,'the kept pick switches back on at Lv 50')
     ok(not errs and not bad,f'desktop: no errors / 404s ({errs[:3]} {bad[:3]})')

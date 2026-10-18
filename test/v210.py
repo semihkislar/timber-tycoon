@@ -92,8 +92,8 @@ with sync_playwright() as p:
     E(pg,'TT.S.totalEarned=1e15;TT.doPrestige()')
     d=E(pg,'({l:TT.pwLvl(),f:TT.S.power.fuel,e:TT.S.power.eff,pel:TT.S.buildings.pellet.lvl,saw:TT.S.buildings.sawmill.lvl,b:TT.pwBoost()})')
     ok(d['l']==10 and d['f']=='pellets' and d['pel']==0 and d['saw']==0 and d['b']==0,f"Replant keeps the plant, resets buildings; no boost until fuel runs ({d})")
-    d=E(pg,'(()=>{TT.S.coins=100;const r=TT.buyBuilding("sawmill",1);return [r,TT.S.buildings.sawmill.lvl,TT.S.coins]})()')
-    ok(d[0] and d[1]==1 and d[2]<1,f'costs reset as before (sawmill Lv 1 costs 100 again after Replant) ({d})')
+    d=E(pg,'(()=>{const c=100*cs();TT.S.coins=c;const r=TT.buyBuilding("sawmill",1);return [r,TT.S.buildings.sawmill.lvl,TT.S.coins,c]})()')
+    ok(d[0] and d[1]==1 and d[2]<d[3]*1e-6+1,f'costs reset to base x forest value (v2.18) ({d})')
     ctx.close()
 
     # --- scene + desktop sheet ---
