@@ -2,7 +2,7 @@
 # waiting, opt-out, off switch, fires, crews cap), offline building, Replant keeps the yard and still resets costs, trophies,
 # scene (trucks, builders, scaffolding), sheet controls, taps on desktop + iPhone 13 + Pixel 7, no 404s/errors, release snapshot.
 from playwright.sync_api import sync_playwright
-import sys,os,json
+import sys,os,json,re
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
 FAILS=[]
@@ -35,7 +35,7 @@ with sync_playwright() as p:
     ok(ver(E(pg,'TT.VERSION'))>=(2,12),f"VERSION>=2.12 ({E(pg,'TT.VERSION')})")
     ok(E(pg,'typeof byTick==="function"&&typeof buyBuilders==="function"&&typeof byDraw==="function"&&typeof byScaffoldRaw==="function"&&typeof byTruckRaw==="function"'),'builders logic + scene loaded')
     sw=E(pg,'fetch("sw.js").then(r=>r.text())')
-    ok("timber-tycoon-v2.1" in sw,'sw.js cache bumped (>= v2.12)')
+    ok(re.search(r"timber-tycoon-v2\.(1[2-9]|[2-9]\d)",sw) is not None,'sw.js cache bumped (>= v2.12)')
     fs=E(pg,'JSON.stringify(TT.S.builders)')
     ok(json.loads(fs)['lvl']==0 and json.loads(fs)['plan']=='ms' and json.loads(fs)['budget']==.25,f'fresh state has an unbuilt yard ({fs[:80]})')
 

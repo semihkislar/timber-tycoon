@@ -6,7 +6,7 @@
    resource tint = fed, amber = slightly short, red = short (uses the smoothed bstat.fs from v2.15.1).
    Toggle with the 🔀 button (or F on a keyboard). Purely visual: nothing in the save changes; the on/off choice lives in
    localStorage 'tt_flow'. Drawn in screen space after the building tags, only while the view is on. */
-const FLOW_TINT={logs:'#b07a42',planks:'#d9a35a',chips:'#c9a24a',charcoal:'#5a5a62',chairs:'#a8743c',pellets:'#9a6a3a',paper:'#e8e2cf',
+const FLOW_TINT={logs:'#b07a42',planks:'#d9a35a',veneer:'#e8cf98',bark:'#7a5030',chips:'#c9a24a',charcoal:'#5a5a62',chairs:'#a8743c',pellets:'#9a6a3a',paper:'#e8e2cf',
   furniture:'#c0603a',glue:'#d8a930',plywood:'#e08a3a',toys:'#e2577a',boats:'#3f86c8',flooring:'#a0703c',cabinets:'#8a5a3a',
   giftbox:'#d14b4b',stationery:'#5a6fd0',luxfurn:'#d8a930'};
 let flowOn=false; try{flowOn=localStorage.getItem('tt_flow')==='1';}catch(_){}
@@ -63,11 +63,15 @@ function flowOverlay(ctx){
     if(placed.some(p=>Math.abs(p.x-L.x)<(p.w+tw)/2&&Math.abs(p.y-L.y)<18)) continue;placed.push({x:L.x,y:L.y,w:tw});
     ctx.fillStyle=L.e.state==='bad'?'rgba(150,30,22,.92)':L.e.state==='warn'?'rgba(140,90,10,.92)':'rgba(43,27,14,.85)';rr(ctx,L.x-tw/2,L.y-9,tw,18,9);ctx.fill();
     ctx.strokeStyle=L.col;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#fff6e0';ctx.fillText(txt,L.x,L.y+.5);}
+  // v2.20 tier badges (I / II / III) on every built building
+  if(typeof BTIER==='object'){ctx.font=`900 ${Math.round(10*Math.min(1.2,z))}px system-ui,sans-serif`;
+    for(const b of BUILDINGS){const t=BTIER[b.id];if(!t||!flowBuilt(b.id)) continue;const a=flowAnchor(b.id);if(!a) continue;const r=9*Math.min(1.2,z),y=a[1]-16*z;
+      ctx.fillStyle=TIER_C[t];ctx.strokeStyle='rgba(20,12,4,.8)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(a[0],y,r,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(TIER_S[t],a[0],y+.5);}}
   ctx.restore();
 }
 function updateFlowLegend(){
   const el=$('flowLegend');if(!el) return;el.classList.toggle('hidden',!flowOn);if(!flowOn) return;
-  const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`;
+  const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${typeof TIER_S==='object'?' · <span class="tier-b t1">I</span>→<span class="tier-b t2">II</span>→<span class="tier-b t3">III</span>':''}${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`;
   if(el._h!==h){el.innerHTML=h;el._h=h;}
 }
 (function initFlow(){

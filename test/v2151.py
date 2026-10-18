@@ -58,8 +58,8 @@ with sync_playwright() as p:
     ok(worst>=.9,f'cost-balanced mid/late game (premium + research): every plank consumer >= 90% fed in fair mode (worst {worst})')
     # 3) value mode + migration
     ctx.close(); ctx,pg,errs2,_=page(); errs+=errs2
-    r=E(pg,"""(()=>{S.premium.lvl=1;for(const b of ['carpentry','furniture','parquet']) S.buildings[b].lvl=30;M=computeMods();
-      const act=['carpentry','furniture','parquet'].map(id=>[BMAP[id],bSpeed(id)]);const dem={planks:0};for(const [b,sp] of act) dem.planks+=b.inp.planks*sp*mgrIn(b.id);
+    r=E(pg,"""(()=>{S.premium.lvl=1;for(const b of ['carpentry','furniture']) S.buildings[b].lvl=30;M=computeMods();
+      const act=['carpentry','furniture'].map(id=>[BMAP[id],bSpeed(id)]);const dem={planks:0};for(const [b,sp] of act) dem.planks+=b.inp.planks*sp*mgrIn(b.id);
       S.res.planks=dem.planks*.5;S.prefs.plankMode='fair';const fair=plankAlloc(act,dem,1);togglePlankMode();const val=plankAlloc(act,dem,1);
       const order=act.map(a=>a[0].id).sort((a,b)=>plankValue(BMAP[b])-plankValue(BMAP[a]));S.res.planks=dem.planks*2;const plenty=plankAlloc(act,dem,1);
       return {fair,val,order,mode:S.prefs.plankMode,plenty};})()""")

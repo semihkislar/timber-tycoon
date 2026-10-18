@@ -64,8 +64,8 @@ with sync_playwright() as p:
     pg.evaluate('TT.S.coins+=5000; TT.buyBuilding("chipper",1); TT.buyBuilding("sawmill",4); TT.simulate(10)')
     sm=pg.evaluate('TT.bstat.sawmill.f'); ch=pg.evaluate('TT.bstat.chipper.f')
     ok(abs(sm-ch)<0.01 and sm<1,'shared logs split proportionally')
-    pg.evaluate('''(()=>{const S=TT.S;S.coins+=1e9;TT.buyCollector("truck",10);TT.buyBuilding("sawmill",20);TT.buyBuilding("carpentry",5);TT.buyBuilding("furniture",1);TT.simulate(30);})()''')
-    ok(pg.evaluate('TT.rates.furniture.p')>0,'furniture produced from chairs+planks')
+    pg.evaluate('''(()=>{const S=TT.S;S.coins+=1e9;TT.buyCollector("truck",10);TT.buyBuilding("sawmill",20);TT.buyBuilding("carpentry",5);TT.buyBuilding("peeler",5);TT.buyBuilding("furniture",1);TT.simulate(30);})()''')
+    ok(pg.evaluate('TT.rates.furniture.p')>0,'furniture produced from planks+veneer (v2.20)')
     # market sheet: tapping the dock opens it
     pg.click('#shClose'); pg.wait_for_timeout(200)
     tap_lot(pg,'dock'); cs=pg.evaluate('TT.curSheet'); ok(cs in('market','ship'),f'dock tap opens market/ship (got {cs})'); pg.evaluate("TT.openSheet('market')")

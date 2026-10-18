@@ -52,6 +52,7 @@ with sync_playwright() as p:
     ok(pg.evaluate('!!TT.S.ach.premium')or pg.evaluate('(TT.checkAch(true),!!TT.S.ach.premium)'),'"Haute Bois" trophy')
     for bid in ['atelier','parquet','stationer','cabinetry','showroom']: pg.evaluate(f'TT.buyBuilding("{bid}",3)')
     ok(all(pg.evaluate(f'TT.S.buildings.{k}.lvl')==3 for k in ['atelier','parquet','stationer','cabinetry','showroom']),'all 5 premium workshops built')
+    pg.evaluate('TT.S.research.tar=1;TT.S.research.plywood=1;TT.buyBuilding("kiln",10);TT.buyBuilding("peeler",15);TT.buyBuilding("plymill",3);M=computeMods()')   # v2.20: cabinets & parquet need plywood, furniture needs veneer
     pg.evaluate('TT.simulate(20)'); pg.wait_for_timeout(1200)
     prod=pg.evaluate('Object.fromEntries(["giftbox","flooring","stationery","cabinets","luxfurn"].map(k=>[k,TT.rates[k].p]))')
     ok(all(v>0 for v in prod.values()),f'premium goods are produced {prod}')

@@ -714,3 +714,11 @@ body.flow-on #flowBtn{background:linear-gradient(180deg,#ffe68a,#f2b83a)}
 .rlist .res-detail .rd-top{display:flex;gap:10px;flex:1 1 220px;align-items:flex-start}
 .rlist .res-detail .btn{min-height:44px;flex:1 1 160px}
 .rd-tier{font-size:10.5px;font-weight:800;color:var(--ink2)}
+/* v2.20 factory tiers */
+.tier-b{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 4px;border-radius:6px;font-size:10.5px;font-weight:900;color:#fff;vertical-align:1px}
+.tier-b.t1{background:#c8742e}.tier-b.t2{background:#3f86c8}.tier-b.t3{background:#a8508a}
+.tier-line{font-weight:800;white-space:nowrap}.tier-line.t1{color:#a85a1e}.tier-line.t2{color:#2f6aa0}.tier-line.t3{color:#8a3a70}
+.bp-margin{color:var(--ink2)}
+tr.mkt-tier td{padding:8px 4px 3px;font-size:12px;border-bottom:1.5px solid var(--line)}
+tr.mkt-tier td span{font-size:11px;color:var(--ink2);font-weight:700}
+tr.mkt-tier.t1 b{color:#a85a1e}tr.mkt-tier.t2 b{color:#2f6aa0}tr.mkt-tier.t3 b{color:#8a3a70}tr.mkt-tier.t0 b{color:#6a4a28}

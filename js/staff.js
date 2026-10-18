@@ -66,7 +66,7 @@ function levelMgr(id){const m=MGR_MAP[id];const l=m?mgrLvl(m.bid):0;if(!l||l>=MG
 
 /* ---------- fire ---------- */
 const FIRE_BASE=1/4500, FIRE_HP=12, FIRE_BURN=60, FIRE_COOL=120, FIRE_GRACE=300;
-const FIRE_RISK={kiln:3,pellet:2,sawmill:1.2,chipper:1,carpentry:.8,paper:.8,furniture:.8};
+const FIRE_RISK={kiln:3,pellet:2,peeler:1,sawmill:1.2,chipper:1,carpentry:.8,paper:.8,furniture:.8};
 const STATION_COST=6e4, STATION_MAX=5;
 function stationLvl(){return (S.station&&S.station.lvl)||0;}
 function stationCost(){return STATION_COST*Math.pow(6,stationLvl());}

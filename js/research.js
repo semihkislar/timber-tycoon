@@ -14,7 +14,7 @@ const RBRANCH=[
   {id:'cra',name:'Craft',icon:'🪑',c:'#a8508a'},{id:'log',name:'Logistics',icon:'⚓',c:'#2f6f8f'}];
 const RTIER=[null,{L:0,n:'Tier I'},{L:25,n:'Tier II'},{L:150,n:'Tier III'},{L:800,n:'Tier IV'},{L:2500,n:'Tier V',ms:true}];
 const blv=id=>(S.buildings[id]&&S.buildings[id].lvl)||0, anyLv=l=>BUILDINGS.some(b=>blv(b.id)>=l);
-const MIL=['sawmill','chipper','kiln','pellet','paper'], CRAFT=['carpentry','furniture','atelier','parquet','stationer','cabinetry','showroom','toyshop','boatyard'];
+const MIL=['peeler','sawmill','chipper','kiln','pellet','paper'], CRAFT=['carpentry','furniture','atelier','parquet','stationer','cabinetry','showroom','toyshop','boatyard'];
 const PREM_RES=()=>RES.filter(r=>r.premium||r.tech).map(r=>r.id);
 const mulB=(ids,k)=>m=>{for(const id of ids) if(m.bld[id]!==undefined) m.bld[id]*=k;};
 const mulP=(ids,k)=>m=>{for(const id of (typeof ids==='function'?ids():ids)) m.price[id]*=k;};
@@ -52,7 +52,7 @@ const RNODES=[
   {id:'blades',  b:'mil',t:1,name:'Carbide Blades',  icon:'🪚',rp:30,   req:['science'], d:'Sawmill & Wood Chipper +15 %',fx:m=>{m.bld.sawmill*=1.15;m.bld.chipper*=1.15;}},
   {id:'tar',     b:'mil',t:1,name:'Pine Tar Glue',   icon:'🍯',rp:40,   req:['science'], d:'Charcoal Kilns also distil glue (½ per charcoal)',fx:m=>{m.tar=true;}},
   {id:'pulp',    b:'mil',t:1,name:'Pulp Chemistry',  icon:'🧪',rp:30,   req:['science'], d:'Paper Mill +15 %',fx:m=>{m.bld.paper*=1.15;}},
-  {id:'plywood', b:'mil',t:1,name:'Plywood Mill',    icon:'🟧',rp:120,  req:['tar'],     d:'Unlocks the Plywood Mill (planks + glue → plywood)',unlock:'plymill'},
+  {id:'plywood', b:'mil',t:1,name:'Plywood Mill',    icon:'🟧',rp:120,  req:['tar'],     d:'Unlocks the Plywood Mill (veneer + glue → plywood)',unlock:'plymill'},
   {id:'drying',  b:'mil',t:1,name:'Kiln Science',    icon:'🌡️',rp:500,  req:['plywood'], d:'Kiln & Pellet Press +15 %, fire risk −30 %',fx:m=>{m.bld.kiln*=1.15;m.bld.pellet*=1.15;m.fire*=.7;}},
   {id:'thinkerf',b:'mil',t:2,name:'Thin-kerf Saws',  icon:'🔪',rp:2500, req:['blades'],  d:'Sawmill +30 %',fx:m=>{m.bld.sawmill*=1.3;}},
   {id:'refiner', b:'mil',t:2,name:'Pressure Refiner',icon:'🌀',rp:3000, req:['drying'],  d:'Wood Chipper & Pellet Press +30 %',fx:m=>{m.bld.chipper*=1.3;m.bld.pellet*=1.3;}},
@@ -60,7 +60,7 @@ const RNODES=[
   {id:'grading', b:'mil',t:3,name:'Laser Grading',   icon:'🔦',rp:10000,req:['thinkerf'],d:'Sawmill & Plywood Mill +40 %',fx:m=>{m.bld.sawmill*=1.4;m.bld.plymill*=1.4;},gate:{f:()=>blv('sawmill')>=100,t:'Sawmill Lv 100'}},
   {id:'biochar', b:'mil',t:3,name:'Biochar Retorts', icon:'⚫',rp:11000,req:['refiner'], d:'Charcoal Kiln +50 %, charcoal sells +20 %',fx:m=>{m.bld.kiln*=1.5;m.price.charcoal*=1.2;}},
   {id:'twinwire',b:'mil',t:3,name:'Twin-wire Paper', icon:'📜',rp:12000,req:['liquor'],  d:'Paper Mill +50 %',fx:m=>{m.bld.paper*=1.5;}},
-  {id:'robomill',b:'mil',t:4,name:'Robotic Mill',    icon:'🏭',rp:32000,req:['grading'], d:'Sawmill, Chipper, Kiln, Pellet Press & Paper Mill +50 %',fx:mulB(MIL,1.5)},
+  {id:'robomill',b:'mil',t:4,name:'Robotic Mill',    icon:'🏭',rp:32000,req:['grading'], d:'Peeler, Sawmill, Chipper, Kiln, Pellet Press & Paper Mill +50 %',fx:mulB(MIL,1.5)},
   {id:'coldpress',b:'mil',t:4,name:'Cold Press',     icon:'🧊',rp:34000,req:['twinwire'],d:'Plywood Mill +60 %',fx:m=>{m.bld.plymill*=1.6;}},
   {id:'r_mil',   b:'mil',t:4,name:'Throughput',      icon:'♾️',rp:40000,req:['robomill'],rep:true,d:'Primary mills +5 % × level^0.7 (repeatable)',fx:(m,n)=>mulB(MIL.concat(['plymill']),1+repV(n))(m)},
   {id:'zerowaste',b:'mil',t:5,name:'Zero-waste Mill',icon:'♻️',rp:250000,req:['robomill','coldpress'],d:'All mills ×2',fx:mulB(MIL.concat(['plymill']),2)},
@@ -69,7 +69,7 @@ const RNODES=[
   {id:'jigs2',   b:'cra',t:1,name:'Joinery Jigs',    icon:'📐',rp:300,  req:['bending'], d:'Carpentry +20 %',fx:m=>{m.bld.carpentry*=1.2;}},
   {id:'toys',    b:'cra',t:1,name:'Toy Workshop',    icon:'🧸',rp:600,  req:['plywood'], d:'Unlocks the Toy Workshop (plywood + paper → wooden toys)',unlock:'toyshop'},
   {id:'automation',b:'cra',t:2,name:'Automation',    icon:'🤖',rp:3000, req:['bending','toys'],d:'Every building +10 %',fx:m=>{m.bldAll*=1.1;}},
-  {id:'boats',   b:'cra',t:2,name:'Boat Yard',       icon:'⛵',rp:3000, req:['toys'],    d:'Unlocks the Boat Yard at the harbour (plywood + planks + glue → boats)',unlock:'boatyard'},
+  {id:'boats',   b:'cra',t:2,name:'Boat Yard',       icon:'⛵',rp:3000, req:['toys'],    d:'Unlocks the Boat Yard at the harbour (plywood + chairs → boats)',unlock:'boatyard'},
   {id:'uphol',   b:'cra',t:2,name:'Upholstery',      icon:'🛋️',rp:3500, req:['jigs2'],   d:'Chairs & Furniture Sets sell +25 %',fx:m=>{m.price.chairs*=1.25;m.price.furniture*=1.25;},gate:{f:()=>blv('furniture')>=1,t:'Furniture Factory built'}},
   {id:'master',  b:'cra',t:3,name:'Masterworks',     icon:'🏆',rp:10000,req:['automation','boats'],d:'Plywood, toys, boats & luxury goods sell +25 %',fx:mulP(['plywood','toys','boats','luxfurn','cabinets'],1.25)},
   {id:'ateliers',b:'cra',t:3,name:'Atelier Methods', icon:'🎨',rp:11000,req:['uphol'],   d:'Premium buildings +40 %',fx:m=>{for(const b of BUILDINGS) if(b.premium) m.bld[b.id]*=1.4;},gate:{f:()=>S.premium&&S.premium.lvl>0,t:'Premium Area open'}},

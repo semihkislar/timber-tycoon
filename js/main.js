@@ -82,6 +82,7 @@ function init(){
   if(typeof staffMigrateFromMgr==='function'){staffMigrateFromMgr(); if(S._needStaffMig) delete S._needStaffMig;}
   if(S.staff&&!(S.staff.candidates&&S.staff.candidates.length)&&typeof staffRefreshCandidates==='function') staffRefreshCandidates(false);
   M=computeMods();
+  if(typeof tierIntro==='function') tierIntro();   // v2.20 factory tiers (one-time note)
   setupUI();
   initScene();
   if(loaded){

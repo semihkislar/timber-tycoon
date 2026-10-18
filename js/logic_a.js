@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.19';
+const VERSION='2.20';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -8,6 +8,9 @@ const BUFFER_SEC=2;
 const ICONS={
   logs:(c)=>`<svg viewBox="0 0 32 32"><ellipse cx="16" cy="24" rx="10" ry="4" fill="#5a3a1a"/><rect x="6" y="8" width="20" height="16" rx="3" fill="${c||'#8b5a2b'}"/><ellipse cx="16" cy="8" rx="10" ry="4" fill="#c08a4f"/><ellipse cx="16" cy="8" rx="4" ry="1.5" fill="#6b4226"/><line x1="8" y1="12" x2="24" y2="12" stroke="#6b4226" stroke-width=".8" opacity=".4"/><line x1="8" y1="16" x2="24" y2="16" stroke="#6b4226" stroke-width=".8" opacity=".4"/></svg>`,
   planks:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="6" rx="1" fill="#c08a4f" stroke="#8b5a2b"/><rect x="4" y="13" width="24" height="6" rx="1" fill="#b07a42" stroke="#8b5a2b"/><rect x="4" y="20" width="24" height="6" rx="1" fill="#a36d38" stroke="#8b5a2b"/></svg>`,
+  veneer:()=>`<svg viewBox="0 0 32 32"><rect x="5" y="7" width="22" height="4" rx="1" fill="#ecd3a2" stroke="#b88c52"/><rect x="4" y="13" width="22" height="4" rx="1" fill="#e2c48c" stroke="#b08446"/><rect x="6" y="19" width="22" height="4" rx="1" fill="#ecd3a2" stroke="#b88c52"/><path d="M8 9h14M7 15h15M10 21h14" stroke="#c9a26a" stroke-width=".7"/></svg>`,
+  bark:()=>`<svg viewBox="0 0 32 32"><path d="M6 22l5-12 5 3 4-6 6 9-3 7z" fill="#6b4428" stroke="#3e2614"/><path d="M10 18l3-5M15 20l2-6M20 21l2-7" stroke="#a07048" stroke-width="1.2"/></svg>`,
+  peeler:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="14" width="24" height="12" fill="#a9b08a"/><polygon points="4,14 16,6 28,14" fill="#4f7a52"/><ellipse cx="14" cy="20" rx="5" ry="3.4" fill="#b07a42" stroke="#6b4226"/><circle cx="14" cy="20" r="1.6" fill="#e2c48c"/><rect x="19" y="18" width="7" height="5" fill="#ecd3a2" stroke="#b88c52"/></svg>`,
   chips:()=>`<svg viewBox="0 0 32 32"><ellipse cx="10" cy="18" rx="5" ry="3" fill="#c08a4f" transform="rotate(-20 10 18)"/><ellipse cx="18" cy="14" rx="4" ry="2.5" fill="#a36d38" transform="rotate(15 18 14)"/><ellipse cx="22" cy="20" rx="5" ry="3" fill="#8b5a2b" transform="rotate(-10 22 20)"/><ellipse cx="14" cy="22" rx="3.5" ry="2" fill="#d4a574"/></svg>`,
   charcoal:()=>`<svg viewBox="0 0 32 32"><circle cx="12" cy="18" r="6" fill="#2a2a2a"/><circle cx="20" cy="14" r="5" fill="#3a3a3a"/><circle cx="18" cy="22" r="4.5" fill="#1a1a1a"/><circle cx="14" cy="12" r="2" fill="#4a4a4a" opacity=".6"/></svg>`,
   chairs:()=>`<svg viewBox="0 0 32 32"><rect x="8" y="10" width="16" height="3" rx="1" fill="#8b5a2b"/><rect x="9" y="13" width="3" height="12" fill="#6b4226"/><rect x="20" y="13" width="3" height="12" fill="#6b4226"/><rect x="9" y="20" width="14" height="3" fill="#a36d38"/><rect x="8" y="4" width="3" height="9" fill="#6b4226"/><rect x="21" y="4" width="3" height="9" fill="#6b4226"/></svg>`,
@@ -41,6 +44,8 @@ function iconHtml(id, size){return `<span class="ric" style="display:inline-flex
 const RES=[
   {id:'logs',name:'Logs',icon:'🪵',svg:'logs',price:1},
   {id:'planks',name:'Planks',icon:'🟫',svg:'planks',price:3},
+  {id:'veneer',name:'Veneer',icon:'📃',svg:'veneer',price:3.5},
+  {id:'bark',name:'Bark Mulch',icon:'🟤',svg:'bark',price:1.5},
   {id:'chips',name:'Wood Chips',icon:'🍂',svg:'chips',price:2},
   {id:'charcoal',name:'Charcoal',icon:'⚫',svg:'charcoal',price:9},
   {id:'chairs',name:'Chairs',icon:'🪑',svg:'chairs',price:60},
@@ -49,7 +54,7 @@ const RES=[
   {id:'furniture',name:'Furniture Sets',icon:'🛋️',svg:'furniture',price:700},
   // v2.2 premium goods (made in the Premium Factory Area)
   {id:'giftbox',name:'Grill Gift Boxes',icon:'🎁',svg:'giftbox',price:230,premium:true},
-  {id:'flooring',name:'Artisan Flooring',icon:'🪵',svg:'flooring',price:180,premium:true},
+  {id:'flooring',name:'Artisan Flooring',icon:'🪵',svg:'flooring',price:260,premium:true},
   {id:'stationery',name:'Premium Stationery',icon:'✒️',svg:'stationery',price:380,premium:true},
   {id:'cabinets',name:'Designer Cabinets',icon:'🗄️',svg:'cabinets',price:380,premium:true},
   {id:'luxfurn',name:'Luxury Furniture',icon:'👑',svg:'luxfurn',price:1900,premium:true},
@@ -74,20 +79,21 @@ const BUILDINGS=[
   {id:'chipper',name:'Wood Chipper',icon:'🌀',svg:'chipper',inp:{logs:6},out:{chips:6},cost:1000,scale:1.19,desc:'Shreds logs into chips.'},
   {id:'kiln',name:'Charcoal Kiln',icon:'🔥',svg:'kiln',inp:{logs:10},out:{charcoal:3},cost:5000,scale:1.2,desc:'Slow-burns logs into charcoal.'},
   {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',svg:'carpentry',inp:{planks:4},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
+  {id:'peeler',name:'Veneer Peeler',icon:'📃',svg:'peeler',inp:{logs:4},out:{veneer:3,bark:1},cost:6e4,scale:1.19,desc:'Debarks logs and peels them into thin veneer sheets (bark is sold as mulch).'},   // v2.20 phase 1
   {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
   {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
-  {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{chairs:8,planks:12},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
+  {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{planks:12,veneer:8},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
   // v2.2 premium workshops (need the Premium Area; spd = base throughput multiplier)
-  {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{charcoal:5,pellets:5},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs charcoal & pellets into grill gift boxes.'},
-  {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{planks:6,charcoal:3},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Planks + a charcoal-oil finish become artisan hardwood flooring.'},
+  {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{pellets:5,paper:2},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs pellets in printed paper into grill gift boxes.'},
+  {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{plywood:1,paper:2},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Engineered parquet: a plywood core on a paper underlay, finished by hand.'},
   {id:'stationer',name:'Stationery House',icon:'✒️',svg:'stationery',inp:{paper:8},out:{stationery:1},cost:1.2e7,scale:1.22,premium:true,spd:5,desc:'Binds fine paper into premium stationery.'},
-  {id:'cabinetry',name:'Cabinet Studio',icon:'🗄️',svg:'cabinets',inp:{chairs:2,planks:6},out:{cabinets:1},cost:4e7,scale:1.22,premium:true,spd:5,desc:'Turns chairs & planks into designer cabinets.'},
+  {id:'cabinetry',name:'Cabinet Studio',icon:'🗄️',svg:'cabinets',inp:{chairs:2,plywood:1},out:{cabinets:1},cost:4e7,scale:1.22,premium:true,spd:5,desc:'Turns chairs & plywood into designer cabinets.'},
   // v2.5 research buildings (tech: unlocked by the research tree; drawn on the R&D campus / harbour)
   {id:'lab',name:'Research Lab',icon:'🔬',svg:'lab',inp:{paper:6},out:{},rp:1,cost:5e5,scale:1.24,tech:true,spd:1,desc:'Turns paper into Research Points for the research tree.'},
-  {id:'plymill',name:'Plywood Mill',icon:'🟧',svg:'plywood',inp:{planks:6,glue:2},out:{plywood:2},cost:1.5e7,scale:1.22,tech:true,spd:4,desc:'Glues veneers of planks into strong plywood sheets.'},
+  {id:'plymill',name:'Plywood Mill',icon:'🟧',svg:'plywood',inp:{veneer:6,glue:2},out:{plywood:2},cost:1.5e7,scale:1.22,tech:true,spd:4,desc:'Glues veneer sheets into strong plywood.'},
   {id:'toyshop',name:'Toy Workshop',icon:'🧸',svg:'toys',inp:{plywood:2,paper:4},out:{toys:2},cost:8e7,scale:1.22,tech:true,spd:4,desc:'Cuts plywood into wooden toys, boxed in printed paper.'},
-  {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:12,planks:18,glue:4},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
-  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,planks:12},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
+  {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:14,chairs:2},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
+  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,chairs:4},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
 ];
 const MAIN_BLD=BUILDINGS.filter(b=>!b.premium&&!b.tech), PREM_BLD=BUILDINGS.filter(b=>b.premium), TECH_BLD=BUILDINGS.filter(b=>b.tech);
 const BMAP={}; BUILDINGS.forEach(b=>BMAP[b.id]=b);
@@ -222,7 +228,7 @@ const ACH=[
 /* ===================== STATE ===================== */
 function freshState(keep){
   const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
-    seeds:0,legacy:0,oldRep:0,shop:{},runCS:1,run:{goals:{},peak:0,start:0,charter:false},rpStats:{runs:[],best:0},prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
+    seeds:0,legacy:0,oldRep:0,tierNote:0,shop:{},runCS:1,run:{goals:{},peak:0,start:0,charter:false},rpStats:{runs:[],best:0},prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
     storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
     wx:{clock:126,w:'clear',ends:0,next:201},
@@ -520,6 +526,7 @@ function doPrestige(){
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
+  keep.tierNote=S.tierNote||0;   // v2.20
   keep.power={lvl:pwLvl(),on:S.power?S.power.on!==false:true,fuel:(S.power&&S.power.fuel)||'mix',eff:0,burn:{}};   // v2.10: the plant stays built
   keep.spec=typeof specKeep==='function'?specKeep():{}; keep.specStats=Object.assign({picks:0,switches:0},S.specStats||{});   // v2.17: picks are remembered, retooling is dropped
   keep.ship=typeof shKeep==='function'?shKeep():S.ship;   // v2.13: docks, forklifts and crane are kept through Replant
