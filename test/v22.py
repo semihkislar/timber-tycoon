@@ -61,7 +61,7 @@ with sync_playwright() as p:
     sp=pg.evaluate('(()=>{const p=TT.P(TT.LOTS.showroom.ci,TT.LOTS.showroom.cj,20);return TT.w2s(p[0],p[1]);})()')
     pg.evaluate('TT.closeSheet()'); pg.wait_for_timeout(300)
     h=pg.evaluate(f'TT.hitTest({sp[0]},{sp[1]})'); ok(h['type']=='bld' and h['id']=='showroom',f'tapping a premium workshop hits it ({h})')
-    ok(pg.evaluate('(TT.scene.premTrucks||[]).length')>=1 and pg.evaluate('!!TT.scene.pfork'),'premium dock truck and premium forklift active')
+    ok(pg.evaluate('(TT.scene.premTrucks||[]).length')>=1 and pg.evaluate('(TT.scene.plifts||[]).length+(TT.scene.pworkers||[]).length')>=1,'premium dock truck and premium forklifts/workers active')   # v2.21.1: II→III lifts replace the single pfork
     lv0=pg.evaluate('TT.price("luxfurn")'); pg.evaluate('TT.S.coins=1e12;TT.buyPremium()'); lv1=pg.evaluate('TT.price("luxfurn")')
     ok(abs(lv1/lv0-1.25)<1e-6,'showroom Lv2 raises premium prices by 25%')
     # --- storage: capacity, FULL, upgrade ---
@@ -92,7 +92,7 @@ with sync_playwright() as p:
     for _ in range(50):
         if pg.evaluate('!!TT.scene.client && TT.scene.client.fig>0'): break
         pg.wait_for_timeout(500)
-    ok(pg.evaluate('!!TT.scene.client && TT.scene.client.fig>0'),'client van parked at the premium gate with the client figure')
+    ok(pg.evaluate('!!TT.scene.client && TT.scene.client.fig>0'),'client van parked by the premium dock with the client figure')
     pg.click('#ocYes'); pg.wait_for_timeout(300)
     ok(pg.evaluate('!!TT.S.orders.active && !TT.S.orders.offer'),'order accepted')
     pg.evaluate('TT.simulate(5)'); g=pg.evaluate('TT.S.orders.active.got'); ok(g>0,f'active order collects surplus production ({g:.0f})')

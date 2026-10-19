@@ -113,7 +113,7 @@ const LOTS={peeler:{id:'peeler',ci:7.45,cj:1.3,side:'R',face:'J'},sawmill:mkLot(
   carpentry:mkLot('carpentry',9,'L'),pellet:mkLot('pellet',14,'L'),paper:mkLot('paper',19,'L'),furniture:mkLot('furniture',24,'L')};
 // v2.21.1 Phase 3 row: the Premium Area is its own fenced row beyond Phase 2 (left of the lane), parallel to rows I and II.
 // The row is a band in lane coordinates u=i+j (along the lane) / v=i-j (across it): rows I (v=+6), II (v=-6), III (v=-17.6).
-const PROW={u0:17.6,u1:57,v0:-21.8,v1:-12.6,vl:-17.6,va:-13.95};
+const PROW={u0:17.0,u1:57,v0:-21.8,v1:-12.6,vl:-17.6,va:-13.95};
 function uvIJ(u,v){return [(u+v)/2,(u-v)/2];}
 function inPremRow(i,j,pad){pad=pad||0;const u=i+j,v=i-j;return u>=PROW.u0-pad&&u<PROW.u1+pad&&v>=PROW.v0-pad&&v<PROW.v1+pad;}
 // PREM stays an i/j bounding box of the row (centre + extents) for callers that only need "roughly where"
@@ -122,8 +122,8 @@ const PREM=(()=>{const c=[uvIJ(PROW.u0,PROW.v0),uvIJ(PROW.u1,PROW.v0),uvIJ(PROW.
     ci:uvIJ((PROW.u0+PROW.u1)/2,PROW.vl)[0],cj:uvIJ((PROW.u0+PROW.u1)/2,PROW.vl)[1],corners:c};})();
 function mkPLot(id,u,bs0){const [ci,cj]=uvIJ(u,PROW.vl);return {id,ci,cj,u,side:'P',face:'I',prem:true,bs0:bs0||2.45};}
 // unlock order runs down the row, like rows I and II: gift box → parquet → stationery → cabinets → showroom
-Object.assign(LOTS,{atelier:mkPLot('atelier',21.9),parquet:mkPLot('parquet',28.9),stationer:mkPLot('stationer',35.9),
-  cabinetry:mkPLot('cabinetry',42.9),showroom:mkPLot('showroom',50.2,2.75)});
+Object.assign(LOTS,{atelier:mkPLot('atelier',20.3),parquet:mkPLot('parquet',27.2),stationer:mkPLot('stationer',34.1),
+  cabinetry:mkPLot('cabinetry',41.0),showroom:mkPLot('showroom',48.4,2.75)});
 const PDOCK=(()=>{const [ci,cj]=uvIJ(60.5,-18.6);return {id:'pdock',ci,cj};})();   // premium dock just past the south end of row III
 const PROAD_J=41.2;          // access road from the highway to the premium dock (runs along i)
 // Phase 2 → Phase 3 forklift gates: one per phase-2 building, opposite its outbound rack
@@ -219,7 +219,7 @@ function initWorld(){
   scene.deco=[];
   for(let i=-34;i<=62;i++) for(let j=-34;j<=62;j++){
     const [x,y]=P(i+.5,j+.5,0); if(x<-1250||x>1250||y<-560||y>1500) continue;
-    const z=zoneAt(i+.5,j+.5); if(z!=='grass') continue;
+    const z=zoneAt(i+.5,j+.5); if(z!=='grass'||inPremRow(i+.5,j+.5,.9)) continue;
     const h=hash2(i*7+3,j*13+5);
     if(h<0.05) scene.deco.push({t:'rock',i:i+.3+hash2(i,j)*.4,j:j+.3+hash2(j,i)*.4,s:.6+h*8});
     else if(h<0.11&&!isForestPt(i+.5,j+.5)) scene.deco.push({t:'bush',i:i+.5,j:j+.5,s:.7+hash2(j,i)*.5});

@@ -22,7 +22,7 @@ function focusLot(id,force){
   const [x0,x1]=viewBandX();
   if(!force&&!c.fly&&s[1]>top+60&&s[1]<bot-30&&s[0]>x0+50&&s[0]<x1-50) return;
   // phones zoom in a little (the sheet covers half the screen); desktop keeps the zoom and only re-centres what is needed
-  const z=scene.w<700?Math.max(c.tz,Math.min(c.maxZ,c.fitZ*1.4)):Math.max(c.tz,Math.min(c.maxZ,c.fitZ*.95));
+  const z=scene.w<700?Math.max(c.tz,Math.min(c.maxZ,c.fitZ*(L.prem?1.7:1.4))):Math.max(c.tz,Math.min(c.maxZ,c.fitZ*.95));   // v2.21.1: row III workshops are smaller
   const sy=(top+bot)/2, sx=(x0+x1)/2, tx=force||z!==c.tz||s[0]<x0+50||s[0]>x1-50?wx-(sx-scene.w/2)/z:c.tx;
   flyTo(tx,wy-(sy-scene.h/2)/z,z);
 }

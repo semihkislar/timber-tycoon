@@ -39,7 +39,7 @@ function drawPremGround(ctx,x0,y0,x1,y1){
       fillP(ctx,pts.map(p=>[p[0],p[1]+3]),'#1e1a17');fillP(ctx,pts,'#2f2a26');ctx.strokeStyle=GOLD;ctx.lineWidth=1.4;pth(ctx,pts);ctx.stroke();}
   }
   // ground lettering at the head of the row (painted on the setts, foreshortened like the ground plane)
-  {const p=PUV(R.u1-1.25,(R.v0+R.v1)/2);ctx.save();ctx.translate(p[0],p[1]);ctx.scale(1,.5);ctx.font='900 30px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  {const p=PUV(R.u1-2.5,(R.v0+R.v1)/2);ctx.save();ctx.translate(p[0],p[1]);ctx.scale(1,.5);ctx.font='900 30px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=open?'rgba(245,211,106,.82)':'rgba(120,100,70,.45)';ctx.fillText('III · PREMIUM',0,0);ctx.restore();}
   // dock apron, spur and access road to the highway
   uvRect(ctx,R.u1,-21.8,64.2,-12.6,open?'#5c5f66':'#b5a891');
@@ -75,7 +75,8 @@ const PDOCKB=[PDOCK.ci+2.37,PDOCK.cj], PD_R=.83;
 function premTruckLegs(){
   const X=PDOCKB[0]+PD_R, A=[X,PDOCKB[1]-PD_R], J=PROAD_J;
   return [
-    {pa:crPath([[31.45,-26],[31.45,J-1.6],[31.25,J-.2],[30.4,J+.38],[X+1.4,J+.38],[X+.2,J-.2],[X,J-1.2],[A[0],A[1]]],8),vmax:3.6,lane:true},
+    // in from the south on the northbound lane (never queues behind the Shipping dock trucks), left onto the access road
+    {pa:crPath([[30.35,74],[30.35,J+1.5],[30.1,J+.6],[29.3,J+.38],[X+1.4,J+.38],[X+.2,J-.2],[X,J-1.2],[A[0],A[1]]],8),vmax:3.6},
     {pa:densePath(arcPts(t=>{const th=t*Math.PI/2;return [A[0]-(A[0]-PDOCKB[0])*(1-Math.cos(th)),A[1]+PD_R*Math.sin(th)];},12)),rev:true,vmax:1.0},
     {pa:densePath([[PDOCKB[0],PDOCKB[1]],[PDOCKB[0]+.001,PDOCKB[1]]]),vmax:.5,hold:(v,dt)=>{v.doors=Math.min(1,(v.doors||0)+dt*1.6);return v.load<1||v.doors<1;}},
     {pa:crPath([[PDOCKB[0],PDOCKB[1]],[X+.3,PDOCKB[1]+.1],[X+.75,PDOCKB[1]+.7],[X+.8,J-.7],[X+1.6,J-.36],[29.4,J-.36],[30.35,J-1.2],[30.35,J-3],[30.35,-26]],8),vmax:3.6}
@@ -116,7 +117,7 @@ function premUpdate(dt){
 /* ---------- client van + client (order notification in the world) ---------- */
 // v2.21.1: the client parks on the premium access road, by the Phase 3 dock
 const CLIENT_PARK=[27.9,PROAD_J-.36], CLIENT_FIG=[27.55,PROAD_J-1.35];
-function clientLegsIn(){const J=PROAD_J;return [{pa:crPath([[31.45,-26],[31.45,J-1.6],[31.25,J-.2],[30.4,J+.38],[28.4,J+.38],[27.1,J+.3],[26.5,J-.1],[26.9,J-.36],[CLIENT_PARK[0],CLIENT_PARK[1]]],8),vmax:3.2,lane:true}];}
+function clientLegsIn(){const J=PROAD_J;return [{pa:crPath([[30.35,74],[30.35,J+1.5],[30.1,J+.6],[29.3,J+.38],[28.4,J+.38],[27.1,J+.3],[26.5,J-.1],[26.9,J-.36],[CLIENT_PARK[0],CLIENT_PARK[1]]],8),vmax:3.2}];}
 function clientLegsOut(){const J=PROAD_J;return [{pa:crPath([[CLIENT_PARK[0],CLIENT_PARK[1]],[29.4,J-.36],[30.35,J-1.2],[30.35,J-3],[30.35,-26]],8),vmax:3.0}];}
 function clientUpdate(dt){
   const O=S.orders, want=!!(O&&(O.offer||O.active));
@@ -341,8 +342,8 @@ function premDraw(ctx,objs,inView){
     else {objs.push({k:L.ci+L.cj,f:()=>drawLot(ctx,L)});const so=stockObj(ctx,L);if(so) objs.push(so);}}
   objs.push({k:PDOCK.ci+PDOCK.cj,f:()=>drawPremDock(ctx)});
   // gold lamp posts + topiary planters
-  for(const [i,j] of [25.4,32.4,39.4,46.4,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
-  for(const [i,j] of [25.4,32.4,39.4,46.4].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
+  for(const [i,j] of [23.75,30.65,37.55,44.6,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
+  for(const [i,j] of [23.75,30.65,37.55,44.6].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
   for(const f of scene.plifts||[]){if(f.i===undefined) continue;const [x,y]=P(f.i,f.j);if(!inView(x,y,40)) continue;objs.push({k:f.i+f.j,f:()=>forklift(ctx,f.i,f.j,f.yaw||0,f.p<1?f.res:null,0)});}
   for(const w of scene.pworkers||[]){if(!w.route) continue;const q=w.p<1?w.p:2-w.p;const [i,j,di,dj]=pathAt(w.route,q);const sg=w.p<1?1:-1;const [x,y]=P(i,j);if(!inView(x,y,30)) continue;
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:(di-dj)*sg>=0?1:-1,back:(di+dj)*sg<0,pose:w.p<1?'box':'walk',ph:w.ph,cargo:w.p<1?Object.keys(BMAP[w.tgt].inp)[0]:null})});}
