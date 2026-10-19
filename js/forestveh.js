@@ -164,7 +164,7 @@ function fvStep(v,dt,sp){
   if(Math.abs(q[2])+Math.abs(q[3])>1e-6){const y=Math.atan2(q[3]*sg,q[2]*sg);v.yaw=v.yaw===undefined?y:angLerp(v.yaw,y,Math.min(1,dt*5));}
 }
 function fvUpdate(dt){fvSync();for(const v of scene.forwarders) fvStep(v,dt,1.6);for(const v of scene.skidders) fvStep(v,dt,1.3);
-  for(const h of scene.harvesters){h.i=-1.2+h.k*2.2;h.j=13.6+h.k*1.4+Math.sin(h.ph*.25)*1.4;}}
+  for(const h of scene.harvesters){h.i=-1.6+h.k*1.9;h.j=13.6+h.k*1.4+Math.sin(h.ph*.25)*1.4;}}
 function fvObjs(ctx,objs,inView){const lit=(scene.dn&&scene.dn.lights>.3)?1:0;
   for(const h of scene.harvesters){if(h.i===undefined) continue;const [x,y]=P(h.i,h.j);if(!inView(x,y,110)) continue;
     objs.push({k:h.i+h.j,f:()=>{const st=harvester(ctx,h.i,h.j,h.yaw||0,{pose:(h.ph*.22)%1,bounce:Math.sin(h.ph*9)*.3,lit});exhaust(st,{v:.4,accel:false});}});}

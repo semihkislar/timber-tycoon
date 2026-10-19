@@ -70,10 +70,11 @@ function tierLiftTick(dt){if(!scene.tierLifts) scene.tierLifts=[];if(!scene._tl|
 function tierLiftDraw(ctx,objs,inView){for(const fl of (scene.tierLifts||[])){if(fl.i===undefined) continue;const [x,y]=P(fl.i,fl.j);if(!inView(x,y,40)) continue;
   objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,0)});}}
 /* ---------- scene: phase signs at the head of each side of the lane ---------- */
-const TIER_SIGNS=[{i:8.7,j:6.0,t:1,txt:'PHASE 1 · PRIMARY'},{i:6.0,j:8.7,t:2,txt:'PHASE 2 · SECONDARY'}];
+const TIER_SIGNS=[{i:8.7,j:6.0,t:1,txt:'PHASE 1 · PRIMARY'},{i:6.0,j:8.7,t:2,txt:'PHASE 2 · SECONDARY'},
+  {i:uvIJ(PROW.u0-.9,PROW.va)[0],j:uvIJ(PROW.u0-.9,PROW.va)[1],t:3,txt:'PHASE 3 · PREMIUM',show:()=>premVisible()||S.premium.lvl>0}];   // v2.21.1: head of row III
 function tierSignDraw(ctx,objs,inView){
   if(!MAIN_BLD.some(b=>S.buildings[b.id].lvl>0)) return;
-  for(const s of TIER_SIGNS){const [x,y]=P(s.i,s.j);if(!inView(x,y,80)) continue;
+  for(const s of TIER_SIGNS){if(s.show&&!s.show()) continue;const [x,y]=P(s.i,s.j);if(!inView(x,y,80)) continue;
     objs.push({k:1e6,f:()=>{const [bx,by]=P(s.i,s.j,0);ctx.save();ctx.fillStyle='#5a4028';ctx.fillRect(bx-13,by-26,2.4,26);ctx.fillRect(bx+11,by-26,2.4,26);
       ctx.font='900 8.5px system-ui,sans-serif';const w=ctx.measureText(s.txt).width+12;ctx.fillStyle=TIER_C[s.t];ctx.strokeStyle='#2a1c10';ctx.lineWidth=1;
       ctx.beginPath();ctx.roundRect?ctx.roundRect(bx-w/2,by-40,w,15,3):ctx.rect(bx-w/2,by-40,w,15);ctx.fill();ctx.stroke();

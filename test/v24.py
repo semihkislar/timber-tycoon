@@ -34,7 +34,7 @@ with sync_playwright() as p:
     # --- managers ---
     ctx,pg=fresh(); pg.evaluate(MID)
     ms=pg.evaluate('TT.MANAGERS.map(m=>({id:m.id,n:m.name,b:m.bid,r:m.r,s:m.skill}))')
-    ok(len(ms)==12 and len(set(m['b'] for m in ms))==12,'12 unique managers, one per building')
+    ok(len(ms)>=12 and len(set(m['b'] for m in ms))==len(ms),f'{len(ms)} unique managers, one per building')   # v2.21 added Aylin (peeler)
     names=' '.join(m['n'] for m in ms)
     ok(all(n in names for n in ['Defne','Emre','Zeynep','Mert','Elif','Can']),'Turkish names Defne, Emre, Zeynep, Mert, Elif, Can present')
     ok(set(m['r'] for m in ms)=={'C','R','E','L'},'all four rarities used')

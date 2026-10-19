@@ -5,6 +5,30 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.21.1] — 2026-10-19
+
+**Phase 3 gets its own row.** Semih: "do Phase 3, but as a separate row". The Premium Area is no longer a square compound by the highway: it is a third fenced row beyond Phase 2, parallel to the other two, so the factory reads left-to-right as three rows **I → II → III** along the lane.
+
+### Changed
+- **Row III layout** (`js/scene1.js` `PROW`, `uvIJ`, `inPremRow`): Gift Box Atelier → Parquet → Stationery → Cabinet Studio → Luxury Showroom run down one centre line in unlock order, slightly larger lots than before. `PREM` stays as the row's bounding box + centre for older callers.
+- **Premium paving**: screen-square stone setts in a running bond with a light-stone forklift aisle and gold inlay (clearly unlike the diamond yard tiles), marble pads under each workshop, painted "III · PREMIUM" lettering, and a **PHASE 3 · PREMIUM** post sign at the head of the row (English to match the PHASE 1 / PHASE 2 signs).
+- **II → III forklift lane**: a paved transfer lane between rows II and III with one gated opening per Phase-2 building (gold "II ▼ III" plates). Forklifts carry chairs / pellets / paper / furniture from the Phase-2 racks through their gate and down the row aisle to the workshop that uses them (one per link, ≤ 6). This replaces the overhead conveyor + receiving table.
+- **Phase 3 dock** at the south end of the row (through a "TIMBER CO. RESERVE" arch) with its own access road; the premium trucks and the order client now come from the south on the northbound lane, so they never queue behind the Shipping dock trucks.
+- Fence, locked-plot hoarding, survey stakes, lamps and planters follow the row.
+- Left forest crew (landing, felling band, jack spots) moved past row III; the strip is cleared of trees and verge deco.
+- Camera: `CAM_WORLD.x0` −860 → −1000. Phone focus zooms a little further on Phase 3 workshops so every one sits above the sheet (iPhone 13, Pixel 7).
+- Quick-jump chip **💎 Phase 3** (was "Premium") frames the whole row; the Forest chip points at the moved crew; a new order flies to the client by the Phase 3 dock.
+- Supply Flow: premium goods now ship from the Phase 3 dock (`pdock`), not the main Shipping dock; II → III arcs follow the new lots.
+- Version `2.21.1`; service worker cache `timber-tycoon-v2.21.1`.
+
+### Compatibility
+- Saves are unaffected: only levels are stored, never positions. v2.21 saves load with every premium level intact.
+- The Boat Yard stays at the harbour slipway (it needs water and the Harbour unlock) and the Toy Workshop stays on the R&D campus; both remain Phase-3 tier buildings.
+
+### Tests
+- New `test/v2211.py`: three parallel rows (row III beyond row II with a clear gap, one centre line, unlock order), no lot overlaps, no trees / deco in the row, premium ground for row + dock + road, forest crew outside the row, Phase 3 sign, camera bounds, locked tap → Premium sheet, Phase 3 chip lock/unlock + fly-to, II → III lifts (gate → aisle → door, ≤ 6, moving), Supply Flow to `pdock`, every workshop tappable, v2.21 save, iPhone 13 / Pixel 7 framing above the sheet.
+- `test/v22.py`: premium forklift check uses the new lifts; `test/v24.py`: manager count allows the v2.21 peeler manager.
+
 ## [2.21] — 2026-10-19
 
 **Town Market Fleet.** Auto-sell and market sales are now visible in the isometric scene: small town delivery vans (and early-game canvas carts) drive to Phase 1–2 stock piles, load tinted crates, and leave with a coin float. Separate from the dock shipping trucks. Also: a hireable manager for the Veneer Peeler.

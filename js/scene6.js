@@ -22,7 +22,7 @@ function focusLot(id,force){
   const [x0,x1]=viewBandX();
   if(!force&&!c.fly&&s[1]>top+60&&s[1]<bot-30&&s[0]>x0+50&&s[0]<x1-50) return;
   // phones zoom in a little (the sheet covers half the screen); desktop keeps the zoom and only re-centres what is needed
-  const z=scene.w<700?Math.max(c.tz,Math.min(c.maxZ,c.fitZ*1.4)):Math.max(c.tz,Math.min(c.maxZ,c.fitZ*.95));
+  const z=scene.w<700?Math.max(c.tz,Math.min(c.maxZ,c.fitZ*(L.prem?1.7:1.4))):Math.max(c.tz,Math.min(c.maxZ,c.fitZ*.95));   // v2.21.1: row III workshops are smaller
   const sy=(top+bot)/2, sx=(x0+x1)/2, tx=force||z!==c.tz||s[0]<x0+50||s[0]>x1-50?wx-(sx-scene.w/2)/z:c.tx;
   flyTo(tx,wy-(sy-scene.h/2)/z,z);
 }
@@ -48,7 +48,7 @@ function hitTest(sx,sy){
   if(PWZ.hit&&pwVisible()&&pip(PWZ.hit,wx,wy)) return {type:'power'};
   {const [gi,gj]=toGrid(wx,wy);if(gi>=14.2&&gi<=19.6&&gj>=-1.4&&gj<=3.5&&campusOpen()) return {type:'campus'};
     if(gi>=32.4&&gi<=37&&gj>=11.5&&gj<=17.2&&(harborOpen()||harborAvail())) return {type:'harbor'};}
-  {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
+  {const [gi,gj]=toGrid(wx,wy);if(inPremRow(gi,gj,.25)) return {type:'prem'};
     if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
   // padded pass
   const pad=HIT_PAD/scene.cam.z; let pb=null,pd=pad;

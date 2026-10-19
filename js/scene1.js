@@ -111,14 +111,23 @@ function mkLot(id,c,side){return side==='L'?{id,ci:c-3,cj:c+3,side,face:'I'}:{id
 // v2.20 factory tiers: right side (R) = phase 1, logs only · left side (L) = phase 2, fed by phase 1 · Premium Area = phase 3
 const LOTS={peeler:{id:'peeler',ci:7.45,cj:1.3,side:'R',face:'J'},sawmill:mkLot('sawmill',9,'R'),chipper:mkLot('chipper',14,'R'),kiln:mkLot('kiln',19,'R'),
   carpentry:mkLot('carpentry',9,'L'),pellet:mkLot('pellet',14,'L'),paper:mkLot('paper',19,'L'),furniture:mkLot('furniture',24,'L')};
-// v2.2 premium factory area: a fenced compound east of the yard, between the factory and the highway
-const PREM={i0:21,i1:29,j0:0,j1:9};
-function mkPLot(id,ci,cj,bs0){return {id,ci,cj,side:'P',face:'I',prem:true,bs0:bs0||1.8};}
-Object.assign(LOTS,{atelier:mkPLot('atelier',22.65,1.7),stationer:mkPLot('stationer',22.65,4.45),parquet:mkPLot('parquet',22.65,7.2),
-  cabinetry:mkPLot('cabinetry',26.35,1.6),showroom:mkPLot('showroom',26.35,4.8,2.3)});
-const PDOCK={id:'pdock',ci:28.25,cj:7.55};
-const PCONV=[[15.9,13.6],[21.6,13.6],[21.6,9.35]];   // overhead conveyor from the lane into the premium area
-const PRECV=[21.75,8.62];                             // receiving table inside the gate
+// v2.21.1 Phase 3 row: the Premium Area is its own fenced row beyond Phase 2 (left of the lane), parallel to rows I and II.
+// The row is a band in lane coordinates u=i+j (along the lane) / v=i-j (across it): rows I (v=+6), II (v=-6), III (v=-17.6).
+const PROW={u0:17.0,u1:57,v0:-21.8,v1:-12.6,vl:-17.6,va:-13.95};
+function uvIJ(u,v){return [(u+v)/2,(u-v)/2];}
+function inPremRow(i,j,pad){pad=pad||0;const u=i+j,v=i-j;return u>=PROW.u0-pad&&u<PROW.u1+pad&&v>=PROW.v0-pad&&v<PROW.v1+pad;}
+// PREM stays an i/j bounding box of the row (centre + extents) for callers that only need "roughly where"
+const PREM=(()=>{const c=[uvIJ(PROW.u0,PROW.v0),uvIJ(PROW.u1,PROW.v0),uvIJ(PROW.u1,PROW.v1),uvIJ(PROW.u0,PROW.v1)];
+  return {i0:Math.min(...c.map(p=>p[0])),i1:Math.max(...c.map(p=>p[0])),j0:Math.min(...c.map(p=>p[1])),j1:Math.max(...c.map(p=>p[1])),
+    ci:uvIJ((PROW.u0+PROW.u1)/2,PROW.vl)[0],cj:uvIJ((PROW.u0+PROW.u1)/2,PROW.vl)[1],corners:c};})();
+function mkPLot(id,u,bs0){const [ci,cj]=uvIJ(u,PROW.vl);return {id,ci,cj,u,side:'P',face:'I',prem:true,bs0:bs0||2.45};}
+// unlock order runs down the row, like rows I and II: gift box → parquet → stationery → cabinets → showroom
+Object.assign(LOTS,{atelier:mkPLot('atelier',20.3),parquet:mkPLot('parquet',27.2),stationer:mkPLot('stationer',34.1),
+  cabinetry:mkPLot('cabinetry',41.0),showroom:mkPLot('showroom',48.4,2.75)});
+const PDOCK=(()=>{const [ci,cj]=uvIJ(60.5,-18.6);return {id:'pdock',ci,cj};})();   // premium dock just past the south end of row III
+const PROAD_J=41.2;          // access road from the highway to the premium dock (runs along i)
+// Phase 2 → Phase 3 forklift gates: one per phase-2 building, opposite its outbound rack
+const PGATES={carpentry:20.7,pellet:30.7,paper:40.7,furniture:50.7};
 const YARD={id:'yard',ci:4,cj:4,face:'I'}, DOCK={id:'dock',ci:27,cj:21,side:'R',face:'J'};
 const LOGPICK=[6.35,6.35];
 const ROAD_I=30.9;           // asphalt road centre line (runs along j)
@@ -146,10 +155,15 @@ function dockDrop(){const b=lotBox(DOCK);return [b.i0+b.bs*.3,b.j1+.42];}
 function yardTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=11&&u>=5&&u<=57&&!(u<=6&&Math.abs(v)>=9)&&!(u>=56&&Math.abs(v)>=9);}
 function laneTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=2&&u>=12&&u<=56;}
 function inFactory(u,v){const i=(u+v)/2,j=(u-v)/2;return yardTile(Math.floor(i),Math.floor(j));}
+function premApron(i,j){ // dock apron + access road + spur (paved, no grass/trees)
+  if(j>=PROAD_J-.75&&j<PROAD_J+.75&&i>=PDOCK.ci-1&&i<30) return true;
+  const u=i+j,v=i-j; if(u>=PROW.u1&&u<64.2&&v>=-21.8&&v<-12.6) return true;
+  if(u>=PROW.u0&&u<PROW.u1&&v>=-12.6&&v<-11.2) return true;   // II → III transfer lane
+  return i>=PDOCK.ci-1&&i<PDOCK.ci+4.2&&j>=PDOCK.cj-2&&j<PROAD_J;}
 function zoneAt(i,j){
   if(i>=30&&i<32) return 'road';
   if(j>=7&&j<9&&i<6.2) return 'dirt';
-  if(i>=PREM.i0&&i<PREM.i1&&j>=PREM.j0&&j<PREM.j1) return 'prem';
+  if(inPremRow(i,j)||premApron(i,j)) return 'prem';
   // v2.5: R&D campus (north of the kiln row) and harbour across the highway
   if(i>=14.2&&i<19.6&&j>=-1.4&&j<3.5) return 'campus';
   if(i>=32.4&&i<40.4&&j>=11.5&&j<17.2) return 'harbor';
@@ -164,6 +178,7 @@ function isForestPt(i,j){
   if(i>=27.5&&i<34.6) return false;
   if(j>=4.8&&j<11.2&&i<7.5) return false;
   if(Math.abs(v)<=13&&u>=1&&u<=58.5) return false;
+  if(v>=-23.4&&v<=-11&&u>=16&&u<=66) return false;   // v2.21.1: clearing round the Phase 3 row
   if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
   if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;
   if(i>=6.2&&i<10.6&&j>=-8.4&&j<-4.4) return false;   // v2.7: tree-nursery clearing
@@ -171,7 +186,7 @@ function isForestPt(i,j){
   if(i>=32&&j>=16.8&&j<20.4) return false;
   return true;
 }
-function isLumberZone(i,j){const u=i+j,v=i-j;return (v>=-18&&v<=-12.5&&u>=-3&&u<=34)||(u>=-6&&u<=2.6&&Math.abs(v)<=17);}
+function isLumberZone(i,j){const u=i+j,v=i-j;return (v>=-28&&v<=-22.5&&u>=-3&&u<=36)||(v>=-18&&v<=-12.5&&u>=-3&&u<=15.5)||(u>=-6&&u<=2.6&&Math.abs(v)<=17);}
 
 /* ---------------- scene state ---------------- */
 const scene={
@@ -204,7 +219,7 @@ function initWorld(){
   scene.deco=[];
   for(let i=-34;i<=62;i++) for(let j=-34;j<=62;j++){
     const [x,y]=P(i+.5,j+.5,0); if(x<-1250||x>1250||y<-560||y>1500) continue;
-    const z=zoneAt(i+.5,j+.5); if(z!=='grass') continue;
+    const z=zoneAt(i+.5,j+.5); if(z!=='grass'||inPremRow(i+.5,j+.5,.9)) continue;
     const h=hash2(i*7+3,j*13+5);
     if(h<0.05) scene.deco.push({t:'rock',i:i+.3+hash2(i,j)*.4,j:j+.3+hash2(j,i)*.4,s:.6+h*8});
     else if(h<0.11&&!isForestPt(i+.5,j+.5)) scene.deco.push({t:'bush',i:i+.5,j:j+.5,s:.7+hash2(j,i)*.5});
@@ -218,7 +233,7 @@ function initWorld(){
 function jackSpots(){
   if(scene._spots) return scene._spots;
   const top=scene.dynTrees.filter(t=>t.i+t.j>=-1&&t.i+t.j<=2.6&&Math.abs(t.i-t.j)<=11).sort((a,b)=>Math.abs(a.i-a.j)-Math.abs(b.i-b.j));
-  const left=scene.dynTrees.filter(t=>t.i-t.j>=-15&&t.i-t.j<=-12.5&&t.i+t.j>=3&&t.i+t.j<=26).sort((a,b)=>(a.i+a.j)-(b.i+b.j));
+  const left=scene.dynTrees.filter(t=>t.i-t.j>=-25.5&&t.i-t.j<=-22.5&&t.i+t.j>=12&&t.i+t.j<=32).sort((a,b)=>(a.i+a.j)-(b.i+b.j));
   const out=[];const n=Math.max(top.length,left.length);
   for(let k=0;k<n;k++){if(top[k*2]) out.push({tree:top[k*2],side:'top'}); if(left[k]) out.push({tree:left[k],side:'left'}); if(top[k*2+1]) out.push({tree:top[k*2+1],side:'top'});}
   return scene._spots=out;
