@@ -40,7 +40,9 @@ function byPick(){
   const B=byState(),cap=byBatch(),bud=byBudget(),busy={};for(const j of B.jobs) busy[j.bid]=1;
   let best=null,bk=Infinity;
   for(const b of BUILDINGS){if(busy[b.id]||!byAllowed(b.id)||!byEligible(b)) continue;
-    const l=S.buildings[b.id].lvl,a=Math.min(cap,byAfford(b,l,bud));if(a<1) continue;
+    const l=S.buildings[b.id].lvl,room=wsHas(b.id)?wsRoom(b.id):1e9;
+    if(room<1){const nx=wsNext(b.id);if(nx&&nx.cost<=bud&&nx.cost<bk){bk=nx.cost;best={bid:b.id,n:0,ws:nx.k};}continue;}   // v2.22: crew fits the workstation the gate needs
+    const a=Math.min(cap,byAfford(b,l,bud),room);if(a<1) continue;
     let key,n=a;
     if(B.plan==='ms'){const nx=nextMs(l),need=nx?nx-l:cap;key=bulkCost(b.cost,b.scale,l,Math.min(need,cap));n=Math.min(a,need);}
     else if(B.plan==='low') key=l+Math.min(.999,Math.log10(1+bulkCost(b.cost,b.scale,l,1))/400);
@@ -63,7 +65,10 @@ function byTick(dt,offline){
   for(let k=B.jobs.length-1;k>=0;k--){const j=B.jobs[k],st=S.buildings[j.bid],b=BMAP[j.bid];
     if(!b||!st||!st.lvl||!byAllowed(j.bid)||(b.premium&&!(S.premium&&S.premium.lvl>0))){B.jobs.splice(k,1);if(!offline&&typeof byDoneFx==='function') byDoneFx(j,0);continue;}
     j.t+=dt; if(j.t<j.dur) continue;
-    if(!onFire(j.bid)){const n=Math.min(j.n,byAfford(b,st.lvl,byBudget()));
+    if(j.ws!==undefined){if(wsLvl(j.bid,j.ws)>=WS_MAX||!wsBlocked(j.bid)){B.jobs.splice(k,1);if(!offline&&typeof byDoneFx==='function') byDoneFx(j,0);continue;}
+      const c=wsCost(j.bid,j.ws);if(c<=byBudget()&&buyWs(j.bid,j.ws,true)){B.jobs.splice(k,1);B.stats.spent+=c;B.stats.jobs++;if(!offline&&typeof byDoneFx==='function') byDoneFx(j,0);continue;}
+      j.st='wait';if(j.t>=j.dur+BY_WAIT){B.jobs.splice(k,1);if(!offline&&typeof byDoneFx==='function') byDoneFx(j,0);}continue;}
+    if(!onFire(j.bid)){const n=Math.min(j.n,byAfford(b,st.lvl,byBudget()),wsHas(j.bid)?wsRoom(j.bid):1e9);
       if(n>=1){const c=bulkCost(b.cost,b.scale,st.lvl,n);B.jobs.splice(k,1);byApply(j,n,c,offline);continue;}}
     j.st='wait';
     if(j.t>=j.dur+BY_WAIT){B.jobs.splice(k,1);if(!offline&&typeof byDoneFx==='function') byDoneFx(j,0);}
@@ -72,7 +77,7 @@ function byTick(dt,offline){
   B.cool=(B.cool||0)-dt; if(B.cool>0||B.jobs.length>=byCrews()) return;
   const p=byPick(); if(!p){B.cool=offline?0:1.2;return;}
   B.cool=offline?0:.6;
-  B.seq=(B.seq||0)+1; B.jobs.push({id:B.seq,bid:p.bid,n:p.n,t:0,dur:byDur(),st:'go'});
+  B.seq=(B.seq||0)+1; B.jobs.push(Object.assign({id:B.seq,bid:p.bid,n:p.n,t:0,dur:byDur(),st:'go'},p.ws!==undefined?{ws:p.ws}:{}));
 }
 function buyBuilders(){const B=byState();if(B.lvl>=BY_MAX||!byUnlocked()) return false;const c=byCost();if(S.coins+1e-9<c) return false;
   S.coins-=c; B.lvl++;

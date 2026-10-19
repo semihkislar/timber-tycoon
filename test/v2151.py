@@ -15,7 +15,7 @@ QUIET="window.toast=()=>{};window.sfx=()=>{};window.confettiBurst=()=>{};window.
 GREEDY='''(cps)=>{const out=[];const cons=BUILDINGS.filter(b=>b.inp.planks);let T=0,acc;
  const buy=()=>{for(let g=0;g<20&&forestEff()<.97;g++){let bi=null,bc=Infinity;for(const p of PLANTERS){const c=plCost(p.id,1)/p.rate;if(c<bc){bc=c;bi=p.id;}}if(plCost(bi,1)>S.coins||!buyPlanter(bi,1)) break;}
   for(let g=0;g<40;g++){let best=null,bc=Infinity;
-   for(const b of BUILDINGS){if(!bldUnlocked(b.id)) continue;const c=bulkCost(b.cost,b.scale,S.buildings[b.id].lvl,1);if(c<bc){bc=c;best=()=>buyBuilding(b.id,1);}}
+   for(const b of BUILDINGS){if(!bldUnlocked(b.id)) continue;const c=typeof bldNextCost==='function'?bldNextCost(b.id):bulkCost(b.cost,b.scale,S.buildings[b.id].lvl,1);if(c<bc){bc=c;best=()=>buyBuilding(b.id,1,{wsAuto:true});}}
    if(typeof colCost==='function'&&S.collectors.lumberjack===0) buyCollector('lumberjack',1);if(typeof sawLogsOk==='function'&&sawLogsOk()) buyBuilding('sawmill',1,{logsOnly:true});
    for(const c of COLLECTORS){const k=typeof colCost==='function'?colCost(c.id,S.collectors[c.id],1):bulkCost(c.cost,COL_SCALE,S.collectors[c.id],1);if(k<bc){bc=k;best=()=>buyCollector(c.id,1);}}
    if(!best||bc>S.coins||!best()) break;}};

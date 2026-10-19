@@ -28,7 +28,7 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         const F=S.forest,ttd=(F.m-D*10)/Math.max(1e-9,D-cap),need=D>0&&cap<D*1.2&&(cap<D?ttd<300:F.m<T.forestPlots()*.7); window.__plNeed=need;
         if(need) for(const p of T.PLANTERS){const cost=T.plCost(p.id,1);if(cost>S.totalEarned*3+200) continue;const r=T.plRate(p.id);
           cands.push({k:'pl:'+p.id,cost,gain:Math.min(r,D*1.2-cap)*(pot/D)*cpl*(cap<D?3:1),do:()=>T.buyPlanter(p.id,1)});}}
-      for(const b of T.BUILDINGS){const st=S.buildings[b.id];const cost=T.bulkCost(b.cost,b.scale,st.lvl,1);
+      for(const b of T.BUILDINGS){const st=S.buildings[b.id];const cost=T.bldNextCost?T.bldNextCost(b.id):T.bulkCost(b.cost,b.scale,st.lvl,1);   // v2.22: includes the workstation a gate needs
         if(cost>S.totalEarned*3+200) continue; if(T.bldUnlocked&&!T.bldUnlocked(b.id)) continue;
         if(b.id==='lab'){if(window.BOT_V25===false||window.BOT_RES===false) continue; const left=T.RNODES.filter(n=>!T.hasRes(n.id)).length; if(left&&st.lvl<12) cands.push({k:'b:lab',cost,gain:Math.max(T.coinRate,1)*(st.lvl?.02:.12),do:()=>T.buyBuilding('lab',1)}); continue;}
         // available surplus of inputs (being sold)
@@ -36,7 +36,10 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*(T.saleValue?T.saleValue(k):T.price(k));
         const sp=st.lvl?T.bstat[b.id].speed/st.lvl:1;
         cands.push({k:'b:'+b.id,cost,gain:Math.max(0,Math.min(1,ok))*val*sp+ (ok<0.3?0:0),do:()=>T.buyBuilding(b.id,1)});}
-      for(const u of T.UPGRADES){ if(S.upgrades[u.id]||!u.req()) continue; const plU=['spades','fert','elite','irrig'].includes(u.id); if(plU&&!window.__plNeed) continue; cands.push({k:'u:'+u.id,cost:u.cost,gain:Math.max(T.coinRate,1)*(plU?.15:0.25),do:()=>T.buyUpgrade(u.id)});}
+      for(const u of T.UPGRADES){ const uL=T.upLvl?T.upLvl(u.id):(S.upgrades[u.id]?1:0); if(T.upMax?(uL>=T.upMax(u)||!T.upReqOk(u)||window.BOT_UPLV===false&&uL):S.upgrades[u.id]) continue; if(!u.req()) continue; const plU=['spades','fert','elite','irrig'].includes(u.id); if(plU&&!window.__plNeed) continue; cands.push({k:'u:'+u.id+uL,cost:T.upCost?T.upCost(u):u.cost,gain:Math.max(T.coinRate,1)*(plU?.15:0.25)*(uL?.6:1),do:()=>T.buyUpgrade(u.id)});}
+      // v2.22: optional workstation levels beyond the gates (+3..5% each)
+      if(T.WS_DEF&&window.BOT_WS!==false) for(const id in T.WS_DEF){const st=S.buildings[id];if(!st||!st.lvl||!T.bstat[id]) continue;const b=T.BUILDINGS.find(x=>x.id===id);let val=0;for(const k in b.out) val+=b.out[k]*T.price(k);
+        const pr=Math.max(0,val)*T.bstat[id].speed*Math.min(1,T.bstat[id].f||0);for(let k=0;k<3;k++){const L=T.wsLvl(id,k);if(L>=T.WS_MAX) continue;cands.push({k:'w:'+id+k+L,cost:T.wsCost(id,k),gain:pr*.04,do:()=>T.buyWs(id,k,true)});}}
       // v2.2: premium area (unlock + showroom levels) and stock-area upgrades (+10% speed each)
       if(T.premCost&&window.BOT_PREM!==false&&S.premium.lvl<5){const pc=T.premCost(); if(pc<S.totalEarned*3) cands.push({k:'p:area'+(S.premium.lvl+1),cost:pc,gain:S.premium.lvl?Math.max(T.coinRate,1)*0.1:Math.max(T.coinRate,1)*0.3,do:()=>T.buyPremium()});}
       if(T.buyStorage&&window.BOT_STORAGE!==false) for(const b of T.BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||T.stoLvl(b.id)>=8) continue; let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);

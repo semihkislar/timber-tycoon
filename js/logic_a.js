@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.21.1';
+const VERSION='2.22';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -142,6 +142,36 @@ const UPGRADES=[
   {id:'irrig',icon:'💧',name:'Drip Irrigation',desc:'Saplings grow 50% faster',cost:3e6,req:()=>pn('nursery')>=1,apply:m=>m.grow*=1.5},
   {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
 ];
+/* v2.22 leveled upgrades (docs/stations-v2.22.md §1): every upgrade is a line Lv 0 → N. Lv 1 = the old one-time upgrade;
+   each further level scales the Lv-1 bonus by g(L)=1+0.1·(L−1). Cost ×12 per level. Lv 2+ need the thing the upgrade is about. */
+const UPG_MAX={sawdust:1,alarm:3,sprinkler:3}, UPG_GROW=12, UPG_STEP=.1;
+const UPG_REF={sharp:['k'],steel:['c','lumberjack'],steamsaw:['b','sawmill'],oil:['c','chainsaw'],combo:['c','lumberjack'],kilndry:['b','sawmill'],sawdust:['b','chipper'],
+  diesel:['c','truck'],conveyor:['n'],jigs:['b','carpentry'],dryer:['b','pellet'],goldaxe:['k'],gps:['c','harvester'],export:['n'],bleach:['b','paper'],heattreat:['b','kiln'],
+  ai:['c','drone'],automation:['b','furniture'],brand:['b','furniture'],logistics:['n'],rotors:['c','heli'],alarm:['b','kiln'],spades:['p','planter'],fert:['p','planter'],
+  elite:['p','team',[0,0,5,10,20,40]],irrig:['p','nursery',[0,0,2,4,7,10]],sprinkler:['b','kiln']};
+const UPG_TH={c:[0,0,15,30,60,100],p:[0,0,10,25,50,100],b:[0,0,25,50,100,200],n:[0,0,5,7,9,11],k:[0,0,200,600,1500,4000]};
+function upLvl(id){const v=S.upgrades&&S.upgrades[id];return v===true?1:(+v||0);}
+function upMax(u){return UPG_MAX[u.id]||5;}
+function upG(L){return 1+UPG_STEP*(L-1);}
+function upRefVal(u){const r=UPG_REF[u.id]||['n'];return r[0]==='c'?cn(r[1]):r[0]==='p'?pn(r[1]):r[0]==='b'?bl(r[1]):r[0]==='k'?S.clicks:nBuilt();}
+function upNeed(u,L){const r=UPG_REF[u.id]||['n'];return (r[2]||UPG_TH[r[0]])[Math.min(5,L)]||0;}
+function upReqOk(u,L){L=L||upLvl(u.id)+1;if(L>upMax(u)) return false;if(!u.req()) return false;return L<2||upRefVal(u)>=upNeed(u,L);}
+function upReqTxt(u,L){const r=UPG_REF[u.id]||['n'],n=upNeed(u,L);
+  if(r[0]==='c'){const c=COLLECTORS.find(x=>x.id===r[1]);return `${c?c.name:r[1]} ×${n}`;}
+  if(r[0]==='p'){const p=(typeof PLANTERS!=='undefined'?PLANTERS:[]).find(x=>x.id===r[1]);return `${p?p.name:r[1]} ×${n}`;}
+  if(r[0]==='b') return `${BMAP[r[1]].name} Lv ${n}`;if(r[0]==='k') return `${fmt(n)} taps this run`;return `${n} buildings built`;}
+function upDesc(u,L){if(L<=1||upMax(u)===1) return u.desc;const g=upG(L),r2=x=>{const v=Math.round(x*100)/100;return (v%1?v.toFixed(v*10%1?2:1):String(v));};
+  return u.desc.replace(/×(\d+(?:\.\d+)?)|−(\d+)%|(\d+)%/,(m0,a,b,c)=>a?'×'+r2(1+(+a-1)*g):b?'−'+r2(Math.min(80,+b*g))+'%':r2(+c*g)+'%');}
+const NEUTRAL_M=()=>{const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
+  COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1); return m;};
+const _upD={};
+function upDiff(u){if(_upD[u.id]) return _upD[u.id];const m0=NEUTRAL_M(),m1=NEUTRAL_M();u.apply(m1);const d=[];
+  for(const k in m1){const a=m0[k],b=m1[k];if(typeof b==='number'){if(b!==a) d.push([k,null,a,b]);}else if(typeof b==='boolean'){if(b!==a) d.push([k,null,a,b]);}
+    else if(b&&typeof b==='object') for(const q in b) if(b[q]!==a[q]) d.push([k,q,a[q],b[q]]);}
+  return _upD[u.id]=d;}
+function upApply(u,m,L){if(!(L>0)) return;if(L===1){u.apply(m);return;}const g=upG(L);
+  for(const [k,q,a,b] of upDiff(u)){const o=q===null?m:m[k],f=q===null?k:q;
+    if(typeof b==='boolean') o[f]=b; else if(a===0) o[f]+=b*g; else o[f]*=Math.max(.2,1+(b/a-1)*g);}}
 const EVENTS=[
   {id:'hotel',name:'🏨 Big Hotel Order',desc:'Chairs & Furniture sell for 3×!',dur:60,req:()=>bl('carpentry')>0,apply:m=>{m.price.chairs*=3;m.price.furniture*=3}},
   {id:'storm',name:'⛈️ Storm!',desc:'A storm knocked down trees',dur:0,instant:()=>{const n=Math.max(40,logRate()*45);addRes('logs',n);return '+'+fmt(n)+' 🪵 logs collected!';}},
@@ -161,7 +191,7 @@ const ACH_BONUS=0.02;
 const totCol=()=>COLLECTORS.reduce((a,c)=>a+S.collectors[c.id],0);
 const totLvl=()=>BUILDINGS.reduce((a,b)=>a+S.buildings[b.id].lvl,0);
 const nBuilt=()=>BUILDINGS.filter(b=>S.buildings[b.id].lvl>0).length;
-const nUpg=()=>Object.keys(S.upgrades).filter(k=>S.upgrades[k]).length;
+const nUpg=()=>Object.keys(S.upgrades).filter(k=>S.upgrades[k]).length;   // lines at Lv ≥ 1
 const maxLvl=()=>Math.max(0,...BUILDINGS.map(b=>S.buildings[b.id].lvl));
 const nSat=()=>BUILDINGS.filter(b=>S.buildings[b.id].lvl>0&&S.buildings[b.id].on&&bstat[b.id].f>0.995).length;
 const ACH=[
@@ -227,7 +257,7 @@ const ACH=[
 
 /* ===================== STATE ===================== */
 function freshState(keep){
-  const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},autosell:{},tree:0,
+  const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},ws:{},autosell:{},tree:0,
     seeds:0,legacy:0,oldRep:0,tierNote:0,shop:{},runCS:1,run:{goals:{},peak:0,start:0,charter:false},rpStats:{runs:[],best:0},prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
     storage:{},premium:{lvl:0},orders:{offer:null,active:null,next:100,done:0,failed:0,hist:[]},
@@ -326,6 +356,9 @@ function migrateSave(o){
   if(typeof rpMigrate==='function') rpMigrate(o);   // v2.18 Replant 2.0
   if(typeof resMigrate==='function') resMigrate(o);   // v2.19 Research 2.0 (refund research Seeds)
   if(o.autosell) o.autosell.logs=false; if(o.res&&!(o.res.logs>=0)) o.res.logs=0;   // v2.20.1: logs are raw stock only (held logs stay and feed the mills)
+  // v2.21.1 -> v2.22: owned one-time upgrades become Lv 1 of their line; workstations start at what each building's level needs (free)
+  if(!o.upgrades||typeof o.upgrades!=='object') o.upgrades={}; for(const k in o.upgrades){const v=o.upgrades[k];o.upgrades[k]=v===true?1:Math.max(0,Math.floor(+v||0));}
+  if(typeof wsGrandfather==='function') wsGrandfather(o);
   o.version=VERSION;
   return o;
 }
@@ -341,9 +374,9 @@ function merge(base,obj){
 
 /* ===================== MODIFIERS ===================== */
 function computeMods(){
-  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
-  COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1);
-  for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
+  const m=NEUTRAL_M();
+  for(const u of UPGRADES){const L=upLvl(u.id);if(L) upApply(u,m,L);}   // v2.22 leveled upgrades
+  if(typeof wsApplyPrice==='function') wsApplyPrice(m);   // v2.22 quality workstations
   m.priceAll*=TREES[S.tree].mult;
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
   if(S.wx) applyWorldMods(m);
@@ -375,14 +408,14 @@ function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkC
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1);}   // v2.17 specialisation / retool
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1);}   // v2.22 workstations   // v2.17 specialisation / retool
 /* v2.17: input per item = manager thrift × specialisation (lean −20…40 %, high-speed +15 %) */
-function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1);}
+function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1)*(typeof wsIn==='function'?wsIn(id):1);}
 /* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),
    so one Sawmill keeps up with the many plank-hungry buildings that come later. Inputs (logs) are unchanged. */
 function sawYieldAt(l){const ms=msCount(l);return Math.pow(1.6,Math.max(0,ms-2))*(1+Math.max(0,l-50)/20);}
 function sawYield(){return sawYieldAt(S.buildings.sawmill.lvl);}
-function bOutMult(id){return mgrOut(id)*(id==='sawmill'?sawYield():1);}
+function bOutMult(id){return mgrOut(id)*(id==='sawmill'?sawYield():1)*(typeof wsOut==='function'?wsOut(id):1);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
@@ -494,7 +527,7 @@ function simulateOffline(sec){
 /* ===================== COSTS & PURCHASES ===================== */
 /* v2.18 run cost scale: everything you rebuy each run is priced in this run's 'forest value' (set at Replant from your
    Legacy + Fertile Soil, see js/replant.js). Kept infrastructure (fire station, power plant, yards, harbour, managers) is not scaled. */
-function upCost(u){return u.cost*cs();}
+function upCost(u,L){L=L||Math.min(upMax(u),upLvl(u.id)+1);return u.cost*cs()*Math.pow(UPG_GROW,L-1);}
 function treeCost(t){return t.cost*cs();}
 function cs(){return (S&&S.runCS>0)?S.runCS:1;}
 function bulkCost(base,scale,owned,n){base*=cs();return base*Math.pow(scale,owned)*(Math.pow(scale,n)-1)/(scale-1);}
@@ -512,8 +545,13 @@ function buyBuilding(id,n,opt){
     toast(`${b.icon} <b>${b.name}</b> built from 🪵 ${SAW_LOGS} logs! ${recipeStr(b)} · planks sell, logs don't`); confettiBurst(); sfx('unlock'); if(typeof buildPoof==='function') buildPoof('sawmill');
     n=n||1; if(n>1&&!(opt&&opt.logsOnly)) buyBuilding('sawmill',n-1); return true;}
   const b=BMAP[id];n=n||qty(b.cost,b.scale,S.buildings[id].lvl);
-  const cost=bulkCost(b.cost,b.scale,S.buildings[id].lvl,n);
   if(!bldUnlocked(id)) return false;
+  // v2.22 workstation gates: purchases are clipped at the cap. opt.wsAuto (the TT test/dev API) buys the needed station levels too.
+  if(typeof wsRoom==='function'&&wsHas(id)&&S.buildings[id].lvl>0){
+    if(opt&&opt.wsAuto){const need=wsNeedFor(id,S.buildings[id].lvl+n);if(need.list.length){const tot=need.cost+bulkCost(b.cost,b.scale,S.buildings[id].lvl,n);if(S.coins+1e-9<tot) return false;
+        for(const [k] of need.list) buyWs(id,k,true);}}
+    else{const room=wsRoom(id);if(room<1) return false;n=Math.min(n,room);}}
+  const cost=bulkCost(b.cost,b.scale,S.buildings[id].lvl,n);
   if(S.coins+1e-9<cost) return false; const first=S.buildings[id].lvl===0;
   const ms0=msCount(S.buildings[id].lvl);
   S.coins-=cost; S.buildings[id].lvl+=n; M=computeMods();
@@ -524,8 +562,9 @@ function buyBuilding(id,n,opt){
   return true;
 }
 function buyUpgrade(id){
-  const u=UPGRADES.find(x=>x.id===id); if(!u||S.upgrades[id]||S.coins<upCost(u)) return false;
-  S.coins-=upCost(u); S.upgrades[id]=true; M=computeMods(); toast(`${u.icon} <b>${u.name}</b>: ${u.desc}`); sfx('buy'); return true;
+  const u=UPGRADES.find(x=>x.id===id); if(!u) return false; const L=upLvl(id)+1;
+  if(L>upMax(u)||!upReqOk(u,L)||S.coins+1e-9<upCost(u,L)) return false;
+  S.coins-=upCost(u,L); S.upgrades[id]=L; M=computeMods(); toast(`${u.icon} <b>${u.name}</b>${upMax(u)>1?' Lv '+L:''}: ${upDesc(u,L)}`); sfx('buy'); return true;
 }
 function buyTree(){
   const nx=TREES[S.tree+1]; if(!nx||S.coins<treeCost(nx)) return false;

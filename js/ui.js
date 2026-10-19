@@ -119,7 +119,7 @@ function updateBuildingSheet(){
   }
   if(!vis){$('bpLocked').innerHTML=`🔒 This lot is still covered in brambles.<br>Earn <b>🪙 ${fmt(b.cost*cs()*0.25)}</b> in total to reveal what can be built here (now ${fmt(S.totalEarned)}).`;$('bpLv').textContent='';return;}
   {const mg=$('bpMargin');if(mg){mg.classList.toggle('hidden',!(typeof BTIER==='object'&&BTIER[b.id]));}if(mg&&typeof bMargin==='function'&&BTIER[b.id]){const v=st.lvl?bMargin(b.id):0,u=unitMargin(b.id);const ph=`<b class="tier-line t${BTIER[b.id]}">${TIER_N[BTIER[b.id]]}</b> · `;const tx=ph+(BTIER[b.id]===1?(st.lvl?`📈 Earns <b>🪙${fmt(v)}/s</b> from logs, which can't be sold`:`📈 Turns logs (not for sale) into goods worth 🪙${fmt(u,1)} per unit`):st.lvl?`📈 Processing adds <b>${v>=0?'+':''}🪙${fmt(v)}/s</b> over selling its inputs raw (${u>=0?'+':''}${fmt(u,1)} per unit)`:`📈 +${fmt(u,1)} per unit over the value of its inputs`);if(mg._t!==tx){mg.innerHTML=tx;mg._t=tx;}}}
-  const n=qty(b.cost,b.scale,st.lvl); const cost=bulkCost(b.cost,b.scale,st.lvl,n);
+  const room=st.lvl&&wsHas(b.id)?wsRoom(b.id):1e9, n=Math.max(1,Math.min(qty(b.cost,b.scale,st.lvl),room)); const cost=bulkCost(b.cost,b.scale,st.lvl,n);   // v2.22: clipped at the workstation gate
   $('bpLv').textContent=st.lvl?' Lv '+st.lvl:'';
   const mc=msCount(st.lvl),nx=nextMs(st.lvl),prev=mc?MILESTONES[mc-1]:0;
   const sh=Math.min(MILESTONES.length,Math.max(3,mc+1));
@@ -127,7 +127,8 @@ function updateBuildingSheet(){
   const se=$('bpStars'); if(se._h!==h){se.innerHTML=h;se._h=h;}
   $('bpMbar').style.width=(nx?Math.min(100,(st.lvl-prev)/(nx-prev)*100):100).toFixed(0)+'%';
   const t=nx?`<b>×${MS_MULT}</b> speed at Lv ${nx}`+(mc?` · now <b>×${Math.pow(MS_MULT,mc)}</b>`:''):`Max milestones · <b>×${Math.pow(MS_MULT,mc)}</b>`;
-  const mt=$('bpMtx'); if(mt._t!==t){mt.innerHTML=t;mt._t=t;}
+  const wg=st.lvl?wsGate(b.id):null, t2=wg&&st.lvl>=wg.lv?`🔒 <b>Capped at Lv ${wg.lv}</b> · needs ${wsIcon(b.id,wg.k)} ${wsName(b.id,wg.k)} Lv ${wg.n}`:t+(wg&&st.lvl>=wg.lv-10?` · 🔒 Lv ${wg.lv}`:'');   // v2.22
+  const mt=$('bpMtx'); if(mt._t!==t2){mt.innerHTML=t2;mt._t=t2;}
   const s=statusOf(b);
   $('bpStatus').classList.toggle('hidden',!st.lvl);
   $('bpBi').style.width=(s.f*100).toFixed(0)+'%';
@@ -156,11 +157,13 @@ function updateBuildingSheet(){
   const bb=$('bpBuy'); const bh=costBtnHtml(st.lvl?`⬆ Upgrade${n>1?' +'+n:''}`:'🔨 Build',cost); if(bb._h!==bh){bb.innerHTML=bh;bb._h=bh;}
   const unl=bldUnlocked(b.id); if(!unl){const lt=b.id==='lab'?'🔒 Needs a Paper Mill':b.id==='boatyard'&&hasRes('boats')?'🔒 Needs the Harbour':'🔒 Research '+RNMAP[TECH_UNLOCK[b.id]].name;if(bb._h!==lt){bb.innerHTML=lt;bb._h=lt;}}
   bb.disabled=!unl||S.coins+1e-9<cost;
+  bb.classList.toggle('ws-lock',!!(unl&&room<1));
+  if(unl&&room<1){const g=wsGate(b.id),lt=`🔒 Upgrade ${wsName(b.id,g.k)} to Lv ${g.n}<small>capped at Lv ${g.lv} · tap for 🛠 Workstations</small>`;if(bb._h!==lt){bb.innerHTML=lt;bb._h=lt;}bb.disabled=false;}   // v2.22: milestone gate
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
   if(b.id==='sawmill'&&sawByLogs()){   // v2.20.1: the first Sawmill is built with logs, with a progress bar
     const have=Math.min(S.res.logs,SAW_LOGS),lh=`🔨 Build<small>🪵 ${fmt(Math.floor(have))} / ${SAW_LOGS} logs</small>`;if(bb._h!==lh){bb.innerHTML=lh;bb._h=lh;}
     bb.disabled=!sawLogsOk();$('bpPbar').style.width=(have/SAW_LOGS*100).toFixed(0)+'%';}
-  updateStorageBlock(b); if(typeof updateBldSpec==='function') updateBldSpec(b); updateBldMgr(b); if(typeof updateBldBy==='function') updateBldBy(b);
+  updateStorageBlock(b); if(typeof updateBldSpec==='function') updateBldSpec(b); updateBldMgr(b); if(typeof updateBldBy==='function') updateBldBy(b); updateBldWs(b);
 }
 function cycleBuilding(d){
   if(!sheetBld) return; let i=BUILDINGS.findIndex(b=>b.id===sheetBld);
@@ -211,28 +214,36 @@ function updateMarket(){
 function baseUpgPrice(id){
   const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
   RES.forEach(r=>m.price[r.id]=1); COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1);
-  for(const u of UPGRADES) if(S.upgrades[u.id]) u.apply(m);
+  for(const u of UPGRADES){const L=upLvl(u.id);if(L) upApply(u,m,L);}
   return m.price[id]*m.priceAll;
 }
 
 /* ===================== RENDER: UPGRADES / TREES / COMPANY / TROPHIES ===================== */
 let upgSig='';
-function availUpgrades(){return UPGRADES.filter(u=>!S.upgrades[u.id]&&u.req()).sort((a,b)=>a.cost-b.cost).slice(0,10);}
+// v2.22: every upgrade is a line with levels Lv 1..N; the panel lists the next level of each line
+function availUpgrades(){return UPGRADES.filter(u=>upLvl(u.id)<upMax(u)&&upReqOk(u)).sort((a,b)=>upCost(a)-upCost(b)).slice(0,12);}
+function nextLockedUpg(){return UPGRADES.filter(u=>{const L=upLvl(u.id);return L>=1&&L<upMax(u)&&!upReqOk(u);}).sort((a,b)=>upCost(a)-upCost(b)).slice(0,4);}
+function upPips(u,L){return `<div class="upips">${Array.from({length:upMax(u)},(_,i)=>`<i class="${i<L?'on':''}"></i>`).join('')}</div>`;}
 function updateUpgrades(){
   const av=availUpgrades();
   let any=av.some(u=>S.coins>=upCost(u));
   $('upgDot').classList.toggle('hidden',!any||curSheet==='upg');
   if(curSheet!=='upg') return;
-  const sig=av.map(u=>u.id).join(',');
+  const lk=nextLockedUpg();
+  const sig=av.map(u=>u.id+upLvl(u.id)).join(',')+'|'+lk.map(u=>u.id+upLvl(u.id)).join(',');
   if(sig!==upgSig){upgSig=sig; const L=$('upgList'); L.innerHTML='';
-    if(!av.length) L.innerHTML='<div class="hint">No upgrades available right now. Keep growing: upgrades appear as you expand.</div>';
-    for(const u of av){const d=document.createElement('div');d.className='card';d.dataset.id=u.id;
-      d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name}</div><div class="ds">${u.desc}</div><div class="pbar"><i></i></div></div><button class="btn buy">${costBtnHtml('Buy',upCost(u))}</button>`;
+    if(!av.length) L.innerHTML='<div class="hint">No upgrades available right now. Keep growing: upgrades and their higher levels unlock as you expand.</div>';
+    for(const u of av){const lv=upLvl(u.id),N=upMax(u),d=document.createElement('div');d.className='card upg-card';d.dataset.id=u.id;
+      const ds=lv?`<b>${upDesc(u,lv)}</b> <span class="nx">→ Lv ${lv+1}: ${upDesc(u,lv+1)}</span>`:upDesc(u,1);
+      d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name} <span class="ulv">Lv ${lv}/${N}</span></div><div class="ds">${ds}</div>${N>1?upPips(u,lv):''}<div class="pbar"><i></i></div></div><button class="btn buy">${costBtnHtml(lv?'⬆ Lv '+(lv+1):'Buy',upCost(u))}</button>`;
       d.querySelector('button').onclick=()=>{buyUpgrade(u.id);render();};L.appendChild(d);}
-    const owned=UPGRADES.filter(u=>S.upgrades[u.id]);
-    $('upgOwned').textContent=owned.length?`Owned (${owned.length}/${UPGRADES.length}): `+owned.map(u=>u.icon+' '+u.name).join(', '):'';
+    if(lk.length){const h=document.createElement('div');h.className='upg-sub';h.textContent='Next levels unlock with progress';L.appendChild(h);
+      for(const u of lk){const lv=upLvl(u.id),d=document.createElement('div');d.className='card upg-card lockd';
+        d.innerHTML=`<div class="ic">${u.icon}</div><div><div class="nm">${u.name} <span class="ulv">Lv ${lv}/${upMax(u)}</span></div><div class="ds">Lv ${lv+1}: ${upDesc(u,lv+1)}</div>${upPips(u,lv)}</div><button class="btn buy" disabled>🔒<small>${upReqTxt(u,lv+1)}</small></button>`;L.appendChild(d);}}
+    const owned=UPGRADES.filter(u=>upLvl(u.id)),lvls=owned.reduce((a,u)=>a+upLvl(u.id),0),tot=UPGRADES.reduce((a,u)=>a+upMax(u),0);
+    $('upgOwned').textContent=owned.length?`Levels ${lvls}/${tot} · `+owned.map(u=>`${u.icon} ${u.name} ${upLvl(u.id)}/${upMax(u)}`).join(', '):'';
   }
-  $('upgList').querySelectorAll('.card').forEach(d=>{const u=UPGRADES.find(x=>x.id===d.dataset.id);const b=d.querySelector('button');b.disabled=S.coins<upCost(u);d.classList.toggle('afford',!b.disabled);
+  $('upgList').querySelectorAll('.card[data-id]').forEach(d=>{const u=UPGRADES.find(x=>x.id===d.dataset.id);const b=d.querySelector('button');b.disabled=S.coins<upCost(u);d.classList.toggle('afford',!b.disabled);
     const pb=d.querySelector('.pbar>i'); if(pb) pb.style.width=Math.min(100,S.coins/upCost(u)*100).toFixed(0)+'%';});
 }
 let treeSig='';

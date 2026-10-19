@@ -64,11 +64,12 @@
         <div class="bp-nav"><button id="bpPrev" title="Previous building">‹</button><button id="bpNext" title="Next building">›</button></div></div>
       <div id="bpLocked" class="lockmsg hidden"></div>
       <div id="bpMain">
+        <div class="seg bptabs hidden" id="bpTabs"><button data-t="ov" class="on">📋 Overview</button><button data-t="ws">🛠 Workstations <b id="bpWsN"></b></button></div>
         <div class="ms" id="bpMs" title="Milestones: each one doubles this building's speed and hires a yard worker"><span class="stars" id="bpStars"></span><span class="mbar"><i id="bpMbar"></i></span><span class="mtx" id="bpMtx"></span></div>
         <div class="bstatus" id="bpStatus"><div class="bar" id="bpBar"><i id="bpBi"></i></div><span class="chip" id="bpChip"></span></div>
         <div class="io" id="bpIo"></div>
         <div class="brow"><span class="seg mult"><button data-m="1" class="on">×1</button><button data-m="10">×10</button><button data-m="max">Max</button></span>
-          <label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
+          <button class="wsgo hidden" id="bpWsGo" title="Workstations inside this building">🛠 Stations <b id="bpWsGoN"></b></button><label class="sw" title="Toggle building on/off"><input type="checkbox" id="bpOn"><span class="tr"></span><span id="bpOnL">On</span></label></div>
         <div class="buyrow"><button class="btn buy big hold" id="bpBuy"></button><button class="btn gold bmax" id="bpMax" title="Buy as many levels as you can afford">Max</button></div>
         <div id="bpMargin" class="bp-margin legend"></div>
         <div class="pbar"><i id="bpPbar"></i></div>
@@ -76,6 +77,7 @@
         <div class="bspec hidden" id="bpSpec"></div>
         <div class="bby hidden" id="bpBy"></div>
         <div class="bmgr hidden" id="bpMgr"></div>
+        <div class="bws hidden" id="bpWs"></div>
         <div class="stor hidden" id="bpStor">
           <div class="stor-h"><b>📦 Stock area</b><span class="lv" id="bpStLv"></span><span class="chip" id="bpStChip"></span>
             <label class="sw" title="Turn auto-sell off for this building's output to stockpile it (for orders)"><input type="checkbox" id="bpStKeep"><span class="tr"></span><span id="bpStKeepL">Keep stock</span></label></div>
@@ -154,6 +156,7 @@
 <div id="fxLayer"></div>
 <script src="js/logic_a.js"></script>
 <script src="js/logic_b.js"></script>
+<script src="js/stations.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/premium.js"></script>
 <script src="js/world.js"></script>

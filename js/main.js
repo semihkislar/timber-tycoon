@@ -35,7 +35,7 @@ function setupUI(){
     b.onclick=()=>{if(curSheet===b.dataset.s) closeSheet(); else openSheet(b.dataset.s);};});
   $('shClose').onclick=closeSheet;
   document.querySelectorAll('.seg.mult button').forEach(b=>b.onclick=()=>setMult(b.dataset.m));
-  $('bpBuy').onclick=()=>{if(sheetBld){buyBuilding(sheetBld,undefined,sheetBld==='sawmill'&&sawByLogs()?{logsOnly:true}:undefined);render();}};   // v2.20.1: the first Sawmill is paid in logs
+  $('bpBuy').onclick=()=>{if(sheetBld&&S.buildings[sheetBld].lvl&&wsHas(sheetBld)&&wsRoom(sheetBld)<1){if(typeof HOLD==='object'&&HOLD.el===$('bpBuy')&&HOLD.n>0){holdStop();return;} bpTab('ws');return;} if(sheetBld){buyBuilding(sheetBld,undefined,sheetBld==='sawmill'&&sawByLogs()?{logsOnly:true}:undefined);render();}};   // v2.20.1: the first Sawmill is paid in logs · v2.22: at a gate a hold-repeat stops, a fresh tap opens the Workstations
   $('bpOn').onchange=()=>{if(sheetBld){S.buildings[sheetBld].on=$('bpOn').checked;render();}};
   $('bpPrev').onclick=()=>cycleBuilding(-1); $('bpNext').onclick=()=>cycleBuilding(1);
   $('saveBtn').onclick=()=>save();
@@ -101,7 +101,10 @@ function init(){
 }
 
 // test / debug hook
-window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,buyCollector,buyBuilding,buyUpgrade,buyTree,sellAll,doPrestige,hardReset,save,load,
+window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,buyCollector,
+  buyBuilding:(id,n,opt)=>buyBuilding(id,n,Object.assign({wsAuto:true},opt||{})),   // v2.22: the test/dev API also buys the workstation levels a purchase needs
+  buyBuildingRaw:buyBuilding,bldNextCost,buyWs,wsLvl,wsCap,wsRoom,wsGate,wsNext,wsCost,wsNeedFor,wsBlocked,wsGrandfather,wsSpd,wsOut,wsIn,wsMult,WS_DEF,WS_GATES,WS_MAX,WS_LV,
+  upLvl,upMax,upCost,upReqOk,upReqTxt,upDesc,buyUpgrade,buyTree,sellAll,doPrestige,hardReset,save,load,
   pendingSeeds,logRate:()=>{M=computeMods();return logRate();},price:id=>{M=computeMods();return price(id);},bstat,rates,get coinRate(){return coinRate;},
   triggerEvent,render,rebuildAll,ACH,checkAch,achCount,spawnGolden,catchGolden,golden,get M(){return M;},COLLECTORS,BUILDINGS,UPGRADES,TREES,bulkCost,COL_SCALE,setBuyMult:m=>{buyMult=m;},VERSION,migrateSave,scene,MILESTONES,msCount,nextMs,totStars,bSpeed,workersFor,
   // v2.0 iso scene helpers

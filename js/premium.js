@@ -50,7 +50,7 @@ const ORDER_OFFER_SEC=75;
 function prodRate(k){
   if(k==='logs') return logRate();
   let p=0; for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||!st.on) continue; const f=Math.max(.3,bstat[b.id].f||0);
-    if(b.out[k]) p+=b.out[k]*bSpeed(b.id)*f*(b.id==='sawmill'?sawYield():1); if(k==='chips'&&b.id==='sawmill'&&M.sawdust) p+=2*bSpeed(b.id)*f;}
+    if(b.out[k]) p+=b.out[k]*bSpeed(b.id)*f*bOutMult(b.id); if(k==='chips'&&b.id==='sawmill'&&M.sawdust) p+=2*bSpeed(b.id)*f;}
   return p;
 }
 function niceNum(x){if(x<10) return Math.max(5,Math.round(x));const e=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/e)*e;}
