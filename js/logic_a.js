@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.20';
+const VERSION='2.20.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -239,7 +239,7 @@ function freshState(keep){
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
     spec:{},specStats:{picks:0,switches:0}};   // v2.17 line specialisations   // v2.7: one free planter, a full forest
-  RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=true;});
+  RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=canSell(r.id);});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
   if(keep) Object.assign(s,keep);
@@ -325,6 +325,7 @@ function migrateSave(o){
   if(o.v===undefined) o.v=1;
   if(typeof rpMigrate==='function') rpMigrate(o);   // v2.18 Replant 2.0
   if(typeof resMigrate==='function') resMigrate(o);   // v2.19 Research 2.0 (refund research Seeds)
+  if(o.autosell) o.autosell.logs=false; if(o.res&&!(o.res.logs>=0)) o.res.logs=0;   // v2.20.1: logs are raw stock only (held logs stay and feed the mills)
   o.version=VERSION;
   return o;
 }
@@ -357,6 +358,20 @@ function computeMods(){
   return m;
 }
 function price(id){return RMAP[id].price*M.priceAll*M.price[id];}
+/* v2.20.1: logs are raw material only. They can't be sold, auto-sold, shipped or ordered; exports start at Phase 1. */
+function canSell(k){return k!=='logs';}   // (a function, not a table: freshState runs before this line)
+function saleValue(k){return canSell(k)?price(k):0;}
+/* Log Yard: holds ~3 min of collection (at least 600). When it is full the collectors stop felling (nothing is wasted, the forest is spared). */
+function logCap(){return Math.max(600,logRatePot()*180);}
+function yardRun(){return S&&isFinite(S.yardRun)?S.yardRun:1;}
+function yardFull(){return yardRun()<.95;}
+/* the first Sawmill of every run is built with LOGS, not coins (logs can't be sold, so a run would otherwise start with no income),
+   and the first Lumberjack of a run is hired for free, so a run with 0 coins can never soft-lock: free lumberjack → logs → Sawmill → planks → coins */
+const SAW_LOGS=40;   // ~40 s of one lumberjack (or ~40 taps); flat, so it is never a wall after a Replant either
+function sawByLogs(){return S.buildings.sawmill.lvl===0;}
+function sawLogsOk(){return sawByLogs()&&S.res.logs+1e-9>=SAW_LOGS;}
+function colCost(id,owned,n){const c=COLLECTORS.find(x=>x.id===id);if(id==='lumberjack'&&owned===0) return n>1?bulkCost(c.cost,COL_SCALE,1,n-1):0;return bulkCost(c.cost,COL_SCALE,owned,n);}
+function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkCost(BMAP[id].cost,BMAP[id].scale,0,1);}
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
@@ -391,7 +406,8 @@ function tick(dt,offline){
   S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline); if(typeof staffTick==='function') staffTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   forestTick(dt,offline);
-  const lr=logRate()*dt; S.res.logs+=lr; fl.logs.p+=lr;
+  {const lr=logRate()*dt,room=Math.max(0,logCap()-S.res.logs),acc=Math.min(lr,room);S.res.logs+=acc;fl.logs.p+=acc;fl.logs.w=lr-acc;   // v2.20.1 Log Yard capacity: old stock above the cap is kept
+    const f=lr>1e-12?acc/lr:(S.res.logs>=logCap()-1e-9?0:1);S.yardRun=yardRun()+(f-yardRun())*Math.min(1,dt/2);if(S.yardRun>.999&&f>=1) S.yardRun=1;}
   const demand={}; RES.forEach(r=>demand[r.id]=0);
   const active=[];
   for(const b of BUILDINGS){
@@ -428,7 +444,7 @@ function tick(dt,offline){
   orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
-    if(!S.autosell[r.id]) continue;
+    if(!S.autosell[r.id]||!canSell(r.id)) continue;
     const reserve=(demand[r.id]/dt)*Math.max(BUFFER_SEC,dt*1.5);
     const sell=S.res[r.id]-reserve;
     if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*price(r.id);sold[r.id]=sell;}
@@ -487,10 +503,14 @@ let buyMult=1;
 function qty(base,scale,owned){if(buyMult==='max') return Math.max(1,maxAfford(base,scale,owned));return buyMult;}
 function buyCollector(id,n){
   const c=COLLECTORS.find(x=>x.id===id);n=n||qty(c.cost,COL_SCALE,S.collectors[id]);
-  const cost=bulkCost(c.cost,COL_SCALE,S.collectors[id],n);
+  const cost=colCost(id,S.collectors[id],n);
   if(S.coins+1e-9<cost) return false; S.coins-=cost; S.collectors[id]+=n; M=computeMods(); sfx('buy'); return true;
 }
-function buyBuilding(id,n){
+function buyBuilding(id,n,opt){
+  if(id==='sawmill'&&sawByLogs()&&(sawLogsOk()||(opt&&opt.logsOnly))){   // v2.20.1: the first Sawmill costs logs (the game's UI only offers this path)
+    if(!sawLogsOk()) return false; S.res.logs-=SAW_LOGS; S.buildings.sawmill.lvl=1; M=computeMods(); const b=BMAP.sawmill;
+    toast(`${b.icon} <b>${b.name}</b> built from 🪵 ${SAW_LOGS} logs! ${recipeStr(b)} · planks sell, logs don't`); confettiBurst(); sfx('unlock'); if(typeof buildPoof==='function') buildPoof('sawmill');
+    n=n||1; if(n>1&&!(opt&&opt.logsOnly)) buyBuilding('sawmill',n-1); return true;}
   const b=BMAP[id];n=n||qty(b.cost,b.scale,S.buildings[id].lvl);
   const cost=bulkCost(b.cost,b.scale,S.buildings[id].lvl,n);
   if(!bldUnlocked(id)) return false;
@@ -512,10 +532,11 @@ function buyTree(){
   S.coins-=treeCost(nx); S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
 }
 function chop(){
-  const n=chopPower()*chopForest(); S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
+  const room=Math.max(0,logCap()-S.res.logs);   // v2.20.1: a full Log Yard takes no more logs (and the tree is left standing)
+  const n=room>0?Math.min(chopPower()*chopForest(),room):0; S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
 }
 function sellAll(id){
-  const n=S.res[id]; if(n<=0) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
+  const n=S.res[id]; if(n<=0||!canSell(id)) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
 }
 /* v2.18: seedsFor / pendingSeeds live in js/replant.js */
 function doPrestige(){

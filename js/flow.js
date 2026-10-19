@@ -25,7 +25,8 @@ function flowEdges(){
       for(const s of srcs) E.push({from:s,to:b.id,k,rate:rate/srcs.length,state});
     }}
   // what gets sold leaves through the dock (one arc per selling producer, top 6 by value so the view stays readable)
-  const sold=[];for(const r of RES){const R=rates[r.id];if(!R||!(R.s>1e-6)) continue;const p=r.id==='logs'?'yard':(BUILDINGS.find(b=>b.out[r.id]&&flowBuilt(b.id))||{}).id;if(p) sold.push({from:p,to:'dock',k:r.id,rate:R.s,state:'sell',val:R.s*price(r.id)});}
+  const sold=[];for(const r of RES){const R=rates[r.id];if(!R||!(R.s>1e-6)||!canSell(r.id)) continue;   // v2.20.1: logs never go to the dock
+const p=r.id==='logs'?'yard':(BUILDINGS.find(b=>b.out[r.id]&&flowBuilt(b.id))||{}).id;if(p) sold.push({from:p,to:'dock',k:r.id,rate:R.s,state:'sell',val:R.s*price(r.id)});}
   sold.sort((a,b)=>b.val-a.val);return E.concat(sold.slice(0,6));
 }
 function flowStats(){const E=flowEdges();return {n:E.length,bad:E.filter(e=>e.state==='bad').length,warn:E.filter(e=>e.state==='warn').length,sell:E.filter(e=>e.state==='sell').length};}

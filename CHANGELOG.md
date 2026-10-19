@@ -5,6 +5,33 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.20.1] — 2026-10-19
+
+**Logs are raw material only.** Semih: "let's not sell logs directly". Logs now only feed the Phase-1 mills; exports start at Phase 1.
+
+### Removed: every way to sell logs
+- Market: the Logs row has no price, no auto-sell and no Sell button. It reads "Raw · not for sale" and shows how full the Log Yard is.
+- Auto-sell and "Sell all" never sell logs, even if an old save had auto-sell on.
+- Shipping-yard export contracts, client orders, daily contracts and trade ships never ask for logs. The "City Builders Co." client now likes veneer instead.
+- Supply Flow: no logs arrow to the dock (logs still flow from the Log Yard into the mills).
+- Tier texts: "Raw · raw material, not for sale, feeds Phase 1" and "Phase 1 · from logs only · exports start here". On Phase-1 sheets the margin reads "Earns 🪙X/s from logs, which can't be sold". Margins value logs at 0.
+
+### Early game: the first Sawmill is built with logs
+- Every run (fresh game and after each Replant) starts with no Sawmill and 0 coins. **The first Sawmill costs 🪵 40 logs, not coins.** That is about 40 s of one lumberjack or about 40 taps. The amount is flat, so it is never a wall after a Replant. Later levels cost coins as usual.
+- The lot reads **"Build: 🪵 x / 40 logs"** with a progress bar. The sheet's Build button reads "🪵 x / 40 logs" with the same bar. Tapping the lot with enough logs builds it.
+- **The first Lumberjack of every run is free** (the crew card reads "Free"), so a run with 0 coins can never soft-lock: free lumberjack → logs → Sawmill → planks → coins.
+- Sims: with taps, the Sawmill is up within 30 s and ~800 coins are earned in the first minute (v2.20 bot: ~600). With no taps at all, the Sawmill is up within 60 s, both on a fresh game and after a Replant. At 20 minutes the bot earns about the same as in v2.20.
+
+### Log Yard capacity
+- The Log Yard holds about 3 minutes of collection (at least 600 logs). When it is full, the **collectors go idle**: no trees are felled (the forest is spared), and no logs are wasted or sold.
+- It is shown clearly: the HUD log counter reads "Yard full" with a red outline, the Market row shows a fill bar, the attention button adds "Log Yard full · collectors idle", and chopping into a full yard shows "Log Yard full".
+
+### Saves
+- Log auto-sell is switched off. Held log stock is kept as raw stock, even above the new cap, and the mills use it up. Nothing is converted to coins.
+
+### Tests
+- New `test/v2201.py`: no sell path for logs (market, auto-sell, orders, daily contracts, export contracts, trade, flow), tier texts, logs-built first Sawmill (lot + sheet label and progress bar, tap-to-build), free first Lumberjack, fresh / idle / after-Replant no-soft-lock sims, Log Yard cap / idle collectors / HUD / attention, v2.20 save migration, iPhone 13 / Pixel 7. `test/bot.js` hires the free Lumberjack, builds the first Sawmill from logs and values buildings by their raw-log surplus; `test/functional.py` follows the new opening.
+
 ## [2.20] — 2026-10-19
 
 **Factory tiers**: the yard now reads as one chain, raw → processed → finished. Each building belongs to a tier and is fed only by the tier before it. Design: `docs/tiers-v2.20.md`.

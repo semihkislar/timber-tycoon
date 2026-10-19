@@ -21,7 +21,7 @@ function plRate(id){return PMAP[id].rate*((M&&M.plantT&&M.plantT[id])||1);}
 function plantCap(){let t=0;for(const p of PLANTERS) t+=((S.planters&&S.planters[p.id])||0)*plRate(p.id);return t;}
 function plantCapBase(){let t=0;for(const p of PLANTERS) t+=((S.planters&&S.planters[p.id])||0)*p.rate;return t;}
 function forestPlots(){return FOREST_BASE+LAND_PER*plantCapBase();}
-function fellDemand(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*FELL[c.id];return t/((M&&M.yield)||1);}
+function fellDemand(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*FELL[c.id];return t/((M&&M.yield)||1)*(typeof yardRun==='function'?yardRun():1);}   // v2.20.1: idle collectors (full Log Yard) don't fell
 function growMult(){return ((M&&M.grow)||1)*SEASON_GROW[S.wx?seasonIdx():0];}
 function forestEff(){const F=S.forest;return F&&isFinite(F.eff)?F.eff:1;}
 function chopForest(){const F=S.forest;if(!F) return 1;const e=.25+.75*forestEff(),c=Math.min(F.m,CHOP_TREES);F.m-=c;F.st+=c;return e;}

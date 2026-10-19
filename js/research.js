@@ -147,7 +147,7 @@ function slots(mode){const l=harborLvl();if(!l) return 0;return mode==='ship'?Ma
 function busy(mode){return S.trade.fleet.filter(v=>v.mode===mode).length;}
 function freeSlot(mode){return busy(mode)<slots(mode);}
 function routeOpen(cid){return !!S.trade.routes[cid];}
-function tradeGoods(){return RES.filter(r=>r.id!=='logs'&&prodRate(r.id)>0.01);}
+function tradeGoods(){return RES.filter(r=>canSell(r.id)&&prodRate(r.id)>0.01);}
 function demOf(cid,k){const d=S.trade.dem[cid];return (d&&d[k])||1;}
 function spikeOn(cid,k){const s=S.trade.spike;return !!(s&&s.city===cid&&s.good===k&&s.ends>S.time);}
 function tradeMult(cid,k){const c=CMAP[cid];return (c.likes[k]||c.base)*demOf(cid,k)*(spikeOn(cid,k)?SPIKE_MULT:1)*M.trade;}
@@ -160,7 +160,7 @@ function buyHarbor(){const l=harborLvl();if(l>=HARBOR_MAX||!harborAvail()) retur
   tradeSig='';checkAch&&checkAch();return true;}
 function openRoute(cid){const c=CMAP[cid];if(!c||routeOpen(cid)||!harborLvl()||S.coins+1e-9<c.cost) return false;S.coins-=c.cost;S.trade.routes[cid]=1;sfx('unlock');
   toast(`${c.flag} <b>Route to ${c.name} opened!</b> ${c.mode==='ship'?'🚢 by sea':'🚂 by rail'} · ${fmtTime(tripTime(cid))} round trip`,4000,'ms-toast');tradeSig='';checkAch&&checkAch();return true;}
-function dispatch(cid,k,quiet){const c=CMAP[cid];if(!c||!routeOpen(cid)||!freeSlot(c.mode)||!RMAP[k]||k==='logs') return false;
+function dispatch(cid,k,quiet){const c=CMAP[cid];if(!c||!routeOpen(cid)||!freeSlot(c.mode)||!RMAP[k]||!canSell(k)) return false;
   const v={id:(S.trade.seq=(S.trade.seq||0)+1),mode:c.mode,city:cid,good:k,cap:vesselCap(k,c.mode),got:0,state:'load',t:0,trip:tripTime(cid)};
   S.trade.fleet.push(v);if(!quiet) sfx('click');tradeSig='';return v;}
 function depart(v,offline){if(v.state!=='load') return;if(v.got<1e-6){S.trade.fleet=S.trade.fleet.filter(x=>x!==v);tradeSig='';return;}

@@ -51,8 +51,9 @@ function attentionList(){
     if(st.lvl&&st.on){const bs=bstat[b.id];
       if(bs.full&&bs.f<0.9){out.push({id:b.id,k:'full',p:1,t:`⛔ ${b.name}: storage full`});continue;}
       const fs=isFinite(bs.fs)?bs.fs:bs.f;if(bs.lim&&fs<0.6){(short[bs.lim]=short[bs.lim]||[]).push([b,fs]);continue;}}
-    if(bVisible(b)&&bldUnlocked(b.id)&&S.coins+1e-9>=bulkCost(b.cost,b.scale,st.lvl,1)) out.push({id:b.id,k:'upg',p:3,t:`⬆ ${b.name}: ${st.lvl?'upgrade':'build'} affordable`});
+    if(bVisible(b)&&bldUnlocked(b.id)&&(st.lvl?S.coins+1e-9>=bulkCost(b.cost,b.scale,st.lvl,1):canFirstBuild(b.id))) out.push({id:b.id,k:'upg',p:3,t:`⬆ ${b.name}: ${st.lvl?'upgrade':'build'} affordable`});
   }
+  if(typeof yardFull==='function'&&yardFull()&&logRatePot()>0) out.push({id:'sawmill',k:'starved',p:2,t:`🪵 Log Yard full · collectors idle. Logs can't be sold: build or upgrade Phase-1 mills`,open:()=>{const id=['sawmill','peeler','chipper','kiln'].find(i=>bldUnlocked(i)&&S.coins+1e-9>=bulkCost(BMAP[i].cost,BMAP[i].scale,S.buildings[i].lvl,1))||'sawmill';openSheet('bld',id);focusLot(id,true);}});   // v2.20.1
   for(const k in short){const L=short[k],si=shortInfo(k),src=si.src;const who=L.length>2?`${L.length} buildings`:L.map(([b,f])=>`${b.name} ${Math.round(f*100)}%`).join(', ');
     out.push({id:src&&S.buildings[src].lvl?src:L[0][0].id,k:'starved',p:2,t:`${RMAP[k].icon} Short on ${RMAP[k].name} (${who})${src?` · upgrade the ${BMAP[src].name}`:''}`,open:()=>{const id=src&&S.buildings[src].lvl?src:L[0][0].id;openSheet('bld',id);focusLot(id,true);}});}
   // v2.10 power plant: out of fuel / low fuel / affordable build or upgrade
@@ -179,10 +180,10 @@ function setupHold(){
     if(e.isTrusted) HOLD.swallow=null;},true);
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest(HOLD_SEL)) e.preventDefault();});
 }
-function buyMaxBld(id){id=id||sheetBld;if(!id) return 0;const b=BMAP[id],st=S.buildings[id];const n=maxAfford(b.cost,b.scale,st.lvl);
+function buyMaxBld(id){id=id||sheetBld;if(!id) return 0;if(id==='sawmill'&&sawByLogs()) return buyBuilding(id,1,{logsOnly:true})?(render(),1):0;const b=BMAP[id],st=S.buildings[id];const n=maxAfford(b.cost,b.scale,st.lvl);
   if(n<1||!bldUnlocked(id)) return 0; if(buyBuilding(id,n)){haptic([8,30,8]);render();return n;} return 0;}
 function updateBuyMax(){
-  if(curSheet!=='bld'||!sheetBld) return; const b=BMAP[sheetBld],st=S.buildings[sheetBld],n=bldUnlocked(sheetBld)?maxAfford(b.cost,b.scale,st.lvl):0;
+  if(curSheet!=='bld'||!sheetBld) return; const b=BMAP[sheetBld],st=S.buildings[sheetBld],n=sheetBld==='sawmill'&&sawByLogs()?0:bldUnlocked(sheetBld)?maxAfford(b.cost,b.scale,st.lvl):0;
   const el=$('bpMax'); const h=n>0?`Max<small>+${n}</small>`:'Max<small>—</small>'; if(el._h!==h){el.innerHTML=h;el._h=h;} el.disabled=n<1;
 }
 

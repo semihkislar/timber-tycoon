@@ -11,7 +11,8 @@ function render(){
     if(target>lastDispCoins+0.5){coinEl.classList.remove('tick');void coinEl.offsetWidth;coinEl.classList.add('tick');}
     lastDispCoins=target;}
   $('hIncome').textContent='+'+fr(coinRate)+'/s';
-  $('hLogs').textContent=fr(logRate()+chopRateDisplay*chopPower())+'/s';
+  {const yf=typeof yardFull==='function'&&yardFull(),t=yf?'Yard full':fr(logRate()+chopRateDisplay*chopPower())+'/s',e=$('hLogs');if(e.textContent!==t) e.textContent=t;   // v2.20.1
+    const hc=e.parentNode;if(hc._yf!==yf){hc._yf=yf;hc.classList.toggle('yardfull',yf);hc.title=yf?'Log Yard full: collectors are idle until your mills use more logs (logs can\'t be sold)':'Logs per second';}}
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
@@ -34,7 +35,7 @@ function setupUI(){
     b.onclick=()=>{if(curSheet===b.dataset.s) closeSheet(); else openSheet(b.dataset.s);};});
   $('shClose').onclick=closeSheet;
   document.querySelectorAll('.seg.mult button').forEach(b=>b.onclick=()=>setMult(b.dataset.m));
-  $('bpBuy').onclick=()=>{if(sheetBld){buyBuilding(sheetBld);render();}};
+  $('bpBuy').onclick=()=>{if(sheetBld){buyBuilding(sheetBld,undefined,sheetBld==='sawmill'&&sawByLogs()?{logsOnly:true}:undefined);render();}};   // v2.20.1: the first Sawmill is paid in logs
   $('bpOn').onchange=()=>{if(sheetBld){S.buildings[sheetBld].on=$('bpOn').checked;render();}};
   $('bpPrev').onclick=()=>cycleBuilding(-1); $('bpNext').onclick=()=>cycleBuilding(1);
   $('saveBtn').onclick=()=>save();
@@ -135,6 +136,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   // v2.7 forest / planting crew helpers
   PLANTERS,PMAP,buyPlanter,plCost,plRate,plantCap,fellDemand,forestPlots,forestEff,growMult,logRatePot:()=>{M=computeMods();return logRatePot();},forestState,FELL,FOREST_BASE,LAND_PER,planterPeople:()=>scene.planters||[],forestScreenAt:(i,j)=>{const p=P(i,j);return w2s(p[0],p[1]);},
   SPR,sprClear,shadeCacheSize:()=>_sh.size,
+  canSell,saleValue,logCap,yardRun,yardFull,SAW_LOGS,sawByLogs,sawLogsOk,colCost,canFirstBuild,   // v2.20.1 logs are raw material
   // v2.9 mobile / camera helpers
   GI,flyTo,flyToWorld,camLimits,camBusy,camOut,focusLot,JUMPS,jumpTo,toggleJump,attentionList,nextAttention,autoFocus,SH,shSnaps,setSheetState,applySheetState,
   HOLD,buyMaxBld,toggleHud,railMode,compactMode,haptic,prefs,viewBand,sceneTapAt:(x,y)=>handleTap(x,y),get ground(){return scene.gl;},

@@ -16,7 +16,8 @@ GREEDY='''(cps)=>{const out=[];const cons=BUILDINGS.filter(b=>b.inp.planks);let 
  const buy=()=>{for(let g=0;g<20&&forestEff()<.97;g++){let bi=null,bc=Infinity;for(const p of PLANTERS){const c=plCost(p.id,1)/p.rate;if(c<bc){bc=c;bi=p.id;}}if(plCost(bi,1)>S.coins||!buyPlanter(bi,1)) break;}
   for(let g=0;g<40;g++){let best=null,bc=Infinity;
    for(const b of BUILDINGS){if(!bldUnlocked(b.id)) continue;const c=bulkCost(b.cost,b.scale,S.buildings[b.id].lvl,1);if(c<bc){bc=c;best=()=>buyBuilding(b.id,1);}}
-   for(const c of COLLECTORS){const k=bulkCost(c.cost,COL_SCALE,S.collectors[c.id],1);if(k<bc){bc=k;best=()=>buyCollector(c.id,1);}}
+   if(typeof colCost==='function'&&S.collectors.lumberjack===0) buyCollector('lumberjack',1);if(typeof sawLogsOk==='function'&&sawLogsOk()) buyBuilding('sawmill',1,{logsOnly:true});
+   for(const c of COLLECTORS){const k=typeof colCost==='function'?colCost(c.id,S.collectors[c.id],1):bulkCost(c.cost,COL_SCALE,S.collectors[c.id],1);if(k<bc){bc=k;best=()=>buyCollector(c.id,1);}}
    if(!best||bc>S.coins||!best()) break;}};
  for(const cp of cps){acc={t:0,starve:0,want:0,got:0};
   while(T<cp*60){tick(1,false);T++;if(T%5===0) buy();
@@ -83,7 +84,8 @@ with sync_playwright() as p:
     pg.click('#bpShort .bp-short-go'); pg.wait_for_timeout(300)
     ok(E(pg,'TT.curSheet')=='bld' and E(pg,'sheetBld')=='sawmill','hint button jumps to the Sawmill')
     E(pg,'S.buildings.sawmill.lvl=60;M=computeMods()'); pg.wait_for_timeout(300); ok('Saw yield' in pg.locator('#bpIo').inner_text(),'sawmill sheet shows saw yield (from Lv 40)')
-    E(pg,"TT.openSheet('bld','carpentry')"); pg.wait_for_timeout(300); m0=E(pg,'S.prefs.plankMode'); pg.click('#bpShort .bp-short-mode'); pg.wait_for_timeout(200)
+    # v2.20.1: logs aren't sold any more, so a Lv 60 Sawmill really feeds everyone; go back to Lv 1 for the shortage
+    E(pg,"S.buildings.sawmill.lvl=1;S.res.planks=0;M=computeMods();TT.openSheet('bld','carpentry')"); pg.wait_for_timeout(1500); m0=E(pg,'S.prefs.plankMode'); pg.click('#bpShort .bp-short-mode'); pg.wait_for_timeout(200)
     ok(E(pg,'S.prefs.plankMode')!=m0,'plank mode toggle in the hint works')
     pg.screenshot(path=ROOT+'/test/v2151_desktop.png')
     ok(not errs and not bad,f'no errors / 404s ({errs[:3]} {bad[:3]})')

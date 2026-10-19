@@ -14,11 +14,14 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
       for(const mode of ['train','ship']){ if(!T.freeSlot(mode)) continue; let best=null;
         for(const c of T.CITIES){ if(c.mode!==mode||!T.routeOpen(c.id)) continue; for(const r of T.tradeGoods()){const v=T.tradeMult(c.id,r.id)*T.price(r.id)*Math.min(1,T.rates[r.id]?T.rates[r.id].s/Math.max(1e-9,T.rates[r.id].p||1e-9):0)*(T.rates[r.id]?T.rates[r.id].p:0)/c.trip; if(!best||v>best.v) best={v,c:c.id,g:r.id};}}
         if(best&&T.dispatch(best.c,best.g)) mark('ship:'+best.c,t);}}
+    // v2.20.1: the first Lumberjack is free and the first Sawmill is built with logs
+    if(T.colCost&&S.collectors.lumberjack===0) T.buyCollector('lumberjack',1);
+    if(T.sawLogsOk&&T.sawLogsOk()) T.buyBuilding('sawmill',1,{logsOnly:true});
     // purchases loop
     for(let guard=0;guard<20;guard++){
       const lr=T.logRate(); const cpl=lr>0?Math.max(T.price('logs'),T.coinRate/Math.max(lr,1)):1;
       const cands=[];
-      for(const c of T.COLLECTORS){const own=S.collectors[c.id];const cost=T.bulkCost(c.cost,T.COL_SCALE,own,1);
+      for(const c of T.COLLECTORS){const own=S.collectors[c.id];const cost=T.colCost?Math.max(1e-9,T.colCost(c.id,own,1)):T.bulkCost(c.cost,T.COL_SCALE,own,1);
         if(cost>S.totalEarned*3+200) continue; cands.push({k:'c:'+c.id,cost,gain:T.logRate()>=0?(c.rate*cpl):0,do:()=>T.buyCollector(c.id,1)});}
       // v2.7: keep the planting crew ahead of the loggers (each sapling/s sustains logPot/D logs/s)
       if(T.PLANTERS&&window.BOT_PLANT!==false){const D=T.fellDemand(),cap=T.plantCap(),pot=T.logRatePot();
@@ -29,8 +32,8 @@ window.runBot=function(totalSec,clickPerSec,clickUntil){
         if(cost>S.totalEarned*3+200) continue; if(T.bldUnlocked&&!T.bldUnlocked(b.id)) continue;
         if(b.id==='lab'){if(window.BOT_V25===false||window.BOT_RES===false) continue; const left=T.RNODES.filter(n=>!T.hasRes(n.id)).length; if(left&&st.lvl<12) cands.push({k:'b:lab',cost,gain:Math.max(T.coinRate,1)*(st.lvl?.02:.12),do:()=>T.buyBuilding('lab',1)}); continue;}
         // available surplus of inputs (being sold)
-        let ok=1; for(const k in b.inp){const R=T.rates[k];const sur=R.s/(b.inp[k]*(T.bstat[b.id].speed/Math.max(st.lvl,1)||1)); ok=Math.min(ok,sur);}
-        let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*T.price(k);
+        let ok=1; for(const k in b.inp){const R=T.rates[k];const raw=T.canSell&&!T.canSell(k);const sur=raw&&S.res[k]>20?1e9:(raw?Math.max(0,R.p-R.c):R.s)/(b.inp[k]*(T.bstat[b.id].speed/Math.max(st.lvl,1)||1)); ok=Math.min(ok,sur);}
+        let val=0; for(const k in b.out) val+=b.out[k]*T.price(k); for(const k in b.inp) val-=b.inp[k]*(T.saleValue?T.saleValue(k):T.price(k));
         const sp=st.lvl?T.bstat[b.id].speed/st.lvl:1;
         cands.push({k:'b:'+b.id,cost,gain:Math.max(0,Math.min(1,ok))*val*sp+ (ok<0.3?0:0),do:()=>T.buyBuilding(b.id,1)});}
       for(const u of T.UPGRADES){ if(S.upgrades[u.id]||!u.req()) continue; const plU=['spades','fert','elite','irrig'].includes(u.id); if(plU&&!window.__plNeed) continue; cands.push({k:'u:'+u.id,cost:u.cost,gain:Math.max(T.coinRate,1)*(plU?.15:0.25),do:()=>T.buyUpgrade(u.id)});}

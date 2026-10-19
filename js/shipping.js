@@ -43,7 +43,7 @@ function shNextGain(k){const s=S.ship,o=Object.assign({},s);
   if(k==='dock'){return `+2% on every sale (≈ +${fmt(coinRate*.02/(1+shPremium()))}/s)${[3,7].includes(s.dock)?' · +1 bay':''}`;}
   o[k]++;const a=shLoadF(s),b=shLoadF(o);return `loading ×${a.toFixed(2)} → ×${b.toFixed(2)}${k==='crane'?' · +20% contract rewards':''}${k==='fspd'?' · faster forklifts':''}`;}
 /* ---------- contracts ---------- */
-function shProducts(){return RES.filter(r=>r.id!=='logs'||true).filter(r=>rates[r.id]&&rates[r.id].s>1e-6);}
+function shProducts(){return RES.filter(r=>canSell(r.id)).filter(r=>rates[r.id]&&rates[r.id].s>1e-6);}
 function shMakeOffer(){const P0=shProducts();if(!P0.length) return null;
   const r=P0[Math.floor(Math.random()*Math.min(P0.length,6))+Math.max(0,P0.length-6)]||P0[P0.length-1];
   const c=CITIES[Math.floor(Math.random()*CITIES.length)];

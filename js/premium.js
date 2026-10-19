@@ -43,7 +43,7 @@ const CLIENTS=[
   {n:'BBQ Masters Club',e:'🔥',likes:['giftbox','charcoal','pellets']},
   {n:'Boutique Stationer',e:'✒️',likes:['stationery','paper']},
   {n:'Luxury Yacht Builder',e:'⛵',likes:['flooring','cabinets','planks']},
-  {n:'City Builders Co.',e:'🏗️',likes:['planks','chips','logs','pellets']},
+  {n:'City Builders Co.',e:'🏗️',likes:['planks','chips','veneer','pellets']},
   {n:'Garden Centre Chain',e:'🌿',likes:['chips','pellets','charcoal']},
 ];
 const ORDER_OFFER_SEC=75;
@@ -56,7 +56,7 @@ function prodRate(k){
 function niceNum(x){if(x<10) return Math.max(5,Math.round(x));const e=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/e)*e;}
 function ordersOpen(){return S.totalEarned>=250&&S.buildings.sawmill.lvl>0;}
 function makeOrder(forceItem){
-  const pool=[]; for(const r of RES){if(r.id==='logs') continue; const p=prodRate(r.id); if(p>0.02) pool.push([r,p]);}
+  const pool=[]; for(const r of RES){if(!canSell(r.id)) continue; const p=prodRate(r.id); if(p>0.02) pool.push([r,p]);}
   if(!pool.length) return null;
   let pick; const prem=pool.filter(([r])=>r.premium);
   if(forceItem) pick=pool.find(([r])=>r.id===forceItem)||pool[0];
@@ -154,11 +154,12 @@ function makeDailyContract(diff,used){
   const pool=[];
   for(const r of RES){
     if(used&&used.has(r.id)) continue;
-    let p=prodRate(r.id); if(r.id==='logs') p=logRate();
+    if(!canSell(r.id)) continue;   // v2.20.1: no daily contract asks for logs
+    let p=prodRate(r.id);
     if(p>0.015) pool.push([r,p]);
   }
   if(!pool.length){
-    for(const r of RES){ if(used&&used.has(r.id)) continue; if(['logs','planks','chips','chairs','charcoal','paper','furniture'].includes(r.id)) pool.push([r,Math.max(.05,prodRate(r.id)||.05)]); }
+    for(const r of RES){ if(used&&used.has(r.id)) continue; if(['planks','chips','chairs','charcoal','paper','furniture'].includes(r.id)) pool.push([r,Math.max(.05,prodRate(r.id)||.05)]); }
   }
   if(!pool.length) return null;
   // prefer common goods early; mix premium/tech if owned

@@ -14,7 +14,7 @@ Isometric lumber factory idle game: a static multi-file web app (no bundler).
 - `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
 - `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
 - `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
-- `js/tiers.js` (v2.20): factory tiers — Phase 1 (logs only) → Phase 2 → Premium, the new Veneer Peeler, processing margins, tier badges, cross-lane forklifts, ground signs (design: `docs/tiers-v2.20.md`)
+- `js/tiers.js` (v2.20): factory tiers — Phase 1 (logs only) → Phase 2 → Premium, the new Veneer Peeler, processing margins, tier badges, cross-lane forklifts, ground signs (design: `docs/tiers-v2.20.md`); v2.20.1: logs are raw material only (`canSell`, Log Yard cap `logCap`, first Sawmill built with 🪵 `SAW_LOGS`, free first Lumberjack)
 - `js/research.js` (v2.19 Research 2.0): 67-node tree in 5 branches × 5 Legacy-gated tiers, milestone gates, growing costs, ♾️ repeatables, R&D sheet + trade map (design: `docs/research-v2.19.md`)
 - `js/replant.js` (v2.18): Replant 2.0 — Forest Legacy, Seed Shop, run goals, forest-value cost scaling, ideal-time advice, confirm sheet, migration (design: `docs/replant-v2.18.md`)
 - `js/spec.js` (v2.17): line specialisations — ⚡ High-speed / ♻️ Lean / 💎 Master craft from Lv 50 (tiers at 50/100/200), advisor, retool on switch, building-sheet block and the scene banner
