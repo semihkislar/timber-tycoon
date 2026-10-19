@@ -69,7 +69,7 @@ selling the inputs raw. Turning a building off (or leaving auto-sell on for its 
   A one-time toast explains the new chain. Nothing is lost.
 
 ## 6. Follow-ups
-* A peeler manager; a phase-2 "Flooring line" if parquet should move out of the Premium Area.
+* ~~A peeler manager~~ → shipped in v2.21 (Aylin Durmaz); a phase-2 "Flooring line" if parquet should move out of the Premium Area.
 * Tier-wide upgrades (e.g. "Phase 1 automation") in the Upgrades list.
 
 ## 7. Tests and perf (release check)

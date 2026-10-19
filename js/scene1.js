@@ -179,7 +179,7 @@ const scene={
   cam:{x:0,y:400,z:1,tx:0,ty:400,tz:1,fitZ:1,minZ:.3,maxZ:2.5},
   trees:[],dynTrees:[],staticTrees:[],deco:[],particles:[],smoke:[],floats:[],axes:[],
   jacks:[],saws:[],logTrucks:[],harvesters:[],drones:[],helis:[],
-  workers:[],forklifts:[],dockTrucks:[],lamps:[],
+  workers:[],forklifts:[],dockTrucks:[],marketVans:[],lamps:[],
   chunks:new Map(),chunkTier:-1,
   msFlash:null,buildAnim:{},earnAcc:0,lastEarned:0,floatTimer:0,
   hover:null,fps:60,frameMs:16,objCount:0

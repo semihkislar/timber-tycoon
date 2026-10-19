@@ -78,6 +78,7 @@ function collectLights(){
   {const fl=.8+.2*Math.sin(t*11)*Math.sin(t*6.7);const [x,y]=P(CAMP.i,CAMP.j,0);out.push({x,y,rx:86,ry:48,c:'fire',a:.85*fl});out.push({x,y:y-6,rx:16,ry:16,c:'fire',a:1,core:1});}
   for(const v of scene.logTrucks) vehLights(out,v,1.62,-1.64);
   for(const v of scene.dockTrucks) vehLights(out,v,1.62,-1.64);
+  for(const v of scene.marketVans||[]) vehLights(out,v,v.cart?.9:.98,v.cart?-0.9:-1.05);
   for(const v of scene.premTrucks||[]) vehLights(out,v,1.62,-1.64);
   if(scene.client&&scene.client.veh) vehLights(out,scene.client.veh,1.08,-1.06);
   for(const f of scene.forklifts) vehLights(out,f,.55,null,true);

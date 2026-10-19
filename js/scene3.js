@@ -473,3 +473,50 @@ function drone(ctx,x,y,alt,ph){
   ell(ctx,x+.4,hy+3.4,1.6,1.3,'#1e2630');ell(ctx,x+.7,hy+3.3,.7,.6,'#7fd0ff');
   ctx.fillStyle=(Math.sin(ph*6)>0)?'#7dfc6a':'#2a6a2a';ctx.fillRect(x-1,hy-4.4,2,1.4);
 }
+
+/* v2.21 town market van — shorter than the dock box truck; cart = canvas-roof early-game cart */
+function mktVanRaw(ctx,i,j,yaw,o){
+  o=o||{}; const cart=!!o.cart; const V=VF(i,j,yaw,o.bounce||0),V0=VF(i,j,yaw,0);
+  const col=o.col||'#6a9ab8', boxc=o.box||'#f2eee4', stripe=o.stripe||'#5a8aa0', cargo=o.cargo||null;
+  const load=Math.max(0,Math.min(1,o.load||0));
+  vshadow(ctx,V0,cart?-0.9:-1.05,cart?.95:1.08,.36);
+  const sv=(V.si+V.sj)>0?1:-1;
+  const wheels=cart?[.52,-.55]:[.68,-.72];
+  for(const a of wheels) vwheel(ctx,V0,a,-sv*.36,4.6,false);
+  if(cart){
+    // wooden cart bed + canvas hoop roof
+    vbox(ctx,V,-.95,.85,-.34,.34,3.5,8.5,'#7a5a38',{left:'#6a4a2a',right:'#5a3a1e',top:'#8a6a42'});
+    vbox(ctx,V,-.9,.55,-.32,.32,8.5,14,'#9a7348',{deco:(f,b)=>{
+      if(f==='R'||f==='L'){vquad(ctx,V,f,b,-.85,.5,10,11,stripe);if(load>.05){const n=Math.ceil(load*4);for(let k=0;k<n;k++){const a=-.7+k*.35;vquad(ctx,V,f,b,a,a+.28,9,13.2,RCOL[cargo]||'#c98a4a');}}}
+      if(f==='B'){for(const cc of [-.28,.28]) vquad(ctx,V,'B',b,cc-.05,cc+.05,5,7.5,o.brake?'#ff3a2a':'#a8221a');}}});
+    // canvas cover (arched)
+    const z0=14,z1=22; for(let k=0;k<5;k++){const t=k/4,a=-.88+t*1.5,z=z0+(1-Math.pow(2*t-1,2))*8;
+      const p0=VL(V,a,-.34,z+V.dz),p1=VL(V,a,.34,z+V.dz);ctx.strokeStyle=k%2?'#d8c8a8':'#c8b890';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.stroke();}
+    // soft cab (driver bench under a short hood)
+    vbox(ctx,V,.5,.95,-.32,.32,8.5,18,col,{deco:(f,b)=>{
+      if(f==='F'){vquad(ctx,V,'F',b,-.28,.28,12,17,'#8ab8c8','rgba(30,40,50,.55)');for(const cc of [-.26,.26]) vquad(ctx,V,'F',b,cc-.04,cc+.04,10,12,'#fff6c8');}
+      if(f==='R'||f==='L') vquad(ctx,V,f,b,.55,.9,12,17,'#8ab8c8','rgba(30,40,50,.55)');}});
+  } else {
+    // short soft-colour box van (no shipping-container look)
+    vbox(ctx,V,-1.08,1.05,-.28,.28,3.5,7.5,'#34343a',{});
+    // cargo box
+    vbox(ctx,V,-1.05,.22,-.38,.38,7.5,28,boxc,{deco:(f,b)=>{
+      if(f==='R'||f==='L'){vquad(ctx,V,f,b,-1.0,.15,16,20,stripe);vquad(ctx,V,f,b,-1.0,.15,15.2,15.8,shade(stripe,1.25));
+        ctx.save();const lp=VL(V,-.45,f==='R'?b.c1:b.c0,23+V.dz);const ax=VL(V,1,0,0),a0=VL(V,0,0,0);let tdx=(ax[0]-a0[0])/32,tdy=(ax[1]-a0[1])/32;if(tdx<0){tdx=-tdx;tdy=-tdy;}
+        ctx.transform(tdx,tdy,0,1,lp[0],lp[1]);ctx.fillStyle=shade(stripe,.85);ctx.font='900 5.5px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.logo||'TOWN',0,0);ctx.restore();}
+      if(f==='B'){if(load>.08){vquad(ctx,V,'B',b,-.34,.34,8,27,'#2a2622');const n=Math.ceil(load*5);for(let k=0;k<n;k++){const cc=-.26+(k%3)*.22,zz=9+Math.floor(k/3)*8;vquad(ctx,V,'B',b,cc,cc+.18,zz,zz+7,RCOL[cargo]||['#c98a4a','#e0b071','#b0703c'][k%3],'rgba(40,20,8,.45)');}}
+        else{vquad(ctx,V,'B',b,-.34,-.01,8,27,shade(boxc,.9));vquad(ctx,V,'B',b,.01,.34,8,27,shade(boxc,.9));}
+        for(const cc of [-.3,.3]) vquad(ctx,V,'B',b,cc-.045,cc+.045,5,7,o.brake?'#ff3a2a':'#a8221a');}}});
+    // short cab
+    vbox(ctx,V,.22,.98,-.36,.36,7.5,24,col,{deco:(f,b)=>{
+      if(f==='F'){vquad(ctx,V,'F',b,-.3,.3,14,22,'#7fb4cc','rgba(30,40,50,.65)');vquad(ctx,V,'F',b,-.3,-.02,17,22,'rgba(255,255,255,.28)');
+        for(const cc of [-.28,.28]) vquad(ctx,V,'F',b,cc-.045,cc+.045,10,12.2,'#fff6c8');for(const cc of [-.32,.32]) vquad(ctx,V,'F',b,cc-.02,cc+.02,8.5,9.8,'#f5a020');}
+      if(f==='R'||f==='L'){vquad(ctx,V,f,b,.35,.9,14,22,'#86bcd2','rgba(30,40,50,.6)');vquad(ctx,V,f,b,.35,.62,17,22,'rgba(255,255,255,.22)');}
+      if(f==='B') vquad(ctx,V,'B',b,-.22,.22,16,21,'#5a7a8a');},
+      decoTop:(b,z)=>{for(const cc of [-.16,0,.16]){const p=VL(V,.7,cc,z);ell(ctx,p[0],p[1],1.1,.7,'#f5a020');}}});
+    vbox(ctx,V,.85,1.02,-.36,.36,4.5,8,'#b8bec6',{});
+  }
+  for(const a of wheels) vwheel(ctx,V0,a,sv*.36,4.6,true);
+  // exhaust tip (for smoke hook)
+  return VL(V,cart?.4:-.15,sv*.3,(cart?19:26)+V.dz);
+}

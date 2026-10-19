@@ -5,6 +5,26 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.21] — 2026-10-19
+
+**Town Market Fleet.** Auto-sell and market sales are now visible in the isometric scene: small town delivery vans (and early-game canvas carts) drive to Phase 1–2 stock piles, load tinted crates, and leave with a coin float. Separate from the dock shipping trucks. Also: a hireable manager for the Veneer Peeler.
+
+### Added
+- **Town Market Fleet** (`js/marketfleet.js`): 0 vans when idle, up to 3 when income is high. Soft-colour short vans (distinct from dock box trucks); canvas-roof carts while only a few buildings are up. Pickup on the factory apron south of stock piles — not the dock bay road. Sprite-cache friendly (quantised headings, `VBOX_S`, respects `SPR.maxMiss`).
+- **Veneer Peeler manager** — Aylin Durmaz (Rare, Lean Line / thrift), hireable once the peeler is built. Fair migration: old saves do not auto-hire her.
+- Coin float when a van departs with a load.
+
+### Changed
+- Version `2.21`; service worker cache `timber-tycoon-v2.21`.
+- `docs/tiers-v2.20.md` §6 follow-up: peeler manager marked shipped.
+
+### Fixed / Compatibility
+- Cosmetic only: does not change `flowEdges`, `canSell`, or log raw-material rules from v2.20.1.
+- v2.20.1 saves load cleanly; logs still never sell.
+
+### Tests
+- New `test/v221.py`: VERSION/sw cache, vans appear when selling and clear when idle, vans leave loaded, peeler in `MANAGERS` and hireable when built, no console errors, iPhone 13 / Pixel 7 smoke, v2.20.1 save still loads (logs not sellable). Re-run `test/v2201.py` and `test/v28.py` (perf).
+
 ## [2.20.1] — 2026-10-19
 
 **Logs are raw material only.** Semih: "let's not sell logs directly". Logs now only feed the Phase-1 mills; exports start at Phase 1.
@@ -880,7 +900,7 @@ Feedback addressed: *"the trucks are really bad"* and *"I want realistic people 
 - ~~Research tree / skill points spent on specialisations~~ → research tree shipped in [2.5], line specialisations in [2.17]
 - ~~Daily contracts (deliver X chairs in Y minutes for a reward)~~ → shipped in [2.6]
 - Seasonal visuals (autumn/winter forest) and weather in the scene
-- Market cart / delivery truck carrying finished goods off-screen
+- ~~Market cart / delivery truck carrying finished goods off-screen~~ → Town Market Fleet in [2.21]
 - Managers that auto-upgrade a building to its next milestone
 
 ## [1.2] — 2026-10-07
