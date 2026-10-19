@@ -103,7 +103,7 @@ function init(){
 // test / debug hook
 window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,buyCollector,
   buyBuilding:(id,n,opt)=>buyBuilding(id,n,Object.assign({wsAuto:true},opt||{})),   // v2.22: the test/dev API also buys the workstation levels a purchase needs
-  buyBuildingRaw:buyBuilding,buyWs,wsLvl,wsCap,wsRoom,wsGate,wsNext,wsCost,wsNeedFor,wsBlocked,wsGrandfather,wsSpd,wsOut,wsIn,wsMult,WS_DEF,WS_GATES,WS_MAX,WS_LV,
+  buyBuildingRaw:buyBuilding,bldNextCost,buyWs,wsLvl,wsCap,wsRoom,wsGate,wsNext,wsCost,wsNeedFor,wsBlocked,wsGrandfather,wsSpd,wsOut,wsIn,wsMult,WS_DEF,WS_GATES,WS_MAX,WS_LV,
   upLvl,upMax,upCost,upReqOk,upReqTxt,upDesc,buyUpgrade,buyTree,sellAll,doPrestige,hardReset,save,load,
   pendingSeeds,logRate:()=>{M=computeMods();return logRate();},price:id=>{M=computeMods();return price(id);},bstat,rates,get coinRate(){return coinRate;},
   triggerEvent,render,rebuildAll,ACH,checkAch,achCount,spawnGolden,catchGolden,golden,get M(){return M;},COLLECTORS,BUILDINGS,UPGRADES,TREES,bulkCost,COL_SCALE,setBuyMult:m=>{buyMult=m;},VERSION,migrateSave,scene,MILESTONES,msCount,nextMs,totStars,bSpeed,workersFor,

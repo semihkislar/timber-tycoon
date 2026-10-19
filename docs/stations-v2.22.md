@@ -15,7 +15,7 @@ The Upgrades sheet used to sell 27 one-time purchases. In v2.22 every upgrade is
   * additive: Ambidextrous Chopping 2 % → 2.6 % → 3.2 % …
 * **Max level**: 5 for most lines; 3 for the fire-safety lines (Smoke Detectors, Sprinkler System); 1 for the on/off
   line Sawdust Recovery (it unlocks a by-product, there is nothing to scale).
-* **Cost** of level L: `base × 8^(L−1) × forest value (cs)`.
+* **Cost** of level L: `base × 12^(L−1) × forest value (cs)`.
 * **Unlocks**: Lv 1 keeps the old requirement. Lv 2+ also need the thing the upgrade is about:
   * collector / planter lines: 15 / 30 / 60 / 100 owned for Lv 2 / 3 / 4 / 5;
   * building lines: that building at Lv 25 / 50 / 100 / 200;

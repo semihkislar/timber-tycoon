@@ -4,7 +4,7 @@
    (speed / yield / input / quality). Milestone gates: a building can't pass Lv 25/50/100/200/400 until a given
    workstation reaches a given level. Levels reset on Replant (they live in S.ws, not in the keep list). */
 const WS_KIND={spd:{e:'⚙️',n:'Speed',per:.05},yld:{e:'📦',n:'Yield',per:.04},inp:{e:'🌲',n:'Input',per:.03},prc:{e:'💎',n:'Quality',per:.05}};
-const WS_MAX=10, WS_K=3;
+const WS_MAX=10, WS_K=1.5;
 const WS_LV=[0,10,25,50,100,150,200,300,400,500,600];          // building level whose cost a station level is priced at
 const WS_GATES=[[25,1,2],[50,0,3],[100,2,4],[200,1,6],[400,0,8]];  // [pass Lv, station index, station Lv needed]
 // [id, name, icon, kind]; station index 1 is always the speed station (the first gate)
@@ -64,6 +64,9 @@ function wsGrandfather(o){o=o||S;if(!o.ws||typeof o.ws!=='object') o.ws={};let n
 /* the next thing to buy for a gated building: {k,L,cost} */
 function wsNext(id){const g=wsGate(id);if(!g) return null;const L=wsLvl(id,g.k)+1;return {k:g.k,L,cost:wsCost(id,g.k,L),gate:g};}
 function wsGateTxt(id){const g=wsGate(id);if(!g) return '';return `${wsIcon(id,g.k)} ${wsName(id,g.k)} Lv ${g.n}`;}
+
+/* cost of the next building level including any workstation levels its gate needs (bots, sims, builders) */
+function bldNextCost(id){const st=S.buildings[id],b=BMAP[id];return bulkCost(b.cost,b.scale,st.lvl,1)+(st.lvl?wsNeedFor(id,st.lvl+1).cost:0);}
 
 /* ---------- UI: building sheet tabs (Overview | 🛠 Workstations) ---------- */
 let bpTabSel='ov', wsSig='';
