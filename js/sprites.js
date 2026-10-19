@@ -170,6 +170,11 @@ function forklift(ctx,i,j,yaw,cargo,bounce){
   const qy=qYaw(yaw),b=q4(bounce),key='fl'+qy.toFixed(3)+'|'+b+'|'+(cargo||'');
   return vehSprite(ctx,key,i,j,VBOX_S,g=>forkliftRaw(g,i,j,qy,cargo,b));
 }
+function mktVan(ctx,i,j,yaw,o){
+  o=o||{}; const qy=qYaw(yaw),b=q4(o.bounce),l=q6(o.load);
+  const key='mv'+qy.toFixed(3)+'|'+b+'|'+l+'|'+(o.cart?'C':'')+'|'+(o.col||'')+(o.box||'')+(o.stripe||'')+'|'+(o.cargo||'')+(o.brake?'B':'');
+  return vehSprite(ctx,key,i,j,VBOX_S,g=>mktVanRaw(g,i,j,qy,Object.assign({},o,{bounce:b,load:l})));
+}
 
 /* v2.8 art pass: street lamp (was a grey bar with a dot) — cast-iron post with base, curved arm and a glass lantern */
 function lampPostRaw(g,x,y){

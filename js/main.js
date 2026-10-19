@@ -112,7 +112,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   LANDINGS,
   forestPeople:()=>{const [tb,bb]=barH();const all=[...scene.jacks,...(scene.foreman?[scene.foreman]:[]),...(scene.planters||[])];
     return all.map(p=>{const q=P(p.i,p.j);const s=w2s(q[0],q[1]);return {st:p.st,type:p.type||'crew',pose:p.pose,i:p.i,j:p.j,sx:s[0],sy:s[1],vis:s[0]>8&&s[0]<scene.w-8&&s[1]>tb+20&&s[1]<scene.h-bb-4};});},
-  vehicles:()=>({log:scene.logTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,done:!!v.done,i:v.i,j:v.j,yaw:v.yaw})),dock:scene.dockTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,i:v.i,j:v.j,yaw:v.yaw})),forklifts:scene.forklifts.length,harvesters:scene.harvesters.length}),
+  vehicles:()=>({log:scene.logTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,done:!!v.done,i:v.i,j:v.j,yaw:v.yaw})),dock:scene.dockTrucks.map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,i:v.i,j:v.j,yaw:v.yaw})),market:(scene.marketVans||[]).map(v=>({li:v.li,s:v.s,v:v.v,load:v.load,done:!!v.done,i:v.i,j:v.j,yaw:v.yaw,cargo:v.cargo,cart:!!v.cart,bid:v.bid})),forklifts:scene.forklifts.length,harvesters:scene.harvesters.length}),
   // v2.2 premium / orders / storage helpers
   MAIN_BLD,PREM_BLD,PREM,buyPremium,premCost,buyStorage,stoCost,stoLvl,stockCaps,bldCap,offerOrder,acceptOrder,declineOrder,deliverFromStock,makeOrder,prodRate,focusPrem,
   premScreen:()=>{const p=P((PREM.i0+PREM.i1)/2,(PREM.j0+PREM.j1)/2,10);return w2s(p[0],p[1]);},

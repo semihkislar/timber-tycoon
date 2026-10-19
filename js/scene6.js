@@ -127,7 +127,7 @@ function sceneLoop(now){
 function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   camUpdate(dt);
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); bySceneUpdate(dt); if(typeof swUpdate==='function') swUpdate(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); if(typeof mktFleetUpdate==='function') mktFleetUpdate(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); bySceneUpdate(dt); if(typeof swUpdate==='function') swUpdate(dt); premUpdate(dt); updateGolden(dt);
   drawScene(dt);
   scene.firstFrame=false;
 }
@@ -174,6 +174,7 @@ function drawScene(dt){
     objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,Math.sin(fl.ph*3)*.25)});}
   for(const tk of scene.dockTrucks){if(tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j);if(!inView(x,y,110)) continue;
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
+  if(typeof mktFleetDraw==='function') mktFleetDraw(ctx,objs,inView);
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
   if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}   // v2.20 factory tiers

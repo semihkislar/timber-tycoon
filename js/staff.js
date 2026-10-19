@@ -23,6 +23,7 @@ function mgrSkillV(k,l,rm){
 // one unique, hand-made manager per building (no random rolls); look indexes SKINS / HAIRS
 const MANAGERS=[
   {id:'emre',bid:'sawmill',name:'Emre Yıldız',from:'İzmir',r:'C',skill:'speed',look:{f:0,skin:2,hair:0,style:'short',beard:1,out:'vest',col:'#e8742a'}},
+  {id:'aylin',bid:'peeler',name:'Aylin Durmaz',from:'Artvin',r:'R',skill:'thrift',look:{f:1,skin:1,hair:2,style:'pony',out:'vest',col:'#7ab04a',glasses:1}},
   {id:'sofia',bid:'chipper',name:'Sofia Rossi',from:'Torino',r:'C',skill:'storage',look:{f:1,skin:0,hair:3,style:'pony',out:'vest',col:'#3aa0d8'}},
   {id:'mert',bid:'kiln',name:'Mert Demir',from:'Bursa',r:'R',skill:'safety',look:{f:0,skin:1,hair:2,style:'crew',beard:2,out:'vest',col:'#d84a3a',hatc:'#d8301e'}},
   {id:'elif',bid:'carpentry',name:'Elif Kaya',from:'Ankara',r:'R',skill:'double',look:{f:1,skin:1,hair:1,style:'long',out:'suit',col:'#6a3a2a',tie:'#e8c43a',glasses:1}},
