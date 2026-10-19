@@ -9,7 +9,7 @@ The Upgrades sheet used to sell 27 one-time purchases. In v2.22 every upgrade is
 
 * **Lv 1 is exactly the old upgrade** (same price, same unlock, same effect), so an owned upgrade migrates to **Lv 1**
   with nothing gained or lost.
-* Higher levels strengthen the same effect: the Lv-1 bonus is scaled by `g(L) = 1 + 0.3·(L−1)`.
+* Higher levels strengthen the same effect: the Lv-1 bonus is scaled by `g(L) = 1 + 0.1·(L−1)` (tuned down from 0.3 by the pacing sim, §7).
   * multipliers: `×f` → `×(1 + (f−1)·g)`, e.g. Sharper Axes ×2 → ×2.3 → ×2.6 → ×2.9 → ×3.2;
   * reductions: Smoke Detectors −25 % → −32.5 % → −40 % (floored at −80 % per line);
   * additive: Ambidextrous Chopping 2 % → 2.6 % → 3.2 % …
@@ -58,7 +58,7 @@ Purchases (×1/×10/Max, lot taps, Builders' Yard) are clipped at the cap; nothi
 
 ### Costs
 
-Level L of a workstation costs `3 × (the building's level cost at WS_LV[L]) × forest value`, with
+Level L of a workstation costs `1.5 × (the building's level cost at WS_LV[L]) × forest value`, with
 `WS_LV = [–, 10, 25, 50, 100, 150, 200, 300, 400, 500, 600]` — i.e. about three building levels at the milestone it
 unlocks. This keeps the gates meaningful (a real purchase decision, a visible step) but never a wall: the station needed
 for a gate always costs about as much as three levels the player is about to buy anyway, and it pays back through its

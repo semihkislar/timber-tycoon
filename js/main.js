@@ -35,7 +35,7 @@ function setupUI(){
     b.onclick=()=>{if(curSheet===b.dataset.s) closeSheet(); else openSheet(b.dataset.s);};});
   $('shClose').onclick=closeSheet;
   document.querySelectorAll('.seg.mult button').forEach(b=>b.onclick=()=>setMult(b.dataset.m));
-  $('bpBuy').onclick=()=>{if(sheetBld&&S.buildings[sheetBld].lvl&&wsHas(sheetBld)&&wsRoom(sheetBld)<1){bpTab('ws');return;} if(sheetBld){buyBuilding(sheetBld,undefined,sheetBld==='sawmill'&&sawByLogs()?{logsOnly:true}:undefined);render();}};   // v2.20.1: the first Sawmill is paid in logs
+  $('bpBuy').onclick=()=>{if(sheetBld&&S.buildings[sheetBld].lvl&&wsHas(sheetBld)&&wsRoom(sheetBld)<1){if(typeof HOLD==='object'&&HOLD.el===$('bpBuy')&&HOLD.n>0){holdStop();return;} bpTab('ws');return;} if(sheetBld){buyBuilding(sheetBld,undefined,sheetBld==='sawmill'&&sawByLogs()?{logsOnly:true}:undefined);render();}};   // v2.20.1: the first Sawmill is paid in logs · v2.22: at a gate a hold-repeat stops, a fresh tap opens the Workstations
   $('bpOn').onchange=()=>{if(sheetBld){S.buildings[sheetBld].on=$('bpOn').checked;render();}};
   $('bpPrev').onclick=()=>cycleBuilding(-1); $('bpNext').onclick=()=>cycleBuilding(1);
   $('saveBtn').onclick=()=>save();

@@ -33,7 +33,8 @@ function wsName(id,k){return WS_DEF[id][k][1];}
 function wsIcon(id,k){return WS_DEF[id][k][2];}
 function wsKind(id,k){return WS_DEF[id][k][3];}
 /* first gate this building has not cleared: {lv,k,n} or null */
-function wsGate(id){if(!wsHas(id)) return null;for(const [lv,k,n] of WS_GATES) if(wsLvl(id,k)<n) return {lv,k,n};return null;}
+// gates below the current level count as passed (a level set directly, e.g. by an old save or a test, is never lost)
+function wsGate(id){if(!wsHas(id)) return null;const l=S.buildings[id]?S.buildings[id].lvl:0;for(const [lv,k,n] of WS_GATES) if(l<=lv&&wsLvl(id,k)<n) return {lv,k,n};return null;}
 function wsCap(id){const g=wsGate(id);return g?g.lv:Infinity;}
 function wsRoom(id){return Math.max(0,wsCap(id)-S.buildings[id].lvl);}
 function wsBlocked(id){return wsHas(id)&&S.buildings[id].lvl>0&&wsRoom(id)===0;}
@@ -47,7 +48,7 @@ function wsApplyPrice(m){if(!S.ws) return;for(const id in S.ws){const b=BMAP[id]
 function wsEffTxt(kind,L){const v=wsEffAt(kind,L);return kind==='inp'?`−${Math.round((1-v)*100)}% input`:kind==='spd'?`×${v.toFixed(2)} speed`:kind==='yld'?`×${v.toFixed(2)} output`:`×${v.toFixed(2)} price`;}
 /* station levels needed to reach building level `to` (missing levels only): [[k,L],...] and their total cost */
 function wsNeedFor(id,to){const out=[];if(!wsHas(id)) return {list:out,cost:0};const cur=[0,1,2].map(k=>wsLvl(id,k));let c=0;
-  for(const [lv,k,n] of WS_GATES){if(to<=lv) break;while(cur[k]<n){cur[k]++;out.push([k,cur[k]]);c+=wsCost(id,k,cur[k]);}}
+  const l=S.buildings[id].lvl;for(const [lv,k,n] of WS_GATES){if(to<=lv) break;if(l>lv) continue;while(cur[k]<n){cur[k]++;out.push([k,cur[k]]);c+=wsCost(id,k,cur[k]);}}
   return {list:out,cost:c};}
 function buyWs(id,k,quiet){
   if(!wsHas(id)||!S.buildings[id].lvl) return false;const L=wsLvl(id,k)+1;if(L>WS_MAX) return false;const c=wsCost(id,k,L);
@@ -73,7 +74,7 @@ let bpTabSel='ov', wsSig='';
 function bpTab(t){bpTabSel=t==='ws'?'ws':'ov';wsSig='';const m=$('bpMain');if(m) m.classList.toggle('ws-mode',bpTabSel==='ws');
   document.querySelectorAll('#bpTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===bpTabSel));
   if(typeof haptic==='function') haptic(6);if(typeof render==='function') render();}
-function wsTabsInit(){const T=$('bpTabs');if(!T||T._i) return;T._i=1;T.querySelectorAll('button').forEach(b=>b.onclick=()=>bpTab(b.dataset.t));}
+function wsTabsInit(){const T=$('bpTabs');if(!T||T._i) return;T._i=1;T.querySelectorAll('button').forEach(b=>b.onclick=()=>bpTab(b.dataset.t));const g=$('bpWsGo');if(g) g.onclick=()=>bpTab('ws');}
 const WS_COL={spd:'#e8742a',yld:'#4fa633',inp:'#3e86c8',prc:'#c9a227'};
 /* tiny isometric interior: a floor slab and the three workstations; height and colour follow their level */
 function wsDrawInterior(cv,id){
@@ -99,8 +100,8 @@ function updateBldWs(b){
   const T=$('bpTabs'),W=$('bpWs');if(!T||!W) return;wsTabsInit();
   const st=S.buildings[b.id],has=wsHas(b.id)&&st.lvl>0;T.classList.toggle('hidden',!has);
   if(!has&&bpTabSel==='ws') bpTab('ov');
-  const blk=has&&wsBlocked(b.id),cnt=$('bpWsN');if(cnt){const t=blk?'🔒':'';if(cnt.textContent!==t) cnt.textContent=t;}
-  T.classList.toggle('alert',blk);
+  const blk=has&&wsBlocked(b.id),t=blk?'🔒':'';for(const id of ['bpWsN','bpWsGoN']){const c=$(id);if(c&&c.textContent!==t) c.textContent=t;}
+  const go=$('bpWsGo');if(go){go.classList.toggle('hidden',!has);go.classList.toggle('alert',blk);}
   if(!has||bpTabSel!=='ws'){W.classList.add('hidden');return;}
   W.classList.remove('hidden');
   const D=WS_DEF[b.id],g=wsGate(b.id),lv=[0,1,2].map(k=>wsLvl(b.id,k));
@@ -112,7 +113,7 @@ function updateBldWs(b){
     for(let k=0;k<3;k++){const [,nm,ic,kind]=D[k],L=lv[k],K=WS_KIND[kind],mx=L>=WS_MAX,gk=g&&g.k===k;
       const pips=Array.from({length:WS_MAX},(_,i)=>`<i class="${i<L?'on':''}${g&&g.k===k&&i<g.n&&i>=L?' need':''}"></i>`).join('');
       h+=`<div class="card ws-card${gk?' gate':''}" data-k="${k}"><div class="ic" style="background:${WS_COL[kind]}22">${ic}</div><div><div class="nm">${nm} <span class="ulv">Lv ${L}/${WS_MAX}</span></div>
-        <div class="ds">${K.e} ${K.n}: ${L?'<b>'+wsEffTxt(kind,L)+'</b>':'none yet'}${mx?'':' → '+wsEffTxt(kind,L+1)}${gk?` · <b class="gtag">unlocks Lv ${g.lv}+${g.n>L+1?' at Lv '+g.n:''}</b>`:''}</div>
+        <div class="ds">${K.e} ${K.n}: ${L?'<b>'+wsEffTxt(kind,L)+'</b>':'none yet'}${mx?'':' → '+wsEffTxt(kind,L+1)}${gk?` · <b class="gtag">🔓 Lv ${g.n} lets ${BMAP[b.id].name} pass Lv ${g.lv}</b>`:''}</div>
         <div class="upips">${pips}</div></div><button class="btn buy" data-k="${k}">${mx?'Max':costBtnHtml('⬆ Lv '+(L+1),wsCost(b.id,k))}</button></div>`;}
     h+=`</div><div class="legend">Each building has three workstations. They add their bonus on top of levels, research, specialisations and staff, and reset on Replant like the building. Gates: Lv 25 · 50 · 100 · 200 · 400.</div>`;
     W.innerHTML=h;W.querySelectorAll('button[data-k]').forEach(x=>x.onclick=()=>{if(buyWs(b.id,+x.dataset.k)){wsSig='';render();}});

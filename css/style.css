@@ -739,8 +739,10 @@ tr.mkt-tier.t1 b{color:#a85a1e}tr.mkt-tier.t2 b{color:#2f6aa0}tr.mkt-tier.t3 b{c
 .upips{display:flex;gap:3px;margin:4px 0 2px}.upips i{flex:1;max-width:22px;height:5px;border-radius:3px;background:#e6d5b5}.upips i.on{background:#e8a33a}.upips i.need{background:#ffb3a3;box-shadow:inset 0 0 0 1px #ff5a3a}
 .upg-card .nx{color:#7b6a52}.upg-sub{font-size:12px;font-weight:800;color:#8a7558;margin:6px 2px 0}
 .card.lockd{opacity:.62}.card.lockd .btn small{white-space:normal;font-size:10px;line-height:1.15}
-.bptabs{display:flex;width:100%;margin:0 0 8px}.bptabs button{flex:1;padding:6px 4px;font-size:13px}
-.bptabs.alert button[data-t="ws"]:not(.on){animation:wsPulse 1.6s ease-in-out infinite}
+.bptabs{display:flex;width:100%;margin:0 0 8px}.bptabs button{flex:1;padding:7px 4px;font-size:13px}
+#bpMain:not(.ws-mode) #bpTabs{display:none}   /* overview: the 🛠 Stations chip in the buy row is the way in (no extra height on phones) */
+.wsgo{margin-left:auto;margin-right:8px;border:1.5px solid #d9b77a;background:#fff3dc;color:var(--ink);font-weight:800;font-size:12.5px;border-radius:10px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.wsgo.alert{background:#ffe1d6;border-color:#ff9c84;animation:wsPulse 1.6s ease-in-out infinite}
 @keyframes wsPulse{50%{background:#ffe1d6}}
 #bpMain.ws-mode>*:not(#bpTabs):not(#bpWs):not(#bpMs){display:none!important}
 .bws .ws-cv{width:100%;display:block;border-radius:12px;background:linear-gradient(#f6ead2,#efdcb8);margin-bottom:6px}

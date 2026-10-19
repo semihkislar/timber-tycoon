@@ -143,7 +143,7 @@ const UPGRADES=[
   {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
 ];
 /* v2.22 leveled upgrades (docs/stations-v2.22.md §1): every upgrade is a line Lv 0 → N. Lv 1 = the old one-time upgrade;
-   each further level scales the Lv-1 bonus by g(L)=1+0.3·(L−1). Cost ×8 per level. Lv 2+ need the thing the upgrade is about. */
+   each further level scales the Lv-1 bonus by g(L)=1+0.1·(L−1). Cost ×12 per level. Lv 2+ need the thing the upgrade is about. */
 const UPG_MAX={sawdust:1,alarm:3,sprinkler:3}, UPG_GROW=12, UPG_STEP=.1;
 const UPG_REF={sharp:['k'],steel:['c','lumberjack'],steamsaw:['b','sawmill'],oil:['c','chainsaw'],combo:['c','lumberjack'],kilndry:['b','sawmill'],sawdust:['b','chipper'],
   diesel:['c','truck'],conveyor:['n'],jigs:['b','carpentry'],dryer:['b','pellet'],goldaxe:['k'],gps:['c','harvester'],export:['n'],bleach:['b','paper'],heattreat:['b','kiln'],

@@ -25,7 +25,7 @@ with sync_playwright() as p:
     ok('ms1' in S['ach'],'Milestone! trophy unlocked from old save (sawmill Lv 27)')
     ok(pg.evaluate('TT.msCount(27)')==2,'two milestones at Lv 27')
     # speed multiplier
-    r=pg.evaluate('(()=>{const M=TT.M;const base=27*M.bld.sawmill*M.bldAll*M.rep;return TT.bSpeed("sawmill")/base;})()')
+    r=pg.evaluate('(()=>{const M=TT.M;const base=27*M.bld.sawmill*M.bldAll*M.rep;return TT.bSpeed("sawmill")/base/(TT.wsSpd?TT.wsSpd("sawmill"):1);})()')
     ok(abs(r-4)<1e-6,f'sawmill speed x4 at Lv 27 ({r})')
     ok(pg.evaluate('[TT.msCount(9),TT.msCount(10),TT.msCount(24),TT.msCount(25),TT.msCount(400)]')==[0,1,1,2,6],'milestone thresholds')
     ok(pg.evaluate('TT.nextMs(27)')==50 and pg.evaluate('TT.nextMs(400)') is None,'next milestone lookup')
