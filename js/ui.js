@@ -127,7 +127,7 @@ function updateBuildingSheet(){
   const se=$('bpStars'); if(se._h!==h){se.innerHTML=h;se._h=h;}
   $('bpMbar').style.width=(nx?Math.min(100,(st.lvl-prev)/(nx-prev)*100):100).toFixed(0)+'%';
   const t=nx?`<b>×${MS_MULT}</b> speed at Lv ${nx}`+(mc?` · now <b>×${Math.pow(MS_MULT,mc)}</b>`:''):`Max milestones · <b>×${Math.pow(MS_MULT,mc)}</b>`;
-  const wg=st.lvl?wsGate(b.id):null, t2=t+(wg&&st.lvl>=wg.lv-15?` · 🔒 Lv ${wg.lv} needs ${wsIcon(b.id,wg.k)} ${wsName(b.id,wg.k)} Lv ${wg.n}`:'');
+  const wg=st.lvl?wsGate(b.id):null, t2=wg&&st.lvl>=wg.lv?`🔒 <b>Capped at Lv ${wg.lv}</b> · needs ${wsIcon(b.id,wg.k)} ${wsName(b.id,wg.k)} Lv ${wg.n}`:t+(wg&&st.lvl>=wg.lv-10?` · 🔒 Lv ${wg.lv}`:'');   // v2.22
   const mt=$('bpMtx'); if(mt._t!==t2){mt.innerHTML=t2;mt._t=t2;}
   const s=statusOf(b);
   $('bpStatus').classList.toggle('hidden',!st.lvl);

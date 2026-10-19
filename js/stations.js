@@ -78,9 +78,9 @@ function wsTabsInit(){const T=$('bpTabs');if(!T||T._i) return;T._i=1;T.querySele
 const WS_COL={spd:'#e8742a',yld:'#4fa633',inp:'#3e86c8',prc:'#c9a227'};
 /* tiny isometric interior: a floor slab and the three workstations; height and colour follow their level */
 function wsDrawInterior(cv,id){
-  const dpr=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth||320,H=118;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';
+  const dpr=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth||320,H=150;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';
   const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
-  const cx=W/2,cy=H*.62,hw=Math.min(W*.46,170),hh=hw*.36;
+  const hh=Math.min((W*.86)*.42,H-56),hw=hh/.42,cx=W/2,cy=H-8-hh/2;   // floor diamond fills the canvas (walls + benches above it)
   const P=(i,j,z)=>[cx+(i-j)*hw/2,cy+(i+j-1)*hh/2-(z||0)];   // i,j in 0..1 floor coords
   const quad=(pts,c)=>{g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(const p of pts.slice(1)) g.lineTo(p[0],p[1]);g.closePath();g.fillStyle=c;g.fill();};
   // floor + back walls
@@ -88,13 +88,13 @@ function wsDrawInterior(cv,id){
   g.strokeStyle='rgba(120,90,50,.25)';g.lineWidth=1;for(let k=1;k<6;k++){const a=P(k/6,0),b=P(k/6,1),c=P(0,k/6),d=P(1,k/6);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.moveTo(c[0],c[1]);g.lineTo(d[0],d[1]);g.stroke();}
   quad([P(0,0),P(1,0),P(1,0,34),P(0,0,34)],'#b89a6e');quad([P(0,0),P(0,1),P(0,1,34),P(0,0,34)],'#a3865c');
   const gate=wsGate(id),D=WS_DEF[id];
-  for(let k=0;k<3;k++){const L=wsLvl(id,k),kind=D[k][3],col=WS_COL[kind],t=.22+k*.28,s=.09,h=8+L*3.2;
-    const i0=t-s,i1=t+s,j0=.42,j1=.62;
+  for(let k=0;k<3;k++){const L=wsLvl(id,k),kind=D[k][3],col=WS_COL[kind],ci=.28+k*.22,cj=.72-k*.22,s=.085,h=8+L*3.2;   // a row across the room, left → right
+    const i0=ci-s,i1=ci+s,j0=cj-s,j1=cj+s;
     const top=[P(i0,j0,h),P(i1,j0,h),P(i1,j1,h),P(i0,j1,h)];
     quad([P(i1,j0),P(i1,j1),P(i1,j1,h),P(i1,j0,h)],shade(col,.72));quad([P(i0,j1),P(i1,j1),P(i1,j1,h),P(i0,j1,h)],shade(col,.86));quad(top,shade(col,1.12));
     if(gate&&gate.k===k){g.strokeStyle='#ff5a3a';g.lineWidth=2;g.setLineDash([4,3]);g.beginPath();g.moveTo(top[0][0],top[0][1]);for(const p of top.slice(1)) g.lineTo(p[0],p[1]);g.closePath();g.stroke();g.setLineDash([]);}
-    const c=P(t,.52,h+6);g.font='16px system-ui';g.textAlign='center';g.textBaseline='bottom';g.fillText(D[k][2],c[0],c[1]-8);
-    g.font='800 10px system-ui';g.fillStyle='#3a2410';g.textBaseline='top';const lp=P(t,.78,0);g.fillText('Lv '+L,lp[0],lp[1]+2);}
+    const c=P(ci,cj,h);g.font='18px system-ui';g.textAlign='center';g.textBaseline='bottom';g.fillText(D[k][2],c[0],c[1]-4);
+    g.font='800 11px system-ui';g.fillStyle=gate&&gate.k===k?'#d2452a':'#3a2410';g.textBaseline='top';const lp=P(i1,j1,0);g.fillText('Lv '+L,lp[0],lp[1]+3);}
 }
 function updateBldWs(b){
   const T=$('bpTabs'),W=$('bpWs');if(!T||!W) return;wsTabsInit();
