@@ -355,7 +355,7 @@ function premOverlays(ctx,showTags){
         pill(ctx,sx,sy-14+bob,'🏛️ Premium Area',{bg:can?'#d8a930':'#2a1d14',fg:can?'#2a1d14':'#f5d36a',fs:12,stroke:'#f5d36a'});
         pill(ctx,sx,sy+8+bob,fmt(cost),{icon:'coin',bg:'#fff6e0',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});}
       else pill(ctx,sx,sy,'🔒 Premium Area · earn '+fmt(PREM_UNLOCK*.25),{fs:10,bg:'rgba(43,27,14,.6)'});}
-    else if(showTags){const p=PUV(PROW.u0+.6,PROW.vl,34);const [px,py]=w2s(p[0],p[1]);pill(ctx,px,py,'🏛️ Phase 3 · Premium · Lv '+S.premium.lvl,{bg:'#2a1d14',fg:'#f5d36a',fs:10.5,stroke:GOLD,padX:12,padY:7});}
+    else if(showTags){const p=PUV(PROW.u0-.5,PROW.vl,22);const [px,py]=w2s(p[0],p[1]);pill(ctx,px,py,'🏛️ Phase 3 · Premium · Lv '+S.premium.lvl,{bg:'#2a1d14',fg:'#f5d36a',fs:10.5,stroke:GOLD,padX:12,padY:7});}
   }
   // client bubble: who is at the gate and what they want
   const cl=scene.client, O=S.orders; if(cl&&cl.fig>.5&&(O.offer||O.active)){const o=O.offer||O.active;const p=P(CLIENT_FIG[0],CLIENT_FIG[1],44);const [bx,by]=w2s(p[0],p[1]);

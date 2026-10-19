@@ -115,7 +115,7 @@ with sync_playwright() as p:
             ok(0<v[0]<v[2] and 0<v[1]<v[3],f'{dev}: Phase 3 chip flies to the row ({v})')
         else: ok(False,f'{dev}: Phase 3 chip present')
         if dev=='iPhone 13':
-            E(pg,"focusLot('cabinetry',true)"); pg.wait_for_timeout(1200); pg.screenshot(path=os.path.join(ROOT,'screenshot-v2211-mobile.png'))
+            E(pg,"focusLot('cabinetry',true)"); pg.wait_for_timeout(1200); pg.screenshot(path='/tmp/v2211-mobile-test.png')
         ok(not errs,f'{dev}: no errors ({errs[:3]})'); ctx.close()
     br.close()
 print('\n'+('ALL PASS' if not FAILS else f'{len(FAILS)} FAIL(S): '+'; '.join(FAILS)))

@@ -72,7 +72,7 @@ with sync_playwright() as p:
     t=pg.locator('#bpMargin').inner_text(); ok("can't be sold" in t,f'Phase-1 sheet: margin says logs can\'t be sold ({t[:90]})')
     E(pg,"closeSheet()"); ok(not errs,f'no errors ({errs[:3]})'); ctx.close()
     # --- Log Yard capacity: collectors go idle, nothing is sold or wasted silently ---
-    ctx,pg,errs=page(); E(pg,CLEAN+"S.coins=1e9;TT.buyBuilding('sawmill',1);TT.buyCollector('lumberjack',60);TT.buyCollector('chainsaw',20);S.buildings.sawmill.on=false;S.planters.planter=50;M=computeMods();")
+    ctx,pg,errs=page(); E(pg,CLEAN+"TT.setWeather('clear',1e6);S.wx.next=1e9;S.coins=1e9;TT.buyBuilding('sawmill',1);TT.buyCollector('lumberjack',60);TT.buyCollector('chainsaw',20);S.buildings.sawmill.on=false;S.planters.planter=50;M=computeMods();")
     E(pg,"TT.simulate(400)"); pg.wait_for_timeout(1500); E(pg,"TT.checkAch&&TT.checkAch(true);M=computeMods();TT.simulate(90)"); pg.wait_for_timeout(300)   # trophies raise the log rate (and the cap) once; let it settle
     r=E(pg,"({l:S.res.logs,cap:logCap(),y:yardRun(),f:yardFull(),D:S.forest.D,p:TT.rates.logs.p,hud:document.getElementById('hLogs').textContent,att:TT.attentionList().map(a=>a.t).filter(t=>t.includes('Log Yard')).length,c:S.coins})")
     ok(abs(r['l']-r['cap'])<r['cap']*0.01 and r['f'] and r['y']<0.1,f"full Log Yard: stock stops at the cap, collectors idle ({r['l']:.0f}/{r['cap']:.0f}, run {r['y']:.2f})")
