@@ -65,10 +65,10 @@ function mkDockTruck(atDock){const c=DOCK_COLS[Math.floor(Math.random()*DOCK_COL
   const v={kind:'dock',legs:dockTruckLegs(),li:0,s:0,v:0,col:c[0],box:c[1],stripe:c[2],load:0,acc:0,doors:0};
   if(atDock===true){v.li=3;v.load=.3;v.doors=1;} else if(atDock==='q'){v.s=v.legs[0].pa.tot-.01;} return v;}
 /* ---------- forest crew ---------- */
-const LANDINGS={T:{i:-1.05,j:3.95,n:3},L:{i:5.0,j:17.0,n:2}};
+const LANDINGS={T:{i:-1.05,j:3.95,n:3},L:{i:-.6,j:22.6,n:2}};
 const CAMP={i:4.3,j:-1.2};
 function zoneTrees(z){scene._zt=scene._zt||{};if(scene._zt[z]) return scene._zt[z];
-  const r=scene.dynTrees.filter(t=>{const u=t.i+t.j,v=t.i-t.j;return z==='T'?(u>=-2.9&&u<=.95&&Math.abs(v)<=10.5):(v>=-16.2&&v<=-12.6&&u>=13&&u<=28);});
+  const r=scene.dynTrees.filter(t=>{const u=t.i+t.j,v=t.i-t.j;return z==='T'?(u>=-2.9&&u<=.95&&Math.abs(v)<=10.5):(v>=-26.2&&v<=-22.6&&u>=14&&u<=34);});
   return scene._zt[z]=r;}
 function workSpot(tr,side){return side==='R'?[tr.i,tr.j-.62]:[tr.i-.62,tr.j];}
 function faceTo(p,di,dj){const sx=di-dj,sy=di+dj;if(Math.abs(sx)>.01)p.fx=sx>=0?1:-1;p.back=sy<-.01;}

@@ -14,10 +14,10 @@ function moreShown(){const b=$('bbMore');return !!(b&&b.offsetParent);}
 
 /* ---------- quick-jump locations ---------- */
 const JUMPS=[
-  {id:'forest',ic:'🌲',l:'Forest',pt:()=>P(0.5,15.5,0),z:1.6},
+  {id:'forest',ic:'🌲',l:'Forest',pt:()=>P(-3,15,0),z:1.6},
   {id:'yard',ic:'🪵',l:'Log Yard',pt:()=>P(YARD.ci,YARD.cj,20),z:1.7},
   {id:'factory',ic:'🏭',l:'Factory',pt:()=>P(15.5,15.5,20),z:1.15},
-  {id:'prem',ic:'💎',l:'Premium',pt:()=>P(25,4.6,20),z:1.6,lock:()=>!S.premium.lvl},
+  {id:'prem',ic:'💎',l:'Phase 3',pt:()=>P(PREM.ci,PREM.cj,20),z:1.05,lock:()=>!S.premium.lvl},   // v2.21.1: the Phase 3 row
   {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
   {id:'rnd',ic:'🔬',l:'R&D',pt:()=>P(16.9,1,20),z:1.7,lock:()=>!campusOpen()},
   {id:'power',ic:'⚡',l:'Power',pt:()=>P(PWZ.ci,PWZ.cj,24),z:1.6,lock:()=>!pwVisible()},
@@ -94,7 +94,7 @@ function autoFocus(wx,wy,why){
 (function hookEvents(){
   const sf=startFire; startFire=function(bid){const r=sf.apply(this,arguments);try{const L=LOTS[bid];if(L&&S.fires[bid]){const p=P(L.ci,L.cj,30);autoFocus(p[0],p[1],'fire');haptic([12,50,12]);}}catch(_){}return r;};
   const sg=spawnGolden; spawnGolden=function(){const g=sg.apply(this,arguments);try{if(g) autoFocus(g.wx,g.wy,'golden');}catch(_){}return g;};
-  const of=orderFx; orderFx=function(kind){const r=of.apply(this,arguments);try{if(kind==='offer'){const p=S.premium.lvl?P(25,4.6,20):P(DOCK.ci,DOCK.cj,20);autoFocus(p[0],p[1],'order');}}catch(_){}return r;};
+  const of=orderFx; orderFx=function(kind){const r=of.apply(this,arguments);try{if(kind==='offer'){const p=P(CLIENT_PARK[0],CLIENT_PARK[1],20);autoFocus(p[0],p[1],'order');}}catch(_){}return r;};
 })();
 
 /* ---------- bottom sheet: snap points, drag, swipe-down ---------- */

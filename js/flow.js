@@ -10,8 +10,8 @@ const FLOW_TINT={logs:'#b07a42',planks:'#d9a35a',veneer:'#e8cf98',bark:'#7a5030'
   furniture:'#c0603a',glue:'#d8a930',plywood:'#e08a3a',toys:'#e2577a',boats:'#3f86c8',flooring:'#a0703c',cabinets:'#8a5a3a',
   giftbox:'#d14b4b',stationery:'#5a6fd0',luxfurn:'#d8a930'};
 let flowOn=false; try{flowOn=localStorage.getItem('tt_flow')==='1';}catch(_){}
-function flowLotOf(id){return id==='yard'?YARD:id==='dock'?DOCK:LOTS[id];}
-function flowAnchor(id){const L=flowLotOf(id);if(!L) return null;const z=id==='yard'||id==='dock'?18:Math.min(56,(L.H||44)*.62);const p=P(L.ci,L.cj,z);return w2s(p[0],p[1]);}
+function flowLotOf(id){return id==='yard'?YARD:id==='dock'?DOCK:id==='pdock'?PDOCK:LOTS[id];}
+function flowAnchor(id){const L=flowLotOf(id);if(!L) return null;const z=id==='yard'||id==='dock'||id==='pdock'?18:Math.min(56,(L.H||44)*.62);const p=P(L.ci,L.cj,z);return w2s(p[0],p[1]);}
 function flowBuilt(id){const st=S.buildings[id];return !!(st&&st.lvl&&LOTS[id]&&(!LOTS[id].prem||S.premium.lvl)&&(id!=='boatyard'||typeof harborOpen!=='function'||harborOpen()));}
 /* edges: {from,to,k,rate,state:'ok'|'warn'|'bad'} */
 function flowEdges(){
@@ -26,7 +26,7 @@ function flowEdges(){
     }}
   // what gets sold leaves through the dock (one arc per selling producer, top 6 by value so the view stays readable)
   const sold=[];for(const r of RES){const R=rates[r.id];if(!R||!(R.s>1e-6)||!canSell(r.id)) continue;   // v2.20.1: logs never go to the dock
-const p=r.id==='logs'?'yard':(BUILDINGS.find(b=>b.out[r.id]&&flowBuilt(b.id))||{}).id;if(p) sold.push({from:p,to:'dock',k:r.id,rate:R.s,state:'sell',val:R.s*price(r.id)});}
+const p=r.id==='logs'?'yard':(BUILDINGS.find(b=>b.out[r.id]&&flowBuilt(b.id))||{}).id;if(p) sold.push({from:p,to:LOTS[p]&&LOTS[p].prem?'pdock':'dock',k:r.id,rate:R.s,state:'sell',val:R.s*price(r.id)});}
   sold.sort((a,b)=>b.val-a.val);return E.concat(sold.slice(0,6));
 }
 function flowStats(){const E=flowEdges();return {n:E.length,bad:E.filter(e=>e.state==='bad').length,warn:E.filter(e=>e.state==='warn').length,sell:E.filter(e=>e.state==='sell').length};}

@@ -48,7 +48,7 @@ function hitTest(sx,sy){
   if(PWZ.hit&&pwVisible()&&pip(PWZ.hit,wx,wy)) return {type:'power'};
   {const [gi,gj]=toGrid(wx,wy);if(gi>=14.2&&gi<=19.6&&gj>=-1.4&&gj<=3.5&&campusOpen()) return {type:'campus'};
     if(gi>=32.4&&gi<=37&&gj>=11.5&&gj<=17.2&&(harborOpen()||harborAvail())) return {type:'harbor'};}
-  {const [gi,gj]=toGrid(wx,wy);if(gi>=PREM.i0-.2&&gi<=PREM.i1+.3&&gj>=PREM.j0-.2&&gj<=PREM.j1+.2) return {type:'prem'};
+  {const [gi,gj]=toGrid(wx,wy);if(inPremRow(gi,gj,.25)) return {type:'prem'};
     if(PDOCK.hit&&pip(PDOCK.hit,wx,wy)) return {type:'prem'};}
   // padded pass
   const pad=HIT_PAD/scene.cam.z; let pb=null,pd=pad;
