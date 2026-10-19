@@ -4,7 +4,7 @@
    (speed / yield / input / quality). Milestone gates: a building can't pass Lv 25/50/100/200/400 until a given
    workstation reaches a given level. Levels reset on Replant (they live in S.ws, not in the keep list). */
 const WS_KIND={spd:{e:'⚙️',n:'Speed',per:.05},yld:{e:'📦',n:'Yield',per:.04},inp:{e:'🌲',n:'Input',per:.03},prc:{e:'💎',n:'Quality',per:.05}};
-const WS_MAX=10, WS_K=1.5;
+const WS_MAX=10, WS_K=1;
 const WS_LV=[0,10,25,50,100,150,200,300,400,500,600];          // building level whose cost a station level is priced at
 const WS_GATES=[[25,1,2],[50,0,3],[100,2,4],[200,1,6],[400,0,8]];  // [pass Lv, station index, station Lv needed]
 // [id, name, icon, kind]; station index 1 is always the speed station (the first gate)

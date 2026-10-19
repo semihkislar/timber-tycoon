@@ -75,7 +75,7 @@ with sync_playwright() as p:
     ok(abs(r2-1.2)<1e-9,f'Finishing Bench Lv 4: ×1.20 price on carpentry goods ({r2:.3f})')
     r=E(pg,"""(()=>{S.ws={};S.buildings.sawmill.lvl=25;const c=wsCost('sawmill',1,1),b=bulkCost(BMAP.sawmill.cost,BMAP.sawmill.scale,10,1);S.runCS=4;const c4=wsCost('sawmill',1,1);S.runCS=1;
       const nf=wsNeedFor('sawmill',120);return {r:c/b,cs:c4/c,nf:nf.list,nc:bldNextCost('sawmill')>bulkCost(BMAP.sawmill.cost,BMAP.sawmill.scale,25,1)}})()""")
-    ok(abs(r['r']-1.5)<1e-6,f"station Lv 1 costs 1.5× the building's Lv-10 level ({r['r']:.3f})")
+    ok(abs(r['r']-1)<1e-6,f"station Lv 1 costs the building's Lv-10 level ({r['r']:.3f})")
     ok(abs(r['cs']-E(pg,"(()=>{S.runCS=4;const v=cs();S.runCS=1;return v})()"))<1e-6,'station costs scale with forest value')
     ok(r['nf']==[[1,1],[1,2],[0,1],[0,2],[0,3],[2,1],[2,2],[2,3],[2,4]] and r['nc'],f"wsNeedFor lists the levels to Lv 120 ({r['nf']})")
     r=E(pg,CLEAN+"""(()=>{S.coins=1e15;S.ws={};S.buildings.sawmill.lvl=24;TT.buyBuilding('sawmill',30);return {l:S.buildings.sawmill.lvl,w:S.ws.sawmill.slice()}})()""")

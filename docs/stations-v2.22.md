@@ -58,7 +58,7 @@ Purchases (×1/×10/Max, lot taps, Builders' Yard) are clipped at the cap; nothi
 
 ### Costs
 
-Level L of a workstation costs `1.5 × (the building's level cost at WS_LV[L]) × forest value`, with
+Level L of a workstation costs `1 × (the building's level cost at WS_LV[L]) × forest value`, with
 `WS_LV = [–, 10, 25, 50, 100, 150, 200, 300, 400, 500, 600]` — i.e. about three building levels at the milestone it
 unlocks. This keeps the gates meaningful (a real purchase decision, a visible step) but never a wall: the station needed
 for a gate always costs about as much as three levels the player is about to buy anyway, and it pays back through its
@@ -95,4 +95,46 @@ income at 10/20/40/60 min, plank flow (planks made ≥ planks used). Results in 
 
 ## 7. Results
 
-(filled in after the sim and perf runs)
+### Tuning the sim forced
+* **Upgrade levels:** the first draft used `g(L)=1+0.3·(L−1)` and ×8 cost per level. In a 120-min greedy sim that made
+  v2.22 earn **4.3×** what v2.21.1 earns (upgrade levels stack multiplicatively). Raising the cost growth barely helped,
+  because late income dwarfs early upgrade prices. The fix was a smaller step: **`g(L)=1+0.1·(L−1)`**, cost **×12** per level.
+  A ×2 upgrade is ×2.1 at Lv 2 and ×2.4 at Lv 5; "−25% risk" goes to −30% at Lv 3.
+* **Station cost:** the first draft used 3× the building's level cost at `WS_LV[L]`. That held the Sawmill at Lv 25 for
+  about 6 extra minutes in the first half hour, so I lowered it to **1×**. One gate now costs about the price of one or
+  two more building levels.
+* **Levels already past a gate are never lost.** A gate below a building's current level counts as passed. That covers
+  levels set directly (old saves, dev tools); old saves also get the free minimum station levels.
+
+### Pacing sim (`test/sim_v222.js`, greedy cheapest-first player, median of 4 runs, 90 min, fresh game)
+| min | v2.21.1 earned | v2.22 earned | ratio |
+|---|---|---|---|
+| 10 | 4.5e5 | 3.7e5 | 0.83 |
+| 20 | 5.2e6 | 4.0e6 | 0.78 |
+| 40 | 9.2e7 | 8.0e7 | 0.87 |
+| 60 | 7.1e8 | 8.5e8 | 1.20 |
+| 90 | 2.7e9 | 3.8e9 | 1.39 |
+
+With the 1.5× station cost, the same sim gave 0.88 / 0.96 / 1.01 / 1.03 / 1.25. The sim varies by about ±20% from run to run
+(chops, events and weather are random). In the first ~40 min, v2.22 runs 10–20% behind because the greedy player spends on
+upgrade levels and stations. After that, their bonuses pay it back.
+
+* **No soft-lock in any run:** 0 failed purchases, and the longest stretch without a buy was 18–38 s.
+* **Gates are felt but are not walls.** The first Sawmill gate (Lv 25 → Bandsaw Lv 2) arrives about 3 min later than the
+  Lv 26 did in v2.21.1. Later Lv 26/51 milestones come 6–11 min later, because the greedy player now also spends on upgrade
+  levels and stations. Income is within about 20% early on, and v2.22 pulls ahead after about 50 min (upgrade levels,
+  station bonuses).
+* **Plank flow stays healthy:** consumers get 96–100% of the planks they want (v2.21.1: 97.5–100%), and shortage warnings
+  stay ≤ 2.3% of the time.
+
+### Perf (`tools/bench.py`, ms per frame, avg / p95)
+| scene | v2.21.1 | v2.22 |
+|---|---|---|
+| day-fit | 13.4 / 17.3 | 13.2 / 18.4 |
+| day-zoom | 9.6 / 12.7 | 9.7 / 12.8 |
+| night-fit | 18.2 / 24.6 | 17.3 / 21.3 |
+| night-zoom | 11.9 / 14.2 | 12.2 / 16.3 |
+
+These are within run-to-run noise. Workstation effects are three multiplies per building per tick, and the interior
+canvas is only drawn when a level changes.
+

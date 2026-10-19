@@ -5,6 +5,55 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.22] — 2026-10-19
+
+**Leveled upgrades and workstations inside every factory.** Semih's two ideas: "let's do the upgrade part with levels" and
+"factories should have extra upgrade areas inside, e.g. the plank place has 3 workbenches and you can't progress without
+upgrading one of them". Design and sim results: `docs/stations-v2.22.md`.
+
+### Added
+- **Leveled upgrades:** every Upgrades-panel item is now a line, Lv 0 → 5. Smoke Detectors and Sprinklers go to Lv 3;
+  Sawdust Recovery stays one-time.
+  - Lv 1 is exactly the old upgrade. Each further level strengthens the same effect: ×2 becomes ×2.1, ×2.2 … ×2.4, and
+    −25% risk becomes −30% at Lv 3.
+  - Cost is ×12 per level, scaled by forest value.
+  - Lv 2+ unlock with what the upgrade is about: the related collector count (15/30/60/100), building level
+    (25/50/100/200), buildings built (5/7/9/11) or taps.
+  - Cards show **Lv X/N**, level pips and "now → next". A "Next levels unlock with progress" list shows the requirement for
+    locked levels.
+- **Workstations:** every production building (16; not the lab) has three stations, each with its own level (0–10) and
+  effect: ⚙️ speed +5%/lv, 📦 output +4%/lv, 🌲 input −3%/lv or 💎 price +5%/lv.
+  - Example, Sawmill: 🪵 Debarker (input), 🪚 Bandsaw (speed), 📏 Edger & Planer (output).
+  - Example, Carpentry: Cutting Bench, Joinery Bench, Finishing Bench.
+- **Milestone gates:** a building can't pass Lv 25 / 50 / 100 / 200 / 400 until the 2nd / 1st / 3rd / 2nd / 1st station
+  reaches Lv 2 / 3 / 4 / 6 / 8.
+  - The Upgrade button turns orange: "🔒 Upgrade Bandsaw to Lv 2 · capped at Lv 25 · tap for 🛠 Workstations".
+  - The milestone line reads "🔒 Capped at Lv 25 · needs …", and the lot tag gets a 🔒.
+  - ×10, Max, lot taps, the Builders' Yard and hold-to-repeat all stop at the cap. Nothing is lost.
+- **Workstations view** (mobile first): opened from a 🛠 Stations chip in the buy row (no extra height on phones), with an
+  Overview / Workstations tab row. It shows:
+  - an isometric mini interior where the three benches grow with their level and the gate's bench is outlined;
+  - the gate line;
+  - three station cards with level pips, effect now → next, "🔓 Lv 3 lets Sawmill pass Lv 50" and a buy button.
+- Station level L costs the building's own level cost at Lv 10/25/50/100/150/200/300/400/500/600 × forest value. Stations
+  reset on Replant like building levels and stack on top of research, specialisations and staff.
+- **Builders' Yard:** at a cap, the crew fits the station the gate needs, within the budget share.
+- **Needs-attention:** "🔒 Sawmill capped at Lv 25 · 🪚 Bandsaw Lv 1 affordable" opens the Workstations tab.
+
+### Compatibility
+- Saves: owned upgrades become Lv 1. Buildings already past a gate keep every level and get the minimum station levels
+  for free. Levels set directly are never clipped.
+- `TT.buyBuilding` (dev/test API) also buys the station levels a purchase needs. The UI never does this silently.
+- Version `2.22`; service worker cache `timber-tycoon-v2.22`.
+
+### Tests
+- New `test/v222.py` (50 checks): upgrade levels, effects, costs, max, requirements, migration and the Fully Tooled
+  trophy; station effects on speed, input, output and price; gates clip ×10/Max; locked button → Workstations tab;
+  interior; card buys; cs scaling; Replant reset; old-save grandfathering; iPhone 13 / Pixel 7.
+- New pacing sim `test/sim_v222.js` (v2.21.1 vs v2.22: no soft-locks, gate delays, plank flow). The bot and the greedy
+  sims count station costs.
+- `test/v13.py` divides out station speed. `test/v29.py` maxes stations before the Max-button check.
+
 ## [2.21.1] — 2026-10-19
 
 **Phase 3 gets its own row.** Semih: "do Phase 3, but as a separate row". The Premium Area is no longer a square compound by the highway: it is a third fenced row beyond Phase 2, parallel to the other two, so the factory reads left-to-right as three rows **I → II → III** along the lane.
