@@ -70,7 +70,7 @@ function sceneTap(sx,sy){
   if(h.type==='staff'){swOpenCard(h.wid);return;}
   if(h.type==='bld'){
     const b=BMAP[h.id],st=S.buildings[h.id];
-    if(!st.lvl&&bVisible(b)&&S.coins+1e-9>=bulkCost(b.cost,b.scale,0,1)){buyBuilding(h.id,1);render();}
+    if(!st.lvl&&bVisible(b)&&canFirstBuild(h.id)){buyBuilding(h.id,1,{logsOnly:true});render();}
     openSheet('bld',h.id);
   } else if(h.type==='yard') openSheet('crew');
   else if(h.type==='dock'){openSheet('ship');focusLot('dock');}
@@ -92,7 +92,7 @@ function forestChop(sx,sy){
   if(best&&!best.stump&&!best.fall){best.shake=1;const p=P(best.i,best.j);fx=p[0];fy=p[1]-10;if(!best.dyn) best.shake=0;}
   scene.axes.push({x:fx+7,y:fy-4,t:0});
   for(let k=0;k<10;k++) emitP(fx,fy,'chip');
-  scene.floats.push({x:fx,y:fy-30,text:'+'+fmt(n,n<10?1:0),log:true,t:0,dur:1});
+  scene.floats.push({x:fx,y:fy-30,text:n>0?'+'+fmt(n,n<10?1:0):'Log Yard full',log:n>0,t:0,dur:1});
   render();
   return n;
 }
@@ -239,10 +239,13 @@ function drawOverlays(ctx){
     const [sx,sy]=w2s(L.top[0],L.top[1]);
     if(sx<-80||sx>scene.w+80||sy<-60||sy>scene.h+120) continue;
     if(!st.lvl){
-      const vis=bVisible(b),cost=bulkCost(b.cost,b.scale,0,1),can=S.coins+1e-9>=cost; const bob=can?Math.sin(t*4)*3:0;
+      const vis=bVisible(b),cost=bulkCost(b.cost,b.scale,0,1),byLogs=b.id==='sawmill'&&sawByLogs(),can=canFirstBuild(b.id); const bob=can?Math.sin(t*4)*3:0;
       if(vis){
         pill(ctx,sx,sy-14+bob,`${b.name}`,{bg:can?'#4fa633':'rgba(43,27,14,.82)',fs:11,stroke:can?'#c9f59e':null});
-        pill(ctx,sx,sy+6+bob,fmt(cost),{icon:'coin',bg:can?'#fff6e0':'rgba(255,246,224,.85)',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});
+        if(byLogs){const have=Math.min(S.res.logs,SAW_LOGS),tx=`Build: 🪵 ${Math.floor(have)} / ${SAW_LOGS} logs`;   // v2.20.1: built with logs, with a progress bar
+          pill(ctx,sx,sy+6+bob,tx,{bg:can?'#fff6e0':'rgba(255,246,224,.9)',fg:can?'#3b7f27':'#6a4a28',fs:11,stroke:can?'#4fa633':'#d9b98a'});
+          ctx.font='800 11px system-ui,sans-serif';const w=Math.max(70,ctx.measureText(tx).width+10),bx=sx-w/2,by=sy+17+bob;ctx.fillStyle='rgba(43,27,14,.55)';ctx.fillRect(bx,by,w,4);ctx.fillStyle=can?'#4fa633':'#e0a040';ctx.fillRect(bx,by,w*have/SAW_LOGS,4);}
+        else pill(ctx,sx,sy+6+bob,fmt(cost),{icon:'coin',bg:can?'#fff6e0':'rgba(255,246,224,.85)',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});
         if(can){ctx.fillStyle='#4fa633';ctx.beginPath();const ay=sy-34+Math.sin(t*5)*4;ctx.moveTo(sx-7,ay-8);ctx.lineTo(sx+7,ay-8);ctx.lineTo(sx,ay);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();}
       } else pill(ctx,sx,sy-4,'🔒 Earn '+fmt(b.cost*cs()*.25),{fs:10,bg:'rgba(43,27,14,.6)'});
       continue;

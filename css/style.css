@@ -722,3 +722,14 @@ body.flow-on #flowBtn{background:linear-gradient(180deg,#ffe68a,#f2b83a)}
 tr.mkt-tier td{padding:8px 4px 3px;font-size:12px;border-bottom:1.5px solid var(--line)}
 tr.mkt-tier td span{font-size:11px;color:var(--ink2);font-weight:700}
 tr.mkt-tier.t1 b{color:#a85a1e}tr.mkt-tier.t2 b{color:#2f6aa0}tr.mkt-tier.t3 b{color:#8a3a70}tr.mkt-tier.t0 b{color:#6a4a28}
+
+/* v2.20.1: logs are raw material (no Sell / auto-sell), Log Yard capacity */
+#mktBody tr.raw .rawcell{text-align:left;white-space:nowrap}
+.rawtag{display:block;width:fit-content;font-size:11px;font-weight:800;color:#8a6a48;background:#f3e6cf;border-radius:8px;padding:2px 7px;margin:0 0 4px}
+.yardbar{display:inline-block;width:56px;height:7px;border-radius:4px;background:#e6d6bb;vertical-align:middle;overflow:hidden;margin-right:6px}
+.yardbar i{display:block;height:100%;background:#b07a42}
+.rawcell.full .yardbar i{background:#d84a3a}
+.yardtx{font-size:11px;color:var(--ink2);vertical-align:middle;white-space:nowrap}
+.rawcell.full .yardtx{color:#c0392b;font-weight:800}
+.hc.yardfull{box-shadow:0 0 0 2px #d84a3a inset}
+.hc.yardfull .v{color:#ffb4a8}

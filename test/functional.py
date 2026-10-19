@@ -26,25 +26,26 @@ with sync_playwright() as p:
     S=pg.evaluate('TT.S'); ok(S['clicks']==25,f"25 forest taps registered ({S['clicks']})")
     ok(pg.evaluate('TT.scene.axes.length+TT.scene.particles.length')>0,'axe swing / wood chips spawned')
     pg.wait_for_timeout(400)
-    S=pg.evaluate('TT.S'); ok(S['coins']>=20,f"logs auto-sold to coins {S['coins']:.1f}")
-    # crew sheet via bottom bar, hire lumberjack
+    S=pg.evaluate('TT.S'); ok(S['coins']==0 and S['res']['logs']>1,f"v2.20.1: logs are kept as raw stock, not sold (coins {S['coins']:.1f}, logs {S['res']['logs']:.1f})")
+    # crew sheet via bottom bar: the first lumberjack is free
     pg.click('#bottombar [data-s=crew]'); pg.wait_for_timeout(250)
     ok(pg.evaluate('TT.curSheet')=='crew','crew sheet opens')
     btn=pg.locator('#colList .card button').first
-    ok(not btn.is_disabled(),'lumberjack affordable'); btn.click()
+    ok(not btn.is_disabled() and 'Free' in btn.inner_text(),'first lumberjack is free'); btn.click()
     ok(pg.evaluate('TT.S.collectors.lumberjack')==1,'bought lumberjack via crew sheet')
     pg.wait_for_timeout(150)
     ok(pg.locator('#colList .card button').first.is_disabled(),'button disabled when unaffordable')
     pg.click('#shClose'); pg.wait_for_timeout(200); ok(pg.evaluate('TT.curSheet') is None,'sheet closes')
-    # earn for sawmill, then build by tapping its lot
-    tap_forest(pg,110); pg.wait_for_timeout(300)
-    ok(pg.evaluate('TT.S.coins')>=100,f"enough coins for sawmill {pg.evaluate('TT.S.coins'):.0f}")
+    # the first sawmill is built with logs, by tapping its lot
+    tap_forest(pg,50); pg.wait_for_timeout(300)
+    ok(pg.evaluate('TT.S.res.logs')>=pg.evaluate('TT.SAW_LOGS'),f"enough logs for the sawmill {pg.evaluate('TT.S.res.logs'):.0f}")
     tap_lot(pg,'sawmill')
     ok(pg.evaluate('TT.S.buildings.sawmill.lvl')==1,'sawmill built by tapping its lot')
     ok(pg.evaluate('TT.curSheet')=='bld' and pg.evaluate('TT.sheetBld')=='sawmill','building sheet opened for sawmill')
-    pg.wait_for_timeout(2500)
+    pg.evaluate('TT.S.res.logs=0;TT.S.collectors.lumberjack=0'); pg.wait_for_timeout(2500)
     st=pg.evaluate('TT.bstat.sawmill'); ok(st['f']<0.5 and st['lim']=='logs',f"sawmill starved on logs util={st['f']:.2f}")
     _t=(pg.locator('#bpStatus').inner_text()+pg.locator('#pane-bld').inner_text()).lower(); ok('starved' in _t or 'short on' in _t,'sheet shows the shortage (v2.15.1: "Short on Logs")')
+    pg.evaluate('TT.S.collectors.lumberjack=1'); pg.click('#shClose'); pg.wait_for_timeout(150); tap_forest(pg,40); pg.evaluate('TT.openSheet("bld","sawmill")'); pg.wait_for_timeout(1500)
     r=pg.evaluate('({p:TT.rates.planks.p, c:TT.rates.logs.c})'); ok(r['p']>0.3 and r['c']>0.6,'planks produced & logs consumed')
     pg.evaluate('TT.S.autosell.planks=false'); pg.evaluate('TT.simulate(20)')
     ok(pg.evaluate('TT.S.res.planks')>5,'planks stock accumulates')

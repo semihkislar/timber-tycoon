@@ -33,12 +33,12 @@ has it, and its art is a premium workshop), so its recipe moves up instead: engi
 Planks now feed only the Carpentry and the Furniture Factory (before: 7 consumers). Veneer — from a separate, log-only building — carries
 half of the Furniture Factory and all of the Plywood Mill. `test/v220.py` runs a long simulated game and checks plank and veneer supply.
 
-## 2. Export at every tier
-Every good can be sold (auto-sell or Market) or shipped. Value per unit rises by tier:
+## 2. Export from Phase 1 up
+**v2.20.1:** logs are raw material only. They can't be sold, auto-sold, shipped or ordered, and the Log Yard holds about 3 minutes of collection; when it is full the collectors go idle. Each run's first Sawmill is built with 40 logs and the first Lumberjack is free, so a run with 0 coins always gets going. Every good from Phase 1 up can be sold (auto-sell or Market) or shipped. Value per unit rises by tier:
 
 | tier | goods (price) | typical margin per unit over its inputs |
 |---|---|---|
-| raw | logs 1 | — |
+| raw | logs (not for sale; value 1 only as a reference) | — |
 | Phase 1 | planks 3 · veneer 3.5 · bark 1.5 · chips 2 · charcoal 9 · glue 6 | +1 … +6 |
 | Phase 2 | chairs 60 · pellets 10 · paper 20 · furniture 700 · plywood 90 | +5 … +670 |
 | Phase 3 | gift box 230 · flooring 260 · stationery 380 · cabinets 380 · luxury 1.9K · toys 320 · boats 4.5K | +140 … +3.2K |

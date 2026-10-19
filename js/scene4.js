@@ -265,7 +265,7 @@ function drawConstruction(ctx,L,vis,can){
 }
 function drawLot(ctx,L){
   const id=L.id, st=S.buildings[id];
-  if(!st.lvl){const b=BMAP[id];drawConstruction(ctx,L,bVisible(b),S.coins+1e-9>=bulkCost(b.cost,b.scale,0,1));return;}
+  if(!st.lvl){const b=BMAP[id];drawConstruction(ctx,L,bVisible(b),canFirstBuild(id));return;}
   const B=lotBox(L); const run=st.on&&bstat[id].f>0.01;
   const anim=scene.buildAnim[id]; let k=1;
   ctx.save();

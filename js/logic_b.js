@@ -89,4 +89,4 @@ function floatText(x,y,text,parent){
   const f=document.createElement('div');f.className='float';f.textContent=text;f.style.left=x+'px';f.style.top=y+'px';
   (parent||document.body).appendChild(f); setTimeout(()=>f.remove(),1000);
 }
-function costBtnHtml(label,cost){return `${label}<small>🪙 ${fmt(cost)}</small>`;}
+function costBtnHtml(label,cost){return `${label}<small>${cost>0?'🪙 '+fmt(cost):'Free'}</small>`;}

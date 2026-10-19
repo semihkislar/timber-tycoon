@@ -83,12 +83,12 @@ function updateCollectors(){
   if(curSheet!=='crew') return;
   const s1=colSig(); if(s1!==cSig){cSig=s1;buildCollectors();}
   for(const c of COLLECTORS){const e=colEls[c.id]; if(!e||!e.d.isConnected) continue;
-    const own=S.collectors[c.id]; const n=qty(c.cost,COL_SCALE,own); const cost=bulkCost(c.cost,COL_SCALE,own,n);
+    const own=S.collectors[c.id]; const n=qty(c.cost,COL_SCALE,own); const cost=colCost(c.id,own,n);   // v2.20.1: the first Lumberjack of a run is free
     e.cnt.textContent=own?'×'+own:''; const r=colRate(c.id);
     e.ds.textContent=`+${fr(r)} 🪵/s each`+(own?` · ${fr(r*own)}/s total`:` · ${c.desc}`);
     e.btn.innerHTML=costBtnHtml(`Hire${n>1?' ×'+n:''}`,cost);
     e.btn.disabled=S.coins+1e-9<cost; e.d.classList.toggle('afford',!e.btn.disabled);
-    if(e.pbar) e.pbar.style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
+    if(e.pbar) e.pbar.style.width=(cost>0?Math.min(100,S.coins/cost*100):100).toFixed(0)+'%';
   }
 }
 
@@ -118,7 +118,7 @@ function updateBuildingSheet(){
     $('shTitle').textContent=vis?b.name:'Empty lot';
   }
   if(!vis){$('bpLocked').innerHTML=`🔒 This lot is still covered in brambles.<br>Earn <b>🪙 ${fmt(b.cost*cs()*0.25)}</b> in total to reveal what can be built here (now ${fmt(S.totalEarned)}).`;$('bpLv').textContent='';return;}
-  {const mg=$('bpMargin');if(mg){mg.classList.toggle('hidden',!(typeof BTIER==='object'&&BTIER[b.id]));}if(mg&&typeof bMargin==='function'&&BTIER[b.id]){const v=st.lvl?bMargin(b.id):0,u=unitMargin(b.id);const ph=`<b class="tier-line t${BTIER[b.id]}">${TIER_N[BTIER[b.id]]}</b> · `;const tx=ph+(st.lvl?`📈 Processing adds <b>${v>=0?'+':''}🪙${fmt(v)}/s</b> over selling its inputs raw (${u>=0?'+':''}${fmt(u,1)} per unit)`:`📈 +${fmt(u,1)} per unit over the value of its inputs`);if(mg._t!==tx){mg.innerHTML=tx;mg._t=tx;}}}
+  {const mg=$('bpMargin');if(mg){mg.classList.toggle('hidden',!(typeof BTIER==='object'&&BTIER[b.id]));}if(mg&&typeof bMargin==='function'&&BTIER[b.id]){const v=st.lvl?bMargin(b.id):0,u=unitMargin(b.id);const ph=`<b class="tier-line t${BTIER[b.id]}">${TIER_N[BTIER[b.id]]}</b> · `;const tx=ph+(BTIER[b.id]===1?(st.lvl?`📈 Earns <b>🪙${fmt(v)}/s</b> from logs, which can't be sold`:`📈 Turns logs (not for sale) into goods worth 🪙${fmt(u,1)} per unit`):st.lvl?`📈 Processing adds <b>${v>=0?'+':''}🪙${fmt(v)}/s</b> over selling its inputs raw (${u>=0?'+':''}${fmt(u,1)} per unit)`:`📈 +${fmt(u,1)} per unit over the value of its inputs`);if(mg._t!==tx){mg.innerHTML=tx;mg._t=tx;}}}
   const n=qty(b.cost,b.scale,st.lvl); const cost=bulkCost(b.cost,b.scale,st.lvl,n);
   $('bpLv').textContent=st.lvl?' Lv '+st.lvl:'';
   const mc=msCount(st.lvl),nx=nextMs(st.lvl),prev=mc?MILESTONES[mc-1]:0;
@@ -157,6 +157,9 @@ function updateBuildingSheet(){
   const unl=bldUnlocked(b.id); if(!unl){const lt=b.id==='lab'?'🔒 Needs a Paper Mill':b.id==='boatyard'&&hasRes('boats')?'🔒 Needs the Harbour':'🔒 Research '+RNMAP[TECH_UNLOCK[b.id]].name;if(bb._h!==lt){bb.innerHTML=lt;bb._h=lt;}}
   bb.disabled=!unl||S.coins+1e-9<cost;
   $('bpPbar').style.width=Math.min(100,S.coins/cost*100).toFixed(0)+'%';
+  if(b.id==='sawmill'&&sawByLogs()){   // v2.20.1: the first Sawmill is built with logs, with a progress bar
+    const have=Math.min(S.res.logs,SAW_LOGS),lh=`🔨 Build<small>🪵 ${fmt(Math.floor(have))} / ${SAW_LOGS} logs</small>`;if(bb._h!==lh){bb.innerHTML=lh;bb._h=lh;}
+    bb.disabled=!sawLogsOk();$('bpPbar').style.width=(have/SAW_LOGS*100).toFixed(0)+'%';}
   updateStorageBlock(b); if(typeof updateBldSpec==='function') updateBldSpec(b); updateBldMgr(b); if(typeof updateBldBy==='function') updateBldBy(b);
 }
 function cycleBuilding(d){
@@ -180,6 +183,10 @@ function buildMarket(){
     const tr=document.createElement('tr'); tr.dataset.id=r.id;
     tr.innerHTML=`<td class="nm"><span class="ric">${svgIcon(r.svg,20)}</span> ${r.name}</td><td class="st"></td><td class="hm pr pos"></td><td class="hm us"></td><td class="price"></td>
       <td><label class="sw" title="Auto-sell surplus"><input type="checkbox"><span class="tr"></span></label></td><td><button class="btn wood small">Sell</button></td>`;
+    if(!canSell(r.id)){   // v2.20.1: logs are raw material: no price, no auto-sell, no Sell button; the row shows the Log Yard instead
+      tr.classList.add('raw');tr.children[4].remove();tr.children[4].remove();tr.children[4].colSpan=3;tr.children[4].className='rawcell';
+      tr.children[4].innerHTML='<span class="rawtag">Raw · not for sale</span><span class="yardbar"><i></i></span><span class="yardtx"></span>';
+      mktEls[r.id]={st:tr.querySelector('.st'),pr:tr.querySelector('.pr'),us:tr.querySelector('.us'),raw:tr.children[4]};T.appendChild(tr);continue;}
     const cb=tr.querySelector('input'); cb.onchange=()=>{S.autosell[r.id]=cb.checked;};
     const btn=tr.querySelector('button'); btn.onclick=()=>{const v=sellAll(r.id); if(v>0){const rc=btn.getBoundingClientRect();floatText(rc.left+rc.width/2,rc.top-4,'+🪙'+fmt(v),$('fxLayer')); dockSale(v);} render();};
     mktEls[r.id]={st:tr.querySelector('.st'),pr:tr.querySelector('.pr'),us:tr.querySelector('.us'),price:tr.querySelector('.price'),cb,btn};
@@ -194,6 +201,8 @@ function updateMarket(){
     e.pr.textContent='+'+fr(R.p);
     const used=R.c;
     e.us.innerHTML=used>0.005?`<span>${fr(used)}</span>`+(R.d>R.p*1.02+0.01&&R.d>0?` <span class="neg" title="Buildings want more than is produced">(need ${fr(R.d)})</span>`:''):'<span class="muted">—</span>';
+    if(e.raw){const cap=logCap(),f=Math.min(1,S.res[id]/cap);e.raw.querySelector('i').style.width=(f*100).toFixed(1)+'%';e.raw.classList.toggle('full',yardFull());
+      const t=yardFull()?`Log Yard full (${fmt(cap)}) · collectors idle`:`Log Yard ${Math.round(f*100)}% of ${fmt(cap)}`;const tx=e.raw.querySelector('.yardtx');if(tx.textContent!==t) tx.textContent=t;continue;}
     const p=price(id); e.price.textContent='🪙'+fmt(p,p<10?2:0);
     e.price.classList.toggle('boost',M.price[id]*M.priceAll>TREES[S.tree].mult*baseUpgPrice(id)+1e-9);
     e.cb.checked=!!S.autosell[id]; e.btn.disabled=S.res[id]<1;

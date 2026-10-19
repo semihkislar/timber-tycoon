@@ -10,14 +10,14 @@ const BTIER={peeler:1,sawmill:1,chipper:1,kiln:1, carpentry:2,pellet:2,paper:2,f
 const TIER_N=['Raw','Phase 1 · Primary','Phase 2 · Secondary','Phase 3 · Premium'];
 const TIER_S=['Raw','I','II','III'];
 const TIER_C=['#8a6a48','#c8742e','#3f86c8','#a8508a'];
-const TIER_D=['straight from the forest','logs only','made from phase-1 goods','made from phase-2 goods'];
+const TIER_D=['raw material · not for sale, feeds Phase 1','from logs only · exports start here','made from phase-1 goods','made from phase-2 goods'];
 function resTier(k){if(k==='logs') return 0;if(k==='glue') return 1;const b=BUILDINGS.find(b=>b.out[k]);return b?(BTIER[b.id]||0):0;}
 /* every building may only take goods from exactly the tier below (lab excepted) */
 function tierViolations(){const v=[];for(const b of BUILDINGS){const t=BTIER[b.id];if(!t) continue;for(const k in b.inp){const rt=resTier(k);if(rt!==t-1) v.push(`${b.id}:${k}(${rt})`);}}return v;}
 /* processing margin per second: goods out minus what the inputs would sell for raw */
 function bMargin(id){const b=BMAP[id],bs=bstat[id];if(!b||!bs||!S.buildings[id].lvl) return 0;const sp=(bs.speed||0)*(bs.f||0);
-  let o=0,i=0;for(const k in b.out) o+=b.out[k]*price(k)*bOutMult(id);for(const k in b.inp) i+=b.inp[k]*price(k)*bInMult(id);return (o-i)*sp;}
-function unitMargin(id){const b=BMAP[id];let o=0,i=0;for(const k in b.out) o+=b.out[k]*RMAP[k].price;for(const k in b.inp) i+=b.inp[k]*RMAP[k].price;const n=Object.values(b.out).reduce((a,x)=>a+x,0)||1;return (o-i)/n;}
+  let o=0,i=0;for(const k in b.out) o+=b.out[k]*price(k)*bOutMult(id);for(const k in b.inp) i+=b.inp[k]*saleValue(k)*bInMult(id);return (o-i)*sp;}
+function unitMargin(id){const b=BMAP[id];let o=0,i=0;for(const k in b.out) o+=b.out[k]*RMAP[k].price;for(const k in b.inp) i+=b.inp[k]*(canSell(k)?RMAP[k].price:0);const n=Object.values(b.out).reduce((a,x)=>a+x,0)||1;return (o-i)/n;}
 function tierBadge(id){const t=BTIER[id];return t?`<span class="tier-b t${t}" title="${TIER_N[t]}">${TIER_S[t]}</span>`:'';}
 function tierIntro(){if(S.tierNote) return;S.tierNote=1;
   if((S.totalEarned||0)>1e4||(S.prestiges||0)>0) setTimeout(()=>toast('🏭 <b>Factory tiers!</b> Phase 1 (right) turns logs into planks, veneer, chips & charcoal · Phase 2 (left) uses only those · the Premium Area uses only phase-2 goods. New: 📃 Veneer Peeler.',7000,'ms-toast'),2500);}
