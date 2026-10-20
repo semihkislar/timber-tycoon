@@ -11,7 +11,7 @@ function stoCost(id){const b=BMAP[id],l=stoLvl(id);return b.cost*cs()*5*Math.pow
 function stockCaps(){
   const c={}; for(const r of RES) c[r.id]=0; const has={};
   for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl) continue; const sp=bSpeed(b.id), sec=stoSec(stoLvl(b.id))*mgrSto(b.id);
-    for(const k in b.out){c[k]+=b.out[k]*sp*sec*(b.id==='sawmill'?sawYield():1);has[k]=1;}
+    for(const k in b.out){c[k]+=b.out[k]*sp*sec*chainYield(b.id);has[k]=1;}
     if(b.id==='sawmill'&&M.sawdust){c.chips+=2*sp*sec;has.chips=1;}}
   for(const r of RES) c[r.id]=has[r.id]?Math.max(50,c[r.id]):Infinity;
   return c;

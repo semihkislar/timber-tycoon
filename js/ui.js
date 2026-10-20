@@ -137,9 +137,10 @@ function updateBuildingSheet(){
   // input -> output flow
   const sp=st.lvl?bSpeed(b.id):0, f=st.lvl&&st.on?bstat[b.id].f:0;
   const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f*bInMult(b.id))+' / '+fr(v*sp*bInMult(b.id)):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  let outsArr=Object.entries(b.out).map(([k,v])=>[k,b.id==='sawmill'?v*sawYield():v]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*.5]);
+  let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  const yl=b.id==='sawmill'&&st.lvl>=40?`<div class="bp-yield">🪚 Saw yield <b>×${sawYield().toFixed(2)}</b> planks per log${st.lvl<50?' · grows from Lv 50':` · Lv ${st.lvl+1}: ×${sawYieldAt(st.lvl+1).toFixed(2)}`}</div>`:'';
+  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',50,sawYieldAt]}[b.id];   // v2.24: Peeler + Plywood Mill too
+  const yl=YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'';
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
     let sh=$('bpShort'); if(!sh){sh=document.createElement('div');sh.id='bpShort';sh.className='bp-short';$('bpBuy').parentElement.after(sh);}   // below the buy row: never shifts the buttons under a finger
@@ -147,7 +148,7 @@ function updateBuildingSheet(){
     let h='';
     if(si){h=`<div>${svgIcon(RMAP[k].svg,18)} <b>${RMAP[k].name}</b>: ${si.src?BMAP[si.src].name+' makes':'you make'} <b>${fr(si.prod)}/s</b>, buildings want <b>${fr(si.want)}/s</b>${si.users.length>1?` (${si.users.map(u=>BMAP[u].name).join(', ')})`:''}.</div>`;
       if(si.src) h+=`<button class="bp-short-go" data-go="${si.src}">⬆ Upgrade ${BMAP[si.src].name} →</button>`;
-      if(k==='planks') h+=`<button class="bp-short-mode" data-mode="1">${S.prefs.plankMode==='value'?'Planks: best value first':'Planks: shared fairly'} ⇄</button>`;}
+      if(SHARED_GOODS.includes(k)) h+=`<button class="bp-short-mode" data-mode="1">${RMAP[k].name}: ${S.prefs.plankMode==='value'?'best value first':'shared fairly'} ⇄</button>`;}   // v2.24: veneer + plywood too
     if(sh._h!==h){sh.innerHTML=h;sh._h=h;sh.classList.toggle('hidden',!h);
       const g=sh.querySelector('[data-go]');if(g) g.onclick=()=>{openSheet('bld',g.dataset.go);if(typeof focusLot==='function') focusLot(g.dataset.go,true);};
       const md=sh.querySelector('[data-mode]');if(md) md.onclick=()=>{togglePlankMode();bpSig='';sh._h='';};}
@@ -299,4 +300,4 @@ function eventIll(id){
 function shortInfo(k){const src=(BUILDINGS.find(b=>b.out[k]&&S.buildings[b.id].lvl)||BUILDINGS.find(b=>b.out[k])||{}).id||null;
   const users=BUILDINGS.filter(b=>b.inp[k]&&S.buildings[b.id].lvl&&S.buildings[b.id].on).map(b=>b.id);
   return {src,users,prod:(rates[k]&&rates[k].p)||0,want:(rates[k]&&rates[k].d)||0};}
-function togglePlankMode(){S.prefs.plankMode=S.prefs.plankMode==='value'?'fair':'value';toast(S.prefs.plankMode==='value'?'🟫 Planks now go to the building that earns most per plank first':'🟫 Planks are now shared fairly between buildings');}
+function togglePlankMode(){S.prefs.plankMode=S.prefs.plankMode==='value'?'fair':'value';toast(S.prefs.plankMode==='value'?'🟫 Planks, veneer & plywood now go to the building that earns most per unit first':'🟫 Planks, veneer & plywood are now shared fairly between buildings');}

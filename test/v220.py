@@ -31,7 +31,7 @@ with sync_playwright() as p:
     r=E(pg,"BUILDINGS.filter(b=>BTIER[b.id]===1).every(b=>Object.keys(b.inp).every(k=>k==='logs'))&&BUILDINGS.every(b=>BTIER[b.id]!==undefined)")
     ok(r,'phase 1 takes logs only; every building has a tier')
     r=E(pg,"({p:BMAP.peeler&&BMAP.peeler.inp,o:BMAP.peeler&&BMAP.peeler.out,f:BMAP.furniture.inp,ply:BMAP.plymill.inp,c:BMAP.peeler&&BMAP.peeler.cost})")
-    ok(r['p']=={'logs':4} and r['o']=={'veneer':3,'bark':1} and r['f']=={'planks':12,'veneer':8} and r['ply']=={'veneer':6,'glue':2} and r['c']==6e4,f'Veneer Peeler 4 logs → 3 veneer + 1 bark; furniture & plywood use veneer ({r})')
+    ok(r['p']=={'logs':4} and r['o']=={'veneer':4,'bark':1} and r['f']=={'planks':12,'veneer':6} and r['ply']=={'veneer':4,'glue':2} and r['c']==6e4,f'Veneer Peeler 4 logs → 4 veneer + 1 bark (v2.24 balance); furniture & plywood use veneer ({r})')
     r=E(pg,"BUILDINGS.filter(b=>BTIER[b.id]).map(b=>[BTIER[b.id],unitMargin(b.id)])")
     ok(all(x[1]>0 for x in r),f'processing always beats selling the inputs raw (margin > 0 for every building)')
     avg=lambda t:sum(x[1] for x in r if x[0]==t)/max(1,len([x for x in r if x[0]==t]))

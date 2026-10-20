@@ -147,6 +147,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   HOLD,buyMaxBld,toggleHud,railMode,compactMode,haptic,prefs,viewBand,sceneTapAt:(x,y)=>handleTap(x,y),get ground(){return scene.gl;},
   // v2.10 power plant helpers
   PW_MAX,PW_FUELS,PW_PERKS,PWZ,pwLvl,pwCost,pwUnlocked,pwVisible,pwShare,pwEff,pwBoost,pwNeed,pwCapacity,pwStatus,buyPower,setPowerFuel,setPowerOn,openPower,
+  PW_LOGMODES,PW_RESERVES,PW_LOG_FUEL,pwLogMode,pwReserveSec,pwLogReserve,pwLogUse,setPowerLogs,setPowerReserve,chainYield,shareAlloc,SHARED_GOODS,TAR_GLUE,   // v2.24
   powerScreen:()=>{const p=P(PWZ.ci,PWZ.cj,20);return w2s(p[0],p[1]);},
   // v2.12 builders' yard helpers
   BY_MAX,BY_LV,BY_PLANS,BY_BUDGETS,BY_PERKS,BY_WAIT,BYZ,byLvl,byCost,byUnlocked,byVisible,byCrews,byBatch,byDur,byBudget,byAfford,byPick,byStatus,byJobOf,byAllowed,

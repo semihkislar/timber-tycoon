@@ -9,7 +9,7 @@ const WS_LV=[0,10,25,50,100,150,200,300,400,500,600];          // building level
 const WS_GATES=[[25,1,2],[50,0,3],[100,2,4],[200,1,6],[400,0,8]];  // [pass Lv, station index, station Lv needed]
 // [id, name, icon, kind]; station index 1 is always the speed station (the first gate)
 const WS_DEF={
-  peeler:[['cond','Log Conditioner','♨️','inp'],['lathe','Rotary Lathe','🌀','spd'],['dryer','Veneer Dryer','🌬️','prc']],
+  peeler:[['cond','Log Conditioner','♨️','inp'],['lathe','Rotary Lathe','🌀','spd'],['dryer','Veneer Dryer','🌬️','yld']],
   sawmill:[['debark','Debarker','🪵','inp'],['bandsaw','Bandsaw','🪚','spd'],['edger','Edger & Planer','📏','yld']],
   chipper:[['infeed','Infeed Conveyor','🛤️','inp'],['disc','Disc Chipper','💿','spd'],['screen','Chip Screen','🧺','yld']],
   kiln:[['bay','Charging Bay','🧱','inp'],['retort','Retort Chamber','🔥','spd'],['grade','Grading Table','⚖️','prc']],
