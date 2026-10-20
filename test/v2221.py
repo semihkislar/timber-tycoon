@@ -63,7 +63,7 @@ with sync_playwright() as p:
     ok(all(got),f'hire forklift operators up to the limit ({cap})')
     n0=E(pg,'TT.S.staff.team.length'); c0=E(pg,'TT.S.coins=1e12')
     ok(E(pg,HIRE1,{'role':'forklift'}) is None and E(pg,'TT.S.staff.team.length')==n0,'hire refused at the limit (team unchanged)')
-    ok(E(pg,'TT.S.coins')==1e12,'refused hire costs nothing')
+    ok(1e12-E(pg,'TT.S.coins')<E(pg,"TT.staffHireCostOf({skill:3,rarity:'R'})*.5"),'refused hire costs nothing (only a tick of wages may pass)')   # v2.23: wages follow income, so a tick between calls shows
     rolls=E(pg,"(()=>{const r=[];for(let i=0;i<40;i++){TT.staffRefreshCandidates(false);r.push(...TT.S.staff.candidates.map(c=>c.role));}return r;})()")
     ok('forklift' not in rolls and len(set(rolls))>=4,f'new candidates skip full roles ({len(rolls)} rolled, forklift {rolls.count("forklift")})')
     # UI: candidate card shows Full + disabled

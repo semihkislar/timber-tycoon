@@ -800,3 +800,4 @@ tr.mkt-tier.t1 b{color:#a85a1e}tr.mkt-tier.t2 b{color:#2f6aa0}tr.mkt-tier.t3 b{c
 .tr-row{cursor:default}.tr-row .as-slots{white-space:nowrap}
 .tr-all .btn small{display:block;font-size:11px;font-weight:700}
 .tr-note{background:#fff3dc;border:1.5px solid #f0d49a;border-radius:10px;padding:6px 9px;font-size:12.5px;margin-bottom:8px}
+.tr-card .mg-r,.staff-card .mg-r{white-space:nowrap}

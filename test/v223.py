@@ -39,7 +39,7 @@ with sync_playwright() as p:
     rm=r['rm']
     ok(abs(r['z']['t']-40*3*rm)<1e-6 and abs(r['z']['wg']-.35*3*rm)<1e-9,f"fresh game: same prices as before (train {r['z']['t']:.0f}, wage {r['z']['wg']:.3f}/s)")
     ok(abs(r['a']['t']-40*3*rm*4)<1e-6 and abs(r['a']['wg']-.35*3*rm*4)<1e-9,f"forest value ×4 (Replant): training and wages ×4 at the start of a run ({r['a']['t']:.0f}, {r['a']['wg']:.2f}/s)")
-    ok(abs(r['c']['t']/1e6-20*3*rm)<1e-6,f"🪙1M/s income: training skill 3→4 ≈ {r['c']['t']/1e6:.0f} s of income ({r['c']['t']:.3g})")
+    ok(abs(r['c']['t']/1e6-40*3*rm/6)<1e-6,f"🪙1M/s income: training skill 3→4 ≈ {r['c']['t']/1e6:.0f} s of income ({r['c']['t']:.3g})")
     ok(abs(r['c']['wg']/1e6-.001*3*rm)<1e-9,f"🪙1M/s income: wage ≈ {r['c']['wg']/1e6*100:.2f}% of income ({r['c']['wg']:.4g}/s)")
     ok(abs(r['c']['h']/1e6-6.25*3*rm)<1e-6,f"🪙1M/s income: hiring ≈ {r['c']['h']/1e6:.0f} s of income")
     # ---------------- run income reference ----------------

@@ -114,10 +114,10 @@ function staffLookRoll(){return STAFF_LOOKS[Math.floor(Math.random()*STAFF_LOOKS
    Replant 2.0: with the forest value cs() as a floor, and with this run's income once that is larger.
    staffIncRef() = the run's best smoothed income (EMA ~60 s, never drops within a run, resets on Replant).
    staffEco(R0) = max(cs(), income/R0): R0 is the income at which a price starts following income.
-     training  40·skill·rarity × staffEco(2)   → ≈ 20·skill·rarity seconds of income (floor: 40·skill·rarity·cs)
+     training  40·skill·rarity × staffEco(6)   → ≈ 6.7·skill·rarity seconds of income (floor: 40·skill·rarity·cs)
      wage     0.35·skill·rarity × staffEco(350) → ≈ 0.1%·skill·rarity of income per worker (floor ×cs)
      hiring    25·skill·rarity × staffEco(4)    → ≈ 6·skill·rarity seconds of income */
-const STAFF_R0={train:2,wage:350,hire:4}, STAFF_INC_TAU=60;
+const STAFF_R0={train:6,wage:350,hire:4}, STAFF_INC_TAU=60;
 function staffIncRef(){const r=S&&S.run;return r&&isFinite(r.inc)&&r.inc>0?r.inc:0;}
 function staffEco(R0){return Math.max(typeof cs==='function'?cs():1,staffIncRef()/R0);}
 function staffIncTick(dt){const r=S&&S.run;if(!r||typeof r!=='object') return;const cr=isFinite(coinRate)?Math.max(0,coinRate):0;

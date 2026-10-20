@@ -5,6 +5,60 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.23] — 2026-10-20
+
+**Staff training rework.** Item 3 of Semih's Oct 20 list: "training costs and effects look silly (tiny numbers) after a
+Replant". Staff stay through Replant, but their prices were fixed coins (training 40·skill, wage 0.35·skill/s). In a
+4-Replant sim, a skill 3→4 training cost 🪙120 while the run made ~🪙58K/s (0.002 s of income); a wage was 🪙1.05/s.
+
+### Changed
+- **Staff prices scale like Replant 2.0** (`staffEco` in `js/staffsys.js`). The floor is the forest value `cs()`; once
+  this run's income is bigger, prices follow income instead.
+  - The income reference is the run's best smoothed income (≈60 s EMA). It never drops within a run and resets on
+    Replant (`S.run.inc`).
+  - **Training:** 40·skill·rarity × max(cs, income/6), about 6.7·skill·rarity seconds of income (the screenshot review
+    showed income/2 meant 1–1.5 h payback for a mill worker; now ~10–30 min).
+  - **Wages:** 0.35·skill·rarity × max(cs, income/350), about 0.1%·skill·rarity of income per worker.
+  - **Hiring:** 25·skill·rarity × max(cs, income/4), about 6·skill·rarity seconds of income.
+  - A fresh game still starts at the old prices.
+  - Same 4-Replant sim, run 4 (forest value ×1.5, ~🪙58K/s): training 3→4 **🪙120 → 🪙1.4M**, wage
+    **🪙1.05/s → 🪙213/s**, hire **🪙63 → 🪙1.3M**. A training level now costs ~3 Sawmill levels (was ~1/3700).
+- **Effects per training level are bigger.** All live in one table, `STAFF_FX`:
+  - mill worker +3% → **+5%** speed per level (cap +45% → +60% per building);
+  - engineer −2.5% → **−3%** input;
+  - lumberjack +2% → **+3%** chop (team cap 40% → 60%);
+  - driver +3% → **+4%** haul;
+  - forklift +4% → **+5%** loading;
+  - dock +1% → **+1.5%** export premium and +2% → +3% truck capacity;
+  - firefighter +3% → **+4%** risk cut.
+- **The next level is shown in plain words** on worker cards, in the Training tab and in Train all, for example
+  "🎓 Next level: +5% Sawmill speed ≈ +🪙1.2K/s". At a team cap it says "team bonus is at its +60% cap" instead of a fake
+  gain; an unassigned mill worker or engineer says "+5% per level once assigned".
+- The Training tab lists the cheapest first and shows Fast-learner time.
+
+### Added
+- **🎓 Train all** (Training tab and Team tab) trains every affordable staff member, cheapest first.
+  - The button shows the count and the total ("Train all 2 of 4", then the price).
+  - Tapping it opens a confirm sheet listing who gets trained, the new skill, the gain and the price.
+  - It never charges more than shown: if the income reference rose while the sheet was open, nothing is paid and the
+    sheet re-opens with the new totals.
+
+### Compatibility
+- Saves need no migration. A v2.22.1 save has no income reference yet, so prices start at the forest-value floor and
+  follow income from the first tick. Training in progress carries on.
+- Version `2.23`; service worker cache `timber-tycoon-v2.23`.
+
+### Tests
+- New `test/v223.py`:
+  - price formulas (fresh / ×4 forest value / 🪙1M/s);
+  - the income reference (follows income, never drops, resets on Replant);
+  - per-level effects and their text; caps; unassigned staff;
+  - Train all: plan, label, confirm sheet, exact charge, disabled at 🪙0;
+  - a 4-run multi-Replant sim with checks: ≥ 10 s of income per training level, ≥ half a Sawmill level, wages 0.05–1% of
+    income, always paid;
+  - v2.22.1 save; iPhone 13 and Pixel 7 touch, including "prices went up while open".
+- `test/v2221.py`: version checks are now ≥ 2.22.1.
+
 ## [2.22.1] — 2026-10-20
 
 **Staff hotfix: hiring limits and a working Assign button.** These are items 1 and 2 of Semih's Oct 20 list: "you can hire
@@ -77,8 +131,7 @@ the top of the Team tab, each with what raises it. On phones you tap a chip to s
 - Screenshots: `python3 test/shot_v2221.py` → `screenshot-v2221-{desktop,mobile}{,-picker}.png`.
 
 ### Next (rest of Semih's Oct 20 list, one per following release)
-3. Staff training rework: training costs, effects and wages scale with forest value, so they stay meaningful after
-   Replant, plus a **Train all** button with the total cost shown before confirming.
+3. ~~Staff training rework~~: done in 2.23.
 4. The power plant also accepts logs; veneer and plywood balance.
 5. Orders scale after Replant (recheck all costs, orders and rewards for silly numbers).
 6. Bad-luck events.
