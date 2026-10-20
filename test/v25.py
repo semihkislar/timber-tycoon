@@ -74,7 +74,7 @@ with sync_playwright() as p:
     ok(not E(pg,"TT.buyBuilding('plymill',1)"),'Plywood Mill locked before its research')
     E(pg,"TT.S.autosell.glue=false;TT.doResearch('tar')"); g0=E(pg,"TT.S.res.glue"); E(pg,"TT.simulate(12,.25)")
     ch=E(pg,"TT.rates.charcoal.p"); gl=E(pg,"TT.rates.glue.p")
-    ok(E(pg,"TT.S.res.glue")>g0 and abs(gl/ch-0.5)<0.04,f'Pine Tar Glue: kilns distil ½ glue per charcoal ({gl:.1f}/{ch:.1f})')
+    ok(E(pg,"TT.S.res.glue")>g0 and abs(gl/ch-E(pg,'typeof TAR_GLUE!=="undefined"?TAR_GLUE:.5'))<0.04,f'Pine Tar Glue: kilns distil glue per charcoal (½, .65 since v2.24) ({gl:.1f}/{ch:.1f})')
     E(pg,"TT.doResearch('plywood')"); ok(E(pg,"!!TT.buyBuilding('plymill',2)"),'Plywood Mill unlocked by research')
     E(pg,"TT.S.autosell.plywood=false;TT.simulate(4,.25)"); ok(E(pg,"TT.S.res.plywood")>0,'plywood produced from veneer + glue (v2.20)')
     E(pg,"TT.S.seeds=4;TT.doResearch('bending');TT.doResearch('toys')")

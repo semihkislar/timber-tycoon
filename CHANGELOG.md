@@ -5,6 +5,87 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.24] — 2026-10-20
+
+**Log fuel for the power plant + veneer/plywood balance.** Item 4 of Semih's Oct 20 list.
+
+### Why veneer and plywood were always short (root cause)
+- The Veneer Peeler (v2.20) makes **3 veneer per level**, but a Furniture Factory level wants **8** and a Plywood Mill
+  level **24** (6 veneer × its built-in ×4 speed). The Sawmill had the same problem and got a yield bonus from Lv 50 in
+  v2.15.1. The Peeler never got one, so it fell further behind as the factory grew.
+- One step down it was the same: a Plywood Mill level makes 8 plywood/s, but a Boat Yard level wants 56 (14 × ×4).
+  Toys want 8, parquet and cabinets 5 each.
+- "Fair share" then split far too little between everyone. At equal spending (cost-balanced sim) the Peeler covered 14–30 %
+  of the veneer wanted and the Plywood Mill 7–20 % of the plywood. In greedy play over 6 Replant runs every veneer/plywood
+  building was short **75–100 %** of the time (100 % in the second half of every run).
+- The Peeler's third workstation (Veneer Dryer) raised veneer's *price*, which does nothing for a good that is mostly used.
+
+### Changed: supply chain balance
+- **Peel yield and press yield.** The Peeler and the Plywood Mill get the Sawmill's yield curve: from Lv 50 milestones ×1.6
+  plus +5 % per level above 50 (`chainYield`). Inputs are unchanged, and bark is not multiplied. Both building sheets show
+  the yield and the next level's value.
+- **Recipes.**
+  - Peeler: 4 logs → **4** veneer + 1 bark (was 3).
+  - Plywood Mill: **4** veneer + 2 glue → **3** plywood (was 6 → 2).
+  - Furniture: 12 planks + **6** veneer (was 8).
+  - Boat Yard: **8** plywood + 2 chairs (was 14).
+- **Glue.** Pine-tar glue is .65 per charcoal (was .5), so late Plywood Mills are not glue-bound (`TAR_GLUE`).
+- **Station.** The Veneer Dryer is now a 📦 Yield station (was 💎 Quality). Its saved levels carry over.
+- **Sharing.** The v2.15.1 "best value first" mode now covers veneer and plywood too (`shareAlloc`, `SHARED_GOODS`). The
+  shortage hint on a veneer- or plywood-bound building offers the toggle.
+- **Results.**
+  - Cost-balanced sim (supply / wanted per second):
+
+    | Budget | Veneer v2.23 | Veneer v2.24 | Plywood v2.23 | Plywood v2.24 |
+    |---|---|---|---|---|
+    | 1e10 | 11.6K / 38.3K | 43.8K / 23.7K | 3.2K / 16.5K | 14.6K / 12.5K |
+    | 1e12 | 15.9K / 117K | 100K / 79.5K | 5.0K / 72.7K | 100K / 50.2K |
+    | 1e14 | 40.9K / 166K | 584K / 113K | 13K / 179K | 262K / 124K |
+
+    No veneer- or plywood-bound consumer is left at any budget from 1e8 to 1e14.
+  - Greedy play with 5–7 Replants:
+    - Veneer was short 75–95 % of the time; now 3–16 % (the first minutes after buying a new consumer). In the second
+      half of a run it is 0–2 %.
+    - Plywood was short 93–100 %; now 3–21 %. In the second half it is 0 in most runs (worst 17 %).
+    - Supply/demand: veneer 0.22–0.45 → 1.3–1.5; plywood 0.13–0.38 → 0.75–1.27. Below 1 only when the plywood users are
+      held back by paper or chairs, not by plywood.
+
+### Added: log fuel for the Biomass Power Plant
+- The plant can burn **logs** (0.3 fuel per log, like the kiln's 10 → 3). Logs stay raw material: burning counts as use
+  (`rates.logs.c`), never as a sale (`canSell('logs')` is still false).
+- **🪵 Log fuel** on the plant card has three choices:
+  - 🚫 Off.
+  - 🔋 **Backup** (default; pellets/charcoal first, surplus logs fill the gap).
+  - 🪵 **Logs first** (surplus logs first, pellets/charcoal for the rest, so more of them can be sold or used).
+- **Keep in yard:** 30 s / 1 min / 2 min / 5 min of Phase-I log use is always left in the Log Yard, capped at 80 % of the
+  yard so a full yard is always usable.
+- **Phase I is never starved.** The plant takes logs only after the Sawmill, Peeler, Chipper and Kiln have their full
+  share for the tick, only while the collectors bring in at least what they use, and never below the reserve.
+- The card shows "Logs burned" and "Log reserve", plus a plain note. It works on phones: 36 px buttons that wrap, and no
+  sideways scroll.
+- With log fuel on, the plant keeps its size while the Pellet Press or Kiln is off or on fire, so logs can stand in.
+- Simulated over 8 runs (7 Replants), "Logs first" burned logs in 45–84 % of samples. There were **0** samples where it
+  burned while the Sawmill or Peeler were short of logs. The share of time Phase I was log-short matched log fuel Off:
+  .38/.28/.26/.20/.12/.11 vs .37/.33/.21/.23/.13/.08.
+- Old saves get Backup with a 60 s reserve. Fuel, level and on/off are kept, bad values are repaired, and Replant keeps
+  the settings.
+
+### Tests
+- New `test/v224.py`, 54 checks:
+  - recipes and yield; bark not multiplied;
+  - cost-balanced 1e8–1e14 with no veneer/plywood shortage;
+  - greedy 5 runs / 4 Replants with log fuel "Logs first": no shortage, and no burning while Phase I is log-short;
+  - full yard, deficit, off, Backup vs Logs first, setters, Replant keep, veneer value sharing;
+  - v2.23 and v2.20 saves;
+  - desktop clicks, iPhone 13 and Pixel 7 taps with fit/size/no sideways scroll;
+  - no console errors or 404s.
+- Updated for the new balance:
+  - `test/v220.py`: recipes;
+  - `test/v25.py`: glue ratio read from `TAR_GLUE`;
+  - `test/v210.py`: the pellet/charcoal-only power checks switch log fuel off first.
+- Screenshots: `python3 test/shot_v224.py` → `screenshot-v224-{desktop,mobile}-{power,plymill}.png`,
+  `screenshot-v224-mobile-power-logs.png`.
+
 ## [2.23] — 2026-10-20
 
 **Staff training rework.** Item 3 of Semih's Oct 20 list: "training costs and effects look silly (tiny numbers) after a
@@ -132,7 +213,7 @@ the top of the Team tab, each with what raises it. On phones you tap a chip to s
 
 ### Next (rest of Semih's Oct 20 list, one per following release)
 3. ~~Staff training rework~~: done in 2.23.
-4. The power plant also accepts logs; veneer and plywood balance.
+4. ~~The power plant also accepts logs; veneer and plywood balance~~: done in 2.24.
 5. Orders scale after Replant (recheck all costs, orders and rewards for silly numbers).
 6. Bad-luck events.
 7. Factory layout: each phase in vertical columns growing downward, helper buildings (power plant, fire station,

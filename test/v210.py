@@ -61,7 +61,8 @@ with sync_playwright() as p:
     sp=E(pg,'(()=>{TT.price("logs");const on=TT.bSpeed("sawmill"),pr=TT.bSpeed("showroom")||0;TT.setPowerOn(false);TT.price("logs");const off=TT.bSpeed("sawmill");TT.setPowerOn(true);TT.price("logs");return [on,off,TT.pwBoost()]})()')
     ok(abs(sp[0]/sp[1]-(1+sp[2]))<1e-6 and abs(sp[2]-.05*d['eff'])<1e-6,f"every building +5%/level (sawmill x{sp[0]/sp[1]:.4f})")
     ok(E(pg,'TT.bSpeed("pellet")')>0 and E(pg,'TT.S.res.pellets')>=0,'stocks never go negative')
-    # fuel modes
+    # fuel modes (v2.24: log fuel off here so the old pellet/charcoal-only rules are tested; log fuel is covered in v224.py)
+    E(pg,'TT.setPowerLogs&&TT.setPowerLogs("off")')
     E(pg,'TT.setPowerFuel("pellets");TT.simulate(20)'); d=E(pg,'({b:TT.S.power.burn,e:TT.pwEff()})')
     ok(d['b']['charcoal']<1e-3*max(1,d['b']['pellets']) and d['b']['pellets']>0 and d['e']>.95,f"Pellets mode burns pellets only ({d})")
     E(pg,'TT.setPowerFuel("charcoal");TT.simulate(20)'); d=E(pg,'({b:TT.S.power.burn,e:TT.pwEff()})')
