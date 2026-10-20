@@ -87,7 +87,7 @@ function runPower(){const c=shopLvl('crews'),m=shopLvl('mills');return legacyMul
 function runScaleFor(){return Math.pow(runPower(),RPC.csE);}
 function rpStartRun(){
   S.runCS=runScaleFor();
-  const r=runState();r.goals={};r.peak=0;r.start=S.playTime||0;r.charter=false;
+  const r=runState();r.goals={};r.peak=0;r.start=S.playTime||0;r.charter=false;r.inc=0;r.incE=0;   // v2.23: staff prices follow the new run's income
   const m=shopLvl('money');if(m) S.coins+=seedMoney(m)*S.runCS;
   const n=shopLvl('nursery');if(n){S.collectors.lumberjack+=5*n;S.planters.planter=(S.planters.planter||0)+2*n;}
   const a=shopLvl('arbor');if(a) S.tree=Math.min(a,TREES.length-1);

@@ -6,21 +6,28 @@
    Legacy mgrSpd/mgrIn/mgrOut/mgrSto/mgrOrders stay authoritative for
    founding foremen via S.mgr; new hires add staff* bonuses on top. */
 
+/* v2.23: per-skill effects in one table (was 1–4% per skill, so a training level looked like nothing).
+   p = bonus per skill level; cap = team-wide (or per-building for mill/engineer) ceiling. */
+const STAFF_FX={
+  lumberjack:{p:.03,cap:.6}, driver:{p:.04,cap:.75}, mill:{p:.05,cap:.6}, engineer:{p:.03,cap:.4,fire:.02,fcap:.4},
+  forklift:{p:.05,cap:.8}, dock:{p:.015,cap:.25,tp:.03,tcap:.5}, firefighter:{p:.04,cap:.6,dl:.5,dcap:8},
+};
+const _pc=x=>{const v=Math.round(x*1000)/10;return (v%1?v.toFixed(1):String(v));};
 const STAFF_ROLES={
   lumberjack:{id:'lumberjack',n:'Lumberjack',e:'🪓',area:'forest',auto:true,
-    effect:(sk)=>`+${(sk*2).toFixed(0)}% chop / collector output`},
+    effect:(sk)=>`+${_pc(sk*STAFF_FX.lumberjack.p)}% chop / collector output`},
   driver:{id:'driver',n:'Driver',e:'🚛',area:'haul',auto:true,
-    effect:(sk)=>`+${(sk*3).toFixed(0)}% log haul rate`},
+    effect:(sk)=>`+${_pc(sk*STAFF_FX.driver.p)}% log haul rate`},
   mill:{id:'mill',n:'Mill worker',e:'🏭',area:'building',auto:false,
-    effect:(sk)=>`+${(sk*3).toFixed(0)}% building speed`},
+    effect:(sk)=>`+${_pc(sk*STAFF_FX.mill.p)}% building speed`},
   engineer:{id:'engineer',n:'Engineer',e:'🔧',area:'building',auto:false,
-    effect:(sk)=>`−${(sk*2.5).toFixed(1)}% input · −${(sk*2).toFixed(0)}% fire risk`},
+    effect:(sk)=>`−${_pc(sk*STAFF_FX.engineer.p)}% input · −${_pc(sk*STAFF_FX.engineer.fire)}% fire risk`},
   forklift:{id:'forklift',n:'Forklift operator',e:'🚜',area:'shipping',auto:true,
-    effect:(sk)=>`+${(sk*4).toFixed(0)}% loading · +contract progress`},
+    effect:(sk)=>`+${_pc(sk*STAFF_FX.forklift.p)}% loading · +contract progress`},
   dock:{id:'dock',n:'Dock worker',e:'⚓',area:'shipping',auto:true,
-    effect:(sk)=>`+${(sk*1).toFixed(0)}% export premium · +${(sk*2).toFixed(0)}% truck capacity`},
+    effect:(sk)=>`+${_pc(sk*STAFF_FX.dock.p)}% export premium · +${_pc(sk*STAFF_FX.dock.tp)}% truck capacity`},
   firefighter:{id:'firefighter',n:'Firefighter',e:'🚒',area:'station',auto:true,
-    effect:(sk)=>`faster response · −${(sk*3).toFixed(0)}% fire risk`},
+    effect:(sk)=>`faster response · −${_pc(sk*STAFF_FX.firefighter.p)}% fire risk`},
 };
 const STAFF_ROLE_IDS=Object.keys(STAFF_ROLES);
 const STAFF_TRAITS={
@@ -102,13 +109,26 @@ function staffNameRoll(used){
 }
 function staffLookRoll(){return STAFF_LOOKS[Math.floor(Math.random()*STAFF_LOOKS.length)];}
 
+/* v2.23 economy scale. v2.14 – v2.22.1 priced staff in fixed coins (training 40·skill, wage 0.35·skill/s), so after a Replant
+   (or ten minutes into any run) they were rounding errors next to a 🪙1M/s income. Staff now scale like the rest of
+   Replant 2.0: with the forest value cs() as a floor, and with this run's income once that is larger.
+   staffIncRef() = the run's best smoothed income (EMA ~60 s, never drops within a run, resets on Replant).
+   staffEco(R0) = max(cs(), income/R0): R0 is the income at which a price starts following income.
+     training  40·skill·rarity × staffEco(2)   → ≈ 20·skill·rarity seconds of income (floor: 40·skill·rarity·cs)
+     wage     0.35·skill·rarity × staffEco(350) → ≈ 0.1%·skill·rarity of income per worker (floor ×cs)
+     hiring    25·skill·rarity × staffEco(4)    → ≈ 6·skill·rarity seconds of income */
+const STAFF_R0={train:2,wage:350,hire:4}, STAFF_INC_TAU=60;
+function staffIncRef(){const r=S&&S.run;return r&&isFinite(r.inc)&&r.inc>0?r.inc:0;}
+function staffEco(R0){return Math.max(typeof cs==='function'?cs():1,staffIncRef()/R0);}
+function staffIncTick(dt){const r=S&&S.run;if(!r||typeof r!=='object') return;const cr=isFinite(coinRate)?Math.max(0,coinRate):0;
+  if(!isFinite(r.incE)) r.incE=0; r.incE+=(cr-r.incE)*Math.min(1,dt/STAFF_INC_TAU); if(!(r.inc>=r.incE)) r.inc=r.incE;}
+function staffRm(w){return (RARITY[w&&w.rarity]||RARITY.C).rm;}
 function staffWageOf(w){
   if(!w||w.founding) return 0;
-  const rm=(RARITY[w.rarity]||RARITY.C).rm;
-  return .35*Math.max(1,w.skill||1)*rm;   // coins/s — scales with skill+rarity, not headcount
+  return .35*Math.max(1,w.skill||1)*staffRm(w)*staffEco(STAFF_R0.wage);   // coins/s — skill × rarity × economy
 }
-function staffHireCostOf(w){return staffWageOf(w)*60;}   // ≈ 1 minute of wage
-function staffTrainCost(w){const rm=(RARITY[w.rarity]||RARITY.C).rm;return 40*Math.max(1,w.skill)*rm;}
+function staffHireCostOf(w){return 25*Math.max(1,w.skill||1)*staffRm(w)*staffEco(STAFF_R0.hire);}
+function staffTrainCost(w){return 40*Math.max(1,w.skill||1)*staffRm(w)*staffEco(STAFF_R0.train);}
 function staffTrainTime(w){return 25+12*Math.max(1,w.skill);}   // seconds; Fast learner halves via tick
 
 function staffEff(w){
@@ -141,46 +161,46 @@ function staffCanAssign(w,bid){
 /* ---- effect hooks (modest stacking, founding excluded from mill/eng to avoid double-count with mgr*) ---- */
 function staffMillSpd(bid){
   let b=1;
-  for(const w of staffAtBuilding(bid)) if(w.role==='mill'&&!w.founding) b+=.03*staffSkillEff(w);
-  return Math.min(1.45,b);   // cap +45%
+  for(const w of staffAtBuilding(bid)) if(w.role==='mill'&&!w.founding) b+=STAFF_FX.mill.p*staffSkillEff(w);
+  return Math.min(1+STAFF_FX.mill.cap,b);   // v2.23: +5%/skill, cap +60%
 }
 function staffEngIn(bid){
   let cut=0;
-  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=.025*staffSkillEff(w);
-  return Math.max(.55,1-Math.min(.4,cut));
+  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=STAFF_FX.engineer.p*staffSkillEff(w);
+  return 1-Math.min(STAFF_FX.engineer.cap,cut);
 }
 function staffEngFire(bid){
   let cut=0;
-  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=.02*staffSkillEff(w);
-  return Math.max(.5,1-Math.min(.4,cut));
+  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=STAFF_FX.engineer.fire*staffSkillEff(w);
+  return 1-Math.min(STAFF_FX.engineer.fcap,cut);
 }
 function staffChopBonus(){
-  let b=0; for(const w of staffByRole('lumberjack')) b+=.02*staffSkillEff(w);
-  return Math.min(.4,b);
+  let b=0; for(const w of staffByRole('lumberjack')) b+=STAFF_FX.lumberjack.p*staffSkillEff(w);
+  return Math.min(STAFF_FX.lumberjack.cap,b);
 }
 function staffHaulBonus(){
-  let b=0; for(const w of staffByRole('driver')) b+=.03*staffSkillEff(w);
-  return Math.min(.5,b);
+  let b=0; for(const w of staffByRole('driver')) b+=STAFF_FX.driver.p*staffSkillEff(w);
+  return Math.min(STAFF_FX.driver.cap,b);
 }
 function staffForkBonus(){
-  let b=0; for(const w of staffByRole('forklift')) b+=.04*staffSkillEff(w);
-  return Math.min(.6,b);
+  let b=0; for(const w of staffByRole('forklift')) b+=STAFF_FX.forklift.p*staffSkillEff(w);
+  return Math.min(STAFF_FX.forklift.cap,b);
 }
 function staffDockPrem(){
-  let b=0; for(const w of staffByRole('dock')) b+=.01*staffSkillEff(w);
-  return Math.min(.2,b);
+  let b=0; for(const w of staffByRole('dock')) b+=STAFF_FX.dock.p*staffSkillEff(w);
+  return Math.min(STAFF_FX.dock.cap,b);
 }
 function staffDockCap(){
-  let b=0; for(const w of staffByRole('dock')) b+=.02*staffSkillEff(w);
-  return Math.min(.4,b);
+  let b=0; for(const w of staffByRole('dock')) b+=STAFF_FX.dock.tp*staffSkillEff(w);
+  return Math.min(STAFF_FX.dock.tcap,b);
 }
 function staffFireCut(){
-  let b=0; for(const w of staffByRole('firefighter')) b+=.03*staffSkillEff(w);
-  return Math.min(.5,b);
+  let b=0; for(const w of staffByRole('firefighter')) b+=STAFF_FX.firefighter.p*staffSkillEff(w);
+  return Math.min(STAFF_FX.firefighter.cap,b);
 }
 function staffFireDelayCut(){
-  let s=0; for(const w of staffByRole('firefighter')) s+=.4*staffSkillEff(w);
-  return Math.min(8,s);   // seconds shaved off response
+  let s=0; for(const w of staffByRole('firefighter')) s+=STAFF_FX.firefighter.dl*staffSkillEff(w);
+  return Math.min(STAFF_FX.firefighter.dcap,s);   // seconds shaved off response
 }
 function staffHiredCount(){
   const n=staffState().team.length;
@@ -193,12 +213,13 @@ function staffOutputRate(){
   let v=0;
   for(const w of staffState().team){
     const e=staffEff(w), sk=w.skill||1;
-    if(w.role==='mill'&&w.assign){const base=bldValueRate(w.assign)||0; v+=base*.03*sk*e;}
-    else if(w.role==='engineer'&&w.assign){const base=bldValueRate(w.assign)||0; v+=base*.015*sk*e;}
-    else if(w.role==='lumberjack') v+=(coinRate||0)*.01*sk*e;
-    else if(w.role==='driver') v+=(coinRate||0)*.012*sk*e;
-    else if(w.role==='forklift'||w.role==='dock') v+=(coinRate||0)*.01*sk*e;
-    else if(w.role==='firefighter') v+=(coinRate||0)*.004*sk*e;
+    const F=STAFF_FX[w.role]||{p:0};   // v2.23: same per-skill numbers as the effects (value share as before)
+    if(w.role==='mill'&&w.assign){if(!w.founding){const base=bldValueRate(w.assign)||0; v+=base*F.p*sk*e;}}
+    else if(w.role==='engineer'&&w.assign){const base=bldValueRate(w.assign)||0; v+=base*F.p*.5*sk*e;}
+    else if(w.role==='lumberjack') v+=(coinRate||0)*F.p*.5*sk*e;
+    else if(w.role==='driver') v+=(coinRate||0)*F.p*.3*sk*e;
+    else if(w.role==='forklift'||w.role==='dock') v+=(coinRate||0)*F.p*.25*sk*e;
+    else if(w.role==='firefighter') v+=(coinRate||0)*F.p*.1*sk*e;
   }
   return v;
 }
@@ -332,6 +353,42 @@ function staffStartTrain(wid){
   return true;
 }
 
+/* v2.23: what the next training level actually adds (team caps included), for cards and the Train-all sheet */
+function staffFxNow(w){const F=STAFF_FX[w.role];if(!F) return 0;
+  if(w.role==='mill') return w.founding?0:staffMillSpd(w.assign)-1;
+  if(w.role==='engineer') return w.assign?1-staffEngIn(w.assign):0;
+  return {lumberjack:staffChopBonus,driver:staffHaulBonus,forklift:staffForkBonus,dock:staffDockPrem,firefighter:staffFireCut}[w.role]();}
+function staffTrainGain(w){
+  const F=STAFF_FX[w.role]||{p:0},sk=w.skill||1,nx=Math.min(STAFF_SKILL_MAX,sk+1);
+  if(w.founding&&w.role==='mill'){return {own:'',delta:0,v:0,capped:false,txt:'Foreman: training raises his legacy skill level'};}
+  const placed=!((w.role==='mill'||w.role==='engineer')&&!w.assign);
+  const a=staffFxNow(w); w.skill=nx; const b=staffFxNow(w); w.skill=sk; const d=Math.max(0,b-a);
+  const own=`${_pc(F.p*sk)}% → ${_pc(F.p*nx)}%`;
+  const cap=STAFF_FX[w.role].cap, capped=placed&&d<1e-9;
+  let v=0;if(placed&&d>0){const cr=coinRate||0;
+    v=w.role==='mill'?(bldValueRate(w.assign)||0)*d/Math.max(1e-9,1+a):w.role==='engineer'?(bldValueRate(w.assign)||0)*d*.5:
+      cr*d/(1+a)*({lumberjack:.5,driver:.3,forklift:.25,dock:.25,firefighter:.1}[w.role]||0);}
+  const what={lumberjack:'chop / collector output',driver:'log haul',mill:w.assign&&BMAP[w.assign]?BMAP[w.assign].name+' speed':'building speed',
+    engineer:'input saved'+(w.assign&&BMAP[w.assign]?' at the '+BMAP[w.assign].name:''),forklift:'loading',dock:'export premium',firefighter:'fire risk cut'}[w.role]||'';
+  const txt=!placed?`+${_pc(F.p)}% per level once assigned`:capped?`team bonus is at its +${_pc(cap)}% cap`:`+${_pc(d)}% ${what}${v>=.05?` ≈ +🪙${fr(v)}/s`:''}`;
+  return {own,delta:d,v,capped,txt};}
+function staffTrainable(w){return w&&!w.train&&(w.skill||1)<STAFF_SKILL_MAX;}
+/* Train all: every staff member you can afford, cheapest first (stops at the first one the coins don't cover) */
+function staffTrainAllPlan(){
+  const L=staffState().team.filter(staffTrainable).map(w=>({w,c:staffTrainCost(w)})).sort((a,b)=>a.c-b.c);
+  const out=[];let sum=0;for(const x of L){if(sum+x.c>S.coins+1e-9) break;sum+=x.c;out.push(x);}
+  return {list:out,cost:sum,n:out.length,all:L.length,next:L[out.length]||null};}
+/* ids/shown: the confirm sheet passes who it listed and the total it showed; if prices rose since (income reference grew),
+   nothing is charged and the caller re-shows the sheet (never charge more than the player saw) */
+function staffTrainAll(ids,shown){
+  let P=staffTrainAllPlan();
+  if(ids){const set=new Set(ids);const L=staffState().team.filter(w=>set.has(w.id)&&staffTrainable(w)).map(w=>({w,c:staffTrainCost(w)}));
+    const cost=L.reduce((a,x)=>a+x.c,0);if(shown!==undefined&&cost>shown*(1+1e-9)+1e-6||cost>S.coins+1e-9) return {n:0,spent:0,changed:true};P={list:L,cost};}
+  let n=0,spent=0;
+  for(const {w} of P.list){const c=staffTrainCost(w);if(S.coins+1e-9<c) break;S.coins-=c;spent+=c;const t=staffTrainTime(w);w.train={left:t,total:t,to:(w.skill||1)+1};n++;}
+  if(n){staffSig='';sfx('buy');toast(`🎓 <b>${n}</b> staff started training · 🪙 ${fmt(spent)}`);}
+  return {n,spent};}
+
 /* ---- migrate managers → founding foremen ---- */
 function staffMigrateFromMgr(o){
   o=o||S;
@@ -357,6 +414,7 @@ function staffMigrateFromMgr(o){
 /* ---- tick: wages, fatigue, training, candidate refresh ---- */
 function staffTick(dt,offline){
   const st=staffState();
+  staffIncTick(dt);   // v2.23: this run's income reference for staff prices
   // keep the candidate pool warm even with an empty team, but skip wage/fatigue work when idle
   if(!st.candidates.length&&(S.time||0)>=10) staffRefreshCandidates(false);
   else if((S.time||0)>=(st.nextRefresh||0)) staffRefreshCandidates(false);

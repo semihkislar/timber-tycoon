@@ -41,8 +41,8 @@ with sync_playwright() as p:
 
     # ---------------- version ----------------
     ctx,pg=page()
-    ok(E(pg,'TT.VERSION')=='2.22.1',f"VERSION 2.22.1 ({E(pg,'TT.VERSION')})")
-    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and m.group(1)=='2.22.1','sw cache timber-tycoon-v2.22.1')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,22,1),f"VERSION >= 2.22.1 ({E(pg,'TT.VERSION')})")
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,22,1),'sw cache >= timber-tycoon-v2.22.1')
     E(pg,MID)
 
     # ---------------- caps: formulas ----------------
@@ -129,7 +129,7 @@ with sync_playwright() as p:
     # v2.21 / v2.14-era saves without any staff object still load
     E(pg,"(()=>{const o=JSON.parse(JSON.stringify(TT.S));o.version='2.13';delete o.staff;Storage.prototype.setItem.call(localStorage,'timberTycoon_save_v1',JSON.stringify(o));Storage.prototype.setItem=function(){};})()")
     pg.reload(); pg.wait_for_timeout(1400)
-    ok(E(pg,"TT.VERSION==='2.22.1'&&Array.isArray(TT.S.staff.team)&&TT.staffCapsAll().length===6"),'pre-staff save loads with limits')
+    ok(E(pg,"!!TT.VERSION&&Array.isArray(TT.S.staff.team)&&TT.staffCapsAll().length===6"),'pre-staff save loads with limits')
     ctx.close()
 
     # ---------------- Assign: desktop mouse ----------------
