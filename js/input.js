@@ -125,7 +125,7 @@ function setupInput(){
   cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();const f=e.ctrlKey?.012:.0016;zoomAt(e.clientX,e.clientY,c.z*Math.exp(-e.deltaY*f));},{passive:false});
   window.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){if(typeof closeMore==='function'&&closeMore()) return;closeSheet();return;}
+    if(e.key==='Escape'){if(typeof staffPickClose==='function'&&staffPickClose()) return;if(typeof closeMore==='function'&&closeMore()) return;closeSheet();return;}
     if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     const k={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
     if(k){e.preventDefault();flyTo(c.tx+k[0]*160/c.z,c.ty+k[1]*120/c.z,c.tz,260);}

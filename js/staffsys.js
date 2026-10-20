@@ -204,9 +204,63 @@ function staffOutputRate(){
 }
 function staffWageTotal(){let t=0;for(const w of staffState().team) t+=staffWageOf(w);return t;}
 
+/* ---- v2.22.1 hiring limits ----
+   v2.14 had no limit at all: every candidate could be hired, forever. Now each role has a cap that grows with the part of
+   the factory it works in. Mill workers and engineers share one cap: the open staff slots in your buildings (1 per building,
+   2 at ★2 = Lv 25, 3 at ★4 = Lv 100; a founding foreman holds his own slot), so every hire can always get a building.
+   Caps never drop: the highest cap reached is remembered (S.staff.capHi), so a Replant (buildings and collectors reset,
+   staff stay) never pushes your team over its limits. Founding foremen never count.
+   Saves already above a limit (hired before v2.22.1) keep everyone working; only hiring that role is paused until the team
+   is under the cap again or the cap grows. A worker can be let go by hand (two taps); nobody is removed automatically. */
+let staffCapAcc=1;
+const STAFF_DRIVER_MACH=['truck','harvester','drone','heli'];
+const STAFF_CAPS={
+  lumberjack:{k:'lumberjack',n:'Lumberjacks',e:'🪓',why:'+1 per collector type you own (Crew)'},
+  driver:{k:'driver',n:'Drivers',e:'🚛',why:'+1 per machine type: truck, harvester, drone, helicopter'},
+  crew:{k:'crew',n:'Mill crew',e:'🏭',why:'one per open building slot (★2 and ★4 add a slot)'},
+  forklift:{k:'forklift',n:'Forklift operators',e:'🚜',why:'one per forklift (Shipping · Forklift Fleet)'},
+  dock:{k:'dock',n:'Dock workers',e:'⚓',why:'1 + one per loading bay (Dock Lv 4 and Lv 8 add bays)'},
+  firefighter:{k:'firefighter',n:'Firefighters',e:'🚒',why:'1 + your Fire Station level'},
+};
+const STAFF_CAP_KEYS=Object.keys(STAFF_CAPS);
+function staffCapKey(role){return role==='mill'||role==='engineer'?'crew':role;}
+function staffCapNow(k){
+  const own=id=>((S.collectors&&S.collectors[id])|0)>0;
+  if(k==='lumberjack') return 2+COLLECTORS.filter(c=>own(c.id)).length;
+  if(k==='driver') return 1+STAFF_DRIVER_MACH.filter(own).length;
+  if(k==='crew'){let n=0;const team=staffState().team;
+    for(const b of BUILDINGS){if(!S.buildings[b.id]||!S.buildings[b.id].lvl) continue;
+      let f=0;for(const w of team) if(w.founding&&w.assign===b.id&&(w.role==='mill'||w.role==='engineer')) f++;
+      n+=Math.max(0,staffSlots(b.id)-f);}
+    return n;}
+  if(k==='forklift') return (S.ship&&S.ship.fork)|0||2;
+  if(k==='dock') return 1+(typeof shBays==='function'&&S.ship?shBays():1);
+  if(k==='firefighter') return 1+(typeof stationLvl==='function'?stationLvl():0);
+  return 0;
+}
+function staffCap(k){
+  const st=staffState(); if(!st.capHi||typeof st.capHi!=='object') st.capHi={};
+  const n=staffCapNow(k); if(!(st.capHi[k]>=n)) st.capHi[k]=n;
+  return st.capHi[k];
+}
+function staffCapCount(k){let n=0;for(const w of staffState().team) if(!w.founding&&staffCapKey(w.role)===k) n++;return n;}
+function staffCapRoom(role){const k=staffCapKey(role);return staffCap(k)-staffCapCount(k);}
+function staffCapsAll(){return STAFF_CAP_KEYS.map(k=>{const cap=staffCap(k),n=staffCapCount(k);return {k,n,cap,over:Math.max(0,n-cap),full:n>=cap};});}
+function staffOverCap(){return staffCapsAll().filter(c=>c.over>0);}
+/* let a (non-founding) worker go by hand: no refund, wage stops */
+function staffLetGo(wid){
+  const st=staffState(), i=st.team.findIndex(x=>x.id===wid); if(i<0) return false;
+  const w=st.team[i]; if(w.founding) return false;
+  st.team.splice(i,1); M=computeMods(); staffSig=''; bpSig='';
+  toast(`👋 <b>${w.name}</b> left the team · wage 🪙 ${fr(staffWageOf(w))}/s saved`);
+  return true;
+}
+
 /* ---- candidates ---- */
 function staffMakeCandidate(forced){
-  const role=forced&&forced.role||STAFF_ROLE_IDS[Math.floor(Math.random()*STAFF_ROLE_IDS.length)];
+  // v2.22.1: roll roles that still have room under their hiring limit (any role if all are full)
+  const open=STAFF_ROLE_IDS.filter(r=>staffCapRoom(r)>0), pool=open.length?open:STAFF_ROLE_IDS;
+  const role=forced&&forced.role||pool[Math.floor(Math.random()*pool.length)];
   const rarity=forced&&forced.rarity||staffRarityRoll();
   const skill=forced&&forced.skill||(1+Math.floor(Math.random()*(rarity==='L'?5:rarity==='E'?4:rarity==='R'?3:2)));
   const traits=forced&&forced.traits||staffTraitRoll(Math.random()<.35?2:1);
@@ -235,6 +289,9 @@ function staffHireCandidate(cid){
   const i=st.candidates.findIndex(c=>c.id===cid);
   if(i<0) return false;
   const c=st.candidates[i];
+  // v2.22.1: hiring limits (per role; mill workers + engineers share the open building slots)
+  if(staffCapRoom(c.role)<=0){const k=staffCapKey(c.role),d=STAFF_CAPS[k];
+    toast(`🔒 <b>${d.n}</b> are at the limit (${staffCapCount(k)}/${staffCap(k)}). ${d.why[0].toUpperCase()+d.why.slice(1)}.`,3800); return false;}
   const cost=staffHireCostOf({skill:c.skill,rarity:c.rarity,founding:false});
   if(S.coins+1e-9<cost) return false;
   S.coins-=cost;
@@ -304,6 +361,10 @@ function staffTick(dt,offline){
   if(!st.candidates.length&&(S.time||0)>=10) staffRefreshCandidates(false);
   else if((S.time||0)>=(st.nextRefresh||0)) staffRefreshCandidates(false);
   if(!st.team.length){st.unpaid=false;return;}
+  // v2.22.1: remember the highest caps (about once a second) and tell an over-cap save once, gently
+  staffCapAcc+=dt; if(!offline&&staffCapAcc>=1){staffCapAcc=0;const over=staffOverCap();
+    if(over.length&&!st.capNoted){st.capNoted=1;const n=over.reduce((a,c)=>a+c.over,0);
+      toast(`👥 Team limits are new in v${VERSION}: <b>${n} of your staff</b> are above a limit. Everyone stays and keeps working; hiring for ${over.map(c=>STAFF_CAPS[c.k].n).join(', ')} is paused until there's room.`,6500,'ms-toast');}}
 
   // wages
   const wage=staffWageTotal();
