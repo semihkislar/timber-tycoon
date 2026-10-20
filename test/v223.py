@@ -53,6 +53,7 @@ with sync_playwright() as p:
     # ---------------- effects per level ----------------
     ctx,pg=page(); E(pg,MID)
     wid=E(pg,ADD,{'role':'mill','skill':4,'assign':'sawmill'})
+    E(pg,"TT.simulate(30)")   # rates settle so the building has a value rate to quote
     r=E(pg,f"(()=>{{const w=TT.staffState().team.find(x=>x.id==='{wid}');return {{s:staffMillSpd('sawmill'),e:STAFF_ROLES.mill.effect(4),g:staffTrainGain(w)}}}})()")
     ok(abs(r['s']-1.2)<1e-9 and r['e']=='+20% building speed',f"mill worker skill 4: +20% speed (+5% per level, was +3%) ({r['s']:.3f}, '{r['e']}')")
     ok(abs(r['g']['delta']-.05)<1e-9 and '+5% Sawmill speed' in r['g']['txt'] and r['g']['own']=='20% → 25%',f"next level shown: '{r['g']['txt']}' ({r['g']['own']})")
