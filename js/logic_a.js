@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.22';
+const VERSION='2.22.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -581,7 +581,7 @@ function sellAll(id){
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,...rpKeep(g),lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
-    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false};})(),
+    firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false,capHi:Object.assign({},st.capHi||{}),capNoted:st.capNoted||0};})(),   // v2.22.1: hiring limits never drop
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};

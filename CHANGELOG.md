@@ -5,6 +5,87 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.22.1] — 2026-10-20
+
+**Staff hotfix: hiring limits and a working Assign button.** These are items 1 and 2 of Semih's Oct 20 list: "you can hire
+infinitely many staff" and "the Assign button does nothing".
+
+### Fixed: the staff "Assign" button did nothing
+- **Root cause:** tapping Assign did build the building list, but it was appended to the *end* of the staff sheet's
+  scrolling body, below every card and off-screen (about 800 px below the fold on desktop and 1,300 px on a phone).
+  Its `position: sticky` never applied, because the list was the only child of its own wrapper. So nothing visible
+  happened. On top of that, the Team tab rebuilds its HTML whenever a card's numbers change, and energy drains every few
+  seconds. That rebuild wiped the hidden list within a few seconds (2–7 s in tests), before anyone could scroll down to it. The list itself
+  worked: when it was scrolled into view in time, a tap did assign.
+- **Fix:** Assign now opens its own **picker**, a modal bottom sheet on phones and a centred card on desktop. It lives in
+  `#modalRoot`, above the staff sheet and outside the body that gets rebuilt, so it opens in view and stays open.
+  - Every built building is a 52 px row with its slots (**used/slots**) and what the worker adds there, e.g.
+    "⚙️ +9% speed ≈ +🪙106/s" or "🔧 −7.5% input".
+  - Full buildings are greyed out with the next slot milestone ("Full · ★2 (Lv 25) adds a slot"). The current building
+    is marked "✓ Working here now".
+  - **⏳ Unassign** sends the worker back to the log yard.
+  - Cancel, a tap outside or Esc closes the picker.
+- After a pick the effect applies right away (mill speed / engineer input and fire risk). The card reads "Working at
+  the …" and its button turns into **↔ Move**. The worker is highlighted and walks to that building in the scene.
+- The building sheet's **"＋ Assign staff (N free)"** opens the same picker the other way round: pick a free mill worker
+  or engineer for *this* building. Before, it only opened the Team tab.
+
+### Fixed: unlimited hiring → team limits
+Each role now has a hiring limit that grows with the part of the factory it works in. The limits show as **x/y** chips at
+the top of the Team tab, each with what raises it. On phones you tap a chip to see that.
+
+| Role | Limit | Raised by |
+|---|---|---|
+| 🪓 Lumberjacks | 2 + collector types owned (max 8) | buying a new collector type |
+| 🚛 Drivers | 1 + machine types owned: truck, harvester, drone, helicopter (max 5) | buying those machines |
+| 🏭 Mill crew (mill workers + engineers, shared) | one per open building slot. A slot is 1 per building, 2 at ★2 (Lv 25), 3 at ★4 (Lv 100). A founding foreman keeps his own slot | building factories, levelling them past ★2 / ★4 |
+| 🚜 Forklift operators | one per forklift (2–6) | Shipping · Forklift Fleet |
+| ⚓ Dock workers | 1 + loading bays (2–4) | Loading Dock Lv 4 / Lv 8 |
+| 🚒 Firefighters | 1 + Fire Station level (1–6) | building / upgrading the Fire Station |
+
+- With the mill crew limit, every mill worker or engineer you hire can always get a building slot.
+- Limits **never drop**. The highest limit reached is remembered (`S.staff.capHi`, kept through Replant), so a Replant
+  never leaves your kept team "over the limit". Founding foremen never count.
+- At a limit, the candidate card reads **"🔒 Full · 2/2"** with what raises it, and the Hire button is disabled.
+  `staffHireCandidate` refuses as well, and the refusal costs nothing. New candidates are rolled from roles that still
+  have room, and the Staff dot ignores candidates you can't hire.
+
+### Saves already over a limit
+- **Nobody is removed.** Staff hired before v2.22.1 above a limit stay on the team and keep working with their effects.
+  The per-role effect caps from v2.14 still apply, as before.
+- Only hiring for that role is paused, until you're under the limit or it grows. The chip turns red ("Lumberjacks 14/8"),
+  and a note explains: "… more than the limit (hired before limits existed). Everyone stays and keeps working; hiring is
+  paused …". A one-time toast mentions it after loading.
+- Over-limit roles get a **Let go** button on their cards (tap twice) if you want to cut wages. It is never automatic.
+- Version `2.22.1`; service worker cache `timber-tycoon-v2.22.1`.
+
+### Tests
+- New `test/v2221.py` (78 checks):
+  - limit formulas and growth; refused hire at a limit (team and coins unchanged); full roles skipped by candidate rolls;
+    🔒 Full card;
+  - 6 chips with x/y, ≥44 px; every mill-crew hire fits a slot; Replant keeps staff and limits;
+  - over-cap v2.22 save: all 19 extras kept and working, hiring paused, red chip and note, two-tap Let go, foremen not
+    counted; pre-staff save loads;
+  - desktop mouse: Assign opens an on-screen, uncovered picker that survives 6.5 s of Team-tab rebuilds; pick →
+    assignment, speed effect, card text, Move label, figure at the Carpentry in the scene; full rows disabled; Esc,
+    outside tap, Unassign;
+  - building-side picker (engineer −input, "Staff here 1/2");
+  - iPhone 13 / Pixel 7 with real touch events: More → Staff, tap a limit to see what raises it, touch Assign → picker
+    above the bottom bar → touch pick assigns; a full role can't be hired;
+  - snapshot; no page errors or 404s.
+- `test/v215.py`: the 49-staff draw-cap/perf scenario adds staff past the limits the way an older save would.
+- Screenshots: `python3 test/shot_v2221.py` → `screenshot-v2221-{desktop,mobile}{,-picker}.png`.
+
+### Next (rest of Semih's Oct 20 list, one per following release)
+3. Staff training rework: training costs, effects and wages scale with forest value, so they stay meaningful after
+   Replant, plus a **Train all** button with the total cost shown before confirming.
+4. The power plant also accepts logs; veneer and plywood balance.
+5. Orders scale after Replant (recheck all costs, orders and rewards for silly numbers).
+6. Bad-luck events.
+7. Factory layout: each phase in vertical columns growing downward, helper buildings (power plant, fire station,
+   construction, R&D, staff) on the right, the chain order followed and gaps filled; new trophies for the new systems.
+8. Logistics tiers: calm, readable-speed forklifts → conveyor belts between adjacent factories → drones.
+
 ## [2.22] — 2026-10-19
 
 **Leveled upgrades and workstations inside every factory.** Semih's two ideas: "let's do the upgrade part with levels" and

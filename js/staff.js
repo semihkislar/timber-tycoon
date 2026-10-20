@@ -179,8 +179,9 @@ function staffWorkerCard(w){
   if(w.founding&&w.mgrId){
     const m=MGR_MAP[w.mgrId]; if(m){const b=mgrBtnHtml(m); btns=`<button class="btn buy small mg-btn staff-btn" data-mgr="${m.id}" ${b.dis?'disabled':''}>${b.h}</button>`;}
   } else {
-    if((w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">Assign</button>`;
+    if((w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">${w.assign?'↔ Move':'📍 Assign'}</button>`;
     if(!w.train&&(w.skill||1)<STAFF_SKILL_MAX) btns+=`<button class="btn buy small staff-btn" data-train="${w.id}">Train 🪙 ${fmt(staffTrainCost(w))}</button>`;
+    if(staffCapRoom(w.role)<0) btns+=`<button class="btn ghost small staff-btn sc-go" data-letgo="${w.id}">${staffLetGoArm===w.id?'Tap again to let go':'Let go'}</button>`;   // v2.22.1: only when the role is over its limit
   }
   const fl=(typeof SW!=='undefined'&&SW.flashWid===w.id&&performance.now()<SW.flashUntil)?' sw-flash':'', sl=(typeof SW!=='undefined'&&SW.sel===w.id)?' sw-sel':'';
   const stx=typeof swStatus==='function'?swStatus(w):'';
@@ -195,32 +196,101 @@ function staffCandCard(c){
   const R=RARITY[c.rarity]||RARITY.C, role=STAFF_ROLES[c.role]||{n:c.role,e:'?',effect:()=>'—'};
   const cost=staffHireCostOf({skill:c.skill,rarity:c.rarity});
   const traits=(c.traits||[]).map(t=>STAFF_TRAITS[t]?`${STAFF_TRAITS[t].e} ${STAFF_TRAITS[t].n}`:t).join(' · ');
-  const dis=S.coins+1e-9<cost;
-  return `<div class="mgr-card staff-card" data-cid="${c.id}" style="--rc:${R.c}"><div class="mg-p">${staffPortrait(c,52)}</div>
+  const k=staffCapKey(c.role), cap=staffCap(k), n=staffCapCount(k), full=n>=cap, dis=full||S.coins+1e-9<cost;
+  return `<div class="mgr-card staff-card${full?' cand-full':''}" data-cid="${c.id}" style="--rc:${R.c}"><div class="mg-p">${staffPortrait(c,52)}</div>
     <div class="mg-b"><div class="mg-n">${c.name} <span class="mg-r">${R.n}</span></div>
     <div class="mg-s">${role.e} ${role.n} · skill ${c.skill} · wage 🪙 ${fr(staffWageOf({skill:c.skill,rarity:c.rarity}))}/s</div>
     <div class="mg-k">${role.effect(c.skill)}</div>
-    <div class="mg-g">${traits}</div></div>
-    <button class="btn buy small mg-btn staff-btn" data-hire="${c.id}" ${dis?'disabled':''}>${costBtnHtml('🤝 Hire',cost)}</button></div>`;
+    <div class="mg-g">${traits}</div>
+    <div class="cand-cap${full?' full':''}">${STAFF_CAPS[k].e} ${STAFF_CAPS[k].n} <b>${n}/${cap}</b>${full?` · full: ${STAFF_CAPS[k].why}`:''}</div></div>
+    <button class="btn buy small mg-btn staff-btn" data-hire="${c.id}" data-full="${full?1:0}" ${dis?'disabled':''}>${full?`🔒 Full<small>${n}/${cap}</small>`:costBtnHtml('🤝 Hire',cost)}</button></div>`;
 }
+/* ---- v2.22.1 assignment picker ----
+   Bug (v2.14 – v2.22): "Assign" appended its building list to the END of the staff sheet's scroll body, below the cards and
+   off-screen (the sticky positioning never applied because the list was the only child of its wrapper), so a tap looked like it
+   did nothing. On top of that the Team tab is rebuilt whenever a card's numbers change (energy drains every few seconds), and
+   that rebuild wiped the hidden list before anyone could scroll to it. The picker is now its own modal bottom sheet in
+   #modalRoot (above the sheet, outside the rebuilt body), opened in view on desktop and phones. */
+let staffLetGoArm=null, staffCapSel=null;
+function staffPickClose(){const o=$('assignOverlay'); if(o){o.remove(); return true;} return false;}
+function staffPickOpen(inner,wire){
+  staffPickClose();
+  const bg=document.createElement('div'); bg.id='assignOverlay'; bg.className='as-bg';
+  bg.innerHTML=`<div class="assign-sheet" role="dialog" aria-modal="true">${inner}<button class="btn wood staff-btn as-cancel" id="asClose">Cancel</button></div>`;
+  $('modalRoot').appendChild(bg);
+  bg.addEventListener('click',e=>{if(e.target===bg) staffPickClose();});
+  bg.querySelector('#asClose').onclick=()=>staffPickClose();
+  wire(bg); haptic&&haptic(6); return bg;
+}
+/* what one worker adds at a building (for the picker rows) */
+function staffAssignGain(w,bid){
+  const e=staffEff(w)||1, sk=(w.skill||1)*e;
+  const v=(typeof bldValueRate==='function'?bldValueRate(bid):0)*(w.role==='mill'?.03:.015)*sk, vt=v>=.05?` ≈ +🪙${fr(v)}/s`:'';
+  if(w.role==='mill') return w.founding?'':`⚙️ +${Math.round(3*sk)}% speed${vt}`;
+  return `🔧 −${(2.5*sk).toFixed(1).replace(/\.0$/,'')}% input${vt}`;
+}
+function staffSlotHint(bid){const s=staffSlots(bid);return s>=3?'max 3 slots':s>=2?'★4 (Lv 100) adds a slot':'★2 (Lv 25) adds a slot';}
+function staffDoAssign(wid,bid){
+  const ok=bid?staffAssign(wid,bid):staffUnassign(wid);
+  if(ok){staffPickClose(); if(!bid) toast(`⏳ <b>${(staffState().team.find(x=>x.id===wid)||{}).name}</b> is waiting at the log yard`);
+    if(typeof swSelect==='function') swSelect(wid); haptic&&haptic(10); sfx&&sfx('buy');}
+  staffSig=''; bpSig=''; render(); return ok;
+}
+/* from a worker card: pick a building */
 function staffAssignSheet(wid){
-  const w=staffState().team.find(x=>x.id===wid); if(!w) return;
-  const bids=BUILDINGS.filter(b=>S.buildings[b.id].lvl>0);
-  let h=`<div class="assign-sheet"><div class="as-h">Assign <b>${w.name}</b> → pick a building</div><div class="list">`;
+  const w=staffState().team.find(x=>x.id===wid); if(!w||(w.role!=='mill'&&w.role!=='engineer')) return;
+  const role=STAFF_ROLES[w.role], bids=BUILDINGS.filter(b=>S.buildings[b.id]&&S.buildings[b.id].lvl>0);
+  let h=`<div class="as-head">${staffPortrait(w,44)}<div><div class="as-h">Assign <b>${w.name}</b></div><div class="as-sub">${role.e} ${role.n} · skill ${w.skill} · ${role.effect(w.skill)}</div></div></div>
+    <div class="as-lab">Pick a building · slots used / slots</div><div class="as-list">`;
+  if(!bids.length) h+=`<div class="legend">Build a factory first: mill workers and engineers work inside buildings.</div>`;
   for(const b of bids){
-    const used=staffSlotUsed(b.id), slots=staffSlots(b.id), ok=staffCanAssign(w,b.id)||w.assign===b.id;
-    h+=`<button class="btn wood as-b staff-btn" data-as="${w.id}" data-bid="${b.id}" ${ok?'':'disabled'} style="min-height:44px">${b.icon} ${b.name} · ${used}/${slots} slots${w.assign===b.id?' · current':''}</button>`;
+    const used=staffSlotUsed(b.id), slots=staffSlots(b.id), cur=w.assign===b.id, ok=cur||staffCanAssign(w,b.id);
+    h+=`<button class="as-row${cur?' cur':''}" data-as="${w.id}" data-bid="${b.id}" ${ok&&!cur?'':'disabled'}><span class="as-ic">${b.icon}</span>
+      <span class="as-tx"><b>${b.name}</b><small>${cur?'✓ Working here now':ok?staffAssignGain(w,b.id):`Full · ${staffSlotHint(b.id)}`}</small></span>
+      <span class="as-slots${used>=slots?' full':''}">${used}/${slots}</span></button>`;
   }
-  h+=`</div><button class="btn ghost staff-btn" id="asClose" style="min-height:44px;width:100%;margin-top:8px">Cancel</button></div>`;
-  const root=$('staffBody'); const box=document.createElement('div'); box.id='assignOverlay'; box.innerHTML=h; root.appendChild(box);
-  box.querySelectorAll('[data-as]').forEach(btn=>btn.onclick=()=>{staffAssign(btn.dataset.as,btn.dataset.bid); staffSig=''; render();});
-  box.querySelector('#asClose').onclick=()=>{box.remove();};
+  h+=`</div>`;
+  if(w.assign) h+=`<button class="btn ghost staff-btn as-un" data-un="${w.id}">⏳ Unassign · wait at the log yard</button>`;
+  staffPickOpen(h,bg=>{
+    bg.querySelectorAll('[data-as]').forEach(btn=>btn.onclick=()=>staffDoAssign(btn.dataset.as,btn.dataset.bid));
+    const un=bg.querySelector('[data-un]'); if(un) un.onclick=()=>staffDoAssign(un.dataset.un,null);
+    const cur=bg.querySelector('.as-row.cur'); if(cur) cur.scrollIntoView({block:'nearest'});
+  });
+}
+/* from a building sheet: pick a mill worker / engineer for this building */
+function staffPickForBld(bid){
+  const b=BMAP[bid]; if(!b||!S.buildings[bid]||!S.buildings[bid].lvl) return;
+  const L=staffState().team.filter(w=>(w.role==='mill'||w.role==='engineer')&&!w.founding)
+    .sort((a,c)=>(!!a.assign-!!c.assign)||((c.skill||1)-(a.skill||1)));
+  const used=staffSlotUsed(bid), slots=staffSlots(bid);
+  let h=`<div class="as-head"><span class="as-big">${b.icon}</span><div><div class="as-h">Staff for the <b>${b.name}</b></div><div class="as-sub">Slots <b>${used}/${slots}</b> · ${staffSlotHint(bid)}</div></div></div>
+    <div class="as-lab">Pick a mill worker or engineer</div><div class="as-list">`;
+  for(const w of L){const R=STAFF_ROLES[w.role], here=w.assign===bid, ok=here||staffCanAssign(w,bid);
+    const where=here?'✓ Working here now':w.assign&&BMAP[w.assign]?`now at the ${BMAP[w.assign].name} · move here`:'waiting at the log yard';
+    h+=`<button class="as-row${here?' cur':''}" data-as="${w.id}" data-bid="${bid}" ${ok&&!here?'':'disabled'}><span class="as-ic">${staffPortrait(w,34)}</span>
+      <span class="as-tx"><b>${w.name}</b><small>${R.e} ${R.n} · skill ${w.skill} · ${ok||here?where:'building full'}</small></span><span class="as-slots">${here?'':staffAssignGain(w,bid)}</span></button>`;}
+  if(!L.length) h+=`<div class="legend">No mill workers or engineers yet. Hire one in the Candidates tab.</div>`;
+  h+=`</div>`;
+  staffPickOpen(h,bg=>bg.querySelectorAll('[data-as]').forEach(btn=>btn.onclick=()=>staffDoAssign(btn.dataset.as,btn.dataset.bid)));
+}
+/* team limits block (Team tab) */
+function staffCapsHtml(){
+  const caps=staffCapsAll(), over=caps.filter(c=>c.over>0);
+  let h=`<div class="staff-caps"><div class="sc-h">👥 Team limits <small>hired / limit</small></div><div class="sc-grid">`;
+  for(const c of caps){const d=STAFF_CAPS[c.k];
+    h+=`<button class="sc-chip${c.over?' over':c.full?' full':''}${staffCapSel===c.k?' sel':''}" data-cap="${c.k}" aria-label="${d.n} ${c.n} of ${c.cap}: ${d.why}"><span class="sc-e">${d.e}</span><span class="sc-t"><span class="sc-n">${d.n}</span><b class="sc-v">${c.n}/${c.cap}</b></span><small>${d.why}</small></button>`;}
+  h+=`</div>`;
+  {const sel=STAFF_CAPS[staffCapSel]; h+=`<div class="sc-why">${sel?`${sel.e} <b>${sel.n}</b>: ${sel.why}`:'Tap a limit to see what raises it.'}</div>`;}
+  for(const c of over){const d=STAFF_CAPS[c.k];
+    h+=`<div class="sc-over">⚠️ <b>${d.n} ${c.n}/${c.cap}</b>: ${c.over} more than the limit (hired before limits existed). Everyone stays and keeps working; hiring ${d.n.toLowerCase()} is paused until you're under ${c.cap} or the limit grows. “Let go” on a card if you want to cut wages.</div>`;}
+  h+=`<div class="legend sc-note">Limits never drop: after a Replant you keep the highest limit you reached. Founding foremen don't count.</div></div>`;
+  return h;
 }
 function updateStaff(){
   const st=staffState();
-  const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||st.candidates.some(c=>S.coins>=staffHireCostOf(c))||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
+  const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||st.candidates.some(c=>S.coins>=staffHireCostOf(c)&&staffCapRoom(c.role)>0)||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
   if(curSheet!=='staff') return;
-  const sig=stationLvl()+'|'+stationVisible()+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0);
+  const sig=stationLvl()+'|'+stationVisible()+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'');
   if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=st.team.length;
     const fl=Object.keys(S.fires);
     let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
@@ -253,6 +323,7 @@ function renderStaffTab(){
     const wage=staffWageTotal(), out=staffOutputRate(), pct=wage>0?Math.min(100,Math.max(0,out/wage*50)): (out>0?100:0);
     let h=`<div class="profit-bar"><div class="pb-lab">Wages 🪙 ${fr(wage)}/s → staff output ≈ 🪙 ${fr(out)}/s ${st.unpaid?'· <b style="color:#b33">UNPAID (50% work)</b>':(out>=wage?'· <b style="color:#2a7a2a">profitable</b>':'')}</div>
       <div class="pb-track"><div class="pb-fill" style="width:${pct}%"></div></div></div>`;
+    h+=staffCapsHtml();
     h+=`<div class="list">`+st.team.map(staffWorkerCard).join('')+`</div>`;
     // Legacy unhired managers still available to hire (become founding foremen)
     const open=MANAGERS.filter(m=>!mgrLvl(m.bid)&&mgrAvail(m));
@@ -265,12 +336,17 @@ function renderStaffTab(){
     wireMgrCards(body);
     body.querySelectorAll('.mgr-card[data-id]').forEach(mgrCardUpdate);
     body.querySelectorAll('[data-assign]').forEach(b=>b.onclick=e=>{e.stopPropagation();staffAssignSheet(b.dataset.assign);});
+    body.querySelectorAll('[data-cap]').forEach(b=>b.onclick=e=>{e.stopPropagation();staffCapSel=staffCapSel===b.dataset.cap?null:b.dataset.cap;
+      body.querySelectorAll('[data-cap]').forEach(x=>x.classList.toggle('sel',x.dataset.cap===staffCapSel));const d=STAFF_CAPS[staffCapSel],wy=body.querySelector('.sc-why');
+      if(wy) wy.innerHTML=d?`${d.e} <b>${d.n}</b>: ${d.why}`:'Tap a limit to see what raises it.';});
+    body.querySelectorAll('[data-letgo]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.letgo;
+      if(staffLetGoArm===id){staffLetGoArm=null;staffLetGo(id);} else {staffLetGoArm=id;setTimeout(()=>{if(staffLetGoArm===id){staffLetGoArm=null;staffSig='';}},4000);} staffSig='';render();});
     body.querySelectorAll('[data-train]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(staffStartTrain(b.dataset.train)){staffSig='';render();}});
     body.querySelectorAll('[data-find]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(typeof swFind==='function') swFind(b.dataset.find);});
     body.querySelectorAll('[data-mgr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.mgr;if(mgrLvl(MGR_MAP[id].bid)) levelMgr(id); else hireMgr(id); staffMigrateFromMgr(); staffSig='';render();});
   } else if(staffTab==='cand'){
     const left=Math.max(0,(st.nextReroll||0)-(S.time||0));
-    let h=`<div class="cand-head"><span class="legend">Pool refreshes every few minutes.</span>
+    let h=`<div class="cand-head"><span class="legend">Pool refreshes every few minutes. Roles at their limit show 🔒 Full.</span>
       <button class="btn wood small staff-btn" id="candReroll" style="min-height:44px" ${left>0?'disabled':''}>${left>0?`Free reroll in ${fmtTime(left)}`:'🔄 Free reroll'}</button></div>`;
     h+=`<div class="list">`+(st.candidates.length?st.candidates.map(staffCandCard).join(''):`<div class="legend">No candidates right now — wait for a refresh.</div>`)+`</div>`;
     body.innerHTML=h;
@@ -297,7 +373,7 @@ function renderStaffTabLight(){
   if(staffTab==='cand'){
     document.querySelectorAll('#staffTabBody [data-hire]').forEach(b=>{
       const c=staffState().candidates.find(x=>x.id===b.dataset.hire); if(!c) return;
-      const cost=staffHireCostOf(c); b.disabled=S.coins+1e-9<cost;
+      const cost=staffHireCostOf(c); b.disabled=b.dataset.full==='1'||S.coins+1e-9<cost;
     });
   }
 }
@@ -315,10 +391,12 @@ function updateBldMgr(b){
     h+=`<h4>👷 Staff here <span class="mg-count">${used}/${slots}</span></h4><div class="bst-list">`;
     for(const w of crew){const R=STAFF_ROLES[w.role];
       h+=`<button class="bst-chip staff-btn" data-wcard="${w.id}" style="--rc:${(RARITY[w.rarity]||RARITY.C).c}">${staffPortrait(w,34)}<span><b>${w.name}</b><small>${R.e} ${R.n} · skill ${w.skill}${staffOnBreak(w)?' · ☕ on break':''}</small></span></button>`;}
+    if(crew.length&&free&&used<slots) h+=`<button class="btn wood small staff-btn bst-team" data-pick="1">＋ Assign staff (${free} free)</button>`;
     h+=`<button class="btn wood small staff-btn bst-team" data-team="1">${crew.length?'👥 Team':free?`＋ Assign staff (${free} free)`:'👥 Hire mill workers & engineers'}</button></div>`;
     el.innerHTML=h; wireMgrCards(el);
     el.querySelectorAll('[data-wcard]').forEach(x=>x.onclick=()=>{if(typeof swOpenCard==='function') swOpenCard(x.dataset.wcard);});
-    const tb=el.querySelector('[data-team]'); if(tb) tb.onclick=()=>{staffTab=crew.length||free?'team':'cand';staffSig='';openSheet('staff');};}
+    const tb=el.querySelector('[data-team]'); if(tb) tb.onclick=()=>{if(free&&!crew.length){staffPickForBld(b.id);return;} staffTab=crew.length||free?'team':'cand';staffSig='';openSheet('staff');};
+    const ab=el.querySelector('[data-pick]'); if(ab) ab.onclick=()=>staffPickForBld(b.id);}
   el.classList.remove('hidden');
   const mc=el.querySelector('.mgr-card[data-id]'); if(mc) mgrCardUpdate(mc);
 }
