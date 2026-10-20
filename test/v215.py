@@ -18,7 +18,9 @@ MID='''(()=>{const S=TT.S;S.coins=1e12;S.totalEarned=1e12;for(const c of COLLECT
 # one of every role (steady unless told otherwise), mill → sawmill, engineer → chipper
 HIRE='''((o)=>{const st=TT.staffState();const roles=o.roles||['lumberjack','driver','mill','engineer','forklift','dock','firefighter'];const ids=[];
  roles.forEach((r,k)=>{const id='cT'+(st.seq+1)+'_'+k;st.candidates=[{id,name:'Test '+r+' '+k,role:r,skill:3,rarity:['C','R','E','L'][k%4],traits:o.traits||['steady'],look:STAFF_LOOKS[k%STAFF_LOOKS.length]}];
-   TT.S.coins=1e12;TT.staffHireCandidate(id);const w=st.team[st.team.length-1];ids.push(w.id);
+   TT.S.coins=1e12;const c=st.candidates[0];if(!TT.staffHireCandidate(id)){   // v2.22.1: past a hiring limit, add them like an older (over-cap) save
+     st.team.push({id:'w'+(++st.seq),name:c.name,role:r,skill:c.skill,rarity:c.rarity,traits:c.traits.slice(),assign:STAFF_ROLES[r].auto?STAFF_ROLES[r].area:null,energy:100,brk:false,founding:false,train:null,look:c.look});}
+   const w=st.team[st.team.length-1];ids.push(w.id);
    if(r==='mill') TT.staffAssign(w.id,o.millAt||'sawmill'); if(r==='engineer') TT.staffAssign(w.id,o.engAt||'chipper');});
  document.querySelectorAll('.toast').forEach(t=>t.remove());return ids;})'''
 AREA='''(()=>{const out={};const near=(a,i,j,r)=>Math.hypot(a.i-i,a.j-j)<=r;
