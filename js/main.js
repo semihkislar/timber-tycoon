@@ -130,6 +130,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   MANAGERS,RARITY,SKILLS,portraitSVG,mgrLvl,hireMgr,levelMgr,mgrHireCost,mgrUpCost,mgrSpd,mgrIn,mgrOut,mgrSto,mgrOrders,startFire,tapFire,fireRisk,buyStation,stationCost,stationLvl,onFire,STATION,
   // v2.14 staff system
   STAFF_ROLES,STAFF_TRAITS,staffState,staffFresh,staffHireCandidate,staffAssign,staffUnassign,staffStartTrain,staffMigrateFromMgr,staffRefreshCandidates,staffRerollFree,
+  staffTrainCost,staffTrainTime,staffTrainGain,staffTrainAllPlan,staffTrainAll,staffTrainAllSheet,staffEco,staffIncRef,STAFF_FX,STAFF_R0,
   staffWageOf,staffHireCostOf,staffWageTotal,staffOutputRate,staffMillSpd,staffEngIn,staffForkBonus,staffChopBonus,staffHaulBonus,staffSlots,staffCanAssign,staffAtBuilding,staffHiredCount,staffTick,
   staffCap,staffCapNow,staffCapCount,staffCapRoom,staffCapsAll,staffOverCap,staffLetGo,staffAssignSheet,staffPickForBld,staffPickClose,STAFF_CAPS,
   get staffTabCur(){return staffTab;},set staffTabCur(v){staffTab=v;},

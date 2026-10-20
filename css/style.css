@@ -793,3 +793,11 @@ tr.mkt-tier.t1 b{color:#a85a1e}tr.mkt-tier.t2 b{color:#2f6aa0}tr.mkt-tier.t3 b{c
 .ws-gate.now{background:#ffe7df;border-color:#ff9c84}.ws-gate.ok{background:#e9f6df;border-color:#a8d58c}
 .ws-card.gate{border-color:#ff9c84;box-shadow:0 0 0 2px #ffd3c6}.ws-card .gtag{color:#d2452a}
 .btn.ws-lock{background:linear-gradient(#ff9a6b,#e8642f)!important;color:#fff}.btn.ws-lock small{white-space:normal}
+
+/* v2.23: staff training rework */
+.mg-tg{font-size:12px;color:#2a6a2a;margin-top:2px;font-weight:700}.mg-tg.capped{color:#a0601a}
+.tr-all{display:flex;align-items:center;gap:10px;margin:6px 0 8px;flex-wrap:wrap}.tr-all .btn{min-height:44px;padding:6px 14px}.tr-all .legend{margin:0}
+.tr-row{cursor:default}.tr-row .as-slots{white-space:nowrap}
+.tr-all .btn small{display:block;font-size:11px;font-weight:700}
+.tr-note{background:#fff3dc;border:1.5px solid #f0d49a;border-radius:10px;padding:6px 9px;font-size:12.5px;margin-bottom:8px}
+.tr-card .mg-r,.staff-card .mg-r{white-space:nowrap}
