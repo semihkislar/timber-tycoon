@@ -16,7 +16,7 @@ function render(){
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); updateBuilders(); updateShip(); updateFlowLegend();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }
@@ -72,8 +72,9 @@ function welcomeBack(elapsed,r){
   const capped=elapsed>offCap();
   const lines=RES.filter(x=>r.p[x.id]>0.5).map(x=>`<div>${x.icon} ${x.name} produced</div><div>${fmt(r.p[x.id])}</div>`).join('');
   const bl=r.built>0?`<br>🏗️ Your builders added <b>${fmt(r.built)}</b> building level${r.built>1?'s':''}.`:'';
+  const mi=typeof mishActive==='function'&&mishActive()?`<br>🍀 No bad luck while you were away: setbacks (storms, floods, thefts, breakdowns…) only happen while you play.${r.fixed?` Your crews finished ${r.fixed} repair${r.fixed>1?'s':''}.`:''}`:'';   // v2.26
   const pl=r.planted>0.5?`<br>🌱 Your planters put <b>${fmt(r.planted)}</b> saplings in the ground; the forest now stands at <b>${Math.round((1-S.forest.st/forestPlots())*100)}%</b> covered.`:'';
-  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at ${Math.round(offCap()/3600)}h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}${bl}
+  modal('🌲 Welcome back, Tycoon!',`You were away for <b>${fmtTime(elapsed)}</b>${capped?` (offline progress capped at ${Math.round(offCap()/3600)}h)`:''}.<br>Your crews kept working and earned <b style="color:#b06a00">🪙 ${fmt(r.coins)}</b>.${pl}${bl}${mi}
     ${lines?`<div class="gainlist">${lines}</div>`:''}`,[{label:'Back to work!',cls:'gold'}]);
 }
 function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yardSigV='';scene._fsig='';scene.lastEarned=S.totalEarned;}
@@ -147,6 +148,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   HOLD,buyMaxBld,toggleHud,railMode,compactMode,haptic,prefs,viewBand,sceneTapAt:(x,y)=>handleTap(x,y),get ground(){return scene.gl;},
   // v2.10 power plant helpers
   PW_MAX,PW_FUELS,PW_PERKS,PWZ,pwLvl,pwCost,pwUnlocked,pwVisible,pwShare,pwEff,pwBoost,pwNeed,pwCapacity,pwStatus,buyPower,setPowerFuel,setPowerOn,openPower,
+  MISH_DEF,MISH_GAP,INS_MAX,mishState,mishRoll,mishApply,mishWeights,mishGrace,mishActive,mishBroken,mishRepair,mishRepairCost,buyInsurance,insLvl,insCost,insCut,mishInc,mishBldMult,mishKeep,   // v2.26
   PW_LOGMODES,PW_RESERVES,PW_LOG_FUEL,pwLogMode,pwReserveSec,pwLogReserve,pwLogUse,setPowerLogs,setPowerReserve,chainYield,shareAlloc,SHARED_GOODS,TAR_GLUE,   // v2.24
   powerScreen:()=>{const p=P(PWZ.ci,PWZ.cj,20);return w2s(p[0],p[1]);},
   // v2.12 builders' yard helpers

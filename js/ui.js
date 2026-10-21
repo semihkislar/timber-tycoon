@@ -38,7 +38,7 @@ function openSheet(name,arg){
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
-  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; dailySig=''; premSig=''; staffSig=''; resSig=''; tradeSig=''; pwSig=''; bySig=''; shSig='';
+  achSig=''; mktSig=''; upgSig=''; treeSig=''; cSig=''; bpSig=''; ordSig=''; dailySig=''; premSig=''; staffSig=''; resSig=''; tradeSig=''; pwSig=''; if(typeof mishSig!=='undefined') mishSig=''; bySig=''; shSig='';
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
   if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
@@ -99,6 +99,7 @@ function statusOf(b){
   if(!st.lvl) return {cls:'off',txt:'Not built',f:0};
   if(!st.on) return {cls:'off',txt:'⏸ Off',f:0};
   if(onFire(b.id)) return {cls:'bad',txt:'🔥 On fire! Tap the flames',f:0};
+  if(typeof mishBroken==='function'&&mishBroken(b.id)){const br=S.mish.broke[b.id];if(!br.slow) return {cls:'bad',txt:`🔧 Broken down · ${Math.ceil(br.left)}s`,f:0};}   // v2.26
   if(bs.full&&bs.f<0.985) return {cls:'bad',txt:`⛔ Storage FULL: ${RMAP[bs.full].name}`,f:bs.f};
   const fs=isFinite(bs.fs)?bs.fs:bs.f, nm=RMAP[bs.lim]?RMAP[bs.lim].name:'input';   // v2.15.1: smoothed, so a one-tick dip doesn't flash a warning
   if(bs.lim&&fs<0.9) return {cls:'bad',txt:`⚠ Short on ${nm}`,f:bs.f};
@@ -142,6 +143,7 @@ function updateBuildingSheet(){
   const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',50,sawYieldAt]}[b.id];   // v2.24: Peeler + Plywood Mill too
   const yl=YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'';
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
+  if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
     let sh=$('bpShort'); if(!sh){sh=document.createElement('div');sh.id='bpShort';sh.className='bp-short';$('bpBuy').parentElement.after(sh);}   // below the buy row: never shifts the buttons under a finger
     const bs=bstat[b.id], k=st.lvl&&st.on&&bs&&bs.lim&&(isFinite(bs.fs)?bs.fs:bs.f)<.95?bs.lim:null, si=k?shortInfo(k):null;
@@ -292,7 +294,7 @@ function renderEvents(force){
   E.querySelectorAll('.event').forEach(x=>{const e=S.events.find(y=>y.id===x.dataset.id);if(e)x.querySelector('.tm').textContent=Math.ceil(e.ends-S.time)+'s';});
 }
 function eventIll(id){
-  const map={hotel:'🪑',storm:'⛈️',termites:'🐜',boom:'📈',acorn:'🌰',print:'🗞️',cold:'❄️',frenzy:'⚡',goldrush:'💛'};
+  const map={crash:'📉',mud:'🌊',hotel:'🪑',storm:'⛈️',termites:'🐜',boom:'📈',acorn:'🌰',print:'🗞️',cold:'❄️',frenzy:'⚡',goldrush:'💛'};
   return map[id]||'⭐';
 }
 

@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.25';
+const VERSION='2.26';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -265,7 +265,7 @@ function freshState(keep){
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
-    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
+    planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
     spec:{},specStats:{picks:0,switches:0}};   // v2.17 line specialisations   // v2.7: one free planter, a full forest
@@ -321,6 +321,10 @@ function migrateSave(o){
   // v2.8 -> v2.9: mobile preferences (auto-focus camera on events, haptic feedback)
   if(!o.prefs||typeof o.prefs!=='object') o.prefs={autoFocus:true,haptics:true};
   if(typeof o.prefs.autoFocus!=='boolean') o.prefs.autoFocus=true; if(typeof o.prefs.haptics!=='boolean') o.prefs.haptics=true;
+  // v2.26 bad-luck events (older saves: no insurance, empty log)
+  if(!o.mish||typeof o.mish!=='object') o.mish={next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}};
+  if(!(o.mish.ins>=0&&o.mish.ins<=3)) o.mish.ins=Math.max(0,Math.min(3,Math.floor(+o.mish.ins)||0)); if(!o.mish.broke||typeof o.mish.broke!=='object') o.mish.broke={}; if(!Array.isArray(o.mish.log)) o.mish.log=[];
+  if(!o.mish.stats||typeof o.mish.stats!=='object') o.mish.stats={n:0,dodged:0,lost:0,repairs:0}; if(!isFinite(o.mish.next)) o.mish.next=0;
   // v2.9 -> v2.10: biomass power plant
   if(!o.power||typeof o.power!=='object') o.power={lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}};
   if(typeof o.power.lvl!=='number') o.power.lvl=0; if(typeof o.power.on!=='boolean') o.power.on=true; if(!['mix','pellets','charcoal'].includes(o.power.fuel)) o.power.fuel='mix';
@@ -409,7 +413,7 @@ function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkC
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1);}   // v2.22 workstations   // v2.17 specialisation / retool
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1);}   // v2.22 workstations   // v2.17 specialisation / retool
 /* v2.17: input per item = manager thrift × specialisation (lean −20…40 %, high-speed +15 %) */
 function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1)*(typeof wsIn==='function'?wsIn(id):1);}
 /* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),
@@ -446,7 +450,7 @@ function priTook(k,n){PRI_TAKEN[k]=(PRI_TAKEN[k]||0)+n;}
 
 function tick(dt,offline){
   M=computeMods();
-  S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline); if(typeof staffTick==='function') staffTick(dt,offline);
+  S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline); if(typeof mishTick==='function') mishTick(dt,offline); if(typeof staffTick==='function') staffTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   forestTick(dt,offline);
   {const lr=logRate()*dt,room=Math.max(0,logCap()-S.res.logs),acc=Math.min(lr,room);S.res.logs+=acc;fl.logs.p+=acc;fl.logs.w=lr-acc;   // v2.20.1 Log Yard capacity: old stock above the cap is kept
@@ -455,7 +459,8 @@ function tick(dt,offline){
   const active=[];
   for(const b of BUILDINGS){
     const st=S.buildings[b.id];
-    if(!st.lvl||!st.on||onFire(b.id)){bstat[b.id]={f:0,lim:null,speed:st.lvl?bSpeed(b.id):0,fire:onFire(b.id)};continue;}
+    const brk=typeof mishPaused==='function'&&mishPaused(b.id);   // v2.26 breakdowns pause a building
+    if(!st.lvl||!st.on||onFire(b.id)||brk){bstat[b.id]={f:0,lim:null,speed:st.lvl?bSpeed(b.id):0,fire:onFire(b.id),broke:brk};continue;}
     const sp=bSpeed(b.id); active.push([b,sp]); const mi=bInMult(b.id);
     for(const k in b.inp) demand[k]+=b.inp[k]*sp*dt*mi;
   }
@@ -597,6 +602,7 @@ function doPrestige(){
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
   keep.tierNote=S.tierNote||0;   // v2.20
+  keep.mish=typeof mishKeep==='function'?mishKeep():S.mish;   // v2.26: insurance, log and stats stay; breakdowns are cleared
   keep.power={lvl:pwLvl(),on:S.power?S.power.on!==false:true,fuel:(S.power&&S.power.fuel)||'mix',logs:pwLogMode(),res:pwReserveSec(),eff:0,burn:{}};   // v2.10: the plant stays built
   keep.spec=typeof specKeep==='function'?specKeep():{}; keep.specStats=Object.assign({picks:0,switches:0},S.specStats||{});   // v2.17: picks are remembered, retooling is dropped
   keep.ship=typeof shKeep==='function'?shKeep():S.ship;   // v2.13: docks, forklifts and crane are kept through Replant

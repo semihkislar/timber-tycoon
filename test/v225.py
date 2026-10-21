@@ -106,7 +106,7 @@ with sync_playwright() as p:
     r=E(pg,"""(()=>{const O=S.orders;O.offer=null;offerOrder('planks');offerOrder('chairs');const id=O.offers[1].id;declineOrder(id);return [O.offers.length,O.offers[0].item,O.next>S.time];})()""")
     ok(r==[1,'chairs',True] or r[0]==1,f'decline removes just that offer ({r})')
     # saves: lists are saved; a v2.24 save with offer/active loads into the board
-    r=E(pg,"""(()=>{const O=S.orders;O.offer=null;O.active=null;offerOrder('planks');offerOrder('chairs');acceptOrder();const j=JSON.parse(JSON.stringify(S));return {offers:j.orders.offers.length,acts:j.orders.acts.length};})()""")
+    r=E(pg,"""(()=>{const O=S.orders;O.offer=null;O.active=null;offerOrder('planks');offerOrder('chairs');acceptOrder();for(const o of O.acts) o.amt=1e30;const j=JSON.parse(JSON.stringify(S));return {offers:j.orders.offers.length,acts:j.orders.acts.length};})()""")
     ok(r=={'offers':1,'acts':1},f'the board is saved ({r})')
     sv=E(pg,"""(()=>{const O=S.orders;const off=O.offers[0],act=O.acts[0];const o=JSON.parse(JSON.stringify(S));o.version='2.24';act.amt=1e30;act.ends=S.time+1e5;o.orders={offer:off,active:act,next:S.time+50,done:7,failed:2,hist:[]};
       o.daily.offers=[{id:5,item:'planks',amt:5,dur:210,reward:40,bonus:null,diff:'std',diffN:'Standard',e:'🟡',got:0,status:'offer'}];o.daily._made=true;o.daily.day=dayKey();return JSON.stringify(o);})()""")
