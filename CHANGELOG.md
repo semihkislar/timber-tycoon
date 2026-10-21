@@ -70,7 +70,7 @@ occasional and fair, are capped small, and come with counter-play.
 - Version `2.26`; service worker cache `timber-tycoon-v2.26`.
 
 ### Tests
-- New `test/v226.py`, 71 checks:
+- New `test/v226.py`, 70 checks:
   - grace periods and offline (3 h away rolls nothing, repairs finish, nothing right on return);
   - 4 h frequency;
   - 60 forced rolls of each setback against its cap;
