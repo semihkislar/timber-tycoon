@@ -67,7 +67,8 @@ with sync_playwright() as p:
         ok(not short and r['vp']>=r['vd'] and r['pp']>=r['pd'],f"cost-balanced {B:.0e}: veneer {r['vp']:.3g}/{r['vd']:.3g}/s, plywood {r['pp']:.3g}/{r['pd']:.3g}/s, no consumer veneer/plywood-bound ({short})")
     ctx.close()
     # ---------------- greedy play over several Replants, log fuel 'first' ----------------
-    ctx,pg=page(); E(pg,"window._pm='first'")
+    # v2.26: random setbacks (a broken Peeler) are tested in v226.py; this sim measures the chain's balance, so they are off here
+    ctx,pg=page(); E(pg,"window._pm='first';window.mishTick=()=>{}")
     R=E(pg,f"({SIM})({{runs:5,maxMin:25,hook:{json.dumps(HOOK)},extra:{json.dumps(EXTRA)}}})")
     print('   runs:',[(x['run'],round(x['x']['cs'],1),round(x['x']['veneer'],2),round(x['x']['plywood'],2),x['x']['cf'],round(x['x']['bn'],2)) for x in R])
     ok(len(R)==5 and R[-1]['x']['cs']>5,f'5 runs with 4 Replants (forest value ×{R[-1]["x"]["cs"]:.1f})')

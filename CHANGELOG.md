@@ -83,6 +83,8 @@ occasional and fair, are capped small, and come with counter-play.
   - iPhone 13 and Pixel 7 taps (More tile, no sideways scroll, ≥ 40 px buttons, repair);
   - no console errors.
 - `test/v225.py`: a running order could complete during the save check (timing race); its amount is now pinned.
+- `test/v224.py`: setbacks are switched off in its greedy sim, which measures the veneer/plywood balance (a random Peeler
+  breakdown made a run 10–16 % short). The setbacks themselves are tested in `test/v226.py`.
 - Screenshots: `python3 test/shot_v226.py` → `screenshot-v226-{desktop,mobile}-{scene,repair,safety,log}.png`.
 
 ## [2.25] — 2026-10-21
