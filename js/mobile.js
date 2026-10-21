@@ -4,8 +4,8 @@
    half/full snap points, compact HUD, hold-to-repeat + Buy max, haptics, landscape rail layout and PWA registration. */
 UI_ICONS.more=`<svg viewBox="0 0 32 32"><rect x="3" y="3" width="11" height="11" rx="3" fill="#5fb441"/><rect x="18" y="3" width="11" height="11" rx="3" fill="#3e86c8"/><rect x="3" y="18" width="11" height="11" rx="3" fill="#f5b52e"/><rect x="18" y="18" width="11" height="11" rx="3" fill="#e85a4a"/><path d="M21 23.5h5M23.5 21v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 SHEETS.more={title:'More',icon:'more'};
-const OVF=['ship','staff','rnd','power','build','ach','co','set'];
-const OVF_LBL={ship:['Shipping','Docks, forklifts & contracts'],staff:['Staff','Team, hires & fire'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
+const OVF=['ship','staff','rnd','power','build','risk','ach','co','set'];
+const OVF_LBL={ship:['Shipping','Docks, forklifts & contracts'],staff:['Staff','Team, hires & fire'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],risk:['Safety','Insurance & bad luck'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
 function prefs(){if(!S.prefs||typeof S.prefs!=='object') S.prefs={autoFocus:true,haptics:true,fatigue:true};if(typeof S.prefs.fatigue!=='boolean') S.prefs.fatigue=true;return S.prefs;}
 function haptic(ms){try{if(prefs().haptics&&navigator.vibrate) navigator.vibrate(ms||8);}catch(_){}}
 function railMode(){return window.matchMedia('(max-height:520px) and (orientation:landscape)').matches;}
@@ -48,6 +48,7 @@ function attentionList(){
   const out=[],short={};   // v2.15.1: shortages are grouped per input, pointing at the building that makes it
   for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st||!LOTS[b.id]) continue; if(LOTS[b.id].prem&&!S.premium.lvl) continue;
     if(st.lvl&&onFire(b.id)){out.push({id:b.id,k:'fire',p:0,t:`🔥 ${b.name} is on fire`});continue;}
+    if(st.lvl&&typeof mishBroken==='function'&&mishBroken(b.id)){out.push({id:b.id,k:'fire',p:1,t:`${S.mish.broke[b.id].slow?'⛈️':'🔧'} ${b.name} ${S.mish.broke[b.id].slow?'storm-damaged (half speed)':'broke down'} · repair now or wait ${Math.ceil(S.mish.broke[b.id].left)}s`});continue;}   // v2.26
     if(st.lvl&&st.on){const bs=bstat[b.id];
       if(bs.full&&bs.f<0.9){out.push({id:b.id,k:'full',p:1,t:`⛔ ${b.name}: storage full`});continue;}
       const fs=isFinite(bs.fs)?bs.fs:bs.f;if(bs.lim&&fs<0.6){(short[bs.lim]=short[bs.lim]||[]).push([b,fs]);continue;}}

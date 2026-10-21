@@ -66,6 +66,7 @@ function sceneTap(sx,sy){
   const g=golden.cur;
   if(g&&Math.hypot(sx-g.x,sy-g.y)<=Math.max(30,goldenSize()*2)){catchGolden();return;}
   if(fireTapAt(sx,sy)) return;
+  if(typeof mishTapAt==='function'&&mishTapAt(sx,sy)) return;   // v2.26 broken-down tag opens the repair
   const h=hitTest(sx,sy);
   if(h.type==='staff'){swOpenCard(h.wid);return;}
   if(h.type==='bld'){
@@ -213,7 +214,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx); byOverlays(ctx); if(typeof swOverlays==='function') swOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx); byOverlays(ctx); if(typeof mishOverlays==='function') mishOverlays(ctx); if(typeof swOverlays==='function') swOverlays(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){return pillCached(ctx,x,y,txt,o);}

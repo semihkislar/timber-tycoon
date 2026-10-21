@@ -5,6 +5,86 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.26] — 2026-10-21
+
+**Bad-luck events ("setbacks").** Item 6 of Semih's Oct 20 list: random setbacks that really affect you, but stay
+occasional and fair, are capped small, and come with counter-play.
+
+### Added: seven setbacks (`js/mishaps.js`)
+| Setback | What happens | Cap |
+|---|---|---|
+| ⛈️ Storm damage | Wind rips a roof: one building runs at **half speed for 1–1.5 min**, and rain spoils part of its stored goods | ≤ 8 % of that good, ≤ 1 min of income |
+| 🌊 Log Yard flood | Water sweeps logs out of the yard, and the roads turn muddy (collectors −20 % for 40 s) | ≤ 10 % of logs; always leaves 30 s of mill use |
+| 🦝 Night theft | Thieves take logs and one stored good | ≤ 6 % of logs (leaves 30 s of mill use) + ≤ 5 % of one good, ≤ 45 s of income |
+| ⚙️ Machine breakdown | One building **stops for 1–1.7 min** | one building at a time |
+| ⚡ Lightning strike | Starts a fire through the normal fire system (tap the flames, Fire Station) | summer or rain only, never during a fire or its cooldown |
+| 🧾 Tax audit | A fine | ≤ 2 % of coins, ≤ 90 s of income |
+| 📉 Market crash | Sale prices −30 % for 60 s (shows in the event bar) | 60 s |
+
+- **How often:** one roll every **8–15 min of play** (≈ 4–7 per hour). Never two within 8 min, and only one damaged
+  building at a time.
+- **Grace periods:** none in the first **15 min of a game** or the first **5 min after a Replant**. Setbacks start once
+  3 buildings run.
+- **Seasons and weather:**
+  - storms ×2.5 in wind, rain or snow and ×1.5 in autumn/winter;
+  - floods ×3 in rain, ×1.6 in spring (snow melt) and ×0.5 in snow;
+  - thefts ×2.5 at night and ×0.4 by day;
+  - breakdowns ×1.3 in winter;
+  - lightning only in summer or rain.
+  The Safety sheet shows the odds right now.
+- **Offline:** no setbacks while you are away, and the next one is at least 2 min after you return. Open repairs keep
+  counting down. The welcome-back summary says "🍀 No bad luck while you were away" and lists finished repairs.
+- **Notification + scene:** a red toast, a short red screen flash, particles and a floating loss tag over the building /
+  Log Yard / HUD coins. A broken building smokes and carries a "🔧 Broken · 72s" / "⛈️ Damaged · 50s" tag. Tapping the tag
+  opens the building sheet.
+
+### Added: counter-play
+- **Repair now:** in the building sheet (below the Upgrade row, so the buttons don't move) and in the Safety sheet. It costs
+  about 20 s of income × the share of time left (half for storm damage).
+- **Insurance** (Safety sheet, kept through Replant):
+  - Lv 1–3 (🪙150K / 1.5M / 15M) pays back 25 / 50 / 75 % of storm, flood, theft and tax losses, and softens crashes
+    (−22.5 / −15 / −7.5 % instead of −30 %).
+  - Lv 2+ adds a night guard that stops half of all thefts.
+- **Fire Station:** each level cuts storm, flood and lightning odds by 10 % (up to 50 %).
+- **Workstations + engineers:** each workstation level makes breakdowns 3 % rarer and shorter (down to ×0.4). An assigned
+  engineer cuts them like it cuts fires.
+- **Safety & Insurance sheet** (bottom bar "Safety"; on phones in More):
+  - a summary and when the next setback is possible;
+  - open repairs and insurance;
+  - "What can happen", with the cap, counter-play and current odds of each setback;
+  - "What happened": a log of the last 20 setbacks with totals (setbacks, stopped, quick repairs, coins lost).
+
+### Sim (real game code, greedy player, 6 runs / 5 Replants, 30–45 min per run, two seeds, setbacks on vs off)
+- **Frequency:** 1–3 setbacks per run (≈ 2–4.7 per hour of play). The first one comes ~16–27 min into a run, because the
+  grace period comes first and the 8–15 min gap starts after it.
+- **Losses:**
+  - worst stock loss 7.4 % of one good;
+  - building downtime 0–8 % of a run;
+  - coins never negative;
+  - Replant gains and run lengths unchanged (total earned ≈ 1.09B with vs 1.09B without).
+- **No soft-lock:** the yard always keeps 30 s of mill logs. Only one building is down at a time. Coins never go negative.
+
+### Compatibility
+- Old saves without `mish` load with no insurance and an empty log. Broken fields are repaired. Replant keeps insurance
+  and the log, and clears open repairs.
+- Version `2.26`; service worker cache `timber-tycoon-v2.26`.
+
+### Tests
+- New `test/v226.py`, 71 checks:
+  - grace periods and offline (3 h away rolls nothing, repairs finish, nothing right on return);
+  - 4 h frequency;
+  - 60 forced rolls of each setback against its cap;
+  - breakdown, storm, repair, insurance, night guard, Fire Station and workstation effects;
+  - lightning → fire, and rain odds;
+  - Replant;
+  - the greedy 5-Replant sim (frequency, loss size, no soft-lock);
+  - old saves and the welcome-back text;
+  - desktop clicks (Safety button, sheet, repairs, insurance, scene tag → building sheet, crash in the event bar);
+  - iPhone 13 and Pixel 7 taps (More tile, no sideways scroll, ≥ 40 px buttons, repair);
+  - no console errors.
+- `test/v225.py`: a running order could complete during the save check (timing race); its amount is now pinned.
+- Screenshots: `python3 test/shot_v226.py` → `screenshot-v226-{desktop,mobile}-{scene,repair,safety,log}.png`.
+
 ## [2.25] — 2026-10-21
 
 **Orders that make sense after a Replant + a client order board.** Item 5 of Semih's Oct 20 list: "after a Replant, orders
@@ -305,8 +385,8 @@ the top of the Team tab, each with what raises it. On phones you tap a chip to s
 ### Next (rest of Semih's Oct 20 list, one per following release)
 3. ~~Staff training rework~~: done in 2.23.
 4. ~~The power plant also accepts logs; veneer and plywood balance~~: done in 2.24.
-5. Orders scale after Replant (recheck all costs, orders and rewards for silly numbers).
-6. Bad-luck events.
+5. ~~Orders scale after Replant~~: done in 2.25.
+6. ~~Bad-luck events~~: done in 2.26.
 7. Factory layout: each phase in vertical columns growing downward, helper buildings (power plant, fire station,
    construction, R&D, staff) on the right, the chain order followed and gaps filled; new trophies for the new systems.
 8. Logistics tiers: calm, readable-speed forklifts → conveyor belts between adjacent factories → drones.
