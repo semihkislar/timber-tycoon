@@ -337,6 +337,9 @@ button{font:inherit;color:inherit}
 #orderCard.late{border-color:#e8473c;animation:ocLate 1s ease-in-out infinite}
 @keyframes ocLate{50%{box-shadow:0 0 0 5px rgba(232,71,60,.35),0 10px 26px rgba(0,0,0,.35)}}
 .ord-card{background:#fffaf0;border:1.5px solid var(--line);border-radius:14px;padding:10px}
+.ord-board{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;background:#2a1d14;color:#fff3d6;border-radius:12px;padding:7px 11px;margin:0 0 8px;font-size:12.5px}.ord-board b{color:#f5c84c}.ord-board small{flex-basis:100%;opacity:.75;font-size:10.5px}
+.ord-card+.ord-card{margin-top:8px}.ord-card.act{border-color:#e8b13a}
+.oc-more{margin-left:auto;align-self:flex-start;background:#2a1d14;color:#f5c84c;font-weight:900;font-size:11px;border-radius:9px;padding:2px 7px;flex:none}
 .ord-card.prem{background:linear-gradient(160deg,#fffaf0,#fff1c4);border-color:#e8b13a}
 .hrow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:6px;padding:6px 8px;border-radius:10px;background:#fffaf0;border:1.5px solid var(--line);font-size:12.5px}
 .hrow small{display:block;color:var(--ink2);font-size:10.5px}.hrow.ok b{color:#2f7020}.hrow.no b{color:#b8352c}.hrow.no{opacity:.75}

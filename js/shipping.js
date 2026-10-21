@@ -43,16 +43,19 @@ function shNextGain(k){const s=S.ship,o=Object.assign({},s);
   if(k==='dock'){return `+2% on every sale (≈ +${fmt(coinRate*.02/(1+shPremium()))}/s)${[3,7].includes(s.dock)?' · +1 bay':''}`;}
   o[k]++;const a=shLoadF(s),b=shLoadF(o);return `loading ×${a.toFixed(2)} → ×${b.toFixed(2)}${k==='crane'?' · +20% contract rewards':''}${k==='fspd'?' · faster forklifts':''}`;}
 /* ---------- contracts ---------- */
-function shProducts(){return RES.filter(r=>canSell(r.id)).filter(r=>rates[r.id]&&rates[r.id].s>1e-6);}
-function shMakeOffer(){const P0=shProducts();if(!P0.length) return null;
+// v2.25: only products whose sales can carry a contract worth ≥ ORD_MIN_SEC s of income; the quantity never drops below
+// ORD_MIN_UNITS, and the reward stays proportional to the goods (value × mult, topped up to at most 2× that by the income floor)
+function shQty(k,t){const rate=(rates[k]&&rates[k].s)||0;return Math.max(rate*t*.55,ORD_MIN_UNITS,Math.min(ORD_MIN_SEC*ordInc()/Math.max(1e-12,price(k)),rate*t*.9));}
+function shProducts(t){t=t||150;return RES.filter(r=>canSell(r.id)).filter(r=>{const s=rates[r.id]&&rates[r.id].s;if(!(s>1e-6)) return false;return s*t*.9*price(r.id)>=ORD_MIN_SEC*ordInc()&&s*t*.9>=ORD_MIN_UNITS;});}
+function shMakeOffer(){const t=Math.round((150+Math.random()*150)/30)*30,P0=shProducts(t);if(!P0.length) return null;
   const r=P0[Math.floor(Math.random()*Math.min(P0.length,6))+Math.max(0,P0.length-6)]||P0[P0.length-1];
   const c=CITIES[Math.floor(Math.random()*CITIES.length)];
-  const t=Math.round((150+Math.random()*150)/30)*30, rate=rates[r.id].s, qty=Math.max(1,rate*t*.55);
+  const qty=niceNum(shQty(r.id,t));
   const mult=1.5+.6*Math.random()+(c.likes&&c.likes[r.id]?.3:0);
-  return {id:Date.now()%1e6,city:c.id,res:r.id,qty,t,mult,cr:coinRate};}
+  return {id:Date.now()%1e6,city:c.id,res:r.id,qty,t,mult,cr:ordInc()};}
 function shReward(o){const s=S.ship,c=CITIES.find(x=>x.id===o.city);const route=S.trade&&S.trade.routes&&S.trade.routes[o.city]?1.25:1;
-  // goods value x mult, but never less than ~10% of what you earn over the contract window (single products can be cheap)
-  return Math.max(o.qty*price(o.res)*o.mult,(o.cr||0)*o.t*.06*o.mult)*(1+.2*s.crane)*route;}
+  // goods value x mult; the income floor (~6 % of income over the window) may top it up, but to at most 2× the goods value
+  const v=o.qty*price(o.res)*o.mult;return Math.max(v,Math.min(2*v,(o.cr||0)*o.t*.06*o.mult),ORD_MIN_PAY*cs())*(1+.2*s.crane)*route;}
 function shAccept(){const s=shState();if(!s.offer||s.contract) return false;s.contract=Object.assign({},s.offer,{got:0,left:s.offer.t,reward:shReward(s.offer)});delete s.contract.age;s.offer=null;sfx('buy');return true;}
 function shSkip(){const s=shState();if(!s.offer) return false;s.offer=null;s.nextOffer=30;return true;}
 function shAbandon(){const s=shState();if(!s.contract) return false;s.contract=null;s.nextOffer=60;return true;}

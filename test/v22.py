@@ -98,7 +98,7 @@ with sync_playwright() as p:
     pg.evaluate('TT.simulate(5)'); g=pg.evaluate('TT.S.orders.active.got'); ok(g>0,f'active order collects surplus production ({g:.0f})')
     pg.evaluate('TT.ordTab="clients"')  # v2.6 added a Daily tab
     pg.click('#bbOrd'); pg.wait_for_timeout(400)
-    ok(pg.evaluate('TT.curSheet')=='ord' and pg.locator('#opBar').count()==1,'Orders panel with progress bar')
+    ok(pg.evaluate('TT.curSheet')=='ord' and pg.locator('#ordBody .ord-card.act [id^=opBar]').count()==1,'Orders panel with progress bar (v2.25: one card per order)')
     c0,rw=pg.evaluate('(()=>{const r=[TT.S.coins,TT.S.orders.active.reward];TT.S.autosell.paper=false;TT.S.res.paper=TT.S.orders.active.amt*2;return r})()')
     pg.wait_for_timeout(500)
     ok(pg.evaluate('TT.S.orders.active')is None and pg.evaluate('TT.S.orders.done')==1,'stockpiled goods (keep stock) feed the order and complete it')
