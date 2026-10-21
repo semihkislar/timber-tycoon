@@ -5,6 +5,97 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.25] — 2026-10-21
+
+**Orders that make sense after a Replant + a client order board.** Item 5 of Semih's Oct 20 list: "after a Replant, orders
+ask for silly tiny amounts like 5 units".
+
+### Why orders asked for 5 units (root cause)
+- **Daily contracts were drawn about 4 seconds into a new run** and kept for the whole day. Replant clears the day's
+  contracts, and the game drew new ones as soon as the first Sawmill ran. At that moment almost nothing was being made, so
+  the draw fell back to a fixed list of goods (planks, chips, chairs, charcoal, paper, furniture) **sized at 0.05 per second**
+  whether you made them or not. That gave "5 Furniture", "5 Charcoal" and "5 Chips". The reward came from an income floor,
+  so "5 furniture" could pay 🪙170K, or 🪙40 in a fresh run. In the sim this happened after **every** Replant.
+- **Client orders were sized on the smoothed output of one good** (the smaller of what the line could make and a slow
+  ~60 s average of what it did make) × 25–40 % of the timer, with a floor of 5. The average lags. Right after a Replant
+  everything grows quickly, and a line that is new, just upgraded or briefly short of inputs reads near 0. Premium goods
+  were picked 65 % of the time, and they come from the newest Lv 1 workshops. So clients asked for a handful of units, and
+  an income floor (25 % of income over the timer) paid **up to 7,000× the goods' value**.
+- **Export contracts** (Shipping Yard) used the same idea on *sales*. A good that is mostly used inside the factory sells
+  almost nothing, so contracts asked for **1 unit** with rewards up to ×74,000 the goods.
+- The minimums (5 units, 🪙50 / 🪙40) were fixed numbers and did not follow forest value.
+
+### Changed: order sizing (client orders, daily contracts, export contracts)
+- **Amounts follow what the line really makes.**
+  - The deliverable rate is the line's potential output, counted at no less than 35 % even while the average lags
+    (`ordRate`).
+  - The amount is that rate × 25–40 % of the timer, and at least worth **5 s of this run's income**. It also never drops
+    below **20 units**, and it stays deliverable: at most 60 % of the output over the timer plus 80 % of stock (`ordPlan`).
+- **Income reference** (`ordInc`): the larger of income now, half of the run's best smoothed income, and
+  2 🪙/s × forest value. So amounts scale with production and forest value.
+- **Goods that can't carry a real order are skipped.** A brand-new Lv 1 workshop is offered once it can fill an order worth
+  5 s of income. Goods you don't make are never offered: the fallback list is gone.
+- **Rewards are proportional to the goods.**
+  - Client orders pay the goods' value × **1.5–2.5**; daily contracts pay × **1.4–2.2** (before premium, difficulty,
+    streak, Client Charmer and research bonuses). Inside that band they follow ~15 % of income over the timer.
+  - Export contracts pay value × multiplier; the income floor may top that up to at most 2×.
+  - The minimum reward is 🪙50 × forest value (was 🪙50).
+  - Bonus Seeds on orders need 🪙10M × forest value earned this run (was a flat 🪙10M, which a late run passes in a second).
+- **Daily contracts wait for running lines.** The day's three are drawn once 3 goods can carry a contract, or after the
+  run's first 5 minutes with at least 1 (a first game with no Replant still opens at ~🪙500, as before). Until you accept an
+  offer, its amount and reward follow your output every 10 s (when they change by ≥ 15 %). Once accepted, it stays fixed.
+
+### Added: client order board (more orders available)
+- Clients now call every **45–75 s** (was once every 3–5 min after the last order ended). They wait on a **board**: up to
+  2 offers, or 3 once you run Phase II goods. Offers stay up for 4 min (was 75 s), and each one asks for a different good.
+- **Run several orders at once:** 1 slot, +1 with a Phase II line, +1 with the Premium Area (up to 3). Each order fills
+  from its own line with the same ≥ 70 % priority as before.
+- **Clients tab:**
+  - A header with slots in use and waiting offers, and what unlocks the next slot.
+  - One card per running order (progress, timer, Deliver from storage) and per offer (Accept / Decline). With every slot
+    busy, Accept shows "All 3 slots busy".
+- **On the scene:**
+  - The order card shows **+N** for more orders on the board.
+  - The client's bubble says "3 new orders!".
+- Saves keep the lists (`S.orders.offers` / `S.orders.acts`). `S.orders.offer` / `.active` still point at the first one.
+
+### Results (sim: real game code, greedy player, 6 runs / 5 Replants, sampled every 15 s)
+| | v2.24 | v2.25 |
+|---|---|---|
+| Day's contracts right after a Replant | **5 units** (fresh player: every run; late player: run 1) | 150 – 1.7M units, only goods you make |
+| Client orders worth < 1 s of income | 0–5 per run | **0** |
+| Client order reward ÷ goods value, worst | ×47 – ×381 | ≤ ×5 incl. all bonuses (×1.5–2.5 before) |
+| Export contracts, smallest | 1 unit, reward up to ×74,000 the goods | ≥ 34 units, ≤ ×5 |
+| Smallest order value (any kind) | 0.00 s of income | 4.8 s of income |
+| Client orders completed per run (bot accepts all) | 1–5 | 4–28 |
+| Orders + dailies, share of the run's earnings (bot) | 0–30 % | 9–45 % |
+
+The late player has all research and the Premium Area, and reaches forest value ×1 → ×12,600. The fresh greedy player
+reaches ×1 → ×2.9. Orders now pay less each than the old income floor (~24–45 s of income instead of ~60–117 s), but there
+are more of them and they are never silly. A player who fills every order earns about a third of a run from orders; that is
+the reward for active play.
+
+### Compatibility
+- Old saves: the waiting offer and the running order move onto the board. Missing or broken fields are repaired. A 5-unit
+  daily offer from before the update is resized within 10 s.
+- Version `2.25`; service worker cache `timber-tycoon-v2.25`.
+
+### Tests
+- New `test/v225.py`, 61 checks:
+  - after a Replant: no contract before a line runs, and the day's contracts are ≥ 20 units, ≥ 5 s of income and only for
+    goods you make; a 5-unit offer is resized; an accepted contract stays fixed;
+  - a lagging line, 300 client orders, 200 dailies and 200 export contracts (amount, value, reward band); a new Lv 1 premium
+    workshop; the forest-value floors;
+  - slots 1/2/3; the board fills to 3 different offers; accept by id, refuse a fourth, deliver, expire, decline;
+  - saves and a v2.24 save;
+  - multi-Replant sims for a late and a fresh player (`test/sim_v225.py`, which also compares any release:
+    `python3 test/sim_v225.py releases/v2.24/index.html`);
+  - desktop clicks, iPhone 13 and Pixel 7 taps with fit / size / no sideways scroll;
+  - no console errors or 404s.
+- `test/v22.py`: the Orders panel check looks for the order's own progress bar (one card per order).
+- Screenshots: `python3 test/shot_v225.py` → `screenshot-v225-{desktop,mobile}-{scene,board,daily}.png`,
+  `screenshot-v225-mobile-offers.png`.
+
 ## [2.24] — 2026-10-20
 
 **Log fuel for the power plant + veneer/plywood balance.** Item 4 of Semih's Oct 20 list.

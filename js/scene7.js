@@ -359,7 +359,7 @@ function premOverlays(ctx,showTags){
   }
   // client bubble: who is at the gate and what they want
   const cl=scene.client, O=S.orders; if(cl&&cl.fig>.5&&(O.offer||O.active)){const o=O.offer||O.active;const p=P(CLIENT_FIG[0],CLIENT_FIG[1],44);const [bx,by]=w2s(p[0],p[1]);
-    if(bx>-60&&bx<scene.w+60&&by>-40&&by<scene.h+40){const bob=Math.sin(t*3)*2;const txt=O.offer?`${o.e} New order!`:`${o.e} ${fmt(o.got)}/${fmt(o.amt)}`;
+    if(bx>-60&&bx<scene.w+60&&by>-40&&by<scene.h+40){const bob=Math.sin(t*3)*2;const nO=(O.offers||[]).length,txt=O.offer?(nO>1?`${o.e} ${nO} new orders!`:`${o.e} New order!`):`${o.e} ${fmt(o.got)}/${fmt(o.amt)}`;
       const r=pill(ctx,bx,by+bob,txt,{bg:O.offer?'#f5c84c':'#fff6e0',fg:'#4a2e06',fs:O.offer?12:10.5,stroke:O.offer?'#fff6c8':'#e8b13a',padX:12,padY:8});
       ctx.fillStyle=O.offer?'#f5c84c':'#fff6e0';ctx.beginPath();ctx.moveTo(bx-5,by+bob+r[3]/2-1);ctx.lineTo(bx+5,by+bob+r[3]/2-1);ctx.lineTo(bx,by+bob+r[3]/2+6);ctx.closePath();ctx.fill();
       if(O.offer){const k=(t*1.3)%1;ctx.strokeStyle=`rgba(245,200,76,${1-k})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(bx,by+bob,r[2]/2+k*18,0,TAU);ctx.stroke();}}}
