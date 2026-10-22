@@ -9,7 +9,7 @@ function fitCamera(instant){
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=portrait?900:(hb?935:(typeof byVisible==='function'&&byVisible()?905:826));
+  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=portrait?900:(hb?935:840);   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -176,7 +176,7 @@ function drawScene(dt){
   for(const tk of scene.dockTrucks){if(tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j);if(!inView(x,y,110)) continue;
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(typeof mktFleetDraw==='function') mktFleetDraw(ctx,objs,inView);
-  if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=[28.35,22.15],b=[28.62,20.55];const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
+  if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=dk(28.35,22.15),b=dk(28.62,20.55);const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
   if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}   // v2.20 factory tiers
   premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView); if(typeof swDraw==='function') swDraw(ctx,objs,inView);   // v2.15 staff in the world

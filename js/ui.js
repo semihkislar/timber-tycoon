@@ -280,8 +280,10 @@ function updateAch(){
     $('achCount').textContent=`${n} / ${ACH.length}`;
     $('achBonus').innerHTML=`Trophy bonus: <b style="color:var(--green-d)">+${Math.round(n*ACH_BONUS*100)}%</b> to all production (+2% each, kept forever)`;
     $('achBar').style.width=(n/ACH.length*100).toFixed(0)+'%';
-    $('achGrid').innerHTML=ACH.map(a=>{const got=!!S.ach[a.id];
-      return `<div class="ach t-${a.t} ${got?'got':'lock'}${achFresh[a.id]?' fresh':''}" data-id="${a.id}" title="${a.n}: ${a.d}">${medalSvg(a.t,a.e)}<div class="an">${a.n}</div><div class="ad">${a.d}</div>${got?'':'<div class="mini"><i></i></div>'}</div>`;}).join('');
+    let lastG='';   // v2.27: the newer-systems trophies get their own section header
+    $('achGrid').innerHTML=ACH.map(a=>{const got=!!S.ach[a.id];const g=a.g||'';let hd='';
+      if(g!==lastG){lastG=g;if(g==='sys'){const tot=ACH.filter(x=>x.g==='sys'),have=tot.filter(x=>S.ach[x.id]).length;hd=`<div class="ach-h">🆕 Factory systems <small>stations · tiers · Replant · research · setbacks · orders · staff · ${have}/${tot.length}</small></div>`;}}
+      return hd+`<div class="ach t-${a.t} ${got?'got':'lock'}${achFresh[a.id]?' fresh':''}" data-id="${a.id}" title="${a.n}: ${a.d}">${medalSvg(a.t,a.e)}<div class="an">${a.n}</div><div class="ad">${a.d}</div>${got?'':'<div class="mini"><i></i></div>'}</div>`;}).join('');
   }
   $('achGrid').querySelectorAll('.ach.lock').forEach(el=>{const a=ACH.find(x=>x.id===el.dataset.id);const [c,t]=a.p();
     const i=el.querySelector('.mini>i'); if(i) i.style.width=Math.max(0,Math.min(100,c/t*100)).toFixed(0)+'%';});

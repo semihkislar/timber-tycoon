@@ -78,6 +78,7 @@ with sync_playwright() as p:
         def tap(x,y):
             cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]}); pg.wait_for_timeout(50); cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]}); pg.wait_for_timeout(600)
         pg.goto(URL); pg.wait_for_timeout(1300); E(pg,MID); E(pg,'document.querySelectorAll(".modal-bg").forEach(t=>t.remove());TT.fitCamera(true)'); pg.wait_for_timeout(800)
+        E(pg,"TT.jumpTo('dock')"); pg.wait_for_timeout(1400)   # v2.27: the dock moved to the helper strip, right of the phone's fit view
         s=E(pg,"TT.lotScreen('dock')"); tap(*s); ok(E(pg,'TT.curSheet')=='ship',f'{dev}: tapping the dock opens the Shipping Yard')
         E(pg,"TT.closeSheet()"); pg.wait_for_timeout(500)
         mb=E(pg,"(()=>{const e=[...document.querySelectorAll('#bottombar .bb')].find(x=>x.dataset.s==='more');const r=e.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()"); tap(*mb)

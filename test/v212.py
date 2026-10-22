@@ -167,7 +167,7 @@ with sync_playwright() as p:
         pt=E(pg,f'''(()=>{{const c=TT.cam;c.maxZ=Math.max(c.maxZ||0,3);c.z=c.tz={zoom};c.fly=null;const q=TT.P({i},{j},{z});c.x=c.tx=q[0];c.y=c.ty=q[1];return TT.w2s(q[0],q[1]);}})()''')
         pg.wait_for_timeout(450); return pt
     def tap_yard(pg,tag,touch=None):
-        pt=aim(pg,24.9,29.6,4); tap_xy(pg,pt,touch)
+        q=E(pg,'[TT.BYZ.ci+.38,TT.BYZ.cj+.25]'); pt=aim(pg,q[0],q[1],4); tap_xy(pg,pt,touch)   # v2.27: the yard moved to the helper strip (was 24.9,29.6)
         ok(E(pg,'TT.curSheet')=='build',f'{tag}: tap the Builders\' Yard → builders sheet ({E(pg,"TT.curSheet")})')
     def tap_bld(pg,bid,tag,touch=None):
         L=E(pg,f'[TT.LOTS["{bid}"].ci,TT.LOTS["{bid}"].cj]'); pt=aim(pg,L[0],L[1],22); tap_xy(pg,pt,touch)

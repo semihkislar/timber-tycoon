@@ -69,12 +69,12 @@ function vehLights(out,v,front,back,small){
 function collectLights(){
   const out=[], t=scene.t;
   for(const l of scene.lamps){const [x,y]=P(l.i,l.j);out.push({x:x+5,y:y+2,rx:50,ry:25,c:'warm',a:.85});out.push({x:x+6,y:y-27,rx:15,ry:15,c:'warm',a:.9,core:1});}
-  if(premOpen()) for(const [i,j] of [[24.75,.35],[24.75,8.7],[28.75,.3],[21.25,.3]]){const [x,y]=P(i,j);out.push({x,y:y+1,rx:42,ry:21,c:'gold',a:.8});out.push({x,y:y-27,rx:13,ry:13,c:'gold',a:.95,core:1});}
+  // v2.27: the pre-v2.21.1 Premium Area lamp glows (now the Power plant / helper strip, with no lamps there) are gone
   for(const b of BUILDINGS){const st=S.buildings[b.id];if(!st.lvl||b.tech) continue;if(b.premium&&!premOpen()) continue;const L=LOTS[b.id];const d=doorOf(L);
     const [x,y]=P(d[0],d[1],0);out.push({x,y,rx:30,ry:15,c:b.premium?'gold':'warm',a:.6});const [hx,hy]=P(d[0],d[1],15);out.push({x:hx,y:hy,rx:9,ry:9,c:'warm',a:.8,core:1});
     if(b.id==='kiln'&&st.on){const fl=.75+.25*Math.sin(t*9)*Math.sin(t*5.3);const k=P(d[0],d[1]-.9,6);out.push({x:k[0],y:k[1],rx:48,ry:30,c:'fire',a:.7*fl});}}
   {const [x,y]=P(YARD.ci,YARD.cj,0);out.push({x,y,rx:80,ry:40,c:'warm',a:.45});}
-  {const [x,y]=P(28.6,21,0);out.push({x,y,rx:70,ry:34,c:'warm',a:.55});}
+  {const [x,y]=P(...dk(28.6,21),0);out.push({x,y,rx:70,ry:34,c:'warm',a:.55});}
   {const fl=.8+.2*Math.sin(t*11)*Math.sin(t*6.7);const [x,y]=P(CAMP.i,CAMP.j,0);out.push({x,y,rx:86,ry:48,c:'fire',a:.85*fl});out.push({x,y:y-6,rx:16,ry:16,c:'fire',a:1,core:1});}
   for(const v of scene.logTrucks) vehLights(out,v,1.62,-1.64);
   for(const v of scene.dockTrucks) vehLights(out,v,1.62,-1.64);

@@ -49,7 +49,7 @@ function mkLogTruck(k,g){const v={kind:'log',k,legs:logTruckLegs(),li:0,s:0,v:0,
   const L0=v.legs[0].pa.tot; if(g>L0){v.li=1;v.s=Math.min(g-L0,v.legs[1].pa.tot-.1);v.load=0;v.v=2.5;} else {v.s=g;v.v=g>0?3:0;}
   return v;}
 /* shipping trucks: road -> reverse into the dock bay -> load -> pull out and leave */
-const DOCKB=[30.45,20.0], DOCK_R=1.0;
+const DOCKB=dk(30.45,20.0), DOCK_R=1.0;   // v2.27: follows the dock
 function dockTruckLegs(){
   const A=[DOCKB[0]+DOCK_R,DOCKB[1]+DOCK_R];
   return [

@@ -37,20 +37,17 @@ function mktPickupOf(bid){
   if(L.side==='R') return [end[0]+1.05, end[1]+.65];
   return [end[0]+.65, end[1]+1.05];
 }
+/* v2.27: vans use the factory lane (in from the highway at the south end of the lane, out the same way) instead of cutting
+   across the helper strip on the right or the Phase II/III columns. In on the outer side of the lane, out on the inner side,
+   so a van never meets itself; forklifts keep the middle (±0.55). */
+const MKT_LANE_END=55.2;
 function mktVanLegs(pick, fromEast){
-  const [pi,pj]=pick;
+  const [pi,pj]=pick, u=pi+pj, sg=(pi-pj)>=0?1:-1, vin=sg*1.65, vout=sg*1.05, uu=Math.min(u,MKT_LANE_END-2);
   const hold=(v,dt)=>{const sell=coinRate>0.05;v.load=Math.min(1,(v.load||0)+dt*(sell?.7:.12));return v.load<1||v.wait<(sell?1.4:2.4);};
-  if(fromEast){
-    return [
-      {pa:crPath([[38,pj+.4],[pi+3.2,pj+.2],[pi+.2,pj]],8),vmax:3.1},
-      {pa:densePath([[pi,pj],[pi+.001,pj]]),vmax:.45,hold},
-      {pa:crPath([[pi,pj],[pi-1.2,pj+2.2],[pi-2.5,pj+6],[10,42],[6,55]],8),vmax:3.5}
-    ];
-  }
   return [
-    {pa:crPath([[pi+.4,42],[pi+.2,pj+4],[pi,pj]],8),vmax:3.1},
+    {pa:crPath([[30.35,52],[30.35,38],[29.4,31.6],lpt(MKT_LANE_END,vin),lpt(uu+1.2,vin),[pi,pj]],8),vmax:3.1},
     {pa:densePath([[pi,pj],[pi+.001,pj]]),vmax:.45,hold},
-    {pa:crPath([[pi,pj],[pi+2.4,pj-1.2],[pi+7,pj-3.5],[40,pj-6],[44,-22]],8),vmax:3.5}
+    {pa:crPath([[pi,pj],lpt(uu+1.6,vout),lpt(MKT_LANE_END,vout),[29.9,31.2],[31.45,37],[31.45,56]],8),vmax:3.5}
   ];
 }
 function mkMktVan(slot){
