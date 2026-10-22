@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.26';
+const VERSION='2.27';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -210,7 +210,7 @@ const ACH=[
   {id:'rate10k',t:'silver',e:'🌊',n:'Log Flood',d:'Reach 10K logs/s',p:()=>[logRate(),1e4]},
   {id:'rate1m',t:'gold',e:'🌋',n:'Deforestation Inc.',d:'Reach 1M logs/s',p:()=>[logRate(),1e6]},
   {id:'saw10',t:'bronze',e:'🪚',n:'Sawdust Everywhere',d:'Sawmill level 10',p:()=>[S.buildings.sawmill.lvl,10]},
-  {id:'allbld',t:'silver',e:'🏭',n:'Full Chain',d:'Build all 7 buildings',p:()=>[MAIN_BLD.filter(b=>S.buildings[b.id].lvl>0).length,MAIN_BLD.length]},
+  {id:'allbld',t:'silver',e:'🏭',n:'Full Chain',d:`Build all ${MAIN_BLD.length} Phase 1–2 buildings`,p:()=>[MAIN_BLD.filter(b=>S.buildings[b.id].lvl>0).length,MAIN_BLD.length]},
   {id:'furn',t:'silver',e:'🛋️',n:'Interior Design',d:'Build a Furniture Factory',p:()=>[S.buildings.furniture.lvl,1]},
   {id:'lvl250',t:'gold',e:'🏗️',n:'Industrial Giant',d:'250 total building levels',p:()=>[totLvl(),250]},
   {id:'sat5',t:'silver',e:'⚙️',n:'Well Oiled',d:'5 buildings at 100% at once',p:()=>[nSat(),5]},
@@ -253,7 +253,33 @@ const ACH=[
   // v2.17 line specialisations
   {id:'spec1',t:'bronze',e:'🎛️',n:'Specialist',d:'Specialise a production line (Lv 50)',p:()=>[typeof specCount==='function'?specCount(1):0,1]},
   {id:'spec3',t:'gold',e:'💠',n:'Master Lines',d:'Run 3 lines at Specialisation III (Lv 200)',p:()=>[typeof specCount==='function'?specCount(3):0,3]},
+  // v2.27 trophies for the newer systems (g:'sys' = their own section in the Trophies sheet); every progress fn is safe on old saves
+  {id:'ws1',g:'sys',t:'bronze',e:'🛠️',n:'Shop Floor',d:'Upgrade a workstation',p:()=>[achWsTot(),1]},
+  {id:'ws50',g:'sys',t:'silver',e:'🔧',n:'Tuned Lines',d:'50 workstation levels in total',p:()=>[achWsTot(),50]},
+  {id:'ws10',g:'sys',t:'gold',e:'⚙️',n:'Precision Works',d:'Max out a workstation (Lv 10)',p:()=>[achWsMax(),10]},
+  {id:'tier3',g:'sys',t:'bronze',e:'🏗️',n:'Three Phases',d:'Run a building in Phase 1, 2 and 3 at once',p:()=>[[1,2,3].filter(t=>BUILDINGS.some(b=>BTIERa(b.id)===t&&S.buildings[b.id].lvl>0)).length,3]},
+  {id:'prem5',g:'sys',t:'gold',e:'💎',n:'Premium Row',d:'Build all 5 Phase 3 workshops',p:()=>[PREM_BLD.filter(b=>S.buildings[b.id].lvl>0).length,PREM_BLD.length]},
+  {id:'rp5',g:'sys',t:'silver',e:'🌲',n:'Evergreen',d:'Replant the forest 5 times',p:()=>[S.prestiges||0,5]},
+  {id:'shop1',g:'sys',t:'bronze',e:'🛒',n:'Seed Shopper',d:'Buy a Seed Shop perk',p:()=>[Object.values(S.shop||{}).reduce((a,v)=>a+(+v||0),0),1]},
+  {id:'goals',g:'sys',t:'gold',e:'🎯',n:'Goal Getter',d:'Finish every run goal in one run',p:()=>typeof GOALS!=='undefined'&&typeof goalsDone==='function'?[goalsDone(),GOALS.length]:[0,1]},
+  {id:'res25',g:'sys',t:'gold',e:'🧪',n:'Research Campus',d:'Research 25 nodes',p:()=>[Object.keys(S.research||{}).length,25]},
+  {id:'resrep',g:'sys',t:'silver',e:'♾️',n:'Never Done',d:'Research a ♾️ repeatable node',p:()=>[typeof RNODES!=='undefined'&&RNODES.some(n=>n.rep&&S.research&&S.research[n.id])?1:0,1]},
+  {id:'mish1',g:'sys',t:'bronze',e:'🍀',n:'Still Standing',d:'Get through your first setback',p:()=>[achMish('n'),1]},
+  {id:'mish10',g:'sys',t:'silver',e:'☂️',n:'Weathered',d:'Get through 10 setbacks',p:()=>[achMish('n'),10]},
+  {id:'fix5',g:'sys',t:'bronze',e:'🔩',n:'Quick Fix',d:'Use Repair now 5 times',p:()=>[achMish('repairs'),5]},
+  {id:'guard',g:'sys',t:'silver',e:'💂',n:'Night Watch',d:'Have the night guard stop a theft',p:()=>[achMish('dodged'),1]},
+  {id:'ins3',g:'sys',t:'gold',e:'🛡️',n:'Fully Covered',d:'Insurance Lv 3',p:()=>[(S.mish&&S.mish.ins)||0,3]},
+  {id:'slots3',g:'sys',t:'silver',e:'📋',n:'Full Board',d:'Run 3 client orders at once',p:()=>[(S.orders&&S.orders.acts&&S.orders.acts.length)||0,3]},
+  {id:'order50',g:'sys',t:'gold',e:'🏅',n:'Preferred Supplier',d:'Complete 50 client orders',p:()=>[(S.orders&&S.orders.done)||0,50]},
+  {id:'ship10',g:'sys',t:'silver',e:'🚢',n:'Export Desk',d:'Complete 10 export contracts',p:()=>[(S.ship&&S.ship.stats&&S.ship.stats.contracts)||0,10]},
+  {id:'train1',g:'sys',t:'bronze',e:'🎓',n:'Night School',d:'Finish a staff training',p:()=>[(S.staff&&S.staff.trained)||0,1]},
+  {id:'skill10',g:'sys',t:'gold',e:'🧑‍🏫',n:'Master Class',d:'Train a staff member to skill 10',p:()=>[Math.max(0,...((S.staff&&S.staff.team)||[]).filter(w=>!w.founding).map(w=>w.skill||1)),10]},
+  {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
+function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
+function achWsMax(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n=Math.max(n,x|0);}return n;}
+function achMish(k){return (S.mish&&S.mish.stats&&+S.mish.stats[k])||0;}
+function BTIERa(id){return typeof BTIER!=='undefined'?(BTIER[id]||0):0;}
 
 /* ===================== STATE ===================== */
 function freshState(keep){

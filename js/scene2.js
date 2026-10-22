@@ -92,14 +92,14 @@ function drawGround(ctx,x0,y0,x1,y1){
   ctx.strokeStyle='rgba(90,130,50,.5)';ctx.lineWidth=1.5;ctx.beginPath();
   for(const dj of [-1.05,1.05]){const a=P(-40,DIRT_J+dj),b=P(6.4,DIRT_J+dj);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   // asphalt road + dock apron
-  fillP(ctx,[P(28.6,18.6),P(30,18.6),P(30,23.4),P(28.6,23.4)],'#73777e');
+  {const a=dk(28.6,18.6),b=dk(30,23.4);fillP(ctx,[P(a[0],a[1]),P(b[0],a[1]),P(b[0],b[1]),P(a[0],b[1])],'#73777e');}   // v2.27: dock apron follows the dock
   fillP(ctx,[P(30,-70),P(32,-70),P(32,100),P(30,100)],'#62666d');
   ctx.strokeStyle='#f0ede4';ctx.lineWidth=2;ctx.beginPath();
   for(const ii of [30.1,31.9]){const a=P(ii,-70),b=P(ii,100);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   ctx.strokeStyle='#f2c230';ctx.lineWidth=2.4;ctx.beginPath();
   for(let j=-70;j<100;j+=1.2){const a=P(31,j),b=P(31,j+.6);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.beginPath();
-  for(let j=19.2;j<23;j+=.55){const a=P(29.05,j),b=P(29.75,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
+  for(let j=19.2+DKJ;j<23+DKJ;j+=.55){const a=P(29.05,j),b=P(29.75,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   // decorations
   for(const d of scene.deco){
     const [x,y]=P(d.i,d.j); if(x<x0-20||x>x1+20||y<y0-20||y>y1+20) continue;

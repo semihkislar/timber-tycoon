@@ -5,6 +5,112 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.27] — 2026-10-22
+
+**Factory layout, part 1 + trophies for the newer systems.** Item 7 of Semih's Oct 20 list. Item 7 is split over releases:
+this one ships the column layout, the helper strip on the right and the trophy batch. The new production buildings come in
+v2.28, because the yard first has to grow south past the highway (see *Next steps*).
+
+### Changed: factory layout (`js/scene1.js`, design: `docs/layout-v2.27.md`)
+- **Every tier is a straight column that runs down the screen in production-chain and unlock order.** Newer buildings sit
+  further down their column.
+  - **Phase 1** (right of the lane): Sawmill → Wood Chipper → Charcoal Kiln → **Veneer Peeler**. The Peeler moved from its
+    odd spot above the Sawmill to the bottom slot, straight across the lane from the Furniture Factory that uses its veneer.
+  - **Phase 2** (left of the lane): Carpentry → Pellet Press → Paper Mill → Furniture Factory, unchanged. Each one sits
+    straight across from its feeder (Sawmill ↔ Carpentry, Chipper ↔ Pellet Press, Peeler ↔ Furniture).
+  - **Phase 3** (its own row on the far left), unchanged: Gift Box Atelier → Parquet → Stationery → Cabinets → Showroom.
+- **Helper buildings sit in one strip on the right**, between the Phase 1 column and the highway. From top to bottom: Fire
+  Station, R&D campus (Power plant beside it), Contract Office, Builders' Yard and Shipping dock.
+  - The **Shipping dock** left the bottom of the Phase 1 column and now sits by the highway. Its forklifts use the aisle between
+    the Kiln and the Peeler.
+  - The **Builders' Yard** moved here from the bottom-left of the lane. The **Contract Office** (daily contracts) moved here from
+    the end of the lane.
+  - The strip is paved, with no trees.
+- **Vehicles follow the new layout:**
+  - Dock trucks, the dock forklift drop, the dock hand, dock-worker and forklift staff spots, and the dock night glow now follow
+    the dock (`dk()`).
+  - The courier van route is set relative to the office.
+  - Town Market vans now come in from the highway at the south end of the lane and leave the same way: in on the outer side of
+    the lane, out on the inner side. They used to cut across the new helper strip and the Phase 2/3 columns.
+  - A test checks that every forklift, tier lift, van, courier and dock-truck path (28 of them, plus every possible dock run)
+    stays clear of every building.
+- **Camera and chips:**
+  - The quick-jump chips list the production columns first (Forest, Log Yard, Factory, **Phase 1**, **Phase 2**, Phase 3), then
+    the helpers (R&D, Power, **📅 Contracts**, Builders, Dock, Harbour).
+  - The desktop fit view no longer grows downward when the Builders' Yard opens, because the yard is no longer at the bottom.
+  - The world bounds are unchanged; every chip target and moved building is inside them.
+  - On phones, the fit view frames the two production columns. The helper strip is one chip away.
+- **Supply Flow:** the arcs follow the moved Peeler and dock automatically.
+- Removed four stale gold night glows from the pre-v2.21.1 Premium Area. They had no lamps under them and sat in the new
+  helper strip.
+- **Saves keep every level.** Positions are not saved; they come from the code. A test checks that no `ci`/`cj` is saved.
+
+### Added: 21 trophies for the newer systems (`ACH`, `g:'sys'`)
+They have their own **🆕 Factory systems** section in the Trophies sheet, with a counter. Each one gives +2 % production, like
+every trophy.
+
+| System | Trophies |
+|---|---|
+| Workstations | 🛠️ Shop Floor (upgrade one) · 🔧 Tuned Lines (50 levels) · ⚙️ Precision Works (one at Lv 10) |
+| Tiers | 🏗️ Three Phases (Phase 1, 2 and 3 running) · 💎 Premium Row (all 5 Phase 3 workshops) |
+| Replant 2.0 | 🌲 Evergreen (5 Replants) · 🛒 Seed Shopper (a Seed Shop perk) · 🎯 Goal Getter (every run goal in one run) |
+| Research | 🧪 Research Campus (25 nodes) · ♾️ Never Done (a repeatable node) |
+| Setbacks | 🍀 Still Standing (first setback) · ☂️ Weathered (10) · 🔩 Quick Fix (5 × Repair now) · 💂 Night Watch (guard stops a theft) · 🛡️ Fully Covered (Insurance Lv 3) |
+| Orders | 📋 Full Board (3 client orders at once) · 🏅 Preferred Supplier (50 client orders) · 🚢 Export Desk (10 export contracts) |
+| Staff | 🎓 Night School (a finished training) · 🧑‍🏫 Master Class (a hired worker at skill 10) · 👥 Full Payroll (12 staff) |
+
+- Progress is read from counters that already exist (`S.ws`, `S.mish.stats`, `S.orders`, `S.ship.stats`, `S.research`,
+  `S.shop`, `S.prestiges`). The one new counter is `S.staff.trained`, which counts finished trainings from now on; old saves
+  start at 0.
+- "Full Chain" now reads "Build all 8 Phase 1–2 buildings". It said 7 from before the Peeler.
+
+### Balance
+- The bot sim (`test/balance.py`, 30 min fresh game) earned 8B–45B with v2.26 and 23B–31B with v2.27 over several runs. That is
+  within v2.26's run-to-run spread; a fresh game gets 2–4 of the new trophies in its first half hour. Fully completed, the new
+  trophies add up to +42 % production.
+- `test/sim_v225.py` (orders across Replants): no small or tiny orders, reward ÷ goods value ≤ ×4.8.
+- Order rewards are untouched, as Semih decided.
+
+### Compatibility
+- Old saves load with all levels, workstations, staff and trophies. A missing `S.staff.trained` reads as 0.
+- Version `2.27`; service worker cache `timber-tycoon-v2.27`.
+
+### Tests
+- New `test/v227.py`, 80 checks:
+  - columns straight, in order, feeders across the lane;
+  - no overlaps between any two buildings or helper yards;
+  - helpers right of Phase 1 and left of the highway, no trees in the strip;
+  - all vehicle paths clear of buildings, dock forklifts in the Kiln–Peeler aisle;
+  - camera bounds and chip order;
+  - Contracts chip flies to the office;
+  - hit tests and taps on the office, Builders' Yard, dock and Peeler;
+  - flow anchors;
+  - 21 trophies (finite progress, coverage, unlocks from counters, training counter, sheet section, Replant);
+  - a v2.26 save loads, and positions are not saved;
+  - iPhone 13 and Pixel 7 taps (chips, ≥ 36 px targets, the Dock chip frames the dock, tapping the office and yard, the
+    Trophies sheet fits);
+  - no console errors and no 404s.
+- Updated for the new positions:
+  - `test/v212.py` taps the Builders' Yard at `BYZ`;
+  - `test/v213.py` jumps to the dock before tapping it on phones;
+  - `test/v29.py` expects the new chip order.
+- The whole suite passes (`test/v*.py` + `functional.py`), including the `test/v28.py` perf test (frame cost flat
+  13.6 → 11.9 ms over 2 game-hours, p95 28 ms, heap stable).
+- Screenshots: `python3 test/shot_v227.py` → `screenshot-v227-{desktop,mobile}-{layout,helpers,peeler,night,jump,trophies}.png`.
+
+### Next steps (rest of item 7, then item 8)
+- **v2.28: grow the yard south and add production buildings at the bottom of the columns.** The highway now runs just below the
+  Phase 1 column (Peeler), so the yard has to grow south first, by moving the highway and dock road east or adding a bridge.
+  Then the new buildings can go at the bottom of the columns. Candidates, each to be balanced and simulated across Replants:
+  - Phase 1: a **Veneer Dryer** / second peeling line (veneer capacity for Furniture + Plywood);
+  - Phase 2: a **Plywood Press** on the factory floor (plywood capacity beside the R&D Plywood Mill) and a **Glulam Beam** line
+    (planks + glue);
+  - Phase 3: a **Timber-frame Houses** workshop (beams + plywood).
+- Camera bounds, quick-jump chips, Supply Flow and forklift lanes need extending to the longer columns, plus phone framing for
+  them.
+- Optional: park the Builders' crew trucks at the yard instead of the lane end.
+- Then item 8: logistics tiers (forklift → conveyor → drone, with calm, readable forklift speed).
+
 ## [2.26] — 2026-10-21
 
 **Bad-luck events ("setbacks").** Item 6 of Semih's Oct 20 list: random setbacks that really affect you, but stay

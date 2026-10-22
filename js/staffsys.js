@@ -445,7 +445,8 @@ function staffTick(dt,offline){
         w.skill=Math.min(STAFF_SKILL_MAX,w.train.to||((w.skill||1)+1));
         // keep S.mgr in sync for founding foremen so legacy bonuses track training
         if(w.founding&&w.mgrId&&S.mgr) S.mgr[w.mgrId]=Math.min(MGR_MAX,Math.max(S.mgr[w.mgrId]|0,w.skill*2));
-        w.train=null; if(!offline) toast(`🎓 <b>${w.name}</b> reached skill ${w.skill}!`);
+        w.train=null; st.trained=(st.trained|0)+1;   // v2.27: counted for the Night School trophy
+        if(!offline) toast(`🎓 <b>${w.name}</b> reached skill ${w.skill}!`);
         staffSig=''; M=computeMods();
       }
     }

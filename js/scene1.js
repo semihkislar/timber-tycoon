@@ -109,7 +109,10 @@ function shadowAt(ctx,i,j,rx,ry,a){const [x,y]=P(i,j,0);ctx.fillStyle=`rgba(30,4
 const ROWC=[9,14,19,24];
 function mkLot(id,c,side){return side==='L'?{id,ci:c-3,cj:c+3,side,face:'I'}:{id,ci:c+3,cj:c-3,side,face:'J'};}
 // v2.20 factory tiers: right side (R) = phase 1, logs only · left side (L) = phase 2, fed by phase 1 · Premium Area = phase 3
-const LOTS={peeler:{id:'peeler',ci:7.45,cj:1.3,side:'R',face:'J'},sawmill:mkLot('sawmill',9,'R'),chipper:mkLot('chipper',14,'R'),kiln:mkLot('kiln',19,'R'),
+// v2.27 layout: every tier is a column that runs down the screen in production-chain / unlock order, and new buildings are
+// added at the bottom of their column. Phase I: Sawmill → Chipper → Kiln → Veneer Peeler (moved from above the Sawmill to the
+// bottom slot, across the lane from the Furniture Factory that uses its veneer). Helpers sit in a strip on the right (HELPERS).
+const LOTS={sawmill:mkLot('sawmill',9,'R'),chipper:mkLot('chipper',14,'R'),kiln:mkLot('kiln',19,'R'),peeler:mkLot('peeler',24,'R'),
   carpentry:mkLot('carpentry',9,'L'),pellet:mkLot('pellet',14,'L'),paper:mkLot('paper',19,'L'),furniture:mkLot('furniture',24,'L')};
 // v2.21.1 Phase 3 row: the Premium Area is its own fenced row beyond Phase 2 (left of the lane), parallel to rows I and II.
 // The row is a band in lane coordinates u=i+j (along the lane) / v=i-j (across it): rows I (v=+6), II (v=-6), III (v=-17.6).
@@ -128,7 +131,15 @@ const PDOCK=(()=>{const [ci,cj]=uvIJ(60.5,-18.6);return {id:'pdock',ci,cj};})();
 const PROAD_J=41.2;          // access road from the highway to the premium dock (runs along i)
 // Phase 2 → Phase 3 forklift gates: one per phase-2 building, opposite its outbound rack
 const PGATES={carpentry:20.7,pellet:30.7,paper:40.7,furniture:50.7};
-const YARD={id:'yard',ci:4,cj:4,face:'I'}, DOCK={id:'dock',ci:27,cj:21,side:'R',face:'J'};
+// v2.27: the Shipping dock left the bottom of the Phase I column for the helper strip on the right, by the highway (j 21 → 15);
+// its forklifts use the aisle between the Kiln and the Peeler. dk() moves the old dock-relative points with it.
+const YARD={id:'yard',ci:4,cj:4,face:'I'}, DOCK={id:'dock',ci:27,cj:15,side:'R',face:'J'};
+const DKI=DOCK.ci-27, DKJ=DOCK.cj-21;
+function dk(i,j){return [i+DKI,j+DKJ];}
+// v2.27 helper strip (right of the Phase I column, left of the highway): Fire Station, R&D campus, Power plant, Builders' Yard,
+// Contract Office, Shipping dock. hStrip() is paved ground with no trees.
+const HSTRIP={v0:9.6,v1:17.2,u0:23.5,u1:47.5,i1:29.9};
+function hStrip(i,j){const u=i+j,v=i-j;return v>=HSTRIP.v0&&v<HSTRIP.v1&&u>=HSTRIP.u0&&u<HSTRIP.u1&&i<HSTRIP.i1;}
 const LOGPICK=[6.35,6.35];
 const ROAD_I=30.9;           // asphalt road centre line (runs along j)
 const DIRT_J=8;              // dirt log road centre (runs along i)
@@ -152,7 +163,7 @@ function lanePt(p,off){const u=p[0]+p[1];return [(u+off)/2,(u-off)/2];}
 function dockDrop(){const b=lotBox(DOCK);return [b.i0+b.bs*.3,b.j1+.42];}
 
 /* ground zones */
-function yardTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=11&&u>=5&&u<=57&&!(u<=6&&Math.abs(v)>=9)&&!(u>=56&&Math.abs(v)>=9);}
+function yardTile(i,j){const v=i-j,u=i+j+1;if(hStrip(i+.5,j+.5)) return true;return Math.abs(v)<=11&&u>=5&&u<=57&&!(u<=6&&Math.abs(v)>=9)&&!(u>=56&&Math.abs(v)>=9);}
 function laneTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=2&&u>=12&&u<=56;}
 function inFactory(u,v){const i=(u+v)/2,j=(u-v)/2;return yardTile(Math.floor(i),Math.floor(j));}
 function premApron(i,j){ // dock apron + access road + spur (paved, no grass/trees)
@@ -167,6 +178,7 @@ function zoneAt(i,j){
   // v2.5: R&D campus (north of the kiln row) and harbour across the highway
   if(i>=14.2&&i<19.6&&j>=-1.4&&j<3.5) return 'campus';
   if(i>=32.4&&i<40.4&&j>=11.5&&j<17.2) return 'harbor';
+  if(hStrip(i,j)) return 'yard';   // v2.27 helper strip
   if(i>=32.2&&j>=17.1&&j<20) return 'river';
   const u=i+j,v=i-j;
   if(inFactory(u,v)) return 'yard';
@@ -178,6 +190,7 @@ function isForestPt(i,j){
   if(i>=27.5&&i<34.6) return false;
   if(j>=4.8&&j<11.2&&i<7.5) return false;
   if(Math.abs(v)<=13&&u>=1&&u<=58.5) return false;
+  if(v>=HSTRIP.v0-1&&v<HSTRIP.v1+1.2&&u>=HSTRIP.u0-1.5&&u<HSTRIP.u1+1&&i<30) return false;   // v2.27 helper strip
   if(v>=-23.4&&v<=-11&&u>=16&&u<=66) return false;   // v2.21.1: clearing round the Phase 3 row
   if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
   if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;

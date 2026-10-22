@@ -1,13 +1,19 @@
 'use strict';
 /* ===================== v2.12 SCENE: builders' yard, crew trucks, builders on scaffolding =====================
-   The yard sits at the bottom of the lane, left of the lane end. The static part (gravel pad, fence, portacabin office, material
+   The yard sits in the helper strip right of the Phase I column (v2.27; it was at the bottom-left of the lane). The static part (gravel pad, fence, portacabin office, material
    stacks, floodlight, sign) is one live sprite that only re-renders when its level, season or lights change; the tower crane is
    drawn per frame (a handful of strokes) so its slow slewing and the hook are smooth. Each running job gets a yellow crew truck
    that drives up the lane (forward) and backs out (reverse), like the fire truck, so it never needs a U-turn in the lane.
    Premium and R&D buildings have no lane access: their crews walk on with a puff of dust. Scaffolding is a cached sprite per
    building and assembly step. */
-const BYZ={id:'build',ci:24.52,cj:29.35,i0:23.35,i1:25.7,j0:28.0,j1:30.7};
-const BY_CR=[23.78,30.22], BY_HM=84;                 // tower crane mast (front-left corner) and its height
+// v2.27: the yard moved from the bottom-left of the lane to the helper strip on the right (between the Chipper and the Power
+// plant). The art is still authored at its old spot (BYZ0) and drawn shifted by BY_D; P() is linear, so a canvas translate does it.
+const BYZ0={ci:24.52,cj:29.35,i0:23.35,i1:25.7,j0:28.0,j1:30.7};
+const BY_D=[23.25-BYZ0.ci,9.75-BYZ0.cj];
+const BYZ={id:'build',ci:BYZ0.ci+BY_D[0],cj:BYZ0.cj+BY_D[1],i0:BYZ0.i0+BY_D[0],i1:BYZ0.i1+BY_D[0],j0:BYZ0.j0+BY_D[1],j1:BYZ0.j1+BY_D[1]};
+function byShift(ctx){ctx.translate((BY_D[0]-BY_D[1])*HW,(BY_D[0]+BY_D[1])*HH);}
+function byP(i,j,z){return P(i+BY_D[0],j+BY_D[1],z);}
+const BY_CR0=[23.78,30.22], BY_CR=[BY_CR0[0]+BY_D[0],BY_CR0[1]+BY_D[1]], BY_HM=84;   // tower crane mast (front-left corner) and its height
 const BY_HOME=[[53.9,-1.15],[53.9,1.15]];            // (u,v) lane-end parking, facing up the lane
 const BY_YAW=Math.atan2(-1,-1);
 const BY_TRUCK_COL='#f2b81a';
@@ -114,8 +120,9 @@ function byDoneFx(j,n){if(typeof scene==='undefined'||!scene.ctx||n<1) return;sc
 function byPoof(){if(typeof scene==='undefined'||!scene.ctx) return;const p=P(BYZ.ci,BYZ.cj,14);for(let k=0;k<30;k++) emitP(p[0]+(Math.random()-.5)*110,p[1]+(Math.random()-.5)*44,'poof');}
 
 /* ---------- ground (baked into the ground chunks): gravel pad with tyre tracks ---------- */
-function byGround(ctx){
-  const {i0,i1,j0,j1}=BYZ, G=SEAS===3?'#e6eaed':'#b9ad94', G2=SEAS===3?'#eef1f3':'#c6bba3';
+function byGround(ctx){ctx.save();byShift(ctx);byGround0(ctx);ctx.restore();}
+function byGround0(ctx){
+  const {i0,i1,j0,j1}=BYZ0, G=SEAS===3?'#e6eaed':'#b9ad94', G2=SEAS===3?'#eef1f3':'#c6bba3';
   fillP(ctx,[P(i0,j0),P(i1,j0),P(i1,j1),P(i0,j1)].map(p=>[p[0],p[1]+3]),SEAS===3?'#c9d0d6':'#9a8e76');
   fillP(ctx,[P(i0,j0),P(i1,j0),P(i1,j1),P(i0,j1)],G);
   fillP(ctx,[P(i0+.12,j0+.12),P(i1-.12,j0+.12),P(i1-.12,j1-.12),P(i0+.12,j1-.12)],G2);
@@ -191,8 +198,9 @@ function byBarrier(ctx,a,b){ // low red/white plastic barriers along the front e
     fillP(ctx,[p0,p1,[p1[0],p1[1]-5.5],[p0[0],p0[1]-5.5]],k%2?'#f4f1ea':'#d8402a','rgba(60,20,10,.4)',.6);
     fillP(ctx,[[p0[0],p0[1]-3.6],[p1[0],p1[1]-3.6],[p1[0],p1[1]-2.4],[p0[0],p0[1]-2.4]],k%2?'#d8402a':'#f4f1ea');}
 }
-function byYardRaw(ctx,l,lit){
-  const {i0,i1,j0,j1}=BYZ;
+function byYardRaw(ctx,l,lit){ctx.save();byShift(ctx);const r=byYardRaw0(ctx,l,lit);ctx.restore();return r;}
+function byYardRaw0(ctx,l,lit){
+  const {i0,i1,j0,j1}=BYZ0;
   // back fences
   byFence(ctx,[i0+.04,j1-.05],[i0+.04,j0+.04],10);byFence(ctx,[i0+.04,j0+.04],[i1-.05,j0+.04],10);
   // back row: cement silo (Lv5), site office (two storeys from Lv3), floodlight (Lv4)
@@ -216,15 +224,16 @@ function byYardRaw(ctx,l,lit){
   byBeams(ctx,24.32,29.05,25.52,29.5);
   byBricks(ctx,24.32,29.8,24.86,30.32,6.4);byBricks(ctx,24.98,29.8,25.52,30.32,l>=2?8:4.8);
   // crane base (the mast itself is drawn per frame)
-  if(l>=2){box(ctx,BY_CR[0]-.24,BY_CR[1]-.24,BY_CR[0]+.24,BY_CR[1]+.24,0,3,'#a8a49c',{lw:.7});}
+  if(l>=2){box(ctx,BY_CR0[0]-.24,BY_CR0[1]-.24,BY_CR0[0]+.24,BY_CR0[1]+.24,0,3,'#a8a49c',{lw:.7});}
   else byBricks(ctx,23.55,29.85,24.05,30.35,4.8);
   // front: barriers on the left edge, sign at the gate
   byBarrier(ctx,[i0+.08,j1-.04],[i1-.55,j1-.04]);
   byYardSign(ctx,i1-.12,j1-.2);
   return 0;
 }
-function byPlot(ctx){ // not built yet: stakes, dashed outline, sign
-  const vis=byVisible(),{i0,i1,j0,j1}=BYZ,pts=[P(i0+.2,j0+.2),P(i1-.2,j0+.2),P(i1-.2,j1-.2),P(i0+.2,j1-.2)];
+function byPlot(ctx){ctx.save();byShift(ctx);byPlot0(ctx);ctx.restore();}
+function byPlot0(ctx){ // not built yet: stakes, dashed outline, sign
+  const vis=byVisible(),{i0,i1,j0,j1}=BYZ0,pts=[P(i0+.2,j0+.2),P(i1-.2,j0+.2),P(i1-.2,j1-.2),P(i0+.2,j1-.2)];
   ctx.setLineDash([5,4]);fillP(ctx,pts,'rgba(255,240,210,.3)',vis?'rgba(232,140,26,.95)':'rgba(120,110,90,.6)',1.6);ctx.setLineDash([]);
   for(const p of pts){ctx.fillStyle='#f07020';ctx.beginPath();ctx.moveTo(p[0],p[1]-9);ctx.lineTo(p[0]-3.4,p[1]);ctx.lineTo(p[0]+3.4,p[1]);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(p[0]-2,p[1]-5,4,1.4);}
   byBricks(ctx,24.3,29.0,24.8,29.5,4);byTimber(ctx,24.95,28.6,25.5,29.1);
@@ -350,8 +359,8 @@ function byOverlays(ctx){
 }
 function byLights(out){
   const l=byLvl();if(!l) return;
-  {const [x,y]=P(24.7,28.95,0);out.push({x,y,rx:40,ry:18,c:'warm',a:.6});}
-  if(l>=4){const [x,y]=P(25.56,28.14,56);for(const dx of [-6,0,6]) out.push({x:x+dx,y:y-.5,rx:7,ry:7,c:'cool',a:.95,core:1});const [gx,gy]=P(24.6,29.6,0);out.push({x:gx,y:gy,rx:96,ry:48,c:'cool',a:.7});}
+  {const [x,y]=byP(24.7,28.95,0);out.push({x,y,rx:40,ry:18,c:'warm',a:.6});}
+  if(l>=4){const [x,y]=byP(25.56,28.14,56);for(const dx of [-6,0,6]) out.push({x:x+dx,y:y-.5,rx:7,ry:7,c:'cool',a:.95,core:1});const [gx,gy]=byP(24.6,29.6,0);out.push({x:gx,y:gy,rx:96,ry:48,c:'cool',a:.7});}
   const ct=scene.by.craneTips;if(l>=2&&ct&&ct[2]){for(const p of [ct[0],ct[1]]) out.push({x:p[0],y:p[1]-1,rx:11,ry:11,c:'red',a:.9,core:1});}
   for(const t of scene.by.trucks){if(t.walk||t.i===undefined) continue;if(t.v>.05||t.goal==='site') vehLights(out,t,1.62,-1.64);
     if(t.v>.05||(t.job&&t.goal==='site')){if(Math.floor(scene.t*5+t.id)%2===0){const V=VF(t.i,t.j,t.yaw,0),p=VL(V,.67,0,37.6);out.push({x:p[0],y:p[1],rx:22,ry:22,c:'gold',a:.8});}}}

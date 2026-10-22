@@ -1,6 +1,6 @@
 'use strict';
 /* ===================== v2.12 BUILDERS' YARD: construction crews that upgrade buildings on their own (logic + sheet) =====================
-   A yard at the bottom of the lane sends crews in yellow trucks out to the factory. Each crew picks a building by the yard's plan
+   A yard in the helper strip right of the Phase 1 column (v2.27; was at the bottom of the lane) sends crews in yellow trucks out to the factory. Each crew picks a building by the yard's plan
    (next ×2 milestone / cheapest level / lowest level), puts up scaffolding, works for a few seconds and then pays for the levels at
    the normal price, never more than the budget share of your coins at that moment. Jobs only reserve a building; nothing is paid
    until the job is done, so prices, Buy ×10/Max and the cost of the next level are exactly the same as buying by hand.

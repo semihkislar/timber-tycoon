@@ -132,16 +132,17 @@ function sprayArc(ctx,from,to,t,a){
 }
 
 /* ===================== v2.6 CONTRACT OFFICE + COURIER VAN ===================== */
-// Small notice-board office between the furniture row and the shipping dock.
-const OFFICE={id:'office',ci:24.2,cj:24.5,face:'J'};
-const OFFB={i0:23.35,i1:25.05,j0:23.7,j1:25.3,bs:1.7};
+// Small notice-board office. v2.27: moved from the bottom of the lane to the helper strip on the right (between the R&D campus and
+// the Builders' Yard); the courier route below is relative to it.
+const OFFICE={id:'office',ci:19.1,cj:6.0,face:'J'};
+const OFFB={i0:OFFICE.ci-.85,i1:OFFICE.ci+.85,j0:OFFICE.cj-.8,j1:OFFICE.cj+.8,bs:1.7};
 scene.couriers=[];
 function spawnCourierVan(o){
   // park by the office, load briefly, then drive onto the highway and off-screen north
-  const park=[25.1,24.9];
+  const ci=OFFICE.ci,cj=OFFICE.cj,park=[ci+.9,cj+.4];
   const legs=[
-    {pa:crPath([[30.35,22.5],[28.4,23.4],[26.4,24.4],[park[0],park[1]]],8),vmax:2.8,hold:(v,dt)=>{v.load=Math.min(1,(v.load||0)+dt*.55);v.doors=Math.min(1,(v.doors||0)+dt*1.4);return v.load<1||v.wait<1.6;}},
-    {pa:crPath([[park[0],park[1]],[26.8,24.2],[28.6,22.8],[30.35,21.2],[30.35,12],[30.35,-26]],10),vmax:3.6}
+    {pa:crPath([[30.35,cj-2],[28.4,cj-1.1],[26.4,cj-.1],[park[0],park[1]]],8),vmax:2.8,hold:(v,dt)=>{v.load=Math.min(1,(v.load||0)+dt*.55);v.doors=Math.min(1,(v.doors||0)+dt*1.4);return v.load<1||v.wait<1.6;}},
+    {pa:crPath([[park[0],park[1]],[ci+2.6,cj-.3],[ci+4.4,cj-1.7],[30.35,cj-3.3],[30.35,cj-9],[30.35,-26]],10),vmax:3.6}
   ];
   scene.couriers.push({kind:'courier',legs,li:0,s:0,v:0,load:0,doors:0,col:'#2f6fb0',box:'#f4f1e8',stripe:'#e8a020',item:o&&o.item,logo:'DAILY CO.'});
 }

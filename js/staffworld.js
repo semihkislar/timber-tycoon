@@ -37,8 +37,8 @@ function swTired(w){return swFatigueOn(w)&&!w.brk&&(typeof w.energy==='number'?w
 
 /* ---------- where each role works (grid coords) ---------- */
 const SW_YARD=[[5.75,6.05],[6.6,5.25],[3.95,5.85],[6.2,4.3],[6.95,6.35]];        // log-yard apron between the yard, the dirt road and the lane
-const SW_FORK=[[25.35,23.25],[27.55,23.45],[24.9,22.2],[26.6,24.0]];          // forklift drop at the Shipping Yard
-const SW_DOCK_A=[[26.35,23.0],[27.05,23.05],[25.85,22.95]], SW_DOCK_B=[[29.05,22.0],[29.1,21.2],[29.05,20.45]], SW_DOCK_VIA=[29.05,23.0]; // platform crates → round the corner → truck bays
+const SW_FORK=[[25.35,23.25],[27.55,23.45],[24.9,22.2],[26.6,24.0]].map(p=>dk(p[0],p[1]));   // v2.27: dk() follows the moved dock          // forklift drop at the Shipping Yard
+const SW_DOCK_A=[[26.35,23.0],[27.05,23.05],[25.85,22.95]].map(p=>dk(p[0],p[1])), SW_DOCK_B=[[29.05,22.0],[29.1,21.2],[29.05,20.45]].map(p=>dk(p[0],p[1])), SW_DOCK_VIA=dk(29.05,23.0); // platform crates → round the corner → truck bays
 const SW_FIRE=[[[9.0,3.3],[8.4,2.8],[8.75,3.75]],[[11.85,1.0],[11.95,1.9],[12.35,1.45]]];   // apron corner | yard beside the station (never walk through it)    // fire-station apron
 const SW_SEATS=[[.95,-.25],[.85,.55],[.25,1.0],[-.5,1.0],[1.3,-.95],[.55,-1.2],[1.6,.25],[1.15,1.2],[-1.1,1.3],[1.85,-.55],[.2,1.65],[1.75,.95]];
 function swBldPts(bid,k){const L=LOTS[bid]; if(!L||(L.prem&&!(S.premium&&S.premium.lvl))) return null; const B=lotBox(L), o=(k%3)*.09;

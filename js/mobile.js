@@ -13,17 +13,24 @@ function compactMode(){return window.innerWidth<=720||railMode();}
 function moreShown(){const b=$('bbMore');return !!(b&&b.offsetParent);}
 
 /* ---------- quick-jump locations ---------- */
+// v2.27: production columns first (top → bottom of the screen, left → right), then the helper strip on the right
 const JUMPS=[
   {id:'forest',ic:'🌲',l:'Forest',pt:()=>P(-3,15,0),z:1.6},
   {id:'yard',ic:'🪵',l:'Log Yard',pt:()=>P(YARD.ci,YARD.cj,20),z:1.7},
   {id:'factory',ic:'🏭',l:'Factory',pt:()=>P(15.5,15.5,20),z:1.15},
+  {id:'p1',ic:'🪚',l:'Phase 1',pt:()=>P(...colMid('R'),20),z:1.2},
+  {id:'p2',ic:'🔨',l:'Phase 2',pt:()=>P(...colMid('L'),20),z:1.2,lock:()=>!MAIN_BLD.some(b=>BTIER[b.id]===2&&S.buildings[b.id].lvl>0)},
   {id:'prem',ic:'💎',l:'Phase 3',pt:()=>P(PREM.ci,PREM.cj,20),z:1.05,lock:()=>!S.premium.lvl},   // v2.21.1: the Phase 3 row
-  {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
   {id:'rnd',ic:'🔬',l:'R&D',pt:()=>P(16.9,1,20),z:1.7,lock:()=>!campusOpen()},
   {id:'power',ic:'⚡',l:'Power',pt:()=>P(PWZ.ci,PWZ.cj,24),z:1.6,lock:()=>!pwVisible()},
+  {id:'office',ic:'📅',l:'Contracts',pt:()=>P(OFFICE.ci,OFFICE.cj,14),z:1.8},
   {id:'build',ic:'🏗️',l:'Builders',pt:()=>P(BYZ.ci,BYZ.cj,22),z:1.7,lock:()=>!byVisible()},
   {id:'dock',ic:'🚚',l:'Dock',pt:()=>P(DOCK.ci,DOCK.cj,20),z:1.7},
+  {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
 ];
+/* centre of a production column (all its lots, built or not) */
+function colMid(side){const L=Object.values(LOTS).filter(l=>l.side===side);if(!L.length) return [15.5,15.5];
+  return [L.reduce((a,l)=>a+l.ci,0)/L.length,L.reduce((a,l)=>a+l.cj,0)/L.length];}
 let jumpSig='';
 function buildJumpBar(){
   const bar=$('jumpBar'); const sig=JUMPS.map(j=>j.lock&&j.lock()?0:1).join('');

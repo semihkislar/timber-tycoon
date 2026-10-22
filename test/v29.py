@@ -129,7 +129,7 @@ with sync_playwright() as p:
         E(pg,'TT.fitCamera(true)'); settle(pg,700)
         T.tap(*E(pg,"(()=>{const r=document.getElementById('jumpBtn').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")); pg.wait_for_timeout(350)
         chips=E(pg,"[...document.querySelectorAll('#jumpBar .jchip')].map(e=>{const r=e.getBoundingClientRect();return [e.dataset.j,r.height,r.bottom]})")
-        ok([c[0] for c in chips if c[0] not in ('power','build')]==['forest','yard','factory','prem','harbor','rnd','dock'] and min(c[1] for c in chips)>=44 and E(pg,"document.body.classList.contains('jump-on')"),f'{tag}: quick-jump chips shown ({[c[0] for c in chips]})')
+        ok([c[0] for c in chips if c[0] not in ('power','build')]==['forest','yard','factory','p1','p2','prem','rnd','office','dock','harbor'] and min(c[1] for c in chips)>=44 and E(pg,"document.body.classList.contains('jump-on')"),f'{tag}: quick-jump chips shown ({[c[0] for c in chips]})')
         bbtop=E(pg,"document.getElementById('bottombar').getBoundingClientRect().top")
         ok(max(c[2] for c in chips)<=bbtop,f'{tag}: chips sit above the bottom bar')
         # scroll the chip row to Dock and tap it
