@@ -5,6 +5,69 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.28] — 2026-10-23
+
+**Factory layout, part 2: the south yard and a timber-frame line.** Finishes item 7 of Semih's Oct 20 list. The highway now
+bends around a new south end of the yard. Three new production buildings sit at the bottom of their phase columns.
+
+### Added: timber-frame line (`js/logic_a.js`, `js/tiers.js`, `js/scene7.js`)
+| Building | Phase | Recipe | Base cost | Where |
+|---|---|---|---|---|
+| **Beam Saw** 🪜 | I | 6 logs → 2 Timber Beams + 2 Wood Chips | 2 M | bottom of the Phase 1 column (south yard) |
+| **Glulam Plant** 🌉 | II | 4 Timber Beams → 1 Glulam Beam | 25 M | bottom of the Phase 2 column, straight across from the Beam Saw |
+| **Timber-frame Houses** 🏡 (premium) | III | 4 Glulam + 2 Plywood → 1 Timber-frame House | 600 M | last workshop of the Phase 3 row |
+
+- New goods: Timber Beams ($14), Glulam Beams ($220), Timber-frame Houses ($3,200, premium).
+- The line avoids paper and chairs, the inputs that held the premium workshops back after v2.24. The Beam Saw's offcuts are
+  chipped, so it also adds chips to the pellet and paper lines.
+- Fully integrated:
+  - tiers (I → II → III, the tier rule holds);
+  - research branches (milling: Beam Saw, Glulam; craft: Houses);
+  - 3 workstations each and 3 new managers (Baran, Ingrid, Hana);
+  - fire risk;
+  - supply-flow tints and arcs;
+  - the premium gate lift for glulam and tier forklifts for beams;
+  - client orders (new client *Alpine Chalet Developers*; City Builders also like beams and glulam);
+  - trade likes (Rotterdam: beams, Hamburg: glulam, New York: houses);
+  - export contracts.
+- Art: the Beam Saw is a timber shed with twin band-saw wheels and stacked beams. The Glulam Plant has a sawtooth hall, a clamp
+  press and curved glulam members. The *TIMBER HOMES* workshop has a timber-frame house skeleton on its roof and house frames
+  behind the glass.
+- 3 new trophies: *Timber Line* (bronze: build a Beam Saw and a Glulam Plant), *Raise the Roof* (silver: build Timber-frame
+  Houses) and *Chalet Village* (gold: Timber-frame Houses Lv 50). *Premium Row* now counts all 6 workshops.
+
+### Changed: south yard and highway (`js/scene1.js`, `js/scene2.js`, `js/scene10.js`; design: `docs/layout-v2.28.md`)
+- **The highway bends.** It runs along j down to the river bridge, then straight down the screen past the new south yard, then
+  along j again further east. The rail line, its bridge, the trains, puddles and lane lines follow the bend.
+- **The yard and lane run on to u ≈ 66.** A **south gate road** joins the lane end to the highway.
+- **The Phase 3 row is one slot longer.** Its dock and access road moved down, and the road now reaches the bent highway.
+- **Vehicles follow the bend:** dock trucks, premium trucks, the client van and market vans. Vans for the lane now use the
+  south gate road.
+- **Camera:** bounds y1 1320 → 1480. The fit view frames the south yard once a Beam Saw or Glulam Plant stands. The Phase 1 and
+  Phase 2 chips frame the longer columns.
+
+### Balance (`/workspace/scratch/p28/bal.py`: greedy late player, all research and premium, 4 Replants, seed 1)
+| Run | v2.27 earned | v2.28 earned | change |
+|---|---|---|---|
+| 1 | 3.11e12 | 3.84e12 | +23 % |
+| 2 | 1.06e14 | 1.32e14 | +25 % |
+| 3 | 2.22e14 | 2.49e14 | +12 % |
+| 4 | 5.57e14 | 6.67e14 | +20 % |
+
+- The new buildings level like their neighbours (Beam Saw Lv 50–63, Glulam Lv 36–45, Houses Lv 18–25).
+- The new line is rarely input-bound (Glulam ≤ 6–23 %, Houses 11–30 %), unlike the paper and chairs premium workshops.
+- Pellet and paper stay chips-bound in this greedy sim, which upgrades every building evenly; the Beam Saw's chips shrink the gap.
+
+### Compatibility
+- Old saves load. The new buildings and goods start at 0 (fresh-state merge). Building positions are still not saved.
+
+### Tests
+- New `test/v228.py`: recipes, tiers, research, workstations and managers; layout (bottom of each column, no overlaps, nothing on
+  the bent highway, continuous road, camera bounds, no trees); the running line; 63 vehicle paths clear of buildings; south gate
+  vans; trucks on the bend; flow; orders; trade; trophies; fit view; taps; drawing at every milestone; a v2.27 save;
+  iPhone 13 and Pixel 7 touch.
+- `test/v227.py` accepts the longer columns and newer versions. Screenshots: `test/shot_v228.py` → `screenshot-v228-*`.
+
 ## [2.27] — 2026-10-22
 
 **Factory layout, part 1 + trophies for the newer systems.** Item 7 of Semih's Oct 20 list. Item 7 is split over releases:
