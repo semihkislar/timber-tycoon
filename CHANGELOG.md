@@ -66,7 +66,8 @@ bends around a new south end of the yard. Three new production buildings sit at 
   the bent highway, continuous road, camera bounds, no trees); the running line; 63 vehicle paths clear of buildings; south gate
   vans; trucks on the bend; flow; orders; trade; trophies; fit view; taps; drawing at every milestone; a v2.27 save;
   iPhone 13 and Pixel 7 touch.
-- `test/v227.py` accepts the longer columns and newer versions. Screenshots: `test/shot_v228.py` → `screenshot-v228-*`.
+- `test/v227.py` accepts the longer columns and newer versions; `test/v12.py`, `v20.py` and `v26.py` drop stale v2.27-layout
+  assumptions. The full suite passes (desktop + touch, `test/v28.py` perf, old saves). Screenshots: `test/shot_v228.py` → `screenshot-v228-*`.
 
 ## [2.27] — 2026-10-22
 
