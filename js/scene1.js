@@ -112,11 +112,13 @@ function mkLot(id,c,side){return side==='L'?{id,ci:c-3,cj:c+3,side,face:'I'}:{id
 // v2.27 layout: every tier is a column that runs down the screen in production-chain / unlock order, and new buildings are
 // added at the bottom of their column. Phase I: Sawmill → Chipper → Kiln → Veneer Peeler (moved from above the Sawmill to the
 // bottom slot, across the lane from the Furniture Factory that uses its veneer). Helpers sit in a strip on the right (HELPERS).
-const LOTS={sawmill:mkLot('sawmill',9,'R'),chipper:mkLot('chipper',14,'R'),kiln:mkLot('kiln',19,'R'),peeler:mkLot('peeler',24,'R'),
-  carpentry:mkLot('carpentry',9,'L'),pellet:mkLot('pellet',14,'L'),paper:mkLot('paper',19,'L'),furniture:mkLot('furniture',24,'L')};
+// v2.28: the yard grows south past the old highway (which now bends round it): Beam Saw at the bottom of Phase 1, Glulam Plant at
+// the bottom of Phase 2 (across the lane from its feeder, like Sawmill ↔ Carpentry), Timber-frame Houses at the bottom of row III.
+const LOTS={sawmill:mkLot('sawmill',9,'R'),chipper:mkLot('chipper',14,'R'),kiln:mkLot('kiln',19,'R'),peeler:mkLot('peeler',24,'R'),beamsaw:mkLot('beamsaw',29,'R'),
+  carpentry:mkLot('carpentry',9,'L'),pellet:mkLot('pellet',14,'L'),paper:mkLot('paper',19,'L'),furniture:mkLot('furniture',24,'L'),glulam:mkLot('glulam',29,'L')};
 // v2.21.1 Phase 3 row: the Premium Area is its own fenced row beyond Phase 2 (left of the lane), parallel to rows I and II.
 // The row is a band in lane coordinates u=i+j (along the lane) / v=i-j (across it): rows I (v=+6), II (v=-6), III (v=-17.6).
-const PROW={u0:17.0,u1:57,v0:-21.8,v1:-12.6,vl:-17.6,va:-13.95};
+const PROW={u0:17.0,u1:64,v0:-21.8,v1:-12.6,vl:-17.6,va:-13.95};   // v2.28: u1 57 → 64 (sixth slot)
 function uvIJ(u,v){return [(u+v)/2,(u-v)/2];}
 function inPremRow(i,j,pad){pad=pad||0;const u=i+j,v=i-j;return u>=PROW.u0-pad&&u<PROW.u1+pad&&v>=PROW.v0-pad&&v<PROW.v1+pad;}
 // PREM stays an i/j bounding box of the row (centre + extents) for callers that only need "roughly where"
@@ -126,11 +128,11 @@ const PREM=(()=>{const c=[uvIJ(PROW.u0,PROW.v0),uvIJ(PROW.u1,PROW.v0),uvIJ(PROW.
 function mkPLot(id,u,bs0){const [ci,cj]=uvIJ(u,PROW.vl);return {id,ci,cj,u,side:'P',face:'I',prem:true,bs0:bs0||2.45};}
 // unlock order runs down the row, like rows I and II: gift box → parquet → stationery → cabinets → showroom
 Object.assign(LOTS,{atelier:mkPLot('atelier',20.3),parquet:mkPLot('parquet',27.2),stationer:mkPLot('stationer',34.1),
-  cabinetry:mkPLot('cabinetry',41.0),showroom:mkPLot('showroom',48.4,2.75)});
-const PDOCK=(()=>{const [ci,cj]=uvIJ(60.5,-18.6);return {id:'pdock',ci,cj};})();   // premium dock just past the south end of row III
-const PROAD_J=41.2;          // access road from the highway to the premium dock (runs along i)
+  cabinetry:mkPLot('cabinetry',41.0),showroom:mkPLot('showroom',48.4,2.75),framer:mkPLot('framer',55.6,2.6)});
+const PDOCK=(()=>{const [ci,cj]=uvIJ(67.5,-18.6);return {id:'pdock',ci,cj};})();   // premium dock just past the south end of row III (v2.28: u 60.5 → 67.5)
+const PROAD_J=44.7;          // access road from the highway to the premium dock (runs along i; v2.28: 41.2 → 44.7)
 // Phase 2 → Phase 3 forklift gates: one per phase-2 building, opposite its outbound rack
-const PGATES={carpentry:20.7,pellet:30.7,paper:40.7,furniture:50.7};
+const PGATES={carpentry:20.7,pellet:30.7,paper:40.7,furniture:50.7,glulam:60.7};
 // v2.27: the Shipping dock left the bottom of the Phase I column for the helper strip on the right, by the highway (j 21 → 15);
 // its forklifts use the aisle between the Kiln and the Peeler. dk() moves the old dock-relative points with it.
 const YARD={id:'yard',ci:4,cj:4,face:'I'}, DOCK={id:'dock',ci:27,cj:15,side:'R',face:'J'};
@@ -141,18 +143,36 @@ function dk(i,j){return [i+DKI,j+DKJ];}
 const HSTRIP={v0:9.6,v1:17.2,u0:23.5,u1:47.5,i1:29.9};
 function hStrip(i,j){const u=i+j,v=i-j;return v>=HSTRIP.v0&&v<HSTRIP.v1&&u>=HSTRIP.u0&&u<HSTRIP.u1&&i<HSTRIP.i1;}
 const LOGPICK=[6.35,6.35];
-const ROAD_I=30.9;           // asphalt road centre line (runs along j)
+const ROAD_I=30.9;           // asphalt road centre line north of the bend (runs along j)
+/* v2.28 highway bend: the old straight highway (i 30–32 along j) ran just below the Phase 1 column, so the yard could not grow.
+   It now runs along j down to the river bridge (j 19), turns straight down the screen (along u, v = 12) past the new south end of
+   the yard, and turns back along j at i 41 (j 29). Lane lines keep a constant lateral offset `o` (in i units on the j-runs; ×0.894
+   in v on the diagonal, so the road keeps its width on screen). hw*() give points on a line of the road; hwOff() the reverse. */
+const HWY={i0:31,ja:19,d:10,k:.894};
+function hwJ1(o){return HWY.ja+(1-HWY.k)*o;}            // first corner (end of the north run) for offset o
+function hwJ2(o){return HWY.ja+HWY.d+(1-HWY.k)*o;}      // second corner (start of the south run)
+function hwI(j,o){o=o||0;if(j<=hwJ1(o)) return HWY.i0+o;if(j>=hwJ2(o)) return HWY.i0+HWY.d+o;return j+(HWY.i0-HWY.ja)+HWY.k*o;}
+function hwPt(j,o){return [hwI(j,o),j];}
+/* polyline along road line o from j0 to j1 (either direction), corners included */
+function hwSeg(o,j0,j1){const out=[hwPt(j0,o)];const c=[hwJ1(o),hwJ2(o)].filter(j=>(j-j0)*(j-j1)<0).sort((a,b)=>j1>j0?a-b:b-a);for(const j of c) out.push(hwPt(j,o));out.push(hwPt(j1,o));return out;}
+function hwOff(i,j){const a=i-HWY.i0;if(j<=hwJ1(a)) return a;const c=i-HWY.i0-HWY.d;if(j>=hwJ2(c)) return c;return (i-j-(HWY.i0-HWY.ja))/HWY.k;}
+/* point + heading at arc length d along road line o, starting at j0 and heading south (+j) */
+function hwAt(o,j0,d){const q=hwSeg(o,j0,j0+400);for(let k=1;k<q.length;k++){const a=q[k-1],b=q[k],L=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  if(d<=L||k===q.length-1){const t=Math.min(1,d/L);return {i:a[0]+(b[0]-a[0])*t,j:a[1]+(b[1]-a[1])*t,yaw:Math.atan2(b[1]-a[1],b[0]-a[0])};}d-=L;}}
+function hwN(j){return hwI(j,-.65);}   // northbound lane
+function hwS(j){return hwI(j,.45);}    // southbound lane
+const SGATE_J=32;            // v2.28 south gate: access road from the south end of the lane to the highway (runs along i)
 const DIRT_J=8;              // dirt log road centre (runs along i)
-const RCOL={logs:'#9a6234',planks:'#e0b071',veneer:'#ecd3a2',bark:'#5e3c22',chips:'#d2a35e',charcoal:'#3a3634',chairs:'#b0703c',pellets:'#8a5a34',paper:'#f6f3ea',furniture:'#d0764e',
+const RCOL={beams:'#c48d4f',glulam:'#e2b877',houses:'#b8542e',logs:'#9a6234',planks:'#e0b071',veneer:'#ecd3a2',bark:'#5e3c22',chips:'#d2a35e',charcoal:'#3a3634',chairs:'#b0703c',pellets:'#8a5a34',paper:'#f6f3ea',furniture:'#d0764e',
   giftbox:'#2a2a30',flooring:'#8a5428',stationery:'#1f3a5a',cabinets:'#4a2c1c',luxfurn:'#6a1f3a'};
 const OUT_OF={peeler:'veneer',sawmill:'planks',chipper:'chips',kiln:'charcoal',carpentry:'chairs',pellet:'pellets',paper:'paper',furniture:'furniture',
-  atelier:'giftbox',parquet:'flooring',stationer:'stationery',cabinetry:'cabinets',showroom:'luxfurn'};
-const SRC_OF={planks:'sawmill',chips:'chipper',chairs:'carpentry',veneer:'peeler',charcoal:'kiln',pellets:'pellet',paper:'paper'};
-const VEST={peeler:'#7ab04a',sawmill:'#e8742a',chipper:'#3aa0d8',kiln:'#d84a3a',carpentry:'#e8c43a',pellet:'#9a6ad8',paper:'#4ac0a0',furniture:'#e85a9a'};
+  atelier:'giftbox',parquet:'flooring',stationer:'stationery',cabinetry:'cabinets',showroom:'luxfurn',beamsaw:'beams',glulam:'glulam',framer:'houses'};
+const SRC_OF={planks:'sawmill',chips:'chipper',chairs:'carpentry',veneer:'peeler',charcoal:'kiln',pellets:'pellet',paper:'paper',beams:'beamsaw',glulam:'glulam'};
+const VEST={beamsaw:'#c8963a',glulam:'#5a8a9a',peeler:'#7ab04a',sawmill:'#e8742a',chipper:'#3aa0d8',kiln:'#d84a3a',carpentry:'#e8c43a',pellet:'#9a6ad8',paper:'#4ac0a0',furniture:'#e85a9a'};
 function msOf(id){return msCount(S.buildings[id].lvl);}
 function lotBox(L){
   const ms=L.id==='dock'||L.id==='yard'?0:msOf(L.id);
-  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.tech) bs=Math.min(L.bs0+.3,L.bs0+.05*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); else if(L.id==='peeler') bs=Math.min(2.95,2.45+0.1*ms); if(L.id==='dock') bs=3.0;
+  let bs=Math.min(3.5,2.8+0.14*ms); if(L.prem) bs=Math.min(L.bs0+.42,L.bs0+.07*ms); else if(L.tech) bs=Math.min(L.bs0+.3,L.bs0+.05*ms); else if(L.id==='furniture') bs=Math.min(3.65,3.05+0.12*ms); else if(L.id==='peeler') bs=Math.min(2.95,2.45+0.1*ms); else if(L.id==='beamsaw'||L.id==='glulam') bs=Math.min(3.3,2.7+0.12*ms); if(L.id==='dock') bs=3.0;
   const hb=bs/2; return {i0:L.ci-hb,i1:L.ci+hb,j0:L.cj-hb,j1:L.cj+hb,bs,ms};
 }
 function doorOf(L){const b=lotBox(L);return L.face==='I'?[b.i1+.38,b.j0+b.bs*.28]:[b.i0+b.bs*.28,b.j1+.38];}
@@ -163,16 +183,19 @@ function lanePt(p,off){const u=p[0]+p[1];return [(u+off)/2,(u-off)/2];}
 function dockDrop(){const b=lotBox(DOCK);return [b.i0+b.bs*.3,b.j1+.42];}
 
 /* ground zones */
-function yardTile(i,j){const v=i-j,u=i+j+1;if(hStrip(i+.5,j+.5)) return true;return Math.abs(v)<=11&&u>=5&&u<=57&&!(u<=6&&Math.abs(v)>=9)&&!(u>=56&&Math.abs(v)>=9);}
-function laneTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=2&&u>=12&&u<=56;}
+// v2.28: the yard runs on to u 66 (Beam Saw / Glulam Plant row), keeping a verge to the bent highway on the east side
+function yardTile(i,j){const v=i-j,u=i+j+1;if(hStrip(i+.5,j+.5)) return true;if(u>=50&&v>9.5) return false;return Math.abs(v)<=11&&u>=5&&u<=66&&!(u<=6&&Math.abs(v)>=9)&&!(u>=65&&Math.abs(v)>=9);}
+function laneTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=2&&u>=12&&u<=65;}
+function sGate(i,j){return j>=SGATE_J-.7&&j<SGATE_J+.7&&i>=31.6&&i<hwI(SGATE_J,-1);}   // v2.28 south gate road
 function inFactory(u,v){const i=(u+v)/2,j=(u-v)/2;return yardTile(Math.floor(i),Math.floor(j));}
 function premApron(i,j){ // dock apron + access road + spur (paved, no grass/trees)
-  if(j>=PROAD_J-.75&&j<PROAD_J+.75&&i>=PDOCK.ci-1&&i<30) return true;
-  const u=i+j,v=i-j; if(u>=PROW.u1&&u<64.2&&v>=-21.8&&v<-12.6) return true;
+  if(j>=PROAD_J-.75&&j<PROAD_J+.75&&i>=PDOCK.ci-1&&i<hwI(PROAD_J,-1)) return true;
+  const u=i+j,v=i-j; if(u>=PROW.u1&&u<71.2&&v>=-21.8&&v<-12.6) return true;
   if(u>=PROW.u0&&u<PROW.u1&&v>=-12.6&&v<-11.2) return true;   // II → III transfer lane
   return i>=PDOCK.ci-1&&i<PDOCK.ci+4.2&&j>=PDOCK.cj-2&&j<PROAD_J;}
 function zoneAt(i,j){
-  if(i>=30&&i<32) return 'road';
+  if(Math.abs(hwOff(i,j))<1) return 'road';   // v2.28 bent highway
+  if(sGate(i,j)) return 'road';
   if(j>=7&&j<9&&i<6.2) return 'dirt';
   if(inPremRow(i,j)||premApron(i,j)) return 'prem';
   // v2.5: R&D campus (north of the kiln row) and harbour across the highway
@@ -187,11 +210,12 @@ function zoneAt(i,j){
 function isForestPt(i,j){
   const u=i+j,v=i-j;
   if(zoneAt(i,j)!=='grass') return false;
-  if(i>=27.5&&i<34.6) return false;
+  {const o=hwOff(i,j);if(o>=-3.4&&o<3.6) return false;}   // v2.28: highway verge follows the bend
   if(j>=4.8&&j<11.2&&i<7.5) return false;
-  if(Math.abs(v)<=13&&u>=1&&u<=58.5) return false;
+  if(Math.abs(v)<=13&&u>=1&&u<=67.5) return false;
+  if(j>=SGATE_J-1.6&&j<SGATE_J+1.6&&i>=30&&i<42) return false;   // v2.28 south gate
   if(v>=HSTRIP.v0-1&&v<HSTRIP.v1+1.2&&u>=HSTRIP.u0-1.5&&u<HSTRIP.u1+1&&i<30) return false;   // v2.27 helper strip
-  if(v>=-23.4&&v<=-11&&u>=16&&u<=66) return false;   // v2.21.1: clearing round the Phase 3 row
+  if(v>=-23.4&&v<=-11&&u>=16&&u<=73) return false;   // v2.21.1: clearing round the Phase 3 row
   if(i>=13.8&&i<20&&j>=-1.8&&j<3.9) return false;
   if(i>=31.4&&i<41&&j>=11&&j<17.6) return false;
   if(i>=6.2&&i<10.6&&j>=-8.4&&j<-4.4) return false;   // v2.7: tree-nursery clearing
@@ -240,7 +264,7 @@ function initWorld(){
   }
   // lamps along the lane
   scene.lamps=[];
-  for(let u=14;u<=54;u+=8){if(u>14) scene.lamps.push({i:(u-2.25)/2,j:(u+2.25)/2});scene.lamps.push({i:(u+4+2.25)/2,j:(u+4-2.25)/2});}
+  for(let u=14;u<=58;u+=8){if(u>14) scene.lamps.push({i:(u-2.25)/2,j:(u+2.25)/2});scene.lamps.push({i:(u+4+2.25)/2,j:(u+4-2.25)/2});}
 }
 /* lumberjack work spots: front-row trees near the log yard first (top band, then left band) */
 function jackSpots(){

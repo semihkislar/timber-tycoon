@@ -43,7 +43,8 @@ const CLIENTS=[
   {n:'BBQ Masters Club',e:'🔥',likes:['giftbox','charcoal','pellets']},
   {n:'Boutique Stationer',e:'✒️',likes:['stationery','paper']},
   {n:'Luxury Yacht Builder',e:'⛵',likes:['flooring','cabinets','planks']},
-  {n:'City Builders Co.',e:'🏗️',likes:['planks','chips','veneer','pellets']},
+  {n:'City Builders Co.',e:'🏗️',likes:['planks','chips','veneer','pellets','beams','glulam']},
+  {n:'Alpine Chalet Developers',e:'🏔️',likes:['houses','glulam','beams','flooring']},   // v2.28
   {n:'Garden Centre Chain',e:'🌿',likes:['chips','pellets','charcoal']},
 ];
 const ORDER_OFFER_SEC=240;   // v2.25: offers wait on the board longer (was 75 s for a single phone call)

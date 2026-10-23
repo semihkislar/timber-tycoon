@@ -57,7 +57,7 @@ function dockTruckLegs(){
     {pa:densePath([[A[0],A[1]-3.6],[A[0],A[1]]]),vmax:2.2,lane:true},
     {pa:densePath(arcPts(t=>{const th=t*Math.PI/2;return [A[0]-DOCK_R*(1-Math.cos(th)),A[1]-DOCK_R*Math.sin(th)];},12)),rev:true,vmax:1.1},
     {pa:densePath([[DOCKB[0],DOCKB[1]],[DOCKB[0]+.001,DOCKB[1]]]),vmax:.5,hold:(v,dt)=>{v.doors=Math.min(1,(v.doors||0)+dt*1.6);return v.load<1||v.doors<1;}},
-    {pa:densePath([...arcPts(t=>{const th=(1-t)*Math.PI/2;return [DOCKB[0]+DOCK_R*Math.cos(th),DOCKB[1]+DOCK_R*(1-Math.sin(th))];},12),[A[0],60]]),vmax:3.8}
+    {pa:densePath([...arcPts(t=>{const th=(1-t)*Math.PI/2;return [DOCKB[0]+DOCK_R*Math.cos(th),DOCKB[1]+DOCK_R*(1-Math.sin(th))];},12),...hwSeg(A[0]-HWY.i0,A[1]+.5,60)]),vmax:3.8}   // v2.28: out along the bent highway
   ];
 }
 const DOCK_COLS=[['#2f6fb0','#f3f0e8','#2f6f9a'],['#c8452a','#f3f0e8','#c8452a'],['#3d7a3a','#eef2e6','#3d7a3a'],['#e8a020','#f6f1e4','#b06a10'],['#6a4a9a','#f1eef6','#6a4a9a']];

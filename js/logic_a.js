@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.27';
+const VERSION='2.28';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -32,6 +32,12 @@ const ICONS={
   pellet:()=>`<svg viewBox="0 0 32 32"><rect x="6" y="10" width="20" height="16" rx="2" fill="#5a5a6a"/><rect x="10" y="6" width="12" height="6" fill="#4a4a5a"/><circle cx="16" cy="18" r="4" fill="#8b5a2b"/><rect x="4" y="20" width="4" height="3" fill="#888"/></svg>`,
   paper_b:()=>`<svg viewBox="0 0 32 32"><rect x="4" y="12" width="24" height="14" fill="#7a8a9a"/><rect x="8" y="4" width="6" height="10" fill="#5a6a7a"/><rect x="18" y="6" width="6" height="8" fill="#5a6a7a"/><rect x="10" y="16" width="12" height="6" fill="#f5f0e0"/></svg>`,
   furniture_b:()=>`<svg viewBox="0 0 32 32"><rect x="2" y="10" width="28" height="16" fill="#6a7a8a"/><rect x="6" y="4" width="8" height="8" fill="#5a6a7a"/><rect x="18" y="4" width="8" height="8" fill="#5a6a7a"/><rect x="8" y="14" width="16" height="8" fill="#8b5a2b"/></svg>`,
+  // v2.28 timber line: beams (Phase 1), glulam (Phase 2), timber-frame houses (Phase 3)
+  beams:()=>`<svg viewBox="0 0 32 32"><path d="M4 12l16-6 8 3-16 6z" fill="#d9a865" stroke="#8b5a2b"/><path d="M4 12v5l8 3v-5z" fill="#b07a42" stroke="#8b5a2b"/><path d="M12 15l16-6v5l-16 6z" fill="#c48d4f" stroke="#8b5a2b"/><path d="M4 20l16-6 8 3-16 6z" fill="#d9a865" stroke="#8b5a2b"/><path d="M4 20v5l8 3v-5z" fill="#b07a42" stroke="#8b5a2b"/><path d="M12 23l16-6v5l-16 6z" fill="#c48d4f" stroke="#8b5a2b"/></svg>`,
+  glulam:()=>`<svg viewBox="0 0 32 32"><path d="M3 22Q16 4 29 22" fill="none" stroke="#8b5a2b" stroke-width="7" stroke-linecap="round"/><path d="M3 22Q16 4 29 22" fill="none" stroke="#e2b877" stroke-width="5" stroke-linecap="round"/><path d="M4.5 21Q16 6.5 27.5 21" fill="none" stroke="#b9874c" stroke-width=".8"/><path d="M5.5 23Q16 9 26.5 23" fill="none" stroke="#b9874c" stroke-width=".8"/><rect x="2" y="24" width="28" height="3" rx="1" fill="#6b4226"/></svg>`,
+  houses:()=>`<svg viewBox="0 0 32 32"><path d="M5 15L16 6l11 9v12H5z" fill="#e8d2a6" stroke="#6b4226"/><path d="M3 16L16 5l13 11" fill="none" stroke="#7a3a24" stroke-width="2.6" stroke-linejoin="round"/><path d="M5 15h22M5 21h22M10 15v12M22 15v12M10 15l12 6M22 15l-12 6" stroke="#8b5a2b" stroke-width="1.2"/><rect x="14" y="21" width="4" height="6" fill="#6b4226"/></svg>`,
+  beamsaw:()=>`<svg viewBox="0 0 32 32"><rect x="3" y="14" width="26" height="12" fill="#9a7a5a"/><polygon points="3,14 16,6 29,14" fill="#5a6a7a"/><rect x="6" y="18" width="12" height="4" fill="#d9a865" stroke="#8b5a2b"/><circle cx="23" cy="20" r="4" fill="#c0c8d0" stroke="#666"/><path d="M23 16v8M19 20h8" stroke="#888"/></svg>`,
+  glulam_b:()=>`<svg viewBox="0 0 32 32"><rect x="3" y="13" width="26" height="13" fill="#7a8a6a"/><path d="M3 14Q16 2 29 14" fill="#c48d4f" stroke="#6b4226"/><rect x="7" y="18" width="18" height="3" fill="#e2b877" stroke="#8b5a2b"/><rect x="7" y="21" width="18" height="2" fill="#d9a865" stroke="#8b5a2b"/></svg>`,
   tree:(hue)=>`<svg viewBox="0 0 32 32"><rect x="14" y="20" width="4" height="10" fill="#6b4226"/><polygon points="16,2 6,16 26,16" fill="${hue||'#2f5b2a'}"/><polygon points="16,8 8,20 24,20" fill="${hue||'#3f7a2a'}"/></svg>`,
 };
 function svgIcon(id, size){
@@ -63,6 +69,10 @@ const RES=[
   {id:'plywood',name:'Plywood',icon:'🟧',svg:'plywood',price:90,tech:true},
   {id:'toys',name:'Wooden Toys',icon:'🧸',svg:'toys',price:320,tech:true},
   {id:'boats',name:'Wooden Boats',icon:'⛵',svg:'boats',price:4500,tech:true},
+  // v2.28 timber line (bottom of the Phase 1 / 2 / 3 columns)
+  {id:'beams',name:'Timber Beams',icon:'🪜',svg:'beams',price:14},
+  {id:'glulam',name:'Glulam Beams',icon:'🌉',svg:'glulam',price:220},
+  {id:'houses',name:'Timber-frame Houses',icon:'🏡',svg:'houses',price:3200,premium:true},
 ];
 const RMAP={}; RES.forEach(r=>RMAP[r.id]=r);
 const COLLECTORS=[
@@ -83,6 +93,9 @@ const BUILDINGS=[
   {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
   {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
   {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{planks:12,veneer:6},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
+  // v2.28 timber line: a Phase 1 beam saw and a Phase 2 glulam plant at the bottom of their columns (south of the old highway)
+  {id:'beamsaw',name:'Beam Saw',icon:'🪜',svg:'beamsaw',inp:{logs:6},out:{beams:2},cost:2e6,scale:1.19,spd:6,desc:'Squares big logs into heavy timber beams.'},
+  {id:'glulam',name:'Glulam Plant',icon:'🌉',svg:'glulam_b',inp:{beams:4},out:{glulam:1},cost:2.5e7,scale:1.21,spd:5,desc:'Laminates timber beams into long, strong glulam beams.'},
   // v2.2 premium workshops (need the Premium Area; spd = base throughput multiplier)
   {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{pellets:5,paper:2},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs pellets in printed paper into grill gift boxes.'},
   {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{plywood:1,paper:2},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Engineered parquet: a plywood core on a paper underlay, finished by hand.'},
@@ -94,6 +107,7 @@ const BUILDINGS=[
   {id:'toyshop',name:'Toy Workshop',icon:'🧸',svg:'toys',inp:{plywood:2,paper:4},out:{toys:2},cost:8e7,scale:1.22,tech:true,spd:4,desc:'Cuts plywood into wooden toys, boxed in printed paper.'},
   {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:8,chairs:2},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
   {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,chairs:4},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
+  {id:'framer',name:'Timber-frame Houses',icon:'🏡',svg:'houses',inp:{glulam:4,plywood:2},out:{houses:1},cost:6e8,scale:1.23,premium:true,spd:5,desc:'Raises timber-frame house kits: a glulam frame sheathed in plywood.'},   // v2.28 bottom of row III
 ];
 const MAIN_BLD=BUILDINGS.filter(b=>!b.premium&&!b.tech), PREM_BLD=BUILDINGS.filter(b=>b.premium), TECH_BLD=BUILDINGS.filter(b=>b.tech);
 const BMAP={}; BUILDINGS.forEach(b=>BMAP[b.id]=b);

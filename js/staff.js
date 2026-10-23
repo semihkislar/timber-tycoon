@@ -30,10 +30,13 @@ const MANAGERS=[
   {id:'kwame',bid:'pellet',name:'Kwame Mensah',from:'Accra',r:'R',skill:'thrift',look:{f:0,skin:5,hair:6,style:'bald',beard:1,out:'vest',col:'#9a6ad8',glasses:1}},
   {id:'yuki',bid:'paper',name:'Yuki Tanaka',from:'Osaka',r:'E',skill:'speed',look:{f:1,skin:0,hair:6,style:'bun',out:'suit',col:'#2a4a5a',tie:'#4ac0a0'}},
   {id:'defne',bid:'furniture',name:'Defne Aydın',from:'İstanbul',r:'E',skill:'double',look:{f:1,skin:1,hair:7,style:'long',out:'suit',col:'#2e2e3a',tie:'#e85a9a'}},
+  {id:'baran',bid:'beamsaw',name:'Baran Aksoy',from:'Kastamonu',r:'R',skill:'speed',look:{f:0,skin:1,hair:1,style:'crew',beard:1,out:'vest',col:'#c8963a'}},   // v2.28
+  {id:'ingrid',bid:'glulam',name:'Ingrid Larsen',from:'Trondheim',r:'E',skill:'thrift',look:{f:1,skin:0,hair:3,style:'bun',out:'vest',col:'#5a8a9a',glasses:1}},   // v2.28
   {id:'lucas',bid:'atelier',name:'Lucas Moreau',from:'Lyon',r:'E',skill:'thrift',look:{f:0,skin:0,hair:4,style:'short',out:'suit',col:'#1c1c22',tie:'#d8a930'}},
   {id:'zeynep',bid:'parquet',name:'Zeynep Çelik',from:'Trabzon',r:'E',skill:'storage',look:{f:1,skin:2,hair:1,style:'pony',out:'suit',col:'#5a3a22',tie:'#f5c84c',glasses:1}},
   {id:'priya',bid:'stationer',name:'Priya Sharma',from:'Mumbai',r:'L',skill:'orders',look:{f:1,skin:3,hair:0,style:'long',out:'suit',col:'#1f3a5a',tie:'#f5c84c'}},
   {id:'can',bid:'cabinetry',name:'Can Öztürk',from:'Antalya',r:'L',skill:'speed',look:{f:0,skin:1,hair:5,style:'short',beard:1,out:'suit',col:'#3a2418',tie:'#d8a930',glasses:1}},
+  {id:'hana',bid:'framer',name:'Hana Novák',from:'Brno',r:'L',skill:'storage',look:{f:1,skin:0,hair:4,style:'short',out:'suit',col:'#7a3a24',tie:'#e2b877'}},   // v2.28
   {id:'isabella',bid:'showroom',name:'Isabella García',from:'Sevilla',r:'L',skill:'double',look:{f:1,skin:2,hair:0,style:'bun',out:'suit',col:'#6a1f3a',tie:'#f5d36a'}},
 ];
 const MGR_OF={}; MANAGERS.forEach(m=>MGR_OF[m.bid]=m);
@@ -67,7 +70,7 @@ function levelMgr(id){const m=MGR_MAP[id];const l=m?mgrLvl(m.bid):0;if(!l||l>=MG
 
 /* ---------- fire ---------- */
 const FIRE_BASE=1/4500, FIRE_HP=12, FIRE_BURN=60, FIRE_COOL=120, FIRE_GRACE=300;
-const FIRE_RISK={kiln:3,pellet:2,peeler:1,sawmill:1.2,chipper:1,carpentry:.8,paper:.8,furniture:.8};
+const FIRE_RISK={kiln:3,pellet:2,peeler:1,sawmill:1.2,chipper:1,carpentry:.8,paper:.8,furniture:.8,beamsaw:1.2,glulam:.9};   // v2.28
 const STATION_COST=6e4, STATION_MAX=5;
 function stationLvl(){return (S.station&&S.station.lvl)||0;}
 function stationCost(){return STATION_COST*Math.pow(6,stationLvl());}

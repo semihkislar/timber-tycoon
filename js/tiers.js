@@ -5,8 +5,8 @@
    Phase 3 (premium area, toy workshop, boat yard): fed only by phase-2 goods.
    Every tier can export; value per unit rises by tier. Forklifts shuttle pallets across the lane from phase 1 to phase 2.
    Design: docs/tiers-v2.20.md */
-const BTIER={peeler:1,sawmill:1,chipper:1,kiln:1, carpentry:2,pellet:2,paper:2,furniture:2,plymill:2,
-  atelier:3,parquet:3,stationer:3,cabinetry:3,showroom:3,toyshop:3,boatyard:3, lab:0};
+const BTIER={peeler:1,sawmill:1,chipper:1,kiln:1,beamsaw:1, carpentry:2,pellet:2,paper:2,furniture:2,glulam:2,plymill:2,
+  atelier:3,parquet:3,stationer:3,cabinetry:3,showroom:3,framer:3,toyshop:3,boatyard:3, lab:0};   // v2.28: Beam Saw (I), Glulam Plant (II), Timber-frame Houses (III)
 const TIER_N=['Raw','Phase 1 · Primary','Phase 2 · Secondary','Phase 3 · Premium'];
 const TIER_S=['Raw','I','II','III'];
 const TIER_C=['#8a6a48','#c8742e','#3f86c8','#a8508a'];
@@ -48,6 +48,55 @@ function bPeeler(ctx,L,B,run,t){
   return top+10;
 }
 if(typeof BDRAW==='object') BDRAW.peeler=bPeeler;
+// v2.28: Beam Saw (phase 1) — logs squared into heavy timber beams on a twin band saw
+function bBeamSaw(ctx,L,B,run,t){
+  const lf=L.face,of=lf==='I'?'J':'I',ms=B.ms,wall='#b9a27a',roof='#7a4a2c',h=24+ms*4;
+  bShadow(ctx,B.i0,B.j0,B.i1,B.j1,.24);
+  box(ctx,B.i0,B.j0,B.i1,B.j1,0,h,wall,{top:false});
+  wallFace(ctx,B,lf,0,h,wall,'plank');wallFace(ctx,B,of,0,h,wall,'plank');
+  fillP(ctx,fq(lf,fK(B,lf),fA(B,lf,0),fA(B,lf,1),0,2.5),'#7a6444');fillP(ctx,fq(of,fK(B,of),fA(B,of,0),fA(B,of,1),0,2.5),'#6a5638');
+  rollerDoor(ctx,B,lf,.08,.56,h-9,true);
+  winFramed(ctx,B,of,.2,.22,h-16,9,true);winFramed(ctx,B,of,.6,.22,h-16,9,true);
+  if(ms>=1) winFramed(ctx,B,lf,.68,.18,h-14,8,true);
+  const ax=lf==='I'?'i':'j',top=roofGable(ctx,B.i0,B.j0,B.i1,B.j1,h,15+ms,ax,roof,wall,'tile');
+  signBand(ctx,B,of,h-7,5,'BEAMS','#4a2c18','#f6e6c8');
+  // twin band-saw wheels in the open bay, a squared log running through
+  ctx.save();fxf(ctx,lf,fK(B,lf)+(lf==='I'?.06:0),fA(B,lf,.32),10);
+  const ang=run?t*9:0;for(const dx of [-6,6]){ctx.fillStyle='#5a6068';ctx.beginPath();ctx.arc(dx,-3,4.6,0,TAU);ctx.fill();ctx.strokeStyle='#cfd5da';ctx.lineWidth=1;ctx.beginPath();ctx.arc(dx,-3,4.6,ang,ang+4);ctx.stroke();}
+  ctx.fillStyle='#c79a5e';ctx.fillRect(-13,3,26,5);ctx.fillStyle='#a87a42';ctx.fillRect(-13,3,26,1.2);ctx.fillStyle='#e8eef2';ctx.fillRect(-.5,-8,1,16);
+  ctx.restore();
+  if(run&&Math.random()<scene.dtF*4){const p=fPt(B,lf,.34,4,.15);emitP(p[0],p[1],'dust');}
+  // stacked beams with spacer sticks beside the shed
+  const si=of==='J'?B.i0+.15:B.i1+.15, sj=of==='J'?B.j1+.15:B.j0+.15, n=2+Math.min(4,ms), li=of==='J'?1.05:.5, lj=of==='J'?.5:1.05;
+  for(let k=0;k<n;k++){box(ctx,si,sj,si+li,sj+lj,k*2.4,k*2.4+2,k%2?'#c9955a':'#d6a86c',{});}
+  tierExtras(ctx,L,B,ms,h,top,wall,roof,'plank','#c9955a');
+  return top+10;
+}
+// v2.28: Glulam Plant (phase 2) — finger-jointed beams glued and clamped into long laminated members
+function bGlulam(ctx,L,B,run,t){
+  const lf=L.face,of=lf==='I'?'J':'I',ms=B.ms,wall='#d8ccb4',roof='#3f5566',h=30+ms*4;
+  bShadow(ctx,B.i0,B.j0,B.i1,B.j1,.26);
+  box(ctx,B.i0,B.j0,B.i1,B.j1,0,h,wall,{top:false});
+  wallFace(ctx,B,lf,0,h,wall,'metal');wallFace(ctx,B,of,0,h,wall,'metal');
+  fillP(ctx,fq(lf,fK(B,lf),fA(B,lf,0),fA(B,lf,1),0,2.5),'#8a8070');fillP(ctx,fq(of,fK(B,of),fA(B,of,0),fA(B,of,1),0,2.5),'#7a7060');
+  rollerDoor(ctx,B,lf,.1,.5,h-12,true);
+  for(const a of [.12,.42,.72]) winFramed(ctx,B,of,a,.18,h-18,11,true);
+  if(ms>=1) winFramed(ctx,B,lf,.66,.22,h-17,10,true);
+  const ax=lf==='I'?'i':'j',top=sawtooth(ctx,B.i0+.05,B.j0+.05,B.i1-.05,B.j1-.05,h,9,3,ax==='i'?'j':'i','#34485a',wall);
+  signBand(ctx,B,of,h-8,5,'GLULAM','#2a3a48','#eef2f6');
+  // the laminated beam in the clamp press, layers showing
+  ctx.save();fxf(ctx,lf,fK(B,lf)+(lf==='I'?.06:0),fA(B,lf,.3),6);
+  const sq=run?Math.sin(t*2.2)*.6:0;for(let k=0;k<4;k++){ctx.fillStyle=k%2?'#d9b07a':'#c99a60';ctx.fillRect(-14,-k*2.2+sq*k*.2,28,2.1);}
+  ctx.fillStyle='#d03a2a';for(const dx of [-10,-3,4,11]) ctx.fillRect(dx,-11,2,13);
+  ctx.restore();
+  // finished curved glulam members on the yard side
+  const ci=of==='J'?(B.i0+B.i1)/2:B.i1+.55, cj=of==='J'?B.j1+.55:(B.j0+B.j1)/2;
+  for(let k=0;k<Math.min(3,1+ms);k++){const p=P(ci+(of==='J'?0:k*.12),cj+(of==='J'?k*.12:0),2+k*2.2);ctx.save();ctx.translate(p[0],p[1]);if(of==='J') ctx.transform(1,-.5,0,1,0,0);else ctx.transform(1,.5,0,1,0,0);
+    ctx.strokeStyle='#a87444';ctx.lineWidth=3.6;ctx.beginPath();ctx.moveTo(-17,2);ctx.quadraticCurveTo(0,-9,17,2);ctx.stroke();ctx.strokeStyle='#e0b880';ctx.lineWidth=1.2;ctx.stroke();ctx.restore();}
+  tierExtras(ctx,L,B,ms,h,top,wall,roof,'metal','#e0b880');
+  return top+10;
+}
+if(typeof BDRAW==='object'){BDRAW.beamsaw=bBeamSaw;BDRAW.glulam=bGlulam;}
 /* ---------- scene: forklifts shuttling pallets from phase 1 to phase 2 ---------- */
 function tierLinks(){const out=[];
   for(const b of MAIN_BLD){if(BTIER[b.id]!==2||!S.buildings[b.id].lvl) continue;
