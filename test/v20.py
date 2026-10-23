@@ -37,7 +37,7 @@ with sync_playwright() as p:
     ok(pg.locator('#bottombar .bb').count()>=5,'bottom bar buttons')
     # --- hit-testing every building lot (built and unbuilt) ---
     for bid in IDS:
-        pg.evaluate('TT.closeSheet()'); pg.wait_for_timeout(60)
+        pg.evaluate('TT.closeSheet()'); pg.evaluate('TT.fitCamera(true)'); pg.wait_for_timeout(60)   # v2.28: opening a sheet pans the camera to the lot; reset so the next lot is on screen
         pt=pg.evaluate(f'TT.lotScreen("{bid}")')
         h=pg.evaluate(f'TT.hitTest({pt[0]},{pt[1]})')
         ok(h.get('type')=='bld' and h.get('id')==bid,f'hitTest {bid} -> {h}')
@@ -86,8 +86,8 @@ with sync_playwright() as p:
     ok(c1['x']>=-760 and c1['y']>=-260,'pan clamped to bounds')
     ok(pg.evaluate('TT.S.clicks')==cl0 and pg.evaluate('TT.curSheet') is None,'drag is not a tap')
     pg.evaluate('TT.fitCamera(true)'); pg.wait_for_timeout(100)
-    ins=pg.evaluate('''(()=>{const r=[];for(const id of TT.MAIN_BLD.map(b=>b.id).concat(['yard','dock'])){const p=TT.lotScreen(id);r.push(p[0]>0&&p[0]<innerWidth&&p[1]>40&&p[1]<innerHeight-60);}return r;})()''')
-    ok(all(ins),f'fit shows every lot {ins}')
+    ins=pg.evaluate('''(()=>{const r=[];for(const id of TT.MAIN_BLD.map(b=>b.id).filter(id=>!['beamsaw','glulam'].includes(id)||TT.S.buildings[id].lvl).concat(['yard','dock'])){const p=TT.lotScreen(id);r.push(p[0]>0&&p[0]<innerWidth&&p[1]>40&&p[1]<innerHeight-60);}return r;})()''')
+    ok(all(ins),f'fit shows every lot (v2.28: the south-yard lots join the fit once built) {ins}')
     # --- world entities ---
     pg.evaluate('TT.S.coins=1e15;TT.buyCollector("lumberjack",20);TT.buyCollector("truck",3);for(const b of ["sawmill","chipper","kiln","carpentry","pellet","paper","furniture"]) TT.buyBuilding(b,15);'); pg.wait_for_timeout(2500)
     e=pg.evaluate('({w:TT.scene.workers.length,f:(TT.scene.forklifts||[]).length,t:(TT.scene.dockTrucks||TT.scene.trucks||[]).length,p:TT.scene.particles.length,ch:TT.scene.chunks.size,cm:TT.scene.chunkMax||42,fps:TT.scene.fps,ms:TT.scene.frameMs})')
@@ -117,8 +117,8 @@ with sync_playwright() as p:
     ok(mp.evaluate('TT.curSheet')=='bld' and mp.evaluate('TT.sheetBld')=='sawmill','tap building on mobile opens sheet')
     sh=mp.evaluate('(()=>{const r=document.getElementById("sheet").getBoundingClientRect();return [r.left,r.right,r.top]})()')
     ok(sh[0]>=0 and sh[1]<=430 and sh[2]>120,f'sheet fits mobile {sh}')
-    ins=mp.evaluate('''(()=>{TT.closeSheet();TT.fitCamera(true);const r=[];for(const id of TT.MAIN_BLD.map(b=>b.id).concat(['yard','dock'])){const p=TT.lotScreen(id);r.push(p[0]>0&&p[0]<innerWidth&&p[1]>40&&p[1]<innerHeight-70);}return r;})()''')
-    ok(all(ins),f'mobile fit shows every lot {ins}')
+    ins=mp.evaluate('''(()=>{TT.closeSheet();TT.fitCamera(true);const r=[];for(const id of TT.MAIN_BLD.map(b=>b.id).filter(id=>!['beamsaw','glulam'].includes(id)||TT.S.buildings[id].lvl).concat(['yard'])){const p=TT.lotScreen(id);r.push(p[0]>0&&p[0]<innerWidth&&p[1]>40&&p[1]<innerHeight-70);}return r;})()''')
+    ok(all(ins),f'mobile fit shows every production lot (v2.27: the dock sits in the helper strip, reached by its chip) {ins}')
     print('ERRORS:',errs); ok(len(errs)==0,'no console errors')
     b.close()
 print('FAILS',FAILS)

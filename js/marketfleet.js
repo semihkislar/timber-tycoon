@@ -45,7 +45,7 @@ function mktVanLegs(pick, fromEast){
   const [pi,pj]=pick, u=pi+pj, sg=(pi-pj)>=0?1:-1, vin=sg*1.65, vout=sg*1.05, uu=Math.min(u,MKT_LANE_END-2), G=SGATE_J;
   const hold=(v,dt)=>{const sell=coinRate>0.05;v.load=Math.min(1,(v.load||0)+dt*(sell?.7:.12));return v.load<1||v.wait<(sell?1.4:2.4);};
   return [
-    {pa:crPath([[hwN(54),54],[hwN(G+1.6),G+1.6],[hwN(G)-.9,G+.35],[33.4,G+.35],lpt(MKT_LANE_END,vin),lpt(uu+1.2,vin),[pi,pj]],8),vmax:3.1},
+    {pa:crPath([[hwN(G+9),G+9],[hwN(G+1.6),G+1.6],[hwN(G)-.9,G+.35],[33.4,G+.35],lpt(MKT_LANE_END,vin),lpt(uu+1.2,vin),[pi,pj]],8),vmax:3.1},
     {pa:densePath([[pi,pj],[pi+.001,pj]]),vmax:.45,hold},
     {pa:crPath([[pi,pj],lpt(uu+1.6,vout),lpt(MKT_LANE_END,vout),[33.4,G-.35],[hwS(G)-1.2,G-.35],[hwS(G),G+.9],[hwS(58),58]],8),vmax:3.5}
   ];
