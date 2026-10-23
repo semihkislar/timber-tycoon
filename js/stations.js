@@ -14,6 +14,8 @@ const WS_DEF={
   chipper:[['infeed','Infeed Conveyor','🛤️','inp'],['disc','Disc Chipper','💿','spd'],['screen','Chip Screen','🧺','yld']],
   kiln:[['bay','Charging Bay','🧱','inp'],['retort','Retort Chamber','🔥','spd'],['grade','Grading Table','⚖️','prc']],
   carpentry:[['cut','Cutting Bench','🪚','inp'],['join','Joinery Bench','🔨','spd'],['finish','Finishing Bench','🖌️','prc']],
+  beamsaw:[['log','Log Turner','🔄','inp'],['twin','Twin Band Saw','🪚','spd'],['grade','Stress Grader','📏','yld']],   // v2.28
+  glulam:[['finger','Finger Jointer','🧩','inp'],['clamp','Clamp Press','🗜️','spd'],['plane','Beam Planer','🧽','yld']],   // v2.28
   pellet:[['hammer','Hammer Mill','🔨','inp'],['press','Pellet Press','🗜️','spd'],['bag','Cooler & Bagger','🛍️','yld']],
   paper:[['pulp','Pulper','🫧','inp'],['machine','Paper Machine','🧻','spd'],['cal','Calender Rolls','🎞️','prc']],
   furniture:[['cnc','CNC Router','🛠️','inp'],['assembly','Assembly Line','🏭','spd'],['spray','Spray Booth','🎨','prc']],
@@ -24,6 +26,7 @@ const WS_DEF={
   parquet:[['core','Core Press','🗜️','inp'],['tng','Tongue & Groove','🧩','spd'],['hand','Hand Finish','✋','prc']],
   stationer:[['cutter','Paper Cutter','✂️','inp'],['bind','Bindery','📚','spd'],['gild','Gilding Desk','✨','prc']],
   cabinetry:[['csaw','Cabinet Saw','🪚','inp'],['cjoin','Joinery','🔩','spd'],['lacq','Lacquer Room','🎨','prc']],
+  framer:[['cut','Joinery Robot','🤖','inp'],['frame','Framing Hall','🏡','spd'],['fit','Fit-out Crew','💎','prc']],   // v2.28
   showroom:[['resto','Restoration','🧰','inp'],['uphol','Upholstery','🛋️','spd'],['hall','Display Hall','👑','prc']],
 };
 function wsHas(id){return !!WS_DEF[id];}

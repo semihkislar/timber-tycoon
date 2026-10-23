@@ -46,7 +46,7 @@ with sync_playwright() as p:
     ctx,pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,27),f"VERSION >= 2.27 ({E(pg,'TT.VERSION')})")
     m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,27),'sw cache bumped to >= v2.27')
-    ok('v2.27' in E(pg,"document.getElementById('verBadge').textContent"),'version badge shows v2.27')
+    ok(ver(E(pg,"document.getElementById('verBadge').textContent").strip().lstrip('v'))>=(2,27),'version badge shows >= v2.27')
     # ---------------- columns ----------------
     col=E(pg,"""(()=>{const o={};for(const id in LOTS){const L=LOTS[id];if(L.tech) continue;(o[L.side]=o[L.side]||[]).push({id,u:L.ci+L.cj,v:L.ci-L.cj,cost:BMAP[id].cost});}
       for(const k in o) o[k].sort((a,b)=>a.u-b.u);return o;})()""")
@@ -54,9 +54,9 @@ with sync_playwright() as p:
         L=col[side]; vs=[x['v'] for x in L]
         ok(max(vs)-min(vs)<.01,f"{name} is one straight column ({[x['id'] for x in L]})")
         ok(all(L[k]['u']<L[k+1]['u'] for k in range(len(L)-1)),f"{name} runs down the screen")
-    ok([x['id'] for x in col['R']]==['sawmill','chipper','kiln','peeler'],f"Phase 1 in chain / unlock order top → bottom: {[x['id'] for x in col['R']]}")
+    ok([x['id'] for x in col['R']][:4]==['sawmill','chipper','kiln','peeler'],f"Phase 1 in chain / unlock order top → bottom: {[x['id'] for x in col['R']]}")
     ok(all(col['R'][k]['cost']<col['R'][k+1]['cost'] for k in range(3)),'Phase 1: every newer building sits further down')
-    ok([x['id'] for x in col['L']]==['carpentry','pellet','paper','furniture'],'Phase 2 order kept (each across from its feeder)')
+    ok([x['id'] for x in col['L']][:4]==['carpentry','pellet','paper','furniture'],'Phase 2 order kept (each across from its feeder)')
     r=E(pg,"""(()=>{const u=id=>LOTS[id].ci+LOTS[id].cj;return {saw:Math.abs(u('sawmill')-u('carpentry')),chip:Math.abs(u('chipper')-u('pellet')),veneer:Math.abs(u('peeler')-u('furniture'))};})()""")
     ok(r['saw']<.01 and r['chip']<.01 and r['veneer']<.01,f"feeders sit straight across the lane (sawmill↔carpentry, chipper↔pellet, peeler↔furniture): {r}")
     # ---------------- helpers on the right, nothing overlaps ----------------
@@ -145,7 +145,7 @@ with sync_playwright() as p:
     ctx.close()
     ctx,pg=page(init='if(!sessionStorage.getItem("_m")){sessionStorage.setItem("_m","1");localStorage.setItem("timberTycoon_save_v1",%s)}'%json.dumps(old))
     r=E(pg,"[S.buildings.sawmill.lvl,S.buildings.peeler.lvl,S.buildings.kiln.lvl,S.builders.lvl,S.version,S.ws.sawmill.join()]")
-    ok(r[:4]==[120,33,12,2] and r[4]=='2.27' and all(int(x)>=y for x,y in zip(r[5].split(','),[3,2,1])),f"a v2.26 save loads with its levels ({r})")
+    ok(r[:4]==[120,33,12,2] and ver(r[4])>=(2,27) and all(int(x)>=y for x,y in zip(r[5].split(','),[3,2,1])),f"a v2.26 save loads with its levels ({r})")
     sv=E(pg,"(()=>{TT.save(true);return localStorage.getItem('timberTycoon_save_v1');})()")
     ok('"ci"' not in sv and '"cj"' not in sv,'building positions are not saved (the layout comes from the code)')
     ok(E(pg,"ACH.find(a=>a.id==='ws1').p()[0]")>=6,'workstation trophies read old saves')

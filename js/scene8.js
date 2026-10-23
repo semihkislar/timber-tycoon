@@ -38,8 +38,8 @@ function treeColors(pal,t,tier){
 /* ---------- puddles (appear while it rains, dry slowly) ---------- */
 function puddleSpots(){
   if(scene._pud) return scene._pud; const out=[];
-  for(let u=14;u<=54;u+=1.7){const h=hash2(u*13,7);const v=(h-.5)*3.2;out.push({i:(u+v)/2,j:(u-v)/2,r:9+h*13,h});}
-  for(let j=-8;j<44;j+=2.6){const h=hash2(j*7,3);out.push({i:30.15+h*.1,j:j+h,r:7+h*9,h});}
+  for(let u=14;u<=62;u+=1.7){const h=hash2(u*13,7);const v=(h-.5)*3.2;out.push({i:(u+v)/2,j:(u-v)/2,r:9+h*13,h});}
+  for(let j=-8;j<44;j+=2.6){const h=hash2(j*7,3);out.push({i:hwI(j+h,-.85)+h*.1,j:j+h,r:7+h*9,h});}   // v2.28 bent highway
   for(let i=-12;i<5;i+=2.4){const h=hash2(i*5,11);out.push({i,j:DIRT_J+(h-.5)*1.2,r:8+h*10,h,mud:true});}
   return scene._pud=out;
 }

@@ -8,7 +8,7 @@
    localStorage 'tt_flow'. Drawn in screen space after the building tags, only while the view is on. */
 const FLOW_TINT={logs:'#b07a42',planks:'#d9a35a',veneer:'#e8cf98',bark:'#7a5030',chips:'#c9a24a',charcoal:'#5a5a62',chairs:'#a8743c',pellets:'#9a6a3a',paper:'#e8e2cf',
   furniture:'#c0603a',glue:'#d8a930',plywood:'#e08a3a',toys:'#e2577a',boats:'#3f86c8',flooring:'#a0703c',cabinets:'#8a5a3a',
-  giftbox:'#d14b4b',stationery:'#5a6fd0',luxfurn:'#d8a930'};
+  giftbox:'#d14b4b',stationery:'#5a6fd0',luxfurn:'#d8a930',beams:'#c48d4f',glulam:'#e2b877',houses:'#b8542e'};
 let flowOn=false; try{flowOn=localStorage.getItem('tt_flow')==='1';}catch(_){}
 function flowLotOf(id){return id==='yard'?YARD:id==='dock'?DOCK:id==='pdock'?PDOCK:LOTS[id];}
 function flowAnchor(id){const L=flowLotOf(id);if(!L) return null;const z=id==='yard'||id==='dock'||id==='pdock'?18:Math.min(56,(L.H||44)*.62);const p=P(L.ci,L.cj,z);return w2s(p[0],p[1]);}

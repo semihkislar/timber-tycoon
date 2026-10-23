@@ -187,8 +187,8 @@ with sync_playwright() as p:
     pg.reload(); pg.wait_for_timeout(800)
     ok(E(pg,'TT.S.version')==E(pg,'TT.VERSION') and E(pg,'TT.S.daily.streak')==6 and E(pg,'TT.S.daily.total')==8,'daily streak/total survive reload')
     # office hit type is office
-    E(pg,"(()=>{const c=TT.cam;c.z=c.tz=1.7;const p=TT.P(24.2,24.5,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()"); pg.wait_for_timeout(500)
-    ok(E(pg,"(()=>{const p=TT.P(24.2,24.55,6);const s=TT.w2s(p[0],p[1]);return TT.hitTest(s[0],s[1]).type})()")=='office','hitTest returns office at contract board')
+    E(pg,"(()=>{const c=TT.cam;c.z=c.tz=1.7;const p=TT.P(OFFICE.ci,OFFICE.cj,0);c.x=c.tx=p[0];c.y=c.ty=p[1];})()"); pg.wait_for_timeout(500)
+    ok(E(pg,"(()=>{const p=TT.P(OFFICE.ci,OFFICE.cj,8);const s=TT.w2s(p[0],p[1]);return TT.hitTest(s[0],s[1]).type})()")=='office','hitTest returns office at contract board')
 
     ctx.close()
 

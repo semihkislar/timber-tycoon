@@ -9,7 +9,7 @@ const GOLD='#d8a930', GOLD_L='#f5d36a', WALNUT='#4a2c1c', SLATE='#3a3430';
 function PUV(u,v,z){return [v*HW,u*HH-(z||0)];}
 function uvRect(ctx,u0,v0,u1,v1,c,st){fillP(ctx,[PUV(u0,v0),PUV(u0,v1),PUV(u1,v1),PUV(u1,v0)],c,st);}
 function drawPremGround(ctx,x0,y0,x1,y1){
-  const R=PROW, bx0=R.v0*HW-60, bx1=Math.max(R.v1,-8)*HW+60, by0=R.u0*HH-60, by1=(PROAD_J+31)*HH+60;
+  const R=PROW, bx0=R.v0*HW-60, bx1=Math.max(R.v1,-8)*HW+60, by0=R.u0*HH-60, by1=(PROAD_J+hwI(PROAD_J)+1)*HH+60;
   if(bx1<x0||bx0>x1||by1<y0||by0>y1) return;
   const open=S.premium&&S.premium.lvl>0;
   // Phase 2 → 3 forklift lanes across the verge (always visible once the row is open, so the hand-off reads)
@@ -42,16 +42,16 @@ function drawPremGround(ctx,x0,y0,x1,y1){
   {const p=PUV(R.u1-2.5,(R.v0+R.v1)/2);ctx.save();ctx.translate(p[0],p[1]);ctx.scale(1,.5);ctx.font='900 30px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=open?'rgba(245,211,106,.82)':'rgba(120,100,70,.45)';ctx.fillText('III · PREMIUM',0,0);ctx.restore();}
   // dock apron, spur and access road to the highway
-  uvRect(ctx,R.u1,-21.8,64.2,-12.6,open?'#5c5f66':'#b5a891');
+  uvRect(ctx,R.u1,-21.8,71.2,-12.6,open?'#5c5f66':'#b5a891');
   {const a=PDOCK.ci-1,b=PDOCK.ci+4.2;fillP(ctx,[P(a,PDOCK.cj-2),P(b,PDOCK.cj-2),P(b,PROAD_J),P(a,PROAD_J)],'#5c5f66');}
-  fillP(ctx,[P(PDOCK.ci-1,PROAD_J-.75),P(30,PROAD_J-.75),P(30,PROAD_J+.75),P(PDOCK.ci-1,PROAD_J+.75)],'#55585f');
-  ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1.6;ctx.beginPath();for(let i=PDOCK.ci+.4;i<29.6;i+=1){const a=P(i,PROAD_J),b=P(i+.5,PROAD_J);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
+  {const e=hwI(PROAD_J,-.95);fillP(ctx,[P(PDOCK.ci-1,PROAD_J-.75),P(e,PROAD_J-.75),P(e,PROAD_J+.75),P(PDOCK.ci-1,PROAD_J+.75)],'#55585f');}
+  ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1.6;ctx.beginPath();for(let i=PDOCK.ci+.4;i<hwI(PROAD_J,-1.4);i+=1){const a=P(i,PROAD_J),b=P(i+.5,PROAD_J);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2.4;ctx.beginPath();for(let j=PDOCK.cj-1;j<PDOCK.cj+1.1;j+=.5){const a=P(PDOCK.ci+1.7,j),b=P(PDOCK.ci+3.0,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
 }
 /* ---------- sync / update ---------- */
 function premOpen(){return S.premium&&S.premium.lvl>0;}
 // v2.21.1: phase-2 sources feeding the row; their pallets travel by forklift through the gates into Phase 3
-const PSRC={chairs:'carpentry',pellets:'pellet',paper:'paper',furniture:'furniture'};
+const PSRC={chairs:'carpentry',pellets:'pellet',paper:'paper',furniture:'furniture',glulam:'glulam'};   // v2.28 glulam → Timber-frame Houses
 function premLinks(){const out=[];
   for(const b of PREM_BLD){if(!S.buildings[b.id].lvl) continue;
     for(const k in b.inp){const src=PSRC[k];if(!src||!S.buildings[src]||!S.buildings[src].lvl||!PGATES[src]) continue;out.push({src,dst:b.id,k});}}
@@ -76,10 +76,10 @@ function premTruckLegs(){
   const X=PDOCKB[0]+PD_R, A=[X,PDOCKB[1]-PD_R], J=PROAD_J;
   return [
     // in from the south on the northbound lane (never queues behind the Shipping dock trucks), left onto the access road
-    {pa:crPath([[30.35,74],[30.35,J+1.5],[30.1,J+.6],[29.3,J+.38],[X+1.4,J+.38],[X+.2,J-.2],[X,J-1.2],[A[0],A[1]]],8),vmax:3.6},
+    {pa:crPath([[hwN(74),74],[hwN(J+1.5),J+1.5],[hwN(J)-.25,J+.6],[hwN(J)-1.05,J+.38],[X+1.4,J+.38],[X+.2,J-.2],[X,J-1.2],[A[0],A[1]]],8),vmax:3.6},
     {pa:densePath(arcPts(t=>{const th=t*Math.PI/2;return [A[0]-(A[0]-PDOCKB[0])*(1-Math.cos(th)),A[1]+PD_R*Math.sin(th)];},12)),rev:true,vmax:1.0},
     {pa:densePath([[PDOCKB[0],PDOCKB[1]],[PDOCKB[0]+.001,PDOCKB[1]]]),vmax:.5,hold:(v,dt)=>{v.doors=Math.min(1,(v.doors||0)+dt*1.6);return v.load<1||v.doors<1;}},
-    {pa:crPath([[PDOCKB[0],PDOCKB[1]],[X+.3,PDOCKB[1]+.1],[X+.75,PDOCKB[1]+.7],[X+.8,J-.7],[X+1.6,J-.36],[29.4,J-.36],[30.35,J-1.2],[30.35,J-3],[30.35,-26]],8),vmax:3.6}
+    {pa:crPath([[PDOCKB[0],PDOCKB[1]],[X+.3,PDOCKB[1]+.1],[X+.75,PDOCKB[1]+.7],[X+.8,J-.7],[X+1.6,J-.36],[hwN(J)-.95,J-.36],[hwN(J),J-1.2],...hwSeg(-.65,J-3,-26,1.5)],8),vmax:3.6}
   ];
 }
 function mkPremTruck(atDock){const v={kind:'prem',legs:premTruckLegs(),li:0,s:0,v:0,load:0,doors:0};if(atDock){v.li=2;v.load=.25;v.doors=1;}return v;}
@@ -87,7 +87,7 @@ function mkPremTruck(atDock){const v={kind:'prem',legs:premTruckLegs(),li:0,s:0,
 function laneLimit(v){
   const L=v.legs[v.li]; if(!L||!L.lane||v.i===undefined) return undefined;
   let lim=1e9; const all=[...scene.dockTrucks,...(scene.premTrucks||[]),...(scene.client&&scene.client.veh?[scene.client.veh]:[])];
-  for(const o of all){if(o===v||o.i===undefined||o.done) continue; if(Math.abs(o.i-31.45)<.62&&o.j>v.j+.05) lim=Math.min(lim,o.j-v.j-3.3);}
+  for(const o of all){if(o===v||o.i===undefined||o.done) continue; if(Math.abs(hwOff(o.i,o.j)-.45)<.62&&o.j>v.j+.05) lim=Math.min(lim,o.j-v.j-3.3);}
   return lim<1e8?Math.max(0,lim):undefined;
 }
 // workers walk the aisle: from the gate of the workshop's first phase-2 source (or the head of the row) to its door
@@ -116,9 +116,9 @@ function premUpdate(dt){
 }
 /* ---------- client van + client (order notification in the world) ---------- */
 // v2.21.1: the client parks on the premium access road, by the Phase 3 dock
-const CLIENT_PARK=[27.9,PROAD_J-.36], CLIENT_FIG=[27.55,PROAD_J-1.35];
-function clientLegsIn(){const J=PROAD_J;return [{pa:crPath([[30.35,74],[30.35,J+1.5],[30.1,J+.6],[29.3,J+.38],[28.4,J+.38],[27.1,J+.3],[26.5,J-.1],[26.9,J-.36],[CLIENT_PARK[0],CLIENT_PARK[1]]],8),vmax:3.2}];}
-function clientLegsOut(){const J=PROAD_J;return [{pa:crPath([[CLIENT_PARK[0],CLIENT_PARK[1]],[29.4,J-.36],[30.35,J-1.2],[30.35,J-3],[30.35,-26]],8),vmax:3.0}];}
+const CLIENT_PARK=[PDOCK.ci+6.95,PROAD_J-.36], CLIENT_FIG=[PDOCK.ci+6.6,PROAD_J-1.35];   // v2.28: relative to the premium dock
+function clientLegsIn(){const J=PROAD_J,c=CLIENT_PARK[0];return [{pa:crPath([[hwN(74),74],[hwN(J+1.5),J+1.5],[hwN(J)-.25,J+.6],[hwN(J)-1.05,J+.38],[c+.5,J+.38],[c-.8,J+.3],[c-1.4,J-.1],[c-1,J-.36],[CLIENT_PARK[0],CLIENT_PARK[1]]],8),vmax:3.2}];}
+function clientLegsOut(){const J=PROAD_J;return [{pa:crPath([[CLIENT_PARK[0],CLIENT_PARK[1]],[hwN(J)-.95,J-.36],[hwN(J),J-1.2],...hwSeg(-.65,J-3,-26,1.5)],8),vmax:3.0}];}
 function clientUpdate(dt){
   const O=S.orders, want=!!(O&&(O.offer||O.active));
   if(want&&!scene.client){const o=O.offer||O.active;scene.client={st:'in',veh:{kind:'van',legs:clientLegsIn(),li:0,s:0,v:0},look:mkLook(9000+(o.id%97),{role:'casual',female:o.id%2===0}),fig:0,ph:0,id:o.id};}
@@ -167,6 +167,7 @@ function interiorItems(ctx,kind,B,z0,run,t){ // silhouettes behind the glass (+i
     if(kind==='atelier'){ctx.fillStyle='#22222a';ctx.fillRect(-4,-9,8,8);ctx.fillStyle=GOLD;ctx.fillRect(-.6,-9,1.2,8);ctx.fillRect(-4,-6,8,1);}
     else if(kind==='parquet'){ctx.fillStyle='#8a5428';ctx.fillRect(-5,-4,10,3);ctx.fillStyle='#b8763a';ctx.fillRect(-5,-7,10,3);ctx.fillStyle='#6a3e1c';ctx.fillRect(-5,-10,10,3);}
     else if(kind==='stationer'){ctx.fillStyle=['#1f3a5a','#6a1f3a','#2f5a3a','#3a2418'][k%4];ctx.fillRect(-3,-12,3,11);ctx.fillRect(1,-10,3,9);ctx.fillStyle=GOLD;ctx.fillRect(-3,-10,3,1);}
+    else if(kind==='framer'){ctx.strokeStyle='#c48d4f';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(-5,-1);ctx.lineTo(-5,-8);ctx.lineTo(0,-13);ctx.lineTo(5,-8);ctx.lineTo(5,-1);ctx.moveTo(-5,-8);ctx.lineTo(5,-8);ctx.moveTo(-5,-1);ctx.lineTo(5,-8);ctx.moveTo(0,-13);ctx.lineTo(0,-1);ctx.stroke();}   // v2.28 house frames
     else if(kind==='cabinetry'){ctx.fillStyle='#3a2418';ctx.fillRect(-4,-14,8,13);ctx.fillStyle='#6a4026';ctx.fillRect(-3.3,-13,3,11);ctx.fillRect(.3,-13,3,11);ctx.fillStyle=GOLD;ctx.fillRect(-1,-8,.8,3);ctx.fillRect(.6,-8,.8,3);}
     else {ctx.fillStyle='#6a1f3a';ctx.fillRect(-7,-6,14,5);ctx.fillRect(-8,-9,3,8);ctx.fillRect(5,-9,3,8);ctx.fillStyle='#a83a5e';ctx.fillRect(-5,-5,10,2);
       if(k===1){ctx.fillStyle='#2a2a30';ctx.fillRect(-.5,-22,1,20);ctx.fillStyle='#fff0c0';ctx.beginPath();ctx.moveTo(-4,-22);ctx.lineTo(4,-22);ctx.lineTo(2.5,-27);ctx.lineTo(-2.5,-27);ctx.closePath();ctx.fill();}}
@@ -174,7 +175,7 @@ function interiorItems(ctx,kind,B,z0,run,t){ // silhouettes behind the glass (+i
   if(run){const g=P(K,(B.j0+B.j1)/2,z0+8);ctx.fillStyle='rgba(255,220,140,.12)';ctx.beginPath();ctx.ellipse(g[0],g[1],span*20,9,0,0,TAU);ctx.fill();}
 }
 function premBuilding(kind){
-  const LABEL={atelier:'ATELIER',parquet:'PARQUET',stationer:'PAPETERIE',cabinetry:'CABINETS',showroom:'SHOWROOM'};
+  const LABEL={atelier:'ATELIER',parquet:'PARQUET',stationer:'PAPETERIE',cabinetry:'CABINETS',showroom:'SHOWROOM',framer:'TIMBER HOMES'};
   return function(ctx,L,B,run,t){
     const ms=B.ms, big=kind==='showroom', h=(big?34:24)+ms*2.6, bs=B.bs;
     box(ctx,B.i0-.07,B.j0-.07,B.i1+.07,B.j1+.07,0,3,'#24201d',{hl:false});
@@ -198,6 +199,14 @@ function premBuilding(kind){
     if(kind==='cabinetry') top=sawtooth(ctx,B.i0+.1,B.j0+.1,B.i1-.1,B.j1-.1,h,8,3,'j','#2a201a',WALNUT);
     else {ctx.strokeStyle=GOLD;ctx.lineWidth=1.3;pth(ctx,[P(B.i0,B.j0,h),P(B.i1,B.j0,h),P(B.i1,B.j1,h),P(B.i0,B.j1,h)]);ctx.stroke();}
     if(kind==='atelier'){const ci=B.i0+.45,cj=B.j0+.45;const cp=stack(ctx,ci,cj,{r:.16,top:h+17,base:[h,h,h],style:'darkbrick'});if(run){ell(ctx,cp[0],cp[1]+1,3.2,1.4,'rgba(255,150,60,.55)');chimneySmoke(cp[0],cp[1],'grey',1.1);}}
+    if(kind==='framer'){   // v2.28: a timber-frame house skeleton raised on the roof deck
+      const a0=B.i0+.35,a1=B.i0+1.35,b0=B.j0+.35,b1=B.j0+1.25,z=h,zt=h+11,zr=h+18,am=(a0+a1)/2;ctx.strokeStyle='#8b5a2b';ctx.lineWidth=2;ctx.beginPath();
+      for(const [i,j] of [[a0,b0],[a1,b0],[a0,b1],[a1,b1]]){const p0=P(i,j,z),p1=P(i,j,zt);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}
+      for(const [i0,j0,i1,j1] of [[a0,b0,a1,b0],[a0,b1,a1,b1],[a0,b0,a0,b1],[a1,b0,a1,b1]]){const p0=P(i0,j0,zt),p1=P(i1,j1,zt);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}
+      for(const j of [b0,b1]){const p0=P(a0,j,zt),p1=P(am,j,zr),p2=P(a1,j,zt);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);}
+      {const p0=P(am,b0,zr),p1=P(am,b1,zr);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}ctx.stroke();
+      ctx.strokeStyle='#e2b877';ctx.lineWidth=.9;ctx.stroke();
+      if(run){const c=P(am,(b0+b1)/2,zr+4);ctx.fillStyle='rgba(255,230,160,.5)';ctx.fillRect(c[0]-.5,c[1]-6,1,6);}}
     if(kind==='parquet'){for(let k=0;k<3;k++){const a=B.i0+.25+k*.1;box(ctx,a,B.j0+.3+k*.08,a+.9,B.j0+.48+k*.08,h+k*2.5,h+2.5+k*2.5,['#b8763a','#8a5428','#a06830'][k],{hl:false});}}
     if(kind==='stationer'){const p=P((B.i0+B.i1)/2,(B.j0+B.j1)/2,h);ctx.save();ctx.translate(p[0],p[1]-6);ctx.rotate(-.5);ctx.fillStyle='#1a1a1e';rr(ctx,-3,-20,6,24,2);ctx.fill();ctx.fillStyle=GOLD;ctx.fillRect(-3,-12,6,2);ctx.beginPath();ctx.moveTo(-3,4);ctx.lineTo(3,4);ctx.lineTo(0,11);ctx.closePath();ctx.fill();ctx.restore();}
     if(big){const p=P((B.i0+B.i1)/2,(B.j0+B.j1)/2,h+2);ctx.fillStyle=GOLD;ctx.beginPath();ctx.moveTo(p[0]-9,p[1]);ctx.lineTo(p[0]-9,p[1]-7);ctx.lineTo(p[0]-4.5,p[1]-3);ctx.lineTo(p[0],p[1]-10);ctx.lineTo(p[0]+4.5,p[1]-3);ctx.lineTo(p[0]+9,p[1]-7);ctx.lineTo(p[0]+9,p[1]);ctx.closePath();ctx.fill();ctx.strokeStyle='#8a6a10';ctx.lineWidth=1;ctx.stroke();
@@ -210,7 +219,7 @@ function premBuilding(kind){
     return top+12;
   };
 }
-for(const k of ['atelier','parquet','stationer','cabinetry','showroom']) BDRAW[k]=premBuilding(k);
+for(const k of ['atelier','parquet','stationer','cabinetry','showroom','framer']) BDRAW[k]=premBuilding(k);
 function premConstruction(ctx,L,can){
   const e=(L.bs0+.42)/2+.1,{ci,cj}=L;
   ctx.save();ctx.setLineDash([5,4]);ctx.lineDashOffset=-scene.t*10*(can?1:0);ctx.strokeStyle=can?'#f5c84c':'rgba(216,169,48,.55)';ctx.lineWidth=2;
@@ -237,7 +246,7 @@ function drawPremDock(ctx){
   ctx.save();fxf(ctx,'J',B.j1,B.i0+.1,19.5);ctx.fillStyle=GOLD_L;ctx.font='900 6.5px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('RESERVE',(B.i1-B.i0-.2)*16,0);ctx.restore();
   ctx.strokeStyle=GOLD;ctx.lineWidth=1.2;pth(ctx,[P(B.i0,B.j0,34),P(B.i1,B.j0,34),P(B.i1,B.j1,34),P(B.i0,B.j1,34)]);ctx.stroke();
   // waiting crates on the dock apron
-  const pal=[RCOL.giftbox,RCOL.flooring,RCOL.stationery,RCOL.cabinets,RCOL.luxfurn];
+  const pal=[RCOL.giftbox,RCOL.flooring,RCOL.stationery,RCOL.cabinets,RCOL.luxfurn,RCOL.houses];
   for(let k=0;k<3;k++){const a=ci+.5,b=cj-1.05+k*.36;box(ctx,a-.12,b,a+.16,b+.28,7,12,pal[(k+Math.floor(scene.t/6))%5],{hl:false});}
   PDOCK.hit=[P(ci-.8,cj-1.2,40),P(ci+.8,cj-1.2,40),P(ci+.8,cj-1.2,0),P(ci+.8,cj+1.2,0),P(ci-.8,cj+1.2,0),P(ci-.8,cj+1.2,40)];PDOCK.top=P(ci,cj,44);
 }
@@ -342,8 +351,8 @@ function premDraw(ctx,objs,inView){
     else {objs.push({k:L.ci+L.cj,f:()=>drawLot(ctx,L)});const so=stockObj(ctx,L);if(so) objs.push(so);}}
   objs.push({k:PDOCK.ci+PDOCK.cj,f:()=>drawPremDock(ctx)});
   // gold lamp posts + topiary planters
-  for(const [i,j] of [23.75,30.65,37.55,44.6,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
-  for(const [i,j] of [23.75,30.65,37.55,44.6].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
+  for(const [i,j] of [23.75,30.65,37.55,44.6,51.9,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
+  for(const [i,j] of [23.75,30.65,37.55,44.6,51.9].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
   for(const f of scene.plifts||[]){if(f.i===undefined) continue;const [x,y]=P(f.i,f.j);if(!inView(x,y,40)) continue;objs.push({k:f.i+f.j,f:()=>forklift(ctx,f.i,f.j,f.yaw||0,f.p<1?f.res:null,0)});}
   for(const w of scene.pworkers||[]){if(!w.route) continue;const q=w.p<1?w.p:2-w.p;const [i,j,di,dj]=pathAt(w.route,q);const sg=w.p<1?1:-1;const [x,y]=P(i,j);if(!inView(x,y,30)) continue;
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:(di-dj)*sg>=0?1:-1,back:(di+dj)*sg<0,pose:w.p<1?'box':'walk',ph:w.ph,cargo:w.p<1?Object.keys(BMAP[w.tgt].inp)[0]:null})});}

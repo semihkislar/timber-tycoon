@@ -14,7 +14,7 @@ const RBRANCH=[
   {id:'cra',name:'Craft',icon:'🪑',c:'#a8508a'},{id:'log',name:'Logistics',icon:'⚓',c:'#2f6f8f'}];
 const RTIER=[null,{L:0,n:'Tier I'},{L:25,n:'Tier II'},{L:150,n:'Tier III'},{L:800,n:'Tier IV'},{L:2500,n:'Tier V',ms:true}];
 const blv=id=>(S.buildings[id]&&S.buildings[id].lvl)||0, anyLv=l=>BUILDINGS.some(b=>blv(b.id)>=l);
-const MIL=['peeler','sawmill','chipper','kiln','pellet','paper'], CRAFT=['carpentry','furniture','atelier','parquet','stationer','cabinetry','showroom','toyshop','boatyard'];
+const MIL=['peeler','sawmill','chipper','kiln','pellet','paper','beamsaw','glulam'], CRAFT=['carpentry','furniture','atelier','parquet','stationer','cabinetry','showroom','framer','toyshop','boatyard'];   // v2.28: Beam Saw + Glulam Plant are mills, Timber-frame Houses a craft
 const PREM_RES=()=>RES.filter(r=>r.premium||r.tech).map(r=>r.id);
 const mulB=(ids,k)=>m=>{for(const id of ids) if(m.bld[id]!==undefined) m.bld[id]*=k;};
 const mulP=(ids,k)=>m=>{for(const id of (typeof ids==='function'?ids():ids)) m.price[id]*=k;};
@@ -60,7 +60,7 @@ const RNODES=[
   {id:'grading', b:'mil',t:3,name:'Laser Grading',   icon:'🔦',rp:10000,req:['thinkerf'],d:'Sawmill & Plywood Mill +40 %',fx:m=>{m.bld.sawmill*=1.4;m.bld.plymill*=1.4;},gate:{f:()=>blv('sawmill')>=100,t:'Sawmill Lv 100'}},
   {id:'biochar', b:'mil',t:3,name:'Biochar Retorts', icon:'⚫',rp:11000,req:['refiner'], d:'Charcoal Kiln +50 %, charcoal sells +20 %',fx:m=>{m.bld.kiln*=1.5;m.price.charcoal*=1.2;}},
   {id:'twinwire',b:'mil',t:3,name:'Twin-wire Paper', icon:'📜',rp:12000,req:['liquor'],  d:'Paper Mill +50 %',fx:m=>{m.bld.paper*=1.5;}},
-  {id:'robomill',b:'mil',t:4,name:'Robotic Mill',    icon:'🏭',rp:32000,req:['grading'], d:'Peeler, Sawmill, Chipper, Kiln, Pellet Press & Paper Mill +50 %',fx:mulB(MIL,1.5)},
+  {id:'robomill',b:'mil',t:4,name:'Robotic Mill',    icon:'🏭',rp:32000,req:['grading'], d:'Peeler, Sawmill, Chipper, Kiln, Beam Saw, Pellet Press, Paper Mill & Glulam Plant +50 %',fx:mulB(MIL,1.5)},
   {id:'coldpress',b:'mil',t:4,name:'Cold Press',     icon:'🧊',rp:34000,req:['twinwire'],d:'Plywood Mill +60 %',fx:m=>{m.bld.plymill*=1.6;}},
   {id:'r_mil',   b:'mil',t:4,name:'Throughput',      icon:'♾️',rp:40000,req:['robomill'],rep:true,d:'Primary mills +5 % × level^0.7 (repeatable)',fx:(m,n)=>mulB(MIL.concat(['plymill']),1+repV(n))(m)},
   {id:'zerowaste',b:'mil',t:5,name:'Zero-waste Mill',icon:'♻️',rp:250000,req:['robomill','coldpress'],d:'All mills ×2',fx:mulB(MIL.concat(['plymill']),2)},
@@ -132,10 +132,10 @@ function resMigrate(o){
 const HARBOR_COST=2.5e7, HARBOR_MAX=5, SPIKE_MULT=2;
 const CITIES=[
   {id:'ist',name:'Istanbul', flag:'🇹🇷',mode:'train',trip:70, cost:2e7, base:1.11,x:.6,y:.39,likes:{furniture:1.38,toys:1.34,chairs:1.26,flooring:1.22,giftbox:1.22}},
-  {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22}},
-  {id:'rot',name:'Rotterdam',flag:'🇳🇱',mode:'ship', trip:190,cost:3e8, base:1.16,x:.42,y:.24,likes:{pellets:1.52,charcoal:1.41,plywood:1.34,boats:1.30,paper:1.22}},
+  {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22,glulam:1.36}},
+  {id:'rot',name:'Rotterdam',flag:'🇳🇱',mode:'ship', trip:190,cost:3e8, base:1.16,x:.42,y:.24,likes:{pellets:1.52,charcoal:1.41,plywood:1.34,boats:1.30,paper:1.22,beams:1.26}},
   {id:'dxb',name:'Dubai',    flag:'🇦🇪',mode:'ship', trip:250,cost:1e9, base:1.19,x:.74,y:.6,likes:{luxfurn:1.68,furniture:1.49,cabinets:1.45,giftbox:1.38,boats:1.45}},
-  {id:'nyc',name:'New York', flag:'🇺🇸',mode:'ship', trip:330,cost:4e9, base:1.22, x:.27,y:.31,likes:{stationery:1.60,toys:1.56,boats:1.52,luxfurn:1.38,flooring:1.34}},
+  {id:'nyc',name:'New York', flag:'🇺🇸',mode:'ship', trip:330,cost:4e9, base:1.22, x:.27,y:.31,likes:{stationery:1.60,toys:1.56,boats:1.52,luxfurn:1.38,flooring:1.34,houses:1.42}},
   {id:'tyo',name:'Tokyo',    flag:'🇯🇵',mode:'ship', trip:420,cost:1.5e10,base:1.26,x:.92,y:.36,likes:{paper:1.68,toys:1.64,stationery:1.49,boats:1.60,plywood:1.38}},
 ];
 const HOME={name:'Bartın',x:.67,y:.355};   // our mill: Black Sea timber coast

@@ -123,15 +123,21 @@ function drawRiver(ctx){
   fillP(ctx,[P(32.2,j0-.15),P(32.4,j0-.15),P(32.4,j1+.15),P(32.2,j1+.15)],'#9a958a');
   fillP(ctx,[P(32.4,j0-.15),P(32.4,j1+.15),P(32.4,j1+.15,-5),P(32.4,j0-.15,-5)],'#6a665e');
 }
+// v2.28: the rail runs beside the highway and follows its bend (line offset RAIL_I − 31 = 1.78)
+const RAIL_O=RAIL_I-HWY.i0;
 function drawRail(ctx){
   if(!harborOpen()) return;
-  fillP(ctx,[P(RAIL_I-.42,-70),P(RAIL_I+.42,-70),P(RAIL_I+.42,100),P(RAIL_I-.42,100)],'#8a8278');
+  const q=hwSeg(RAIL_O,-70,100),A=hwSeg(RAIL_O-.42,-70,100),B=hwSeg(RAIL_O+.42,100,-70);
+  fillP(ctx,[...A,...B].map(p=>P(p[0],p[1])),'#8a8278');
   ctx.strokeStyle='#5a4a3a';ctx.lineWidth=1.6;ctx.beginPath();
-  for(let j=-70;j<100;j+=.42){const a=P(RAIL_I-.3,j),b=P(RAIL_I+.3,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
+  for(let k=1;k<q.length;k++){const a=q[k-1],b=q[k],L=Math.hypot(b[0]-a[0],b[1]-a[1]),di=(b[0]-a[0])/L,dj=(b[1]-a[1])/L;
+    const n=Math.abs(di)<.1?[.3,0]:[.134,-.134];   // sleeper across the track (keeps its screen width on the diagonal)
+    for(let d=0;d<L;d+=.42){const i=a[0]+di*d,j=a[1]+dj*d,p0=P(i-n[0],j-n[1]),p1=P(i+n[0],j+n[1]);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}}
+  ctx.stroke();
   ctx.strokeStyle='#cfd4da';ctx.lineWidth=1.3;ctx.beginPath();
-  for(const d of [-.17,.17]){const a=P(RAIL_I+d,-70),b=P(RAIL_I+d,100);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
+  for(const d of [-.17,.17]){const r=hwSeg(RAIL_O+d,-70,100);ctx.moveTo(...P(r[0][0],r[0][1]));for(let k=1;k<r.length;k++) ctx.lineTo(...P(r[k][0],r[k][1]));}ctx.stroke();
   // rail bridge over the river
-  fillP(ctx,[P(RAIL_I-.45,RIVER_J0-.1),P(RAIL_I+.45,RIVER_J0-.1),P(RAIL_I+.45,RIVER_J1+.1),P(RAIL_I-.45,RIVER_J1+.1)],'#6a6a70');
+  fillP(ctx,[P(RAIL_I-.45,RIVER_J0-.1),P(RAIL_I+.45,RIVER_J0-.1),P(RAIL_I+1.2,RIVER_J1+.1),P(RAIL_I+.3,RIVER_J1+.1)],'#6a6a70');
 }
 function drawHarborGround(ctx){
   drawRiver(ctx);
@@ -257,7 +263,7 @@ function vesselPose(v){
   // ships berth along the quay; under way they steer out to the far fairway so they never sail through a berthed ship
   if(v.mode==='ship'){const lane=v.state==='load'?0:Math.min(1,u*4);const s0=v.state==='load'?Math.max(0,slot):0;
     return {i:BERTH[0]+s0*5.4+e*32,j:BERTH[1]-.35+lane*1.15,yaw:0,a:1-Math.max(0,e-.6)/.4};}
-  return {i:RAIL_I,j:PLATFORM_J-Math.max(0,slot)*0+e*44,yaw:Math.PI/2,a:1-Math.max(0,e-.6)/.4};
+  const r=hwAt(RAIL_O,PLATFORM_J,e*44);return {i:r.i,j:r.j,yaw:r.yaw,a:1-Math.max(0,e-.6)/.4};   // v2.28: follows the bent rail
 }
 function drawVessel(ctx,v,p){
   ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,p.a));

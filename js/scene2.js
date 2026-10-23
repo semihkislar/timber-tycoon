@@ -26,9 +26,9 @@ function drawGround(ctx,x0,y0,x1,y1){
   for(let j=jMin;j<=jMax;j++){const a=P(iMin,j),b=P(iMax,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}
   ctx.stroke();
   // factory yard: tile-aligned packed-earth platform (raised lip), paved lane
-  if(!(x1<-13*HW||x0>13*HW||y1<3*HH||y0>59*HH)){
+  if(!(x1<-13*HW||x0>13*HW||y1<3*HH||y0>68*HH)){
     const tiles=[];
-    for(let u=Math.max(u0,3);u<=Math.min(u1,58);u++) for(let v=Math.max(v0,-13);v<=Math.min(v1,13);v++){
+    for(let u=Math.max(u0,3);u<=Math.min(u1,67);u++) for(let v=Math.max(v0,-13);v<=Math.min(v1,13);v++){
       if((u+v)&1) continue; const i=(u+v)/2,j=(u-v)/2; if(yardTile(i,j)) tiles.push([i,j]);
     }
     // lip (side faces) first, below front edges
@@ -63,7 +63,7 @@ function drawGround(ctx,x0,y0,x1,y1){
     }
     ctx.lineCap='butt';
     // lane center dashes (walkway markings)
-    ctx.fillStyle='rgba(255,255,255,.72)';for(let u=13;u<56;u+=2){const a=P(u/2,u/2);if(a[1]<y0-20||a[1]>y1+20)continue;ctx.fillRect(a[0]-2,a[1]+4,4,13);}
+    ctx.fillStyle='rgba(255,255,255,.72)';for(let u=13;u<65;u+=2){const a=P(u/2,u/2);if(a[1]<y0-20||a[1]>y1+20)continue;ctx.fillRect(a[0]-2,a[1]+4,4,13);}
   }
   // concrete pads for every lot + yard + dock
   drawPremGround(ctx,x0,y0,x1,y1);
@@ -93,11 +93,7 @@ function drawGround(ctx,x0,y0,x1,y1){
   for(const dj of [-1.05,1.05]){const a=P(-40,DIRT_J+dj),b=P(6.4,DIRT_J+dj);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   // asphalt road + dock apron
   {const a=dk(28.6,18.6),b=dk(30,23.4);fillP(ctx,[P(a[0],a[1]),P(b[0],a[1]),P(b[0],b[1]),P(a[0],b[1])],'#73777e');}   // v2.27: dock apron follows the dock
-  fillP(ctx,[P(30,-70),P(32,-70),P(32,100),P(30,100)],'#62666d');
-  ctx.strokeStyle='#f0ede4';ctx.lineWidth=2;ctx.beginPath();
-  for(const ii of [30.1,31.9]){const a=P(ii,-70),b=P(ii,100);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
-  ctx.strokeStyle='#f2c230';ctx.lineWidth=2.4;ctx.beginPath();
-  for(let j=-70;j<100;j+=1.2){const a=P(31,j),b=P(31,j+.6);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
+  drawHighway(ctx);
   ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.beginPath();
   for(let j=19.2+DKJ;j<23+DKJ;j+=.55){const a=P(29.05,j),b=P(29.75,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
   // decorations
@@ -116,6 +112,18 @@ function drawGround(ctx,x0,y0,x1,y1){
   const tier=S.tree;
   for(const t of scene.staticTrees){const [x,y]=P(t.i,t.j); if(x<x0-40||x>x1+40||y<y0-10||y>y1+90) continue; treeShadow(ctx,x,y,t.s);}
   for(const t of scene.staticTrees){const [x,y]=P(t.i,t.j); if(x<x0-40||x>x1+40||y<y0-10||y>y1+90) continue; drawTree(ctx,x,y,t,tier);}
+}
+/* v2.28 bent highway (see HWY in scene1) + the south gate road from the lane end */
+function hwPoly(o0,o1){const a=hwSeg(o0,-70,100),b=hwSeg(o1,100,-70);return [...a,...b].map(p=>P(p[0],p[1]));}
+function hwLine(ctx,o){const q=hwSeg(o,-70,100);ctx.moveTo(...P(q[0][0],q[0][1]));for(let k=1;k<q.length;k++) ctx.lineTo(...P(q[k][0],q[k][1]));}
+function drawHighway(ctx){
+  // south gate: asphalt from the end of the factory lane to the highway
+  {const i1=hwI(SGATE_J,-.95);fillP(ctx,[P(31.6,SGATE_J-.7),P(i1,SGATE_J-.7),P(i1,SGATE_J+.7),P(31.6,SGATE_J+.7)],'#696d74');
+    ctx.strokeStyle='rgba(240,237,228,.85)';ctx.lineWidth=1.6;ctx.beginPath();for(const d of [-.62,.62]){const a=P(31.8,SGATE_J+d),b=P(i1,SGATE_J+d);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=3;ctx.beginPath();for(let j=SGATE_J-.55;j<SGATE_J+.6;j+=.4){const a=P(32.0,j),b=P(32.6,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();}
+  fillP(ctx,hwPoly(-1,1),'#62666d');
+  ctx.strokeStyle='#f0ede4';ctx.lineWidth=2;ctx.beginPath();hwLine(ctx,-.9);hwLine(ctx,.9);ctx.stroke();
+  ctx.save();ctx.strokeStyle='#f2c230';ctx.lineWidth=2.4;ctx.setLineDash([11,11]);ctx.beginPath();hwLine(ctx,0);ctx.stroke();ctx.restore();
 }
 function rr(ctx,x,y,w,h,r){ctx.beginPath();if(ctx.roundRect) ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);}
 function chunkScale(){const w=scene.cam.z*scene.dpr;const L=[.5,.75,1,1.25,1.5,2,2.5];for(const s of L) if(w<=s*1.08) return s;return 2.5;}

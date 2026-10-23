@@ -93,7 +93,8 @@ with sync_playwright() as p:
     mp.touchscreen.tap(box['x']+gx, box['y']+gy); mp.wait_for_timeout(300)
     ok(mp.evaluate('TT.S.golden')==1,'golden log tappable on mobile')
     ok(mp.evaluate('document.documentElement.scrollWidth')<=391,'no horizontal overflow on mobile')
-    mp.evaluate('TT.closeSheet()'); pt=mp.evaluate('TT.lotScreen("dock")'); mp.touchscreen.tap(pt[0],pt[1]); mp.wait_for_timeout(300)
+    # v2.27: the dock moved to the helper strip, off the portrait fit view, so centre it first
+    mp.evaluate('TT.closeSheet()'); mp.evaluate('(()=>{const c=scene.cam,p=P(DOCK.ci,DOCK.cj,20);c.fly=null;c.x=c.tx=p[0];c.y=c.ty=p[1];TT.render();})()'); mp.wait_for_timeout(200); pt=mp.evaluate('TT.lotScreen("dock")'); mp.touchscreen.tap(pt[0],pt[1]); mp.wait_for_timeout(300)
     ok(mp.evaluate('TT.curSheet') in ('market','ship'),'dock tappable on mobile (touch) -> shipping yard (v2.13)')
     print('ERRORS:',errs); ok(len(errs)==0,'no console errors')
     b.close()
