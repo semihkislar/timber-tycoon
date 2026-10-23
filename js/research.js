@@ -132,10 +132,10 @@ function resMigrate(o){
 const HARBOR_COST=2.5e7, HARBOR_MAX=5, SPIKE_MULT=2;
 const CITIES=[
   {id:'ist',name:'Istanbul', flag:'🇹🇷',mode:'train',trip:70, cost:2e7, base:1.11,x:.6,y:.39,likes:{furniture:1.38,toys:1.34,chairs:1.26,flooring:1.22,giftbox:1.22}},
-  {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22}},
-  {id:'rot',name:'Rotterdam',flag:'🇳🇱',mode:'ship', trip:190,cost:3e8, base:1.16,x:.42,y:.24,likes:{pellets:1.52,charcoal:1.41,plywood:1.34,boats:1.30,paper:1.22}},
+  {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22,glulam:1.36}},
+  {id:'rot',name:'Rotterdam',flag:'🇳🇱',mode:'ship', trip:190,cost:3e8, base:1.16,x:.42,y:.24,likes:{pellets:1.52,charcoal:1.41,plywood:1.34,boats:1.30,paper:1.22,beams:1.26}},
   {id:'dxb',name:'Dubai',    flag:'🇦🇪',mode:'ship', trip:250,cost:1e9, base:1.19,x:.74,y:.6,likes:{luxfurn:1.68,furniture:1.49,cabinets:1.45,giftbox:1.38,boats:1.45}},
-  {id:'nyc',name:'New York', flag:'🇺🇸',mode:'ship', trip:330,cost:4e9, base:1.22, x:.27,y:.31,likes:{stationery:1.60,toys:1.56,boats:1.52,luxfurn:1.38,flooring:1.34}},
+  {id:'nyc',name:'New York', flag:'🇺🇸',mode:'ship', trip:330,cost:4e9, base:1.22, x:.27,y:.31,likes:{stationery:1.60,toys:1.56,boats:1.52,luxfurn:1.38,flooring:1.34,houses:1.42}},
   {id:'tyo',name:'Tokyo',    flag:'🇯🇵',mode:'ship', trip:420,cost:1.5e10,base:1.26,x:.92,y:.36,likes:{paper:1.68,toys:1.64,stationery:1.49,boats:1.60,plywood:1.38}},
 ];
 const HOME={name:'Bartın',x:.67,y:.355};   // our mill: Black Sea timber coast

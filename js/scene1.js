@@ -154,7 +154,9 @@ function hwJ2(o){return HWY.ja+HWY.d+(1-HWY.k)*o;}      // second corner (start 
 function hwI(j,o){o=o||0;if(j<=hwJ1(o)) return HWY.i0+o;if(j>=hwJ2(o)) return HWY.i0+HWY.d+o;return j+(HWY.i0-HWY.ja)+HWY.k*o;}
 function hwPt(j,o){return [hwI(j,o),j];}
 /* polyline along road line o from j0 to j1 (either direction), corners included */
-function hwSeg(o,j0,j1){const out=[hwPt(j0,o)];const c=[hwJ1(o),hwJ2(o)].filter(j=>(j-j0)*(j-j1)<0).sort((a,b)=>j1>j0?a-b:b-a);for(const j of c) out.push(hwPt(j,o));out.push(hwPt(j1,o));return out;}
+function hwSeg(o,j0,j1,step){const c=[hwJ1(o),hwJ2(o)].filter(j=>(j-j0)*(j-j1)<0).sort((a,b)=>j1>j0?a-b:b-a);const ks=[j0,...c,j1];
+  if(!step) return ks.map(j=>hwPt(j,o));   // step: extra points every `step` in j, so a Catmull-Rom path (crPath) hugs the corners
+  const out=[hwPt(j0,o)];for(let k=1;k<ks.length;k++){const a=ks[k-1],b=ks[k],n=Math.max(1,Math.ceil(Math.abs(b-a)/step));for(let q=1;q<=n;q++) out.push(hwPt(a+(b-a)*q/n,o));}return out;}
 function hwOff(i,j){const a=i-HWY.i0;if(j<=hwJ1(a)) return a;const c=i-HWY.i0-HWY.d;if(j>=hwJ2(c)) return c;return (i-j-(HWY.i0-HWY.ja))/HWY.k;}
 /* point + heading at arc length d along road line o, starting at j0 and heading south (+j) */
 function hwAt(o,j0,d){const q=hwSeg(o,j0,j0+400);for(let k=1;k<q.length;k++){const a=q[k-1],b=q[k],L=Math.hypot(b[0]-a[0],b[1]-a[1]);

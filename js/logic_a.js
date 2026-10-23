@@ -94,7 +94,7 @@ const BUILDINGS=[
   {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
   {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{planks:12,veneer:6},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
   // v2.28 timber line: a Phase 1 beam saw and a Phase 2 glulam plant at the bottom of their columns (south of the old highway)
-  {id:'beamsaw',name:'Beam Saw',icon:'🪜',svg:'beamsaw',inp:{logs:6},out:{beams:2},cost:2e6,scale:1.19,spd:6,desc:'Squares big logs into heavy timber beams.'},
+  {id:'beamsaw',name:'Beam Saw',icon:'🪜',svg:'beamsaw',inp:{logs:6},out:{beams:2,chips:2},cost:2e6,scale:1.19,spd:6,desc:'Squares big logs into heavy timber beams; the slabs and offcuts are chipped, feeding the pellet and paper lines.'},
   {id:'glulam',name:'Glulam Plant',icon:'🌉',svg:'glulam_b',inp:{beams:4},out:{glulam:1},cost:2.5e7,scale:1.21,spd:5,desc:'Laminates timber beams into long, strong glulam beams.'},
   // v2.2 premium workshops (need the Premium Area; spd = base throughput multiplier)
   {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{pellets:5,paper:2},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs pellets in printed paper into grill gift boxes.'},
@@ -272,7 +272,11 @@ const ACH=[
   {id:'ws50',g:'sys',t:'silver',e:'🔧',n:'Tuned Lines',d:'50 workstation levels in total',p:()=>[achWsTot(),50]},
   {id:'ws10',g:'sys',t:'gold',e:'⚙️',n:'Precision Works',d:'Max out a workstation (Lv 10)',p:()=>[achWsMax(),10]},
   {id:'tier3',g:'sys',t:'bronze',e:'🏗️',n:'Three Phases',d:'Run a building in Phase 1, 2 and 3 at once',p:()=>[[1,2,3].filter(t=>BUILDINGS.some(b=>BTIERa(b.id)===t&&S.buildings[b.id].lvl>0)).length,3]},
-  {id:'prem5',g:'sys',t:'gold',e:'💎',n:'Premium Row',d:'Build all 5 Phase 3 workshops',p:()=>[PREM_BLD.filter(b=>S.buildings[b.id].lvl>0).length,PREM_BLD.length]},
+  {id:'prem5',g:'sys',t:'gold',e:'💎',n:'Premium Row',d:'Build every Phase 3 workshop',p:()=>[PREM_BLD.filter(b=>S.buildings[b.id].lvl>0).length,PREM_BLD.length]},
+  // v2.28 south yard / timber-frame line
+  {id:'beams2',g:'sys',t:'bronze',e:'🪜',n:'Timber Line',d:'Build a Beam Saw and a Glulam Plant',p:()=>[['beamsaw','glulam'].filter(k=>S.buildings[k]&&S.buildings[k].lvl>0).length,2]},
+  {id:'house1',g:'sys',t:'silver',e:'🏡',n:'Raise the Roof',d:'Build the Timber-frame Houses workshop',p:()=>[S.buildings.framer&&S.buildings.framer.lvl>0?1:0,1]},
+  {id:'house50',g:'sys',t:'gold',e:'🏘️',n:'Chalet Village',d:'Timber-frame Houses Lv 50',p:()=>[(S.buildings.framer&&S.buildings.framer.lvl)||0,50]},
   {id:'rp5',g:'sys',t:'silver',e:'🌲',n:'Evergreen',d:'Replant the forest 5 times',p:()=>[S.prestiges||0,5]},
   {id:'shop1',g:'sys',t:'bronze',e:'🛒',n:'Seed Shopper',d:'Buy a Seed Shop perk',p:()=>[Object.values(S.shop||{}).reduce((a,v)=>a+(+v||0),0),1]},
   {id:'goals',g:'sys',t:'gold',e:'🎯',n:'Goal Getter',d:'Finish every run goal in one run',p:()=>typeof GOALS!=='undefined'&&typeof goalsDone==='function'?[goalsDone(),GOALS.length]:[0,1]},

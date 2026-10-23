@@ -4,12 +4,13 @@
 function w2s(x,y){const c=scene.cam;return [(x-c.x)*c.z+scene.w/2,(y-c.y)*c.z+scene.h/2];}
 function s2w(x,y){const c=scene.cam;return [c.x+(x-scene.w/2)/c.z,c.y+(y-scene.h/2)/c.z];}
 function barH(){return [$('topbar').offsetHeight||50,typeof railMode==='function'&&railMode()?0:($('bottombar').offsetHeight||70)];}
+function southYardBuilt(){const B=typeof S==='object'&&S&&S.buildings;return !!(B&&((B.beamsaw&&B.beamsaw.lvl)||(B.glulam&&B.glulam.lvl)));}
 function fitCamera(instant){
   const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h; if(instant){c.fly=null;c.vx=c.vy=0;}
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=portrait?900:(hb?935:840);   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?900:(hb?935:840),southYardBuilt()?1000:0);   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;

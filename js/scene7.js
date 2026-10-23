@@ -79,7 +79,7 @@ function premTruckLegs(){
     {pa:crPath([[hwN(74),74],[hwN(J+1.5),J+1.5],[hwN(J)-.25,J+.6],[hwN(J)-1.05,J+.38],[X+1.4,J+.38],[X+.2,J-.2],[X,J-1.2],[A[0],A[1]]],8),vmax:3.6},
     {pa:densePath(arcPts(t=>{const th=t*Math.PI/2;return [A[0]-(A[0]-PDOCKB[0])*(1-Math.cos(th)),A[1]+PD_R*Math.sin(th)];},12)),rev:true,vmax:1.0},
     {pa:densePath([[PDOCKB[0],PDOCKB[1]],[PDOCKB[0]+.001,PDOCKB[1]]]),vmax:.5,hold:(v,dt)=>{v.doors=Math.min(1,(v.doors||0)+dt*1.6);return v.load<1||v.doors<1;}},
-    {pa:crPath([[PDOCKB[0],PDOCKB[1]],[X+.3,PDOCKB[1]+.1],[X+.75,PDOCKB[1]+.7],[X+.8,J-.7],[X+1.6,J-.36],[hwN(J)-.95,J-.36],[hwN(J),J-1.2],...hwSeg(-.65,J-3,-26)],8),vmax:3.6}
+    {pa:crPath([[PDOCKB[0],PDOCKB[1]],[X+.3,PDOCKB[1]+.1],[X+.75,PDOCKB[1]+.7],[X+.8,J-.7],[X+1.6,J-.36],[hwN(J)-.95,J-.36],[hwN(J),J-1.2],...hwSeg(-.65,J-3,-26,1.5)],8),vmax:3.6}
   ];
 }
 function mkPremTruck(atDock){const v={kind:'prem',legs:premTruckLegs(),li:0,s:0,v:0,load:0,doors:0};if(atDock){v.li=2;v.load=.25;v.doors=1;}return v;}
@@ -118,7 +118,7 @@ function premUpdate(dt){
 // v2.21.1: the client parks on the premium access road, by the Phase 3 dock
 const CLIENT_PARK=[PDOCK.ci+6.95,PROAD_J-.36], CLIENT_FIG=[PDOCK.ci+6.6,PROAD_J-1.35];   // v2.28: relative to the premium dock
 function clientLegsIn(){const J=PROAD_J,c=CLIENT_PARK[0];return [{pa:crPath([[hwN(74),74],[hwN(J+1.5),J+1.5],[hwN(J)-.25,J+.6],[hwN(J)-1.05,J+.38],[c+.5,J+.38],[c-.8,J+.3],[c-1.4,J-.1],[c-1,J-.36],[CLIENT_PARK[0],CLIENT_PARK[1]]],8),vmax:3.2}];}
-function clientLegsOut(){const J=PROAD_J;return [{pa:crPath([[CLIENT_PARK[0],CLIENT_PARK[1]],[hwN(J)-.95,J-.36],[hwN(J),J-1.2],...hwSeg(-.65,J-3,-26)],8),vmax:3.0}];}
+function clientLegsOut(){const J=PROAD_J;return [{pa:crPath([[CLIENT_PARK[0],CLIENT_PARK[1]],[hwN(J)-.95,J-.36],[hwN(J),J-1.2],...hwSeg(-.65,J-3,-26,1.5)],8),vmax:3.0}];}
 function clientUpdate(dt){
   const O=S.orders, want=!!(O&&(O.offer||O.active));
   if(want&&!scene.client){const o=O.offer||O.active;scene.client={st:'in',veh:{kind:'van',legs:clientLegsIn(),li:0,s:0,v:0},look:mkLook(9000+(o.id%97),{role:'casual',female:o.id%2===0}),fig:0,ph:0,id:o.id};}
