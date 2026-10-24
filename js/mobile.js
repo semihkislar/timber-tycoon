@@ -117,6 +117,7 @@ function shSnaps(){
 }
 function applySheetState(st){
   const sh=$('sheet'); SH.state=st; sh.dataset.snap=st;
+  document.body.classList.toggle('sheet-full',st==='full');   // v2.28.1: toasts move below a full-height sheet's header
   if(railMode()){sh.style.height='';sh.style.maxHeight='';return;}
   const {half,full}=shSnaps();
   if(st==='full'){sh.style.height=full+'px';sh.style.maxHeight=full+'px';} else {sh.style.height='';sh.style.maxHeight=half+'px';}

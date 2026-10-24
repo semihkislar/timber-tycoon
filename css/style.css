@@ -390,6 +390,7 @@ button{font:inherit;color:inherit}
   #bottombar.many .bb svg{width:24px;height:24px}
   #sheet{max-height:min(58vh,calc(100dvh - var(--tb) - var(--bb) - 30px))}
   .mkt .hm{display:none}
+  .mkt td{padding:6px 3px}.mkt td.nm{white-space:normal;line-height:1.15}#mktBody tr.raw .rawcell{white-space:normal}   /* v2.28.1: long names (Timber-frame Houses) no longer push the Sell column off a phone */
 }
 @media (max-width:400px){ .hc.seeds{display:none} }
 /* ===================== v2.9 mobile-first ===================== */
@@ -491,6 +492,7 @@ body.sheet-on #fabs,body.sheet-on #jumpBar,body.sheet-on #attnTip{opacity:0;poin
   .toast{font-size:14px;padding:9px 12px}
   .toast:nth-child(n+3){display:none}
   body.sheet-on #toasts{top:calc(var(--tb) + 4px + env(safe-area-inset-top))}
+  body.sheet-on.sheet-full #toasts{top:auto;bottom:calc(var(--bb) + 10px + env(safe-area-inset-bottom));flex-direction:column-reverse}   /* v2.28.1: never over the sheet title / close button */
   /* order card / daily chip sit left of the action buttons */
   #orderCard{left:10px;right:auto;transform:none;width:calc(100vw - 92px);max-width:330px}
   #dailyChip{left:10px;transform:none;width:min(240px,calc(100vw - 92px))}

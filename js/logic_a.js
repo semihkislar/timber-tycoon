@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.28';
+const VERSION='2.28.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -91,7 +91,7 @@ const BUILDINGS=[
   {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',svg:'carpentry',inp:{planks:4},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
   {id:'peeler',name:'Veneer Peeler',icon:'📃',svg:'peeler',inp:{logs:4},out:{veneer:4,bark:1},cost:6e4,scale:1.19,desc:'Debarks logs and peels them into thin veneer sheets (bark is sold as mulch).'},   // v2.20 phase 1
   {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
-  {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
+  {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:30},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
   {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{planks:12,veneer:6},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
   // v2.28 timber line: a Phase 1 beam saw and a Phase 2 glulam plant at the bottom of their columns (south of the old highway)
   {id:'beamsaw',name:'Beam Saw',icon:'🪜',svg:'beamsaw',inp:{logs:6},out:{beams:2,chips:2},cost:2e6,scale:1.19,spd:6,desc:'Squares big logs into heavy timber beams; the slabs and offcuts are chipped, feeding the pellet and paper lines.'},
@@ -105,8 +105,8 @@ const BUILDINGS=[
   {id:'lab',name:'Research Lab',icon:'🔬',svg:'lab',inp:{paper:6},out:{},rp:1,cost:5e5,scale:1.24,tech:true,spd:1,desc:'Turns paper into Research Points for the research tree.'},
   {id:'plymill',name:'Plywood Mill',icon:'🟧',svg:'plywood',inp:{veneer:4,glue:2},out:{plywood:3},cost:1.5e7,scale:1.22,tech:true,spd:4,desc:'Glues veneer sheets into strong plywood.'},
   {id:'toyshop',name:'Toy Workshop',icon:'🧸',svg:'toys',inp:{plywood:2,paper:4},out:{toys:2},cost:8e7,scale:1.22,tech:true,spd:4,desc:'Cuts plywood into wooden toys, boxed in printed paper.'},
-  {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:8,chairs:2},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
-  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,chairs:4},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
+  {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:8,chairs:1},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
+  {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,chairs:2},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
   {id:'framer',name:'Timber-frame Houses',icon:'🏡',svg:'houses',inp:{glulam:4,plywood:2},out:{houses:1},cost:6e8,scale:1.23,premium:true,spd:5,desc:'Raises timber-frame house kits: a glulam frame sheathed in plywood.'},   // v2.28 bottom of row III
 ];
 const MAIN_BLD=BUILDINGS.filter(b=>!b.premium&&!b.tech), PREM_BLD=BUILDINGS.filter(b=>b.premium), TECH_BLD=BUILDINGS.filter(b=>b.tech);
@@ -416,9 +416,24 @@ function merge(base,obj){
     if(obj[k]&&typeof obj[k]==='object'&&!Array.isArray(obj[k])&&base[k]&&typeof base[k]==='object'&&!Array.isArray(base[k])){
       merge(base[k],obj[k]);
       for(const k2 in obj[k]) if(!(k2 in base[k])) base[k][k2]=obj[k][k2];
-    } else if(k in base) base[k]=obj[k];
+    } else if(k in base){
+      // v2.28.1: a hand-edited / damaged save can't replace an object or number with the wrong type (null, string, NaN, Infinity)
+      const b=base[k],v=obj[k];
+      if(b&&typeof b==='object'&&!Array.isArray(b)&&(!v||typeof v!=='object'||Array.isArray(v))) continue;
+      if(Array.isArray(b)&&!Array.isArray(v)) continue;
+      if(typeof b==='number'&&!Number.isFinite(v)) continue;
+      base[k]=v;
+    }
   }
   return base;
+}
+/* v2.28.1: final clamp after loading (levels are whole numbers ≥ 0, stocks and coins never negative) */
+function sanitizeState(s){
+  for(const id in s.buildings){const b=s.buildings[id];if(b&&typeof b==='object') b.lvl=Math.max(0,Math.floor(+b.lvl||0));}
+  for(const k of ['coins','totalEarned','lifetimeEarned','seeds']) if(typeof s[k]==='number'&&s[k]<0) s[k]=0;
+  if(s.res&&typeof s.res==='object') for(const k in s.res) if(!(s.res[k]>=0)) s.res[k]=0;
+  if(s.collectors&&typeof s.collectors==='object') for(const k in s.collectors) s.collectors[k]=Math.max(0,Math.floor(+s.collectors[k]||0));
+  return s;
 }
 
 /* ===================== MODIFIERS ===================== */

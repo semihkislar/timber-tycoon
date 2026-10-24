@@ -128,7 +128,7 @@ function mishFx(id,at,v){
   const a=mishAnchor(at);if(a){for(let k=0;k<18;k++) emitP(a[0]+(Math.random()-.5)*70,a[1]+20+(Math.random()-.5)*30,id==='flood'?'poof':id==='breakdown'?'spark':'chip');}
   if(at==='coins'&&typeof floatText==='function'){const c=$('hCoins');if(c){const r=c.getBoundingClientRect();floatText(r.left+r.width/2,r.bottom+8,'−🪙'+fmt(v),$('fxLayer'));}}}
 function mishOverlays(ctx){
-  const m=S.mish;if(!m) return;scene.mishFx=(scene.mishFx||[]).filter(f=>(f.t+=scene.dtF||.016)<3.2);
+  const m=S.mish;if(!m) return;scene.mishFx=(scene.mishFx||[]).filter(f=>(f.t+=scene.dtF||.016)<3.2&&!(S.buildings[f.at]&&!S.buildings[f.at].lvl)).slice(-4);   // v2.28.1: no callouts over lots emptied by a Replant; at most 4 at once
   for(const f of scene.mishFx){const a=mishAnchor(f.at);if(!a) continue;const [sx,sy]=w2s(a[0],a[1]-24);const k=f.t/3.2;ctx.globalAlpha=Math.max(0,1-k*k);
     pill(ctx,sx,sy-k*36,`${MISH_DEF[f.id].e} ${MISH_DEF[f.id].n}${f.v>0?' −🪙'+fmt(f.v):''}`,{bg:'#b3261e',fg:'#fff',fs:12.5,stroke:'#ffd0c0',padX:12,padY:7});ctx.globalAlpha=1;}
   for(const bid in m.broke){const L=LOTS[bid];if(!L||!L.top||(L.prem&&!S.premium.lvl)) continue;const b=m.broke[bid];

@@ -153,7 +153,7 @@ with sync_playwright() as p:
     ctx.close()
     ctx,pg=page(init='if(!sessionStorage.getItem("_m")){sessionStorage.setItem("_m","1");localStorage.setItem("timberTycoon_save_v1",%s)}'%json.dumps(old))
     r=E(pg,"[S.buildings.sawmill.lvl,S.buildings.peeler.lvl,S.buildings.showroom.lvl,S.version,S.buildings.beamsaw.lvl,S.buildings.framer.lvl,S.res.beams,S.res.houses]")
-    ok(r[:3]==[120,33,4] and r[3]=='2.28' and r[4]==0 and r[5]==0 and r[6]==0 and r[7]==0,f"a v2.27 save loads; the new buildings start empty ({r})")
+    ok(r[:3]==[120,33,4] and ver(r[3])>=(2,28) and r[4]==0 and r[5]==0 and r[6]==0 and r[7]==0,f"a v2.27 save loads; the new buildings start empty ({r})")
     E(pg,"(()=>{S.coins=1e12;TT.buyBuilding('beamsaw',3);for(let k=0;k<20;k++) tick(.5,false);TT.render();})()")
     r=E(pg,"[S.buildings.beamsaw.lvl,S.res.beams,prodRate('beams'),S.coins]")
     ok(r[0]==3 and (r[1]>0 or r[2]>0),f"the old save can build a Beam Saw and makes beams ({r})")
