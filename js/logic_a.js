@@ -91,7 +91,7 @@ const BUILDINGS=[
   {id:'carpentry',name:'Carpentry Workshop',icon:'🔨',svg:'carpentry',inp:{planks:4},out:{chairs:1},cost:8000,scale:1.2,desc:'Crafts planks into chairs.'},
   {id:'peeler',name:'Veneer Peeler',icon:'📃',svg:'peeler',inp:{logs:4},out:{veneer:4,bark:1},cost:6e4,scale:1.19,desc:'Debarks logs and peels them into thin veneer sheets (bark is sold as mulch).'},   // v2.20 phase 1
   {id:'pellet',name:'Pellet Press',icon:'⚙️',svg:'pellet',inp:{chips:20},out:{pellets:8},cost:25000,scale:1.2,desc:'Compresses chips into fuel pellets.'},
-  {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:30},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
+  {id:'paper',name:'Paper Mill',icon:'🏭',svg:'paper_b',inp:{chips:40},out:{paper:10},cost:100000,scale:1.21,desc:'Pulps chips into fine paper.'},
   {id:'furniture',name:'Furniture Factory',icon:'🏗️',svg:'furniture_b',inp:{planks:12,veneer:6},out:{furniture:2},cost:6e5,scale:1.22,desc:'Assembles full furniture sets.'},
   // v2.28 timber line: a Phase 1 beam saw and a Phase 2 glulam plant at the bottom of their columns (south of the old highway)
   {id:'beamsaw',name:'Beam Saw',icon:'🪜',svg:'beamsaw',inp:{logs:6},out:{beams:2,chips:2},cost:2e6,scale:1.19,spd:6,desc:'Squares big logs into heavy timber beams; the slabs and offcuts are chipped, feeding the pellet and paper lines.'},
