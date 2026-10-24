@@ -139,7 +139,7 @@ const UPGRADES=[
   {id:'dryer',icon:'💨',name:'Pellet Dryer',desc:'Pellets sell ×2',cost:400000,req:()=>bl('pellet')>=2,apply:m=>m.price.pellets*=2},
   {id:'goldaxe',icon:'✨',name:'Golden Axe',desc:'Chopping ×5',cost:250000,req:()=>S.clicks>=400,apply:m=>m.chop*=5},
   {id:'gps',icon:'🛰️',name:'GPS Harvesters',desc:'Harvesters ×2',cost:500000,req:()=>cn('harvester')>=5,apply:m=>m.col.harvester*=2},
-  {id:'export',icon:'🚢',name:'Export Contracts',desc:'All products sell ×1.5',cost:1500000,req:()=>bl('carpentry')>=1,apply:m=>m.priceAll*=1.5},
+  {id:'export',icon:'🚢',name:'Export Licence',desc:'All products sell ×1.5',cost:1500000,req:()=>bl('carpentry')>=1,apply:m=>m.priceAll*=1.5},   // v2.28.1: was "Export Contracts" (clashed with the Shipping Yard's export contracts)
   {id:'bleach',icon:'🧪',name:'Paper Bleaching',desc:'Paper sells ×2',cost:2500000,req:()=>bl('paper')>=2,apply:m=>m.price.paper*=2},
   {id:'heattreat',icon:'🔥',name:'Retort Kilns',desc:'Charcoal Kiln speed ×2',cost:3000000,req:()=>bl('kiln')>=5,apply:m=>m.bld.kiln*=2},
   {id:'ai',icon:'🤖',name:'Swarm AI',desc:'Drone Fleets ×2',cost:15000000,req:()=>cn('drone')>=5,apply:m=>m.col.drone*=2},

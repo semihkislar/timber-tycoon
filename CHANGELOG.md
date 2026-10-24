@@ -5,6 +5,50 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.28.1] — 2026-10-24
+
+**Maintenance day.** Covers assets, rules and text, balance, save robustness and tests. Item 8 (logistics tiers) is postponed.
+The full audit and prioritized proposals are in `docs/maintenance-v2.28.1.md`.
+
+### Fixed
+- **Mobile Market table** no longer runs off a phone in late game, so the Sell buttons stay visible. Long names such as
+  "Timber-frame Houses" now wrap.
+- **Toasts** no longer cover the title and ✕ of a full-height sheet on phones. They stack above the bottom bar while a full sheet
+  is open.
+- **Mishap callouts** ("⚙️ Machine breakdown") no longer hang over lots that a Replant just emptied. At most 4 show at once.
+- **Damaged saves:**
+  - `merge()` keeps the default when a saved value has the wrong type (null in place of an object, text or Infinity in place of
+    a number).
+  - The new `sanitizeState()` clamps building levels, collectors, stocks and coins to sane values.
+  - A save with `"buildings":null` used to crash every tick; it now loads.
+- **Replant card:** the second line repeated the first. It now shows progress to the first Seed ("… · 42% there").
+
+### Changed
+- **Balance**, for the open v2.24 note (premium workshops starved of paper and chairs):
+
+  | Building | Before | After |
+  |---|---|---|
+  | Paper Mill | 40 chips → 10 paper | 30 chips → 10 paper |
+  | Luxury Showroom | furniture + 4 chairs | furniture + 2 chairs |
+  | Boat Yard | 8 plywood + 2 chairs | 8 plywood + 1 chair |
+
+  - Late-game sim over 4 Replants: earnings +15 % (run 4: 6.67e14 → 7.66e14).
+  - Time the Research Lab and Stationery spend short of paper: 100 % → about 75 %.
+  - The early-game bot is unchanged within noise.
+- **Text:**
+  - The *Export Contracts* upgrade is now **Export Licence**, so it no longer shares a name with the Shipping Yard's export
+    contracts. Its effect is unchanged.
+  - *Masterworks* now lists exactly what it boosts.
+
+### Tests
+- New `test/v2281.py`:
+  - recipes and the tier rule;
+  - the new texts;
+  - mishap callouts;
+  - 5 damaged saves plus a normal old save;
+  - on iPhone 13 and Pixel 7: the late-game Market table fit and toasts with a full sheet.
+- The full suite (37 files) passes.
+
 ## [2.28] — 2026-10-23
 
 **Factory layout, part 2: the south yard and a timber-frame line.** Finishes item 7 of Semih's Oct 20 list. The highway now
