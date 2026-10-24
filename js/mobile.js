@@ -63,7 +63,8 @@ function attentionList(){
     if(bVisible(b)&&bldUnlocked(b.id)&&(st.lvl?S.coins+1e-9>=bulkCost(b.cost,b.scale,st.lvl,1):canFirstBuild(b.id))) out.push({id:b.id,k:'upg',p:3,t:`⬆ ${b.name}: ${st.lvl?'upgrade':'build'} affordable`});
   }
   if(typeof yardFull==='function'&&yardFull()&&logRatePot()>0) out.push({id:'sawmill',k:'starved',p:2,t:`🪵 Log Yard full · collectors idle. Logs can't be sold: build or upgrade Phase-1 mills`,open:()=>{const id=['sawmill','peeler','chipper','kiln'].find(i=>bldUnlocked(i)&&S.coins+1e-9>=bulkCost(BMAP[i].cost,BMAP[i].scale,S.buildings[i].lvl,1))||'sawmill';openSheet('bld',id);focusLot(id,true);}});   // v2.20.1
-  for(const k in short){const L=short[k],si=shortInfo(k),src=si.src;const who=L.length>2?`${L.length} buildings`:L.map(([b,f])=>`${b.name} ${Math.round(f*100)}%`).join(', ');
+  for(const k in short){const L=short[k],si=shortInfo(k),src=si.src,fx=typeof advFix==='function'?advFix(k):null;const who=L.length>2?`${L.length} buildings`:L.map(([b,f])=>`${b.name} ${Math.round(f*100)}%`).join(', ');
+    if(fx){out.push({id:fx.id==='yard'?L[0][0].id:fx.id,k:'starved',p:2,t:`${RMAP[k].icon} Short on ${RMAP[k].name} (${who}) · ${fx.short}`,open:fx.open});continue;}   // v2.29: root fix from the advisor
     out.push({id:src&&S.buildings[src].lvl?src:L[0][0].id,k:'starved',p:2,t:`${RMAP[k].icon} Short on ${RMAP[k].name} (${who})${src?` · upgrade the ${BMAP[src].name}`:''}`,open:()=>{const id=src&&S.buildings[src].lvl?src:L[0][0].id;openSheet('bld',id);focusLot(id,true);}});}
   // v2.10 power plant: out of fuel / low fuel / affordable build or upgrade
   if(pwLvl()&&pwState().on!==false){const s=pwStatus();if(s.k==='nofuel'||s.k==='low') out.push({id:'power',k:'power',p:2,t:s.k==='nofuel'?'⛔ Power Plant: no fuel running':'⚠ Power Plant: low on fuel',open:()=>{openSheet('power');focusLot('power',true);}});}
