@@ -168,5 +168,5 @@ function rpConfirm(){
    <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li></ul></div>
   </div>
   <div class="legend">The new run is priced in your forest's value (×${fx2(Math.pow(legacyOf(L+g)*(1+.25*shopLvl('soil'))*Math.sqrt((1+.5*shopLvl('crews'))*(1+.5*shopLvl('mills')))*(1+.1*shopLvl('market'))*TREES[Math.min(shopLvl('arbor'),TREES.length-1)].mult,RPC.csE))}): costs and goals grow with it, so the climb stays meaningful.</div>`;
-  confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{openSheet('co');rpTabOpen('shop');},700);}});
+  confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{if(curSheet) return;openSheet('co');rpTabOpen('shop');},700);/* v2.28.1: never replaces a sheet the player opened meanwhile */}});
 }

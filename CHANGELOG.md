@@ -15,6 +15,8 @@ The full audit and prioritized proposals are in `docs/maintenance-v2.28.1.md`.
   "Timber-frame Houses" now wrap.
 - **Toasts** no longer cover the title and ✕ of a full-height sheet on phones. They stack above the bottom bar while a full sheet
   is open.
+- **Seed Shop auto-open** after a Replant (700 ms later) no longer replaces a sheet you opened in the meantime, such as
+  Settings.
 - **Mishap callouts** ("⚙️ Machine breakdown") no longer hang over lots that a Replant just emptied. At most 4 show at once.
 - **Damaged saves:**
   - `merge()` keeps the default when a saved value has the wrong type (null in place of an object, text or Infinity in place of
