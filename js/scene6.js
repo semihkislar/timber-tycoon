@@ -263,7 +263,7 @@ function drawOverlays(ctx){
     {const rt=typeof specRetool==='function'?specRetool(b.id):0;if(rt>0&&!S.fires[b.id]) pill(ctx,sx,sy-30,'🔧 Retooling '+Math.ceil(rt)+'s',{fs:10.5,bg:'#5b6067',fg:'#fff',stroke:'#c9d0d8',padX:12,padY:7});}   // v2.17
     if(S.fires[b.id]){} // v2.4: the fire pill replaces status badges
     else if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
-    else if(starved){advBadge(ctx,b.id,sx,sy,t);   // v2.29: "waiting on X" (icon badge on phones, a short pill on desktop)
+    else if(starved){if(L.prem){const zz=Math.max(.8,Math.min(1.4,scene.cam.z));advBadge(ctx,b.id,sx+40*zz,sy+10*zz,t);}else advBadge(ctx,b.id,sx,sy,t);   // v2.29: "waiting on X" (icon badge on phones, a short pill on desktop)
     } else if(!st.on){ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle='rgba(40,40,70,.7)';ctx.lineWidth=3;ctx.textAlign='center';ctx.textBaseline='middle';
       for(let k=0;k<3;k++){const ph=(t*.6+k/3)%1;ctx.globalAlpha=Math.sin(ph*Math.PI);ctx.font=`900 ${11+ph*8}px system-ui`;ctx.strokeText('z',sx+ph*16-4,sy-ph*26);ctx.fillText('z',sx+ph*16-4,sy-ph*26);}ctx.globalAlpha=1;}
     if(scene.msFlash&&scene.msFlash.id===b.id){const k=scene.msFlash.t/1.6, y2=sy-20-(1-k)*30;ctx.save();ctx.globalAlpha=Math.min(1,k*2);ctx.translate(sx,y2);ctx.rotate((1-k)*6);

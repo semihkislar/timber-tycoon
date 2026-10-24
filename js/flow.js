@@ -72,8 +72,10 @@ function flowOverlay(ctx){
 }
 function updateFlowLegend(){
   const el=$('flowLegend');if(!el) return;el.classList.toggle('hidden',!flowOn);if(!flowOn) return;
-  const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${typeof TIER_S==='object'?' · <span class="tier-b t1">I</span>→<span class="tier-b t2">II</span>→<span class="tier-b t3">III</span>':''}${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`+(typeof advSummaryHtml==='function'?advSummaryHtml():'');   // v2.29 top bottlenecks
-  if(el._h!==h){el.innerHTML=h;el._h=h;}
+  const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${typeof TIER_S==='object'?' · <span class="tier-b t1">I</span>→<span class="tier-b t2">II</span>→<span class="tier-b t3">III</span>':''}${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`;
+  let tx=el.querySelector('.fl-txt');if(!tx){el.innerHTML='<span class="fl-txt"></span><div class="adv-box"></div>';tx=el.querySelector('.fl-txt');}
+  if(tx._h!==h){tx.innerHTML=h;tx._h=h;}
+  if(typeof advSummaryUpdate==='function') advSummaryUpdate(el.querySelector('.adv-box'));   // v2.29 top bottlenecks (rows stay put while you tap them)
 }
 (function initFlow(){
   const go=()=>{const b=$('flowBtn');if(b){b.onclick=()=>toggleFlow();b.setAttribute('aria-pressed',flowOn?'true':'false');}document.body.classList.toggle('flow-on',flowOn);

@@ -24,19 +24,19 @@ function advSrc(k){
 function advGo(id,tab){return ()=>{openSheet('bld',id);if(tab&&typeof bpTab==='function') bpTab(tab);if(typeof focusLot==='function') focusLot(id,true);advPing(id);};}
 function advFix(k,seen,via){
   seen=seen||{};via=via||[];seen[k]=1;
-  if(k==='logs') return {id:'yard',kind:'crew',k,via,label:'👷 Hire collectors',short:'hire collectors',open:()=>{openSheet('crew');if(typeof focusLot==='function') focusLot('yard',true);advPing('yard');}};
+  if(k==='logs') return {id:'yard',kind:'crew',k,via,label:'👷 Hire collectors',btn:'👷 Collectors',short:'hire collectors',open:()=>{openSheet('crew');if(typeof focusLot==='function') focusLot('yard',true);advPing('yard');}};
   const id=advSrc(k);if(!id) return null;const b=BMAP[id],st=S.buildings[id],nm=b.name;
   if(!st.lvl){
     if(!bldUnlocked(id)){const r=TECH_UNLOCK[id]&&RNMAP[TECH_UNLOCK[id]];
-      return {id,kind:'research',k,via,label:r?`🔬 Research ${r.name}`:`🔒 Unlock ${nm}`,short:r?`research ${r.name}`:`unlock the ${nm}`,open:()=>{if(r) openSheet('rnd');else advGo(id)();}};}
-    return {id,kind:'build',k,via,label:`🔨 Build the ${nm}`,short:`build the ${nm}`,open:advGo(id)};}
-  if(advDown(id)) return {id,kind:'repair',k,via,label:`🔧 Fix the ${nm}`,short:`fix the ${nm}`,open:advGo(id)};
-  if(!st.on) return {id,kind:'on',k,via,label:`▶ Turn on the ${nm}`,short:`turn on the ${nm}`,open:advGo(id)};
+      return {id,kind:'research',k,via,label:r?`🔬 Research ${r.name}`:`🔒 Unlock ${nm}`,btn:'🔬 Research',short:r?`research ${r.name}`:`unlock the ${nm}`,open:()=>{if(r) openSheet('rnd');else advGo(id)();}};}
+    return {id,kind:'build',k,via,label:`🔨 Build the ${nm}`,btn:`🔨 ${nm}`,short:`build the ${nm}`,open:advGo(id)};}
+  if(advDown(id)) return {id,kind:'repair',k,via,label:`🔧 Fix the ${nm}`,btn:`🔧 ${nm}`,short:`fix the ${nm}`,open:advGo(id)};
+  if(!st.on) return {id,kind:'on',k,via,label:`▶ Turn on the ${nm}`,btn:`▶ ${nm}`,short:`turn on the ${nm}`,open:advGo(id)};
   const w=advWait(id);
   if(w&&!seen[w.k]){const r=advFix(w.k,seen,via.concat([id]));if(r) return r;}   // the producer is starved too: fix the root
   if(typeof wsBlocked==='function'&&wsBlocked(id)){const g=wsGate(id);
-    return {id,kind:'ws',k,via,label:`🛠 ${wsName(id,g.k)} Lv ${g.n} (${nm})`,short:`upgrade the ${nm}'s ${wsName(id,g.k)}`,open:advGo(id,'ws')};}
-  return {id,kind:'upg',k,via,label:`⬆ Upgrade the ${nm}`,short:`upgrade the ${nm}`,open:advGo(id)};
+    return {id,kind:'ws',k,via,label:`🛠 ${wsName(id,g.k)} Lv ${g.n} (${nm})`,btn:`🛠 ${wsName(id,g.k)}`,short:`upgrade the ${nm}'s ${wsName(id,g.k)}`,open:advGo(id,'ws')};}
+  return {id,kind:'upg',k,via,label:`⬆ Upgrade the ${nm}`,btn:`⬆ ${nm}`,short:`upgrade the ${nm}`,open:advGo(id)};
 }
 /* coins/s a building would add if it ran at full speed (its sold value; intermediates count at their market price) */
 function advLost(id,fs){const b=BMAP[id],bs=bstat[id];if(!b||!bs) return 0;let v=0;
@@ -48,17 +48,23 @@ function advList(force){
   const g={};
   for(const b of BUILDINGS){const L=LOTS[b.id];if(L&&L.prem&&!S.premium.lvl) continue;const w=advWait(b.id);if(!w) continue;
     (g[w.k]=g[w.k]||{k:w.k,users:[],lost:0,worst:1}).users.push({id:b.id,fs:w.fs});g[w.k].lost+=advLost(b.id,w.fs);g[w.k].worst=Math.min(g[w.k].worst,w.fs);}
-  const L=Object.values(g);for(const e of L){e.fix=advFix(e.k);e.users.sort((a,b)=>a.fs-b.fs);}
+  // group by ROOT fix: ten lines starved because the yard is short of logs are one bottleneck ("hire collectors"), not ten
+  const R={};
+  for(const e of Object.values(g)){const f=advFix(e.k),key=f?f.kind+':'+f.id:'?:'+e.k;
+    const r=R[key]||(R[key]={k:f?f.k:e.k,fix:f,users:[],lost:0,worst:1,via:[]});
+    for(const u of e.users) if(!r.users.some(x=>x.id===u.id)) r.users.push(u);
+    r.lost+=e.lost;r.worst=Math.min(r.worst,e.worst);if(r.via.indexOf(e.k)<0) r.via.push(e.k);}
+  const L=Object.values(R);for(const e of L) e.users.sort((a,b)=>a.fs-b.fs);
   L.sort((a,b)=>(b.lost-a.lost)||(b.users.length-a.users.length)||(a.worst-b.worst));
   advC={t:now,L};return L;
 }
 function advPhone(){return scene.w<700;}
 /* ---- in-scene: "waiting on X" badge (replaces the old "!" bubble) ---- */
-function advBadge(ctx,id,sx,sy,t){
+function advBadge(ctx,id,sx,sy,t,o){o=o||{};
   const w=advWait(id);if(!w) return false;const R=RMAP[w.k],ic=R?R.icon:'⏳',bad=w.bad;
   const z=scene.cam.z/Math.max(1e-6,scene.cam.fitZ), sel=scene.hover===id||sheetBld===id;
   const by=sy-8+(bad?Math.sin(t*4)*2.5:0);
-  if(!advPhone()&&z>=.95||sel){   // desktop (or the selected building): a short readable pill
+  if(!o.compact&&!advPhone()&&z>=.95||sel){   // desktop (or the selected building): a short readable pill
     pill(ctx,sx,by,`⏳ ${ic} ${R?R.name:'input'}${bad?' · '+Math.round(w.fs*100)+'%':''}`,{fs:sel?11.5:10.5,bg:bad?'#c4463d':'#c98a1e',fg:'#fff',stroke:bad?'#ffd2cc':'#ffe6b0',padX:12,padY:7});
     return true;}
   // phones / zoomed out: a calm round badge with the input's icon; only real starvation is red and bobs
@@ -83,14 +89,28 @@ function advChip(id){const w=advWait(id);if(!w) return null;const n=RMAP[w.k]?RM
 function advHintHtml(id){
   const w=advWait(id);if(!w) return '';const f=advFix(w.k);if(!f) return '';
   const chain=f.via.length?` · the ${f.via.map(v=>BMAP[v].name).join(' and the ')} ${f.via.length>1?'are':'is'} waiting too, so the real fix is ${f.kind==='crew'?'more logs':'the '+(BMAP[f.id]?BMAP[f.id].name:'source')}`:'';
-  return `<div class="adv-why">👉 <b>Fix:</b> ${f.short}${chain}.</div><button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
+  return `${chain?`<div class="adv-why">👉 <b>Fix:</b> ${f.short}${chain}.</div>`:''}<button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
 }
 /* ---- Supply Flow: top bottlenecks ---- */
+function advRowsData(){const L=advList(),n=advPhone()?2:3;return {L,n,top:L.slice(0,n)};}
 function advSummaryHtml(){
-  const L=advList(),n=advPhone()?2:3;if(!L.length) return `<div class="adv-sum ok">✔ No bottlenecks: every running building is fed</div>`;
-  const rows=L.slice(0,n).map((e,i)=>{const R=RMAP[e.k],u=e.users,who=u.length>2||advPhone()&&u.length>1?`${u.length} buildings`:u.map(x=>BMAP[x.id].name).join(', ');
-    return `<button class="adv-row${e.worst<ADV_BAD?' bad':''}" data-adv="${e.k}"><span class="adv-n">${i+1}</span><span class="adv-t">${R.icon} <b>${R.name}</b> · ${who} <small>${Math.round(e.worst*100)}%${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small></span><span class="adv-f">${e.fix?e.fix.label:''} →</span></button>`;}).join('');
-  return `<div class="adv-sum"><div class="adv-h">⏳ Top bottlenecks${L.length>n?` <small>+${L.length-n} more</small>`:''}</div>${rows}</div>`;
+  const {L,n,top}=advRowsData();if(!L.length) return `<div class="adv-sum ok">✔ No bottlenecks: every running building is fed</div>`;
+  const rows=top.map((e,i)=>`<button class="adv-row" data-adv="${e.k}"><span class="adv-n">${i+1}</span><span class="adv-t"></span><span class="adv-f"></span></button>`).join('');
+  return `<div class="adv-sum"><div class="adv-h">⏳ Top bottlenecks <small></small></div>${rows}</div>`;
+}
+function advRowText(e){const R=RMAP[e.k],u=e.users,who=u.length>2||advPhone()&&u.length>1?`${u.length} buildings wait`:u.map(x=>BMAP[x.id].name).join(', ')+(u.length>1?' wait':' waits');
+  const vv=advPhone()?'':(e.via||[]).filter(k=>k!==e.k&&RMAP[k]).slice(0,4).map(k=>RMAP[k].icon).join('');
+  if(advPhone()) return `${R.icon} <b>${R.name}</b> · ${u.length} wait <small>${Math.round(e.worst*100)}% fed${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small>`;
+  return `${R.icon} <b>${R.name}</b>${vv?` <small>→ ${vv}</small>`:''} · ${who} <small>${Math.round(e.worst*100)}% fed${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small>`;}
+/* keyed update: the row buttons are only rebuilt when the set of bottlenecks changes, so a tap never lands on a replaced node */
+function advSummaryUpdate(box){
+  if(!box) return;const {L,n,top}=advRowsData(),key=L.length?top.map(e=>e.k).join(','):'ok';
+  if(box._k!==key){box.innerHTML=advSummaryHtml();box._k=key;}
+  if(!L.length) return;
+  const sm=box.querySelector('.adv-h small'),more=L.length>n?`+${L.length-n} more · tap one to jump`:'tap one to jump';if(sm&&sm._t!==more){sm.textContent=more;sm._t=more;}
+  box.querySelectorAll('.adv-row').forEach((r,i)=>{const e=top[i];if(!e) return;r.classList.toggle('bad',e.worst<ADV_BAD);
+    const t=advRowText(e),f=(e.fix?(advPhone()?e.fix.btn||e.fix.label:e.fix.label):'Open')+' →',a=r.querySelector('.adv-t'),b=r.querySelector('.adv-f');
+    if(a._h!==t){a.innerHTML=t;a._h=t;}if(b._h!==f){b.textContent=f;b._h=f;}});
 }
 function advRun(k){const f=advFix(k);if(!f) return false;if(typeof GI==='object') GI.touchedAt=camNow();f.open();if(typeof haptic==='function') haptic(8);return f;}
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-adv]');if(!b) return;e.preventDefault();advRun(b.dataset.adv);});
