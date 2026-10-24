@@ -32,19 +32,20 @@ Other checks:
 | Rules / text | The Replant card said the same thing twice ("Requires 15.8M…" and "First Seeds at 15.8M…"). | The second line now shows progress ("… · 42% there"). |
 | Rules / text | The *Export Contracts* upgrade had the same name as the Shipping Yard's export contracts. | Renamed to **Export Licence**; the effect is unchanged. |
 | Rules / text | *Masterworks* said "luxury goods" but boosts plywood, toys, boats, cabinets and luxury furniture. | The description now lists exactly what it boosts. |
-| Balance | Open v2.24 note: premium workshops were held back by paper and chairs. | Paper Mill uses 30 chips per batch instead of 40; Luxury Showroom 2 chairs instead of 4; Boat Yard 1 chair instead of 2. Results are in the table below. |
+| Balance | Open v2.24 note: premium workshops were held back by paper and chairs. | Paper Mill uses 30 chips per batch instead of 40; Luxury Showroom 2 chairs instead of 4. Results are in the table below. |
 | Tests | `v20` click checks failed because opening a sheet pans the camera. `v12`/`v26` still used pre-v2.27 dock and office positions. | Fixed in v2.28. v2.28.1 adds `test/v2281.py` for the fixes above. |
 
 ### Balance results (`bal.py`, seed 1, 4 Replants, late greedy player)
 | | v2.28 | v2.28.1 |
 |---|---|---|
-| Earned, run 4 | 6.67e14 | 7.66e14 (+15 %) |
-| Research Lab paper-bound | 100 % | 76 % |
-| Stationery paper-bound | 100 % | 75 % |
-| Showroom chair-bound | 100 % | 93 % |
+| Earned, run 4 | 6.67e14 | 7.28e14 (+9 %) |
+| Research Lab paper-bound | 100 % | 91 % |
+| Stationery paper-bound | 100 % | 91 % |
 
 - The early-game bot (`test/balance.py`) is within run-to-run noise. Only late, premium-side inputs changed.
-- A Wood Chipper at 2× speed was tried and dropped. It made the first 5 minutes about 10× faster, which is not low-risk.
+- Two tweaks were tried and dropped:
+  - A Wood Chipper at 2× speed made the first 5 minutes about 10× faster, which is not low-risk.
+  - A Boat Yard at 1 chair made boats faster, and the extra boats starved plywood again (the `v224` plywood check fell to 15–19 %).
 
 ## (a) Improvement areas found but not fixed
 In priority order, with the reason each was left:
@@ -60,7 +61,7 @@ In priority order, with the reason each was left:
    - It is harmless, but it is a dead end. A veneer consumer (for example a Veneer Dryer station, or decor panels) is a feature.
 3. **Plywood becomes the late bottleneck after this release.**
    - Parquet, Toy Workshop and Timber-frame Houses all wait on the Plywood Mill, which needs research to unlock.
-   - Watch it; a Plywood Mill station or a manager perk would fix it.
+   - Watch it; a Plywood Mill station or a manager perk would fix it. This is also why the Boat Yard keeps 2 chairs.
 4. **Chopping upgrades are dead late.**
    - *Golden Axe* (×5 chop) and *Sharper Axes* barely matter once collectors run, because clicks are tiny next to the income.
    - Making them scale with logs/s would change their role. That is a design call.

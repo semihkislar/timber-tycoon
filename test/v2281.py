@@ -28,7 +28,7 @@ with sync_playwright() as p:
     ctx,pg=page(); pg.evaluate(QUIET)
     ok(ver(pg.evaluate('TT.VERSION'))>=(2,28,1),f"VERSION >= 2.28.1 ({pg.evaluate('TT.VERSION')})")
     r=pg.evaluate("[BMAP.paper.inp.chips,BMAP.showroom.inp.chairs,BMAP.boatyard.inp.chairs,BMAP.paper.out.paper]")
-    ok(r==[30,2,1,10],f"recipes: Paper Mill 30 chips → 10 paper, Showroom 2 chairs, Boat Yard 1 chair ({r})")
+    ok(r==[30,2,2,10],f"recipes: Paper Mill 30 chips → 10 paper, Showroom 2 chairs, Boat Yard unchanged (2 chairs: more boats would starve plywood) ({r})")
     ok(pg.evaluate("tierViolations().length")==0,'tier rule still holds')
     ok(pg.evaluate("UPGRADES.find(u=>u.id==='export').name")=='Export Licence','the price upgrade no longer shares a name with export contracts')
     ok('cabinets' in pg.evaluate("RNMAP.master.d"),'Masterworks lists what it boosts')

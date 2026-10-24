@@ -30,10 +30,10 @@ The full audit and prioritized proposals are in `docs/maintenance-v2.28.1.md`.
   |---|---|---|
   | Paper Mill | 40 chips → 10 paper | 30 chips → 10 paper |
   | Luxury Showroom | furniture + 4 chairs | furniture + 2 chairs |
-  | Boat Yard | 8 plywood + 2 chairs | 8 plywood + 1 chair |
 
-  - Late-game sim over 4 Replants: earnings +15 % (run 4: 6.67e14 → 7.66e14).
-  - Time the Research Lab and Stationery spend short of paper: 100 % → about 75 %.
+  - A lighter Boat Yard recipe (1 chair) was tried and dropped: the extra boats starved plywood again (v224 sim).
+  - Late-game sim over 4 Replants: earnings +9 % (run 4: 6.67e14 → 7.28e14).
+  - Time the Research Lab and Stationery spend short of paper: 100 % → 91 %.
   - The early-game bot is unchanged within noise.
 - **Text:**
   - The *Export Contracts* upgrade is now **Export Licence**, so it no longer shares a name with the Shipping Yard's export
@@ -47,7 +47,7 @@ The full audit and prioritized proposals are in `docs/maintenance-v2.28.1.md`.
   - mishap callouts;
   - 5 damaged saves plus a normal old save;
   - on iPhone 13 and Pixel 7: the late-game Market table fit and toasts with a full sheet.
-- The full suite (37 files) passes.
+- The full suite (38 files) passes.
 
 ## [2.28] — 2026-10-23
 
