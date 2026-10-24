@@ -49,6 +49,7 @@ release also clears two small blockers for item 8 (logistics tiers), which comes
   - phone fit view: dock, label and lots.
 - `functional.py` accepts "Waiting on". `v29.py`: an attention entry whose root fix is "hire collectors" opens the Crew
   sheet.
+- The full suite (39 files) passes, with no FAIL lines.
 
 ## [2.28.1] — 2026-10-24
 
