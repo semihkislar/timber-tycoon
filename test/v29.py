@@ -148,11 +148,12 @@ with sync_playwright() as p:
         ok(len(L)>0 and E(pg,"document.getElementById('attnN').textContent")==str(len(L)) if len(L)<100 else True,f'{tag}: attention badge counts problems ({L[:4]})')
         E(pg,'TT.fitCamera(true)'); settle(pg,500)
         T.tap(*E(pg,"(()=>{const r=document.getElementById('attnBtn').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")); pg.wait_for_timeout(900)
-        first=L[0].split(':')[0]
-        ok(E(pg,'TT.curSheet')=='bld' and E(pg,'TT.sheetBld')==first,f'{tag}: attention button opens the first problem ({first})')
+        first=L[0].split(':')[0]; LT=E(pg,'TT.attentionList().map(a=>a.t)')
+        def opened(i): return (E(pg,'TT.curSheet')=='bld' and E(pg,'TT.sheetBld')==L[i].split(':')[0]) or ('hire collectors' in LT[i] and E(pg,'TT.curSheet')=='crew')   # v2.29: a log shortage's root fix is the Crew sheet
+        ok(opened(0),f'{tag}: attention button opens the first problem ({first})')
         if len(L)>1:
             E(pg,'TT.nextAttention()'); pg.wait_for_timeout(200)
-            ok(E(pg,'TT.sheetBld')==L[1].split(':')[0],f'{tag}: …and cycles to the next one ({E(pg,"TT.sheetBld")} vs {L[1]})')
+            ok(opened(1),f'{tag}: …and cycles to the next one ({E(pg,"TT.sheetBld")} vs {L[1]})')
         # sheet prev/next fly the camera
         E(pg,'TT.openSheet("bld","sawmill")'); pg.wait_for_timeout(800); c0=cam(pg)
         T.tap(*E(pg,"(()=>{const r=document.getElementById('bpNext').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")); pg.wait_for_timeout(900)

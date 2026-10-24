@@ -44,7 +44,7 @@ with sync_playwright() as p:
     ok(pg.evaluate('TT.curSheet')=='bld' and pg.evaluate('TT.sheetBld')=='sawmill','building sheet opened for sawmill')
     pg.evaluate('TT.S.res.logs=0;TT.S.collectors.lumberjack=0'); pg.wait_for_timeout(2500)
     st=pg.evaluate('TT.bstat.sawmill'); ok(st['f']<0.5 and st['lim']=='logs',f"sawmill starved on logs util={st['f']:.2f}")
-    _t=(pg.locator('#bpStatus').inner_text()+pg.locator('#pane-bld').inner_text()).lower(); ok('starved' in _t or 'short on' in _t,'sheet shows the shortage (v2.15.1: "Short on Logs")')
+    _t=(pg.locator('#bpStatus').inner_text()+pg.locator('#pane-bld').inner_text()).lower(); ok('starved' in _t or 'short on' in _t or 'waiting on' in _t,'sheet shows the shortage (v2.29: "Waiting on Logs")')
     pg.evaluate('TT.S.collectors.lumberjack=1'); pg.click('#shClose'); pg.wait_for_timeout(150); tap_forest(pg,40); pg.evaluate('TT.openSheet("bld","sawmill")'); pg.wait_for_timeout(1500)
     r=pg.evaluate('({p:TT.rates.planks.p, c:TT.rates.logs.c})'); ok(r['p']>0.3 and r['c']>0.6,'planks produced & logs consumed')
     pg.evaluate('TT.S.autosell.planks=false'); pg.evaluate('TT.simulate(20)')
