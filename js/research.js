@@ -11,7 +11,7 @@ const REP_SCALE=1.6;    // repeatable node: cost ×1.6 per level
 const OLD_RES_SEEDS={automation:5,master:10};   // pre-v2.19 Seed prices (refunded on migration)
 const RBRANCH=[
   {id:'sci',name:'Science',icon:'🔬',c:'#3f7fb8'},{id:'for',name:'Forestry',icon:'🌲',c:'#3d8a4a'},{id:'mil',name:'Milling',icon:'🪚',c:'#9a6a2e'},
-  {id:'cra',name:'Craft',icon:'🪑',c:'#a8508a'},{id:'log',name:'Logistics',icon:'⚓',c:'#2f6f8f'}];
+  {id:'cra',name:'Craft',icon:'🪑',c:'#a8508a'},{id:'log',name:'Trade',icon:'⚓',c:'#2f6f8f'}];   // v2.29: branch was "Logistics" (id kept)
 const RTIER=[null,{L:0,n:'Tier I'},{L:25,n:'Tier II'},{L:150,n:'Tier III'},{L:800,n:'Tier IV'},{L:2500,n:'Tier V',ms:true}];
 const blv=id=>(S.buildings[id]&&S.buildings[id].lvl)||0, anyLv=l=>BUILDINGS.some(b=>blv(b.id)>=l);
 const MIL=['peeler','sawmill','chipper','kiln','pellet','paper','beamsaw','glulam'], CRAFT=['carpentry','furniture','atelier','parquet','stationer','cabinetry','showroom','framer','toyshop','boatyard'];   // v2.28: Beam Saw + Glulam Plant are mills, Timber-frame Houses a craft
@@ -78,10 +78,10 @@ const RNODES=[
   {id:'signat',  b:'cra',t:4,name:'Signature Pieces',icon:'✍️',rp:34000,req:['toyline'], d:'Premium & tech goods sell +30 %',fx:mulP(PREM_RES,1.3)},
   {id:'r_cra',   b:'cra',t:4,name:'Craftsmanship',   icon:'♾️',rp:40000,req:['cnc'],     rep:true,d:'Craft buildings +5 % × level^0.7 (repeatable)',fx:(m,n)=>mulB(CRAFT,1+repV(n))(m)},
   {id:'heritage',b:'cra',t:5,name:'Heritage Brand',  icon:'👑',rp:250000,req:['cnc','signat'],d:'Premium & tech goods sell ×1.5',fx:mulP(PREM_RES,1.5)},
-  // ---------- Logistics ----------
+  // ---------- Trade (was Logistics until v2.29; ids kept for saves) ----------
   {id:'market',  b:'log',t:1,name:'Market Research', icon:'📊',rp:150,  req:['pulp'],    d:'All sell prices +5 %',fx:m=>{m.priceAll*=1.05;}},
   {id:'orderdesk',b:'log',t:1,name:'Order Desk',     icon:'📋',rp:250,  req:['market'],  d:'Client orders & daily contracts pay +20 %',fx:m=>{m.orderPay*=1.2;}},
-  {id:'logistics',b:'log',t:1,name:'Trade Logistics',icon:'⚓',rp:450,  req:['market'],  d:'Trade payouts +20 %, trips 20 % faster',fx:m=>{m.trade*=1.2;m.tripSpd*=.8;}},
+  {id:'logistics',b:'log',t:1,name:'Trade Routes',icon:'⚓',rp:450,  req:['market'],  d:'Trade payouts +20 %, trips 20 % faster',fx:m=>{m.trade*=1.2;m.tripSpd*=.8;}},
   {id:'pallets', b:'log',t:2,name:'Pallet Standards',icon:'📦',rp:2500, req:['logistics'],d:'Trade payouts +15 %, trips 15 % faster',fx:m=>{m.trade*=1.15;m.tripSpd*=.85;},gate:{f:()=>harborLvl()>=1,t:'Harbour built'}},
   {id:'bulk',    b:'log',t:2,name:'Bulk Contracts',  icon:'🤝',rp:3000, req:['orderdesk'],d:'Client orders & daily contracts pay +30 %',fx:m=>{m.orderPay*=1.3;}},
   {id:'analytics',b:'log',t:2,name:'Price Analytics',icon:'📈',rp:3500, req:['orderdesk'],d:'All sell prices +8 %',fx:m=>{m.priceAll*=1.08;}},

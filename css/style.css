@@ -697,6 +697,18 @@ body.flow-on #flowBtn{background:linear-gradient(180deg,#ffe68a,#f2b83a)}
 #flowLegend .fl-k{display:inline-block;width:14px;height:5px;border-radius:3px;margin:0 3px 2px 8px;vertical-align:middle;background:#d9a35a}
 #flowLegend .fl-k.warn{background:#ffbf3a}#flowLegend .fl-k.bad{background:#ff5a4a}#flowLegend .fl-k.sell{background:#7ad04a}#flowLegend .fl-bad{color:#ff8a7a}
 @media (max-width:520px){#flowLegend{font-size:11px;top:calc(env(safe-area-inset-top) + 84px)}}
+/* v2.29 bottleneck advisor: top bottlenecks under the Supply Flow legend + the building-sheet fix hint */
+#flowLegend .adv-sum{display:block;white-space:normal;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,246,224,.18);pointer-events:auto;min-width:300px}
+#flowLegend .adv-sum.ok{color:#bfe8a0;font-weight:700;min-width:0}
+#flowLegend .adv-h{font-size:11.5px;color:#ffd98a;margin-bottom:4px}#flowLegend .adv-h small{color:#cdb994;font-weight:600}
+#flowLegend .adv-row{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;margin:3px 0 0;padding:5px 8px;border:0;border-radius:10px;cursor:pointer;
+  background:rgba(227,163,42,.20);color:#fff6e0;font:700 12px system-ui,sans-serif;text-align:left;touch-action:manipulation}
+#flowLegend .adv-row.bad{background:rgba(232,71,60,.26)}#flowLegend .adv-row:hover{filter:brightness(1.18)}
+#flowLegend .adv-n{flex:0 0 18px;height:18px;border-radius:50%;background:#fff6e0;color:#5a3218;font-size:11px;display:grid;place-items:center}
+#flowLegend .adv-t{flex:1 1 auto;min-width:0;line-height:1.2}#flowLegend .adv-t small{color:#e8d6b0;font-weight:600;white-space:nowrap}
+#flowLegend .adv-f{flex:0 0 auto;background:#4fa633;color:#fff;border-radius:8px;padding:5px 8px;font-size:11.5px;white-space:nowrap}
+@media (max-width:520px){#flowLegend .adv-sum{min-width:0;width:calc(94vw - 24px)}#flowLegend .adv-row{font-size:11px;gap:6px;padding:4px 6px}#flowLegend .adv-f{font-size:10.5px;padding:4px 6px}#flowLegend .adv-t small{display:block}}
+.bp-short .adv-why{flex:1 1 100%;font-size:12.5px;color:#6a3a18}
 /* v2.17 line specialisations (building sheet) */
 .bspec{margin-top:8px;padding:9px 10px 8px;border-radius:12px;background:linear-gradient(180deg,#fbf3e2,#f5e8cc);border:1.5px solid #e2c991}
 .bspec.has{border-color:#d9bd7c}

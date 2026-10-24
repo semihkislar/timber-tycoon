@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.28.1';
+const VERSION='2.29';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -145,7 +145,7 @@ const UPGRADES=[
   {id:'ai',icon:'🤖',name:'Swarm AI',desc:'Drone Fleets ×2',cost:15000000,req:()=>cn('drone')>=5,apply:m=>m.col.drone*=2},
   {id:'automation',icon:'🦾',name:'Automated Assembly',desc:'Furniture Factory speed ×2',cost:25000000,req:()=>bl('furniture')>=2,apply:m=>m.bld.furniture*=2},
   {id:'brand',icon:'🏷️',name:'Designer Brand',desc:'Chairs & Furniture sell ×2',cost:40000000,req:()=>bl('furniture')>=1,apply:m=>{m.price.chairs*=2;m.price.furniture*=2}},
-  {id:'logistics',icon:'🌍',name:'Global Logistics',desc:'All buildings speed ×2',cost:100000000,req:()=>bl('furniture')>=4,apply:m=>m.bldAll*=2},
+  {id:'logistics',icon:'🌍',name:'Global Expansion',desc:'All buildings speed ×2',cost:100000000,req:()=>bl('furniture')>=4,apply:m=>m.bldAll*=2},   // v2.29: was "Global Logistics"; id kept so saves still own it (the word now belongs to the logistics tiers)
   {id:'rotors',icon:'🌀',name:'Twin Rotors',desc:'Sky-Cranes ×2',cost:300000000,req:()=>cn('heli')>=5,apply:m=>m.col.heli*=2},
   // v2.4 fire safety
   {id:'alarm',icon:'🚨',name:'Smoke Detectors',desc:'Fire risk −25%',cost:40000,req:()=>bl('kiln')>=1,apply:m=>m.fire*=.75},

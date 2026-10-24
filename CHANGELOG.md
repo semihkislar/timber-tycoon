@@ -5,6 +5,52 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.29] — 2026-10-24
+
+**Bottleneck Advisor (item 9).** The game now tells you what is holding production back and takes you to the fix. This
+release also clears two small blockers for item 8 (logistics tiers), which comes next.
+
+### Added
+- **"Waiting on X" in the scene.** A building that is short of an input shows what it is waiting for, in place of the old
+  "!" bubble.
+  - Desktop shows a short pill, e.g. "⏳ 🟫 Planks", with the % fed when it is badly starved. Premium workshops get the
+    pill beside their level tag; the crowded R&D campus gets an icon badge.
+  - Phones, and desktop when zoomed out, show a calm round badge with the input's icon. Only real starvation (below
+    60 %) is red and bobs. The selected building still gets the full pill.
+- **Building card.** The status chip reads "⏳ Waiting on Chairs". The shortage hint's button now points at the **root**
+  fix: the advisor follows the chain. If the Wood Chipper that makes the chips is itself waiting on logs, the button says
+  "👷 Hire collectors", with a line explaining why.
+  - Fix kinds: upgrade the producer, workstation (when the producer is capped at a gate), build it, research it, turn it
+    on, fix it (fire / breakdown) or hire collectors.
+- **Supply Flow: Top bottlenecks.** Under the 🔀 legend, waiting buildings are grouped by their root fix and ranked by the
+  income they lose (−🪙/s): 3 rows on desktop, 2 compact rows on phones, "+N more". When everything is fed it says so.
+  - Rows stay the same DOM nodes while the numbers update, so a tap never lands on a replaced button.
+- **Tap to jump.** Tapping a bottleneck row or the card's fix button opens the right sheet (building, Workstations tab,
+  Crew or R&D). The camera flies to the building and a gold ring pulses on it for about 3 s.
+- The ⚠ attention list uses the same root fix ("Short on Planks (…) · hire collectors").
+
+### Changed
+- **"Logistics" is free for item 8.** These were renamed; their ids are kept, so saves keep them and their effects:
+  - the upgrade *Global Logistics* → **Global Expansion** (all buildings ×2);
+  - the research *Trade Logistics* → **Trade Routes**;
+  - the research branch *Logistics* → **Trade**.
+- **Phone fit view frames the Shipping dock.** The portrait frame is shifted right and a little deeper. On iPhone 13 and
+  Pixel 7, all 10 lots and the dock with its label are on screen, clear of the side buttons. Zoom is about 16 % (iPhone)
+  and 11 % (Pixel) further out.
+
+### Tests
+- New `test/v229.py` (desktop + iPhone 13 / Pixel 7 touch):
+  - advisor logic: root grouping, chain following, every fix kind;
+  - card chip and jump button;
+  - desktop pills vs quiet phone badges;
+  - Supply Flow rows: content, stable nodes, tap-to-jump, the "no bottlenecks" state;
+  - phone row size and fit;
+  - renames, plus an old save keeping ×2 / +20 %;
+  - phone fit view: dock, label and lots.
+- `functional.py` accepts "Waiting on". `v29.py`: an attention entry whose root fix is "hire collectors" opens the Crew
+  sheet.
+- The full suite (39 files) passes, with no FAIL lines.
+
 ## [2.28.1] — 2026-10-24
 
 **Maintenance day.** Covers assets, rules and text, balance, save robustness and tests. Item 8 (logistics tiers) is postponed.

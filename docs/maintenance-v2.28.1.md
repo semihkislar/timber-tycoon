@@ -66,7 +66,7 @@ In priority order, with the reason each was left:
 4. **Chopping upgrades are dead late.**
    - *Golden Axe* (×5 chop) and *Sharper Axes* barely matter once collectors run, because clicks are tiny next to the income.
    - Making them scale with logs/s would change their role. That is a design call.
-5. **Name clash ahead.**
+5. **Name clash ahead.** *(Done in v2.29: Global Expansion / Trade Routes / Trade branch, ids kept.)*
    - The *Global Logistics* upgrade and the *Trade Logistics* research both say "logistics", and item 8 will add "logistics tiers".
    - Rename them when item 8 lands, so the new system owns the word.
 6. **No upgrades for the newer lines.**
@@ -79,7 +79,7 @@ In priority order, with the reason each was left:
    - The premium order card, two or three toasts, the event bar, the jump, upgrade and alert buttons and the lot tags all compete
      for space.
    - Needs a priority/stacking rule rather than a CSS tweak.
-9. **The fit view on phones leaves out the Shipping dock** (helper strip, v2.27). The Dock chip reaches it, but a new player
+9. *(Done in v2.29.)* **The fit view on phones leaves out the Shipping dock** (helper strip, v2.27). The Dock chip reaches it, but a new player
    may not find it.
 10. **Test speed.** The suite takes about 10 minutes on 4 workers.
     - `v28` (perf) and `v225` (timing) are still sensitive to machine load and pass when rerun alone.
@@ -90,7 +90,7 @@ Effort: S ≈ a day, M ≈ 2–3 days, L ≈ a week or more.
 
 | # | Idea | Pitch | Player value | Effort |
 |---|---|---|---|---|
-| 1 | **Bottleneck Advisor** | A "Fix the chain" card shows the one upgrade that unblocks the most income right now (from `bstat.lim` and the flow edges). | Turns the paper/chairs/chips puzzle into a clear next step; good for new players. | S |
+| 1 | **Bottleneck Advisor** *(shipped in v2.29)* | A "Fix the chain" card shows the one upgrade that unblocks the most income right now (from `bstat.lim` and the flow edges). | Turns the paper/chairs/chips puzzle into a clear next step; good for new players. | S |
 | 2 | **Logistics tiers (item 8)** | Forklift, truck and rail capacity tiers that cap how fast goods move between phases and to the dock. | A new progression axis that uses the existing fleets and the bent highway. | L |
 | 3 | **Replant Blueprints** | Before a Replant, save the build order of up to 3 lines; the next run auto-builds them as coins allow. | Cuts the repetitive early clicking of every run. Fits Replant 2.0 and the Builders' Yard. | M |
 | 4 | **Veneer & Decor line** | A Phase 2 *Decor Panels* workshop (veneer + glue → panels) feeding a Phase 3 *Interior Fit-out* (panels + cabinets). | Uses the late veneer surplus and gives Timber-frame Houses an upscale sibling. | M |

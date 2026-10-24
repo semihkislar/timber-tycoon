@@ -10,7 +10,7 @@ function fitCamera(instant){
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-340:-480, bx1=portrait?356:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?900:(hb?935:840),southYardBuilt()?1050:0);   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0);   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -263,12 +263,7 @@ function drawOverlays(ctx){
     {const rt=typeof specRetool==='function'?specRetool(b.id):0;if(rt>0&&!S.fires[b.id]) pill(ctx,sx,sy-30,'🔧 Retooling '+Math.ceil(rt)+'s',{fs:10.5,bg:'#5b6067',fg:'#fff',stroke:'#c9d0d8',padX:12,padY:7});}   // v2.17
     if(S.fires[b.id]){} // v2.4: the fire pill replaces status badges
     else if(bs.full&&st.on){const by=sy-10+Math.sin(t*4)*2.5;pill(ctx,sx,by,'⛔ FULL',{bg:'#c4463d',fg:'#fff',fs:11.5,stroke:'#ffd2cc',padX:12,padY:7});}
-    else if(starved){
-      // v2.2: mild shortages (>=70% running) get a small calm amber badge; real starvation keeps the bouncing red alert
-      const bad=bfs<.6, R=bad?12:8.5, by=sy-8+(bad?Math.sin(t*5)*3:0);ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,R,0,TAU);ctx.fill();
-      ctx.fillStyle=bad?'#e8473c':'#e3a32a';ctx.beginPath();ctx.arc(sx,by,R,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(sx-R*.42,by+R*.75);ctx.lineTo(sx+R*.42,by+R*.75);ctx.lineTo(sx,by+R*1.33);ctx.closePath();ctx.fill();
-      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sx,by,R,0,TAU);ctx.stroke();
-      ctx.fillStyle='#fff';ctx.font=`900 ${bad?15:11}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',sx,by+1);
+    else if(starved){if(L.prem){const zz=Math.max(.8,Math.min(1.4,scene.cam.z));advBadge(ctx,b.id,sx+40*zz,sy+10*zz,t);}else advBadge(ctx,b.id,sx,sy,t);   // v2.29: "waiting on X" (icon badge on phones, a short pill on desktop)
     } else if(!st.on){ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle='rgba(40,40,70,.7)';ctx.lineWidth=3;ctx.textAlign='center';ctx.textBaseline='middle';
       for(let k=0;k<3;k++){const ph=(t*.6+k/3)%1;ctx.globalAlpha=Math.sin(ph*Math.PI);ctx.font=`900 ${11+ph*8}px system-ui`;ctx.strokeText('z',sx+ph*16-4,sy-ph*26);ctx.fillText('z',sx+ph*16-4,sy-ph*26);}ctx.globalAlpha=1;}
     if(scene.msFlash&&scene.msFlash.id===b.id){const k=scene.msFlash.t/1.6, y2=sy-20-(1-k)*30;ctx.save();ctx.globalAlpha=Math.min(1,k*2);ctx.translate(sx,y2);ctx.rotate((1-k)*6);
@@ -280,7 +275,7 @@ function drawOverlays(ctx){
     for(const [L,txt,id] of [[YARD,'Log Yard','yard'],[DOCK,'Shipping','dock']]){if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const hov=scene.hover===id;
       pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
   }
-  premOverlays(ctx,showTags); shipOverlay(ctx,showTags); flowOverlay(ctx);   // v2.16 supply flow view
+  premOverlays(ctx,showTags); shipOverlay(ctx,showTags); flowOverlay(ctx); advOverlay(ctx);   // v2.16 supply flow view · v2.29 advisor jump ping
   // floating numbers
   for(const f of scene.floats){const k=f.t/f.dur;const [sx,sy]=w2s(f.x,f.y);const y=sy-k*(f.big?60:44);ctx.globalAlpha=k<.7?1:1-(k-.7)/.3;
     const fs=f.big?20:f.timber?17:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;

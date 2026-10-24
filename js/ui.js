@@ -102,7 +102,7 @@ function statusOf(b){
   if(typeof mishBroken==='function'&&mishBroken(b.id)){const br=S.mish.broke[b.id];if(!br.slow) return {cls:'bad',txt:`🔧 Broken down · ${Math.ceil(br.left)}s`,f:0};}   // v2.26
   if(bs.full&&bs.f<0.985) return {cls:'bad',txt:`⛔ Storage FULL: ${RMAP[bs.full].name}`,f:bs.f};
   const fs=isFinite(bs.fs)?bs.fs:bs.f, nm=RMAP[bs.lim]?RMAP[bs.lim].name:'input';   // v2.15.1: smoothed, so a one-tick dip doesn't flash a warning
-  if(bs.lim&&fs<0.9) return {cls:'bad',txt:`⚠ Short on ${nm}`,f:bs.f};
+  if(bs.lim&&fs<0.9) return {cls:'bad',txt:`⏳ Waiting on ${nm}`,f:bs.f};   // v2.29 advisor wording
   if(bs.lim&&bs.f<0.985) return {cls:'',txt:`Slightly short on ${nm}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};
 }
@@ -149,7 +149,7 @@ function updateBuildingSheet(){
     const bs=bstat[b.id], k=st.lvl&&st.on&&bs&&bs.lim&&(isFinite(bs.fs)?bs.fs:bs.f)<.95?bs.lim:null, si=k?shortInfo(k):null;
     let h='';
     if(si){h=`<div>${svgIcon(RMAP[k].svg,18)} <b>${RMAP[k].name}</b>: ${si.src?BMAP[si.src].name+' makes':'you make'} <b>${fr(si.prod)}/s</b>, buildings want <b>${fr(si.want)}/s</b>${si.users.length>1?` (${si.users.map(u=>BMAP[u].name).join(', ')})`:''}.</div>`;
-      if(si.src) h+=`<button class="bp-short-go" data-go="${si.src}">⬆ Upgrade ${BMAP[si.src].name} →</button>`;
+      h+=typeof advHintHtml==='function'?advHintHtml(b.id):si.src?`<button class="bp-short-go" data-go="${si.src}">⬆ Upgrade ${BMAP[si.src].name} →</button>`:'';   // v2.29: the advisor follows the chain to the root fix
       if(SHARED_GOODS.includes(k)) h+=`<button class="bp-short-mode" data-mode="1">${RMAP[k].name}: ${S.prefs.plankMode==='value'?'best value first':'shared fairly'} ⇄</button>`;}   // v2.24: veneer + plywood too
     if(sh._h!==h){sh.innerHTML=h;sh._h=h;sh.classList.toggle('hidden',!h);
       const g=sh.querySelector('[data-go]');if(g) g.onclick=()=>{openSheet('bld',g.dataset.go);if(typeof focusLot==='function') focusLot(g.dataset.go,true);};
