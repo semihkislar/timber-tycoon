@@ -71,7 +71,7 @@ const RNODES=[
   {id:'automation',b:'cra',t:2,name:'Automation',    icon:'🤖',rp:3000, req:['bending','toys'],d:'Every building +10 %',fx:m=>{m.bldAll*=1.1;}},
   {id:'boats',   b:'cra',t:2,name:'Boat Yard',       icon:'⛵',rp:3000, req:['toys'],    d:'Unlocks the Boat Yard at the harbour (plywood + chairs → boats)',unlock:'boatyard'},
   {id:'uphol',   b:'cra',t:2,name:'Upholstery',      icon:'🛋️',rp:3500, req:['jigs2'],   d:'Chairs & Furniture Sets sell +25 %',fx:m=>{m.price.chairs*=1.25;m.price.furniture*=1.25;},gate:{f:()=>blv('furniture')>=1,t:'Furniture Factory built'}},
-  {id:'master',  b:'cra',t:3,name:'Masterworks',     icon:'🏆',rp:10000,req:['automation','boats'],d:'Plywood, toys, boats & luxury goods sell +25 %',fx:mulP(['plywood','toys','boats','luxfurn','cabinets'],1.25)},
+  {id:'master',  b:'cra',t:3,name:'Masterworks',     icon:'🏆',rp:10000,req:['automation','boats'],d:'Plywood, toys, boats, cabinets & luxury furniture sell +25 %',fx:mulP(['plywood','toys','boats','luxfurn','cabinets'],1.25)},
   {id:'ateliers',b:'cra',t:3,name:'Atelier Methods', icon:'🎨',rp:11000,req:['uphol'],   d:'Premium buildings +40 %',fx:m=>{for(const b of BUILDINGS) if(b.premium) m.bld[b.id]*=1.4;},gate:{f:()=>S.premium&&S.premium.lvl>0,t:'Premium Area open'}},
   {id:'toyline', b:'cra',t:3,name:'Toy Line',        icon:'🪀',rp:12000,req:['master'],  d:'Toy Workshop & Boat Yard +50 %',fx:m=>{m.bld.toyshop*=1.5;m.bld.boatyard*=1.5;}},
   {id:'cnc',     b:'cra',t:4,name:'CNC Workshop',    icon:'🛠️',rp:32000,req:['ateliers'],d:'All craft buildings +50 %',fx:mulB(CRAFT,1.5)},

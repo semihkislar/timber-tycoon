@@ -8,7 +8,7 @@ function save(silent){
 function load(){
   let raw=null; try{raw=localStorage.getItem(SAVE_KEY);}catch(e){}
   if(!raw) return null;
-  try{const o=migrateSave(JSON.parse(raw)); S=merge(freshState(),o); return S;}catch(e){console.warn('Bad save, starting fresh');return null;}
+  try{const o=migrateSave(JSON.parse(raw)); S=sanitizeState(merge(freshState(),o)); return S;}catch(e){console.warn('Bad save, starting fresh');return null;}
 }
 function hardReset(){
   try{localStorage.removeItem(SAVE_KEY);}catch(e){}

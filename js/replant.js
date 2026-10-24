@@ -74,7 +74,7 @@ function seedRate(){return pendingSeeds()/runMin();}
 function rpTick(){const r=runState();goalTick();const rate=seedRate();if(rate>r.peak) r.peak=rate;}
 /* "good time to replant": gain worth at least a quarter of the legacy (or 3 Seeds), and the Seeds-per-minute rate has passed its peak */
 function rpAdvice(){const g=pendingSeeds(),r=runState(),rate=seedRate(),L=S.legacy||0;
-  if(g<1) return {k:'wait',t:`First Seeds at 🪙 ${fmt(RPC.first*cs())} earned this run`};
+  if(g<1) return {k:'wait',t:`First Seeds at 🪙 ${fmt(RPC.first*cs())} · ${Math.min(99,Math.floor(100*S.totalEarned/Math.max(1,RPC.first*cs())))}% there`};   // v2.28.1: progress, not a repeat of the line above
   const worth=g>=Math.max(3,Math.ceil(L*.25)), past=r.peak>0&&rate<r.peak*.85&&runMin()>=5;
   if(worth&&past) return {k:'now',t:'🌟 Good time to replant: your Seeds per minute have peaked'};
   if(!worth) return {k:'grow',t:`Keep growing: aim for ≥ ${Math.max(3,Math.ceil(L*.25))} Seeds (¼ of your Legacy) for a worthwhile Replant`};
@@ -168,5 +168,5 @@ function rpConfirm(){
    <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li></ul></div>
   </div>
   <div class="legend">The new run is priced in your forest's value (×${fx2(Math.pow(legacyOf(L+g)*(1+.25*shopLvl('soil'))*Math.sqrt((1+.5*shopLvl('crews'))*(1+.5*shopLvl('mills')))*(1+.1*shopLvl('market'))*TREES[Math.min(shopLvl('arbor'),TREES.length-1)].mult,RPC.csE))}): costs and goals grow with it, so the climb stays meaningful.</div>`;
-  confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{openSheet('co');rpTabOpen('shop');},700);}});
+  confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{if(curSheet) return;openSheet('co');rpTabOpen('shop');},700);/* v2.28.1: never replaces a sheet the player opened meanwhile */}});
 }

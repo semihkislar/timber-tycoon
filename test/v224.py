@@ -68,7 +68,8 @@ with sync_playwright() as p:
     ctx.close()
     # ---------------- greedy play over several Replants, log fuel 'first' ----------------
     # v2.26: random setbacks (a broken Peeler) are tested in v226.py; this sim measures the chain's balance, so they are off here
-    ctx,pg=page(); E(pg,"window._pm='first';window.mishTick=()=>{}")
+    # v2.28.1: seeded Math.random so the greedy sim is the same every run (it was flaky at the 10 % plywood threshold)
+    ctx,pg=page(init=CLEAR+';(()=>{let s=7;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};})()'); E(pg,"window._pm='first';window.mishTick=()=>{}")
     R=E(pg,f"({SIM})({{runs:5,maxMin:25,hook:{json.dumps(HOOK)},extra:{json.dumps(EXTRA)}}})")
     print('   runs:',[(x['run'],round(x['x']['cs'],1),round(x['x']['veneer'],2),round(x['x']['plywood'],2),x['x']['cf'],round(x['x']['bn'],2)) for x in R])
     ok(len(R)==5 and R[-1]['x']['cs']>5,f'5 runs with 4 Replants (forest value ×{R[-1]["x"]["cs"]:.1f})')
