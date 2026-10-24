@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.29';
+const VERSION='2.29.1';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -483,7 +483,15 @@ function sawYield(){return sawYieldAt(S.buildings.sawmill.lvl);}
    milestones ×1.6, plus +5 % per level above 50), so they keep up with the consumers that grow behind them. Inputs are unchanged. */
 const TAR_GLUE=.65;
 const YIELD_BLD={sawmill:1,peeler:1,plymill:1};
-function chainYield(id){return YIELD_BLD[id]&&S.buildings[id]?sawYieldAt(S.buildings[id].lvl):1;}
+/* v2.29.1 chip yield: the Wood Chipper feeds the Pellet Press (20 chips) and the Paper Mill (40 chips) from 6 chips per level,
+   so with every building levelled evenly chips were only 15–50 % of demand. From Lv 25 each level gets +7 % chips out of the
+   same logs, and from Lv 100 every milestone adds ×1.6 (like the Sawmill curve, one milestone later). Lv ≤ 25 is unchanged, so the
+   first minutes of a run play exactly as before. */
+function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,msCount(l)-3));}
+/* The Plywood Mill gets an early start too (+5 % per level from Lv 10): otherwise the extra paper just moves the wait to plywood
+   (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
+function plyYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-10)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
+function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}

@@ -51,7 +51,8 @@ with sync_playwright() as p:
       fv:BMAP.furniture.inp.veneer,by:BMAP.boatyard.inp.plywood,tg:TAR_GLUE,dry:wsKind('peeler',2)})""")
     ok(r=={'pe':4,'bark':1,'pi':4,'pmv':4,'pmg':2,'pmo':3,'fv':6,'by':8,'tg':.65,'dry':'yld'},f'v2.24 recipes: peeler 4 logs→4 veneer+1 bark, plymill 4 veneer+2 glue→3 plywood, furniture 6 veneer, boat 8 plywood, glue .65, Veneer Dryer = yield ({r})')
     r=E(pg,"""(()=>{const o={};for(const id of ['sawmill','peeler','plymill','furniture']){o[id]=[];for(const l of [49,60,100]){S.buildings[id].lvl=l;o[id].push(+chainYield(id).toFixed(3));}S.buildings[id].lvl=0;}return o;})()""")
-    ok(r['peeler']==r['sawmill'] and r['plymill']==r['sawmill'] and r['peeler'][0]==1 and r['peeler'][1]>1.4 and r['peeler'][2]>r['peeler'][1],f"Peeler and Plywood Mill get the Sawmill yield curve from Lv 50 ({r['peeler']})")
+    ok(r['peeler']==r['sawmill'] and r['peeler'][0]==1 and r['peeler'][1]>1.4 and r['peeler'][2]>r['peeler'][1],f"Peeler gets the Sawmill yield curve from Lv 50 ({r['peeler']})")
+    ok(all(a>=b for a,b in zip(r['plymill'],r['sawmill'])) and r['plymill'][0]>1,f"Plywood Mill: at least the Sawmill curve, with the v2.29.1 early start ({r['plymill']})")
     ok(r['furniture']==[1,1,1],'consumers get no yield bonus')
     # bark is not multiplied by the peel yield
     r=E(pg,"""(()=>{for(const b of BUILDINGS){S.buildings[b.id].lvl=0;}S.buildings.peeler.lvl=60;S.buildings.peeler.on=true;S.res.logs=1e12;S.res.veneer=0;S.res.bark=0;S.autosell.veneer=false;S.autosell.bark=false;
