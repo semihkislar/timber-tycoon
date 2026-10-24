@@ -51,7 +51,8 @@ with sync_playwright() as p:
       fv:BMAP.furniture.inp.veneer,by:BMAP.boatyard.inp.plywood,tg:TAR_GLUE,dry:wsKind('peeler',2)})""")
     ok(r=={'pe':4,'bark':1,'pi':4,'pmv':4,'pmg':2,'pmo':3,'fv':6,'by':8,'tg':.65,'dry':'yld'},f'v2.24 recipes: peeler 4 logs→4 veneer+1 bark, plymill 4 veneer+2 glue→3 plywood, furniture 6 veneer, boat 8 plywood, glue .65, Veneer Dryer = yield ({r})')
     r=E(pg,"""(()=>{const o={};for(const id of ['sawmill','peeler','plymill','furniture']){o[id]=[];for(const l of [49,60,100]){S.buildings[id].lvl=l;o[id].push(+chainYield(id).toFixed(3));}S.buildings[id].lvl=0;}return o;})()""")
-    ok(r['peeler']==r['sawmill'] and r['plymill']==r['sawmill'] and r['peeler'][0]==1 and r['peeler'][1]>1.4 and r['peeler'][2]>r['peeler'][1],f"Peeler and Plywood Mill get the Sawmill yield curve from Lv 50 ({r['peeler']})")
+    ok(r['peeler']==r['sawmill'] and r['peeler'][0]==1 and r['peeler'][1]>1.4 and r['peeler'][2]>r['peeler'][1],f"Peeler gets the Sawmill yield curve from Lv 50 ({r['peeler']})")
+    ok(all(a>=b for a,b in zip(r['plymill'],r['sawmill'])) and r['plymill'][0]>1,f"Plywood Mill: at least the Sawmill curve, with the v2.29.1 early start ({r['plymill']})")
     ok(r['furniture']==[1,1,1],'consumers get no yield bonus')
     # bark is not multiplied by the peel yield
     r=E(pg,"""(()=>{for(const b of BUILDINGS){S.buildings[b.id].lvl=0;}S.buildings.peeler.lvl=60;S.buildings.peeler.on=true;S.res.logs=1e12;S.res.veneer=0;S.res.bark=0;S.autosell.veneer=false;S.autosell.bark=false;
@@ -69,7 +70,7 @@ with sync_playwright() as p:
     # ---------------- greedy play over several Replants, log fuel 'first' ----------------
     # v2.26: random setbacks (a broken Peeler) are tested in v226.py; this sim measures the chain's balance, so they are off here
     # v2.28.1: seeded Math.random so the greedy sim is the same every run (it was flaky at the 10 % plywood threshold)
-    ctx,pg=page(init=CLEAR+';(()=>{let s=7;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};})()'); E(pg,"window._pm='first';window.mishTick=()=>{}")
+    ctx,pg=page(init=CLEAR+';(()=>{let s=7;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};})()'); E(pg,"window._pm='first';window.mishTick=()=>{};window.fireTick=fireTick=()=>{}")   # v2.29.1: fires are random setbacks too (a burning kiln = a minute without glue), tested elsewhere
     R=E(pg,f"({SIM})({{runs:5,maxMin:25,hook:{json.dumps(HOOK)},extra:{json.dumps(EXTRA)}}})")
     print('   runs:',[(x['run'],round(x['x']['cs'],1),round(x['x']['veneer'],2),round(x['x']['plywood'],2),x['x']['cf'],round(x['x']['bn'],2)) for x in R])
     ok(len(R)==5 and R[-1]['x']['cs']>5,f'5 runs with 4 Replants (forest value ×{R[-1]["x"]["cs"]:.1f})')

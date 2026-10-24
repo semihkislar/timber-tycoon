@@ -5,6 +5,64 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.29.1] — 2026-10-24
+
+**Chip balance patch.** Semih: "Wood chipperda dar boğaz var yetmiyor" (the Wood Chipper is a bottleneck and can't keep
+up).
+
+### Root cause
+- One Wood Chipper level makes 6 chips/s. One Pellet Press level wants 20 and one Paper Mill level wants 40, so feeding
+  one level of each takes about 10 Chipper levels at the same milestones.
+- The Sawmill, Peeler and Plywood Mill got a yield curve in v2.15.1 / v2.24 to keep up with their consumers. The Chipper
+  never did.
+- The research doesn't help: Pressure Refiner speeds the Chipper and the Pellet Press by the same +30 %, so the gap stays.
+- Sawdust Recovery and Beam Saw offcuts add chips, but not enough.
+- Result with every building given the same coins: chips at only 15–47 % of demand. In the greedy multi-Replant sim, the
+  Pellet Press and Paper Mill waited on chips 91–100 % of the second half of every run, even with the Chipper at Lv 100
+  and its consumers at Lv 70–85.
+- The Power Plant burns pellets and charcoal, not chips.
+
+### Changed
+- **Chip yield (Wood Chipper):** from Lv 25, each level gets +7 % chips from the same logs. From Lv 100, every milestone
+  adds ×1.6, like the Sawmill curve one milestone later.
+  - Lv 25: ×1.00 · Lv 40: ×2.05 · Lv 50: ×2.75 · Lv 75: ×4.50 · Lv 99: ×6.18 · Lv 100: ×10.0 · Lv 150: ×15.6.
+  - Recipes, price, speed and the logs it uses are unchanged. **Lv ≤ 25 is exactly as before**, so the first minutes of a
+    run are untouched.
+  - The building card shows "🍂 Chip yield ×…".
+- **Plywood Mill early start:** +5 % per level from Lv 10, or the old curve wherever that is higher. Without this, the
+  extra paper only moved the wait to plywood (Parquet and the Toy Workshop need both): the `v224` check went from 0 to
+  22–52 % plywood-short.
+
+### Results (sims, before → after)
+- Cost-balanced (same coins per building, 1e6…1e14), chips supply/demand: 0.42 / 0.47 / 0.29 / 0.15 / 0.29 / 0.19 →
+  0.83 / 1.34 / 1.03 / 0.67 / 2.57 / 1.56.
+- Greedy play over 3 Replants (seeded): share of the second half where the Pellet Press or Paper Mill waits on chips,
+  0.91–1.00 → 0.00–0.01. The Bottleneck Advisor no longer lists chips at the end of any run.
+- Plywood stays fed: `v224` greedy plywood-short share is 0 in all 5 runs, and the cost-balanced checks pass.
+- Pacing, early bot over 6 seeds:
+  - the first 10 minutes are identical;
+  - the median earned at 30 min is 4.65e10 → 4.85e10 (+4 %, within seed noise).
+- Pacing, late greedy sim (seeded):
+  - total earned in run 4: 6.3–7.1e14 → 1.1e15;
+  - Seeds per Replant +15–20 %, because the paper and pellet lines finally run.
+- The next pinch the advisor shows is the Gift Box Atelier waiting on **pellets**. The Pellet Press isn't short of
+  chips; it is just a level choice. Chairs for the Cabinet Studio / Showroom are still the known v2.28.1 item (a).
+
+### Tests
+- New `test/v2291.py`:
+  - recipes unchanged;
+  - Lv ≤ 25 yield = 1;
+  - the curve values, and real chips per log at Lv 60;
+  - cost-balanced chips ≥ 60 % everywhere (median ≥ 100 %), and fully fed at 1e7 / 1e12 / 1e14;
+  - seeded greedy chips-bound share ≤ 10 %;
+  - the advisor is clear of chips;
+  - the chip yield on the card, desktop and iPhone 13.
+- `v224`: the Peeler still matches the Sawmill curve; the Plywood Mill is "at least the Sawmill curve, plus the early start".
+- `v224`: the greedy plywood sim now also turns off random fires, like mishaps already were. With more paper flowing, one
+  seeded run had a kiln fire that cut glue to 0 for its 60 s burn, which counted as "plywood short" (16 %). That is a setback,
+  not a supply balance; fires keep their own tests.
+- Full suite (40 files) is green. `v2151` and `v2201` failed only under 4-way parallel load and pass when rerun alone.
+
 ## [2.29] — 2026-10-24
 
 **Bottleneck Advisor (item 9).** The game now tells you what is holding production back and takes you to the fix. This
