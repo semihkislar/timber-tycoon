@@ -101,7 +101,7 @@ function advSummaryHtml(){
 function advRowText(e){const R=RMAP[e.k],u=e.users,who=u.length>2||advPhone()&&u.length>1?`${u.length} buildings wait`:u.map(x=>BMAP[x.id].name).join(', ')+(u.length>1?' wait':' waits');
   const vv=advPhone()?'':(e.via||[]).filter(k=>k!==e.k&&RMAP[k]).slice(0,4).map(k=>RMAP[k].icon).join('');
   if(advPhone()) return `${R.icon} <b>${R.name}</b> · ${u.length} wait <small>${Math.round(e.worst*100)}% fed${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small>`;
-  return `${R.icon} <b>${R.name}</b>${vv?` <small>→ ${vv}</small>`:''} · ${who} <small>${Math.round(e.worst*100)}% fed${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small>`;}
+  return `${R.icon} <b>${R.name}</b>${vv?` <small>(also ${vv} short)</small>`:''} · ${who} <small>${Math.round(e.worst*100)}% fed${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small>`;}
 /* keyed update: the row buttons are only rebuilt when the set of bottlenecks changes, so a tap never lands on a replaced node */
 function advSummaryUpdate(box){
   if(!box) return;const {L,n,top}=advRowsData(),key=L.length?top.map(e=>e.k).join(','):'ok';
