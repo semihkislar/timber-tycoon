@@ -74,7 +74,7 @@ function seedRate(){return pendingSeeds()/runMin();}
 function rpTick(){const r=runState();goalTick();const rate=seedRate();if(rate>r.peak) r.peak=rate;}
 /* "good time to replant": gain worth at least a quarter of the legacy (or 3 Seeds), and the Seeds-per-minute rate has passed its peak */
 function rpAdvice(){const g=pendingSeeds(),r=runState(),rate=seedRate(),L=S.legacy||0;
-  if(g<1) return {k:'wait',t:`First Seeds at 🪙 ${fmt(RPC.first*cs())} earned this run`};
+  if(g<1) return {k:'wait',t:`First Seeds at 🪙 ${fmt(RPC.first*cs())} · ${Math.min(99,Math.floor(100*S.totalEarned/Math.max(1,RPC.first*cs())))}% there`};   // v2.28.1: progress, not a repeat of the line above
   const worth=g>=Math.max(3,Math.ceil(L*.25)), past=r.peak>0&&rate<r.peak*.85&&runMin()>=5;
   if(worth&&past) return {k:'now',t:'🌟 Good time to replant: your Seeds per minute have peaked'};
   if(!worth) return {k:'grow',t:`Keep growing: aim for ≥ ${Math.max(3,Math.ceil(L*.25))} Seeds (¼ of your Legacy) for a worthwhile Replant`};
