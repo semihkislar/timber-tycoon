@@ -14,7 +14,7 @@ const SH_DOCK_MAX=10, SH_FORK_MIN=2, SH_FORK_MAX=6, SH_SPD_MAX=5, SH_CRANE_MAX=3
 const SH_UP={
   dock:{n:'Loading Dock',e:'🏭',cost:l=>6e4*Math.pow(9,l-1),max:SH_DOCK_MAX,cur:()=>S.ship.dock},
   fork:{n:'Forklift Fleet',e:'🚜',cost:n=>2.5e4*Math.pow(8,n-SH_FORK_MIN),max:SH_FORK_MAX,cur:()=>S.ship.fork},
-  fspd:{n:'Forklift Speed',e:'⚡',cost:l=>3e4*Math.pow(7,l),max:SH_SPD_MAX,cur:()=>S.ship.fspd},
+  fspd:{n:'Forklift Loads',e:'📦',cost:l=>3e4*Math.pow(7,l),max:SH_SPD_MAX,cur:()=>S.ship.fspd},
   crane:{n:'Gantry Crane',e:'🏗️',cost:l=>2e6*Math.pow(18,l),max:SH_CRANE_MAX,cur:()=>S.ship.crane}};
 function shFresh(){return {dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}};}
 function shState(){let s=S.ship;if(!s||typeof s!=='object') s=S.ship=shFresh();
@@ -36,12 +36,12 @@ function shBuy(k){const s=shState(),u=SH_UP[k];if(!u) return false;const c=shCos
 function shUpText(k){const s=S.ship;
   if(k==='dock') return `+${Math.round(shPremium()*100)}% export premium on all sales · ${shBays()} bay${shBays()>1?'s':''} · trucks hold ${shCapSec()}s of sales`;
   if(k==='fork') return `${s.fork} forklifts · loading ×${shLoadF().toFixed(2)}`;
-  if(k==='fspd') return `forklifts ${Math.round(shForkSpeed()/1.7*100)}% of the old speed · loading ×${shLoadF().toFixed(2)}`;
+  if(k==='fspd') return `bigger pallets${s.fspd>=3?' (double-stacked)':''} · loading ×${shLoadF().toFixed(2)}`;   // v2.30: loads, not speed
   return `${s.crane?'crane Lv '+s.crane:'no crane'} · loading ×${shLoadF().toFixed(2)} · contract rewards +${s.crane*20}%`;}
 /* what the next step of an upgrade gives, for the cost-vs-benefit line */
 function shNextGain(k){const s=S.ship,o=Object.assign({},s);
   if(k==='dock'){return `+2% on every sale (≈ +${fmt(coinRate*.02/(1+shPremium()))}/s)${[3,7].includes(s.dock)?' · +1 bay':''}`;}
-  o[k]++;const a=shLoadF(s),b=shLoadF(o);return `loading ×${a.toFixed(2)} → ×${b.toFixed(2)}${k==='crane'?' · +20% contract rewards':''}${k==='fspd'?' · faster forklifts':''}`;}
+  o[k]++;const a=shLoadF(s),b=shLoadF(o);return `loading ×${a.toFixed(2)} → ×${b.toFixed(2)}${k==='crane'?' · +20% contract rewards':''}${k==='fspd'?(s.fspd===2?' · double-stacked loads':' · bigger pallets'):''}`;}
 /* ---------- contracts ---------- */
 // v2.25: only products whose sales can carry a contract worth ≥ ORD_MIN_SEC s of income; the quantity never drops below
 // ORD_MIN_UNITS, and the reward stays proportional to the goods (value × mult, topped up to at most 2× that by the income floor)
@@ -85,19 +85,21 @@ function cityOf(id){return CITIES.find(c=>c.id===id)||CITIES[0];}
 function updateShip(){
   const dot=$('shipDot'); if(dot) dot.classList.toggle('hidden',curSheet==='ship'||!(S.ship&&S.ship.offer));
   if(curSheet!=='ship') return; const s=shState();
-  const sig=[s.dock,s.fork,s.fspd,s.crane,shBays(),s.offer?s.offer.id:'-',s.contract?s.contract.id:'-'].join('|');
+  const sig=[s.dock,s.fork,s.fspd,s.crane,typeof logiUnlocked==='function'?logiUnlocked():0,shBays(),s.offer?s.offer.id:'-',s.contract?s.contract.id:'-'].join('|');
   if(sig!==shSig){shSig=sig;
     let h=`<div class="pw-hero sh-hero"><div class="ph-ic">${UI_ICONS.ship}</div><div style="flex:1"><div class="ph-t">Shipping Yard · Dock Lv ${s.dock}${s.dock>=SH_DOCK_MAX?' ★':''}</div>
       <div class="legend" style="margin:2px 0 0">${shBays()} loading bay${shBays()>1?'s':''} · ${s.fork} forklifts · export premium <b>+${Math.round(shPremium()*100)}%</b> on all sales</div></div></div>`;
     h+=`<h4>🚚 Departures</h4><div class="sh-board" id="shBoard">${s.bays.map((b,k)=>`<div class="sh-bay"><span class="sh-bn">Bay ${k+1}</span><span class="pbar"><i id="shB${k}"></i></span><span class="sh-bt" id="shT${k}"></span></div>`).join('')}
       <div class="sh-kv"><span>Trucks dispatched</span><b id="shTrucks"></b></div></div>`;
     h+=`<h4>📜 Export contract</h4><div id="shCon"></div>`;
+    if(typeof logiHtml==='function') h+=`<h4>🚜 Logistics</h4>${logiHtml()}`;   // v2.30
     h+=`<h4>⬆ Yard upgrades</h4><div class="list sh-ups">${Object.keys(SH_UP).map(k=>`<div class="card sh-up" data-k="${k}"><div class="ic">${SH_UP[k].e}</div><div><div class="nm">${SH_UP[k].n} <span class="cnt" id="shL_${k}"></span></div><div class="ds" id="shD_${k}"></div></div><button class="btn buy" id="shU_${k}"></button></div>`).join('')}</div>`;
-    h+=`<div class="legend">Your sales leave through the dock. Better docks pay an export premium on every sale; more and faster forklifts and a gantry crane load trucks quicker and complete export contracts faster. Kept through Replant.</div>
+    h+=`<div class="legend">Your sales leave through the dock. Better docks pay an export premium on every sale; more forklifts, bigger loads and a gantry crane load trucks quicker and complete export contracts faster. Kept through Replant.</div>
       <button class="btn small" id="shMarket">🪙 Open the Market</button>`;
     $('shipBody').innerHTML=h;
     for(const k of Object.keys(SH_UP)) $('shU_'+k).onclick=()=>{if(shBuy(k)){shSig='';haptic&&haptic(8);render();}};
     $('shMarket').onclick=()=>openSheet('market');
+    if(typeof logiBind==='function') logiBind();
     const cn=$('shCon');
     if(s.contract){const c=s.contract,ci=cityOf(c.city),R=RMAP[c.res];
       cn.innerHTML=`<div class="sh-con on"><div class="sh-ct">${ci.flag} <b>${ci.name}</b> wants ${R.icon} <b>${fmt(c.qty)}</b> ${R.name}</div><div class="pbar big"><i id="shCp"></i></div>
@@ -113,6 +115,7 @@ function updateShip(){
   const cap=Math.max(1,coinRate*shCapSec());
   s.bays.forEach((b,k)=>{const e=$('shB'+k);if(e) e.style.width=Math.min(100,b.v/cap*100).toFixed(1)+'%';const t=$('shT'+k);if(t) t.textContent=b.v>=cap*.999?'departing':`${Math.round(Math.min(1,b.v/cap)*100)}% · ${fmtTime(Math.max(0,shTimer()-b.t))}`;});
   const tr=$('shTrucks');if(tr) tr.textContent=fmt(s.stats.trucks);
+  if(typeof logiUpdate==='function') logiUpdate();
   if(s.contract){const c=s.contract,p=$('shCp');if(p) p.style.width=(c.got/c.qty*100).toFixed(1)+'%';const x=$('shCx');if(x) x.textContent=`${fmt(c.got)} / ${fmt(c.qty)} · ⏱ ${fmtTime(Math.max(0,c.left))}`;}
   for(const k of Object.keys(SH_UP)){const u=SH_UP[k],c=shCost(k),b=$('shU_'+k);if(!b) continue;const mx=!isFinite(c);
     const bh=mx?'MAX':costBtnHtml(k==='fork'?'+1':'⬆',c);if(b._h!==bh){b.innerHTML=bh;b._h=bh;}b.disabled=mx||S.coins+1e-9<c;

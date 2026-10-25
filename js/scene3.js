@@ -386,7 +386,7 @@ function boxTruckRaw(ctx,i,j,yaw,o){
   return stack;
 }
 /* forklift; o: {cargo,yaw} */
-function forkliftRaw(ctx,i,j,yaw,cargo,bounce){
+function forkliftRaw(ctx,i,j,yaw,cargo,bounce,big){
   const V=VF(i,j,yaw,bounce||0),V0=VF(i,j,yaw,0);
   vshadow(ctx,V0,-.45,.9,.3,.9);
   const sv=(V.si+V.sj)>0?1:-1;
@@ -400,7 +400,8 @@ function forkliftRaw(ctx,i,j,yaw,cargo,bounce){
     vbox(ctx,V,-.33,.25,-.27,.27,27,28.2,'#2a2a2e',{edge:false});}});
   parts.push({d:vdepth(V,.46,0),f:()=>{for(const sc of [-1,1]) vbox(ctx,V,.38,.46,sc*.18-.04,sc*.18+.04,2,29,'#3a3a40',{edge:false});vbox(ctx,V,.38,.46,-.2,.2,4,6,'#4a4a52',{edge:false});
     for(const sc of [-1,1]) vbox(ctx,V,.46,.9,sc*.12-.03,sc*.12+.03,2,3.2,'#9aa0a8',{edge:false});
-    if(cargo){vbox(ctx,V,.48,.92,-.2,.2,3.2,5.2,'#b88a52',{});vbox(ctx,V,.5,.9,-.18,.18,5.2,13,RCOL[cargo]||'#c96',{});}}});
+    if(cargo){vbox(ctx,V,.48,.92,-.2,.2,3.2,5.2,'#b88a52',{});vbox(ctx,V,.5,.9,-.18,.18,5.2,13,RCOL[cargo]||'#c96',{});
+      if(big){vbox(ctx,V,.48,.92,-.2,.2,13,14.6,'#b88a52',{});vbox(ctx,V,.5,.9,-.18,.18,14.6,21.5,RCOL[cargo]||'#c96',{});vbox(ctx,V,.69,.71,-.19,.19,4,21.8,'#2f5f9a',{edge:false});}}}});   // v2.30 double loads
   drawParts(ctx,parts);
   for(const a of [.22,-.28]) vwheel(ctx,V0,a,sv*.27,3.6,true);
 }

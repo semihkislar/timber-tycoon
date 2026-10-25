@@ -73,8 +73,9 @@ function flowOverlay(ctx){
 function updateFlowLegend(){
   const el=$('flowLegend');if(!el) return;el.classList.toggle('hidden',!flowOn);if(!flowOn) return;
   const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${typeof TIER_S==='object'?' · <span class="tier-b t1">I</span>→<span class="tier-b t2">II</span>→<span class="tier-b t3">III</span>':''}${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`;
-  let tx=el.querySelector('.fl-txt');if(!tx){el.innerHTML='<span class="fl-txt"></span><div class="adv-box"></div>';tx=el.querySelector('.fl-txt');}
+  let tx=el.querySelector('.fl-txt');if(!tx){el.innerHTML='<span class="fl-txt"></span><div class="lg-fl"></div><div class="adv-box"></div>';tx=el.querySelector('.fl-txt');}
   if(tx._h!==h){tx.innerHTML=h;tx._h=h;}
+  {const lf=el.querySelector('.lg-fl'),lh=typeof logiFlowLine==='function'?logiFlowLine():'';if(lf&&lf._h!==lh){lf.innerHTML=lh;lf._h=lh;const g=lf.querySelector('#lgFlowGo');if(g) g.onclick=e=>{e.stopPropagation();logiOpen();};}}   // v2.30 logistics tier
   if(typeof advSummaryUpdate==='function') advSummaryUpdate(el.querySelector('.adv-box'));   // v2.29 top bottlenecks (rows stay put while you tap them)
 }
 (function initFlow(){

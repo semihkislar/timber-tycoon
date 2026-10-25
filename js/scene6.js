@@ -173,7 +173,7 @@ function drawScene(dt){
     const sg=w.p<1?1:-1,sdx=(di-dj)*sg,sdy=(di+dj)*sg;const carrying=w.p<1&&!w.idle;
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:sdx>=0?1:-1,back:sdy<0,pose:w.idle?'stand':carrying?'box':'walk',ph:w.ph,cargo:carrying?w.res:null,zz:w.idle})});}
   for(const fl of scene.forklifts){if(fl.i===undefined) continue;const [x,y]=P(fl.i,fl.j);if(!inView(x,y,40)) continue;
-    objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,Math.sin(fl.ph*3)*.25)});}
+    const big=S.ship&&S.ship.fspd>=3;objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fkCargo(fl),fkBounce(fl),big)});}
   for(const tk of scene.dockTrucks){if(tk.i===undefined) continue;const [x,y]=P(tk.i,tk.j);if(!inView(x,y,110)) continue;
     objs.push({k:tk.i+tk.j,f:()=>{const st=boxTruck(ctx,tk.i,tk.j,tk.yaw,{col:tk.col,box:tk.box,stripe:tk.stripe,load:tk.load,doors:tk.doors,brake:tk.brake,bounce:vehBounce(tk)});exhaust(st,tk);}});}
   if(typeof mktFleetDraw==='function') mktFleetDraw(ctx,objs,inView);

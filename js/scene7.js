@@ -58,7 +58,7 @@ function premLinks(){const out=[];
   return out.slice(0,6);}   // ≤ 6 lifts keeps the forklift sprite cache warm
 function doorUV(L){const d=doorOf(L);return [d[0]+d[1],d[0]-d[1],d];}
 function premLiftPath(src,dst,k){const gu=PGATES[src],L=LOTS[dst],[du,dv,d]=doorUV(L),off=(k%3-1)*.28;
-  return mkPath([uvIJ(gu,-10.55),uvIJ(gu,PROW.va+off),uvIJ(du,PROW.va+off),uvIJ(du,dv+.1),d]);}
+  return fkPath([uvIJ(gu,-10.55),uvIJ(gu,PROW.va+off),uvIJ(du,PROW.va+off),uvIJ(du,dv+.1),d]);}
 function premSync(){
   const open=premOpen();
   if(scene._premOpen!==open){scene._premOpen=open;scene.chunks.clear();if(!open){for(const b of PREM_BLD){LOTS[b.id].hit=null;LOTS[b.id].top=null;}scene.premTrucks=[];scene.plifts=[];scene.pworkers=[];}}
@@ -100,9 +100,7 @@ function premUpdate(dt){
   const built=PREM_BLD.filter(b=>S.buildings[b.id].lvl>0); if(!built.length) return;
   const running=built.some(b=>S.buildings[b.id].on&&bstat[b.id].f>.01);
   // Phase 2 → 3 forklifts: rack → gate → aisle → workshop door, and back empty
-  const fv=(typeof shForkSpeed==='function'?shForkSpeed():1.7)*(running?.8:.3);
-  for(const f of scene.plifts||[]){f.p=(f.p+dt*fv/f.path.tot)%2;const q=f.p<1?f.p:2-f.p;const [i,j,di,dj]=pathAt(f.path,q);const sg=f.p<1?1:-1;f.i=i;f.j=j;
-    if(Math.abs(di)+Math.abs(dj)>1e-6){const y=Math.atan2(dj*sg,di*sg);f.yaw=Math.round(y/(Math.PI/8))*(Math.PI/8);}f.ph+=dt*6;}
+  for(const f of scene.plifts||[]) fkStep(f,dt,FK_V*(running?1:.5));   // v2.30 calm motion
   for(const w of scene.pworkers||[]){if(!w.route){const b=BMAP[w.tgt]||built[0];w.route=premRoute(premFrom(b.id),b.id);}
     w.p+=dt*.11*(4/Math.max(4,w.route.tot))*2.2; if(w.p>=2){w.p=0;w.k++;w.tgt=built[w.k%built.length].id;w.route=null;} w.ph+=dt*7;}
   // premium dock trucks
@@ -353,7 +351,7 @@ function premDraw(ctx,objs,inView){
   // gold lamp posts + topiary planters
   for(const [i,j] of [23.75,30.65,37.55,44.6,51.9,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
   for(const [i,j] of [23.75,30.65,37.55,44.6,51.9].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
-  for(const f of scene.plifts||[]){if(f.i===undefined) continue;const [x,y]=P(f.i,f.j);if(!inView(x,y,40)) continue;objs.push({k:f.i+f.j,f:()=>forklift(ctx,f.i,f.j,f.yaw||0,f.p<1?f.res:null,0)});}
+  for(const f of scene.plifts||[]){if(f.i===undefined) continue;const [x,y]=P(f.i,f.j);if(!inView(x,y,40)) continue;const big=typeof logiBig==='function'&&logiBig();objs.push({k:f.i+f.j,f:()=>forklift(ctx,f.i,f.j,f.yaw||0,fkCargo(f),fkBounce(f),big)});}
   for(const w of scene.pworkers||[]){if(!w.route) continue;const q=w.p<1?w.p:2-w.p;const [i,j,di,dj]=pathAt(w.route,q);const sg=w.p<1?1:-1;const [x,y]=P(i,j);if(!inView(x,y,30)) continue;
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:(di-dj)*sg>=0?1:-1,back:(di+dj)*sg<0,pose:w.p<1?'box':'walk',ph:w.ph,cargo:w.p<1?Object.keys(BMAP[w.tgt].inp)[0]:null})});}
 }

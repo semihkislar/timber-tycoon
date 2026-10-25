@@ -166,9 +166,9 @@ function fireTruck(ctx,i,j,yaw,o){
   const qy=qYaw(yaw),b=q4(o.bounce),fr=o.siren?Math.floor(scene.t*8)%8:0,key='ft'+qy.toFixed(3)+'|'+b+'|'+fr+(o.siren?'S':'')+(o.brake?'B':'');
   return vehSprite(ctx,key,i,j,VBOX,g=>{const T0=scene.t;scene.t=fr/8;const r=fireTruckRaw(g,i,j,qy,Object.assign({},o,{bounce:b}));scene.t=T0;return r;});
 }
-function forklift(ctx,i,j,yaw,cargo,bounce){
-  const qy=qYaw(yaw),b=q4(bounce),key='fl'+qy.toFixed(3)+'|'+b+'|'+(cargo||'');
-  return vehSprite(ctx,key,i,j,VBOX_S,g=>forkliftRaw(g,i,j,qy,cargo,b));
+function forklift(ctx,i,j,yaw,cargo,bounce,big){
+  const qy=qYaw(yaw),b=q4(bounce),bg=!!(big&&cargo),key='fl'+qy.toFixed(3)+'|'+b+'|'+(cargo||'')+(bg?'+':'');
+  return vehSprite(ctx,key,i,j,VBOX_S,g=>forkliftRaw(g,i,j,qy,cargo,b,bg));
 }
 function mktVan(ctx,i,j,yaw,o){
   o=o||{}; const qy=qYaw(yaw),b=q4(o.bounce),l=q6(o.load);
