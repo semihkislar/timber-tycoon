@@ -103,21 +103,19 @@ function tierLinks(){const out=[];
     for(const k in b.inp){const src=SRC_OF[k];if(!src||BTIER[src]!==1||!S.buildings[src].lvl||!LOTS[src]||!LOTS[b.id]) continue;
       const bs=bstat[b.id],rate=bs?b.inp[k]*(bs.speed||0)*(bs.f||0):0;out.push({src,dst:b.id,k,rate});}}
   return out;}
-function tierLiftsFor(rate){return rate<=0?0:rate<500?1:2;}   // ≤ 2 per link keeps the sprite cache warm
+function tierLiftsFor(rate){return rate<=0?0:Math.min(3,(rate<500?1:2)+(typeof logiLvl==='function'&&logiLvl()>=LOGI_MORE?1:0));}   // ≤ 3 per link keeps the sprite cache warm (v2.30: +1 from Forklift Depot Lv 4)
 function syncTierLifts(){
   const L=tierLinks(),sig=L.map(l=>l.src+'>'+l.dst+':'+tierLiftsFor(l.rate)).join(',');
   if(scene._tsig===sig) return; scene._tsig=sig; const old=scene.tierLifts||[]; scene.tierLifts=[];
   for(const l of L){const n=tierLiftsFor(l.rate);for(let k=0;k<n;k++){
     const from=convOf(LOTS[l.src]).end,to=doorOf(LOTS[l.dst]),off=(k-1)*.42+(l.k.length%3-1)*.18;
     const prev=old.find(o=>o.src===l.src&&o.dst===l.dst&&o.k===k);
-    scene.tierLifts.push({src:l.src,dst:l.dst,k,res:l.k,p:prev?prev.p:Math.random()*2,path:mkPath([from,lanePt(from,off),lanePt(to,off),to])});}}
+    scene.tierLifts.push({src:l.src,dst:l.dst,k,res:l.k,p:prev?prev.p:Math.random()*2,path:fkPath([from,lanePt(from,off),lanePt(to,off),to])});}}
 }
 function tierLiftTick(dt){if(!scene.tierLifts) scene.tierLifts=[];if(!scene._tl||scene.t-scene._tl>1.5){scene._tl=scene.t;syncTierLifts();}
-  const v=(typeof shForkSpeed==='function'?shForkSpeed():1.7)*.8;
-  for(const fl of scene.tierLifts){fl.p=(fl.p+dt*v/fl.path.tot)%2;const f=fl.p<1?fl.p:2-fl.p;const q=pathAt(fl.path,f),sg=fl.p<1?1:-1;
-    fl.i=q[0];fl.j=q[1];if(Math.abs(q[2])+Math.abs(q[3])>1e-6){const y=Math.atan2(q[3]*sg,q[2]*sg);fl.yaw=Math.round(y/(Math.PI/8))*(Math.PI/8);}fl.ph=(fl.ph||0)+dt*6;}}
+  for(const fl of scene.tierLifts) fkStep(fl,dt,FK_V*(bstat[fl.dst]&&bstat[fl.dst].f>.01?1:.6));}   // v2.30 calm motion
 function tierLiftDraw(ctx,objs,inView){for(const fl of (scene.tierLifts||[])){if(fl.i===undefined) continue;const [x,y]=P(fl.i,fl.j);if(!inView(x,y,40)) continue;
-  objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fl.p<1?fl.res:null,0)});}}
+  const big=typeof logiBig==='function'&&logiBig();objs.push({k:fl.i+fl.j,f:()=>forklift(ctx,fl.i,fl.j,fl.yaw||0,fkCargo(fl),fkBounce(fl),big)});}}
 /* ---------- scene: phase signs at the head of each side of the lane ---------- */
 const TIER_SIGNS=[{i:8.7,j:6.0,t:1,txt:'PHASE 1 · PRIMARY'},{i:6.0,j:8.7,t:2,txt:'PHASE 2 · SECONDARY'},
   {i:uvIJ(PROW.u0-.9,PROW.va)[0],j:uvIJ(PROW.u0-.9,PROW.va)[1],t:3,txt:'PHASE 3 · PREMIUM',show:()=>premVisible()||S.premium.lvl>0}];   // v2.21.1: head of row III

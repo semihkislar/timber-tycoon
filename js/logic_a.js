@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.29.1';
+const VERSION='2.30';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -292,6 +292,8 @@ const ACH=[
   {id:'ship10',g:'sys',t:'silver',e:'🚢',n:'Export Desk',d:'Complete 10 export contracts',p:()=>[(S.ship&&S.ship.stats&&S.ship.stats.contracts)||0,10]},
   {id:'train1',g:'sys',t:'bronze',e:'🎓',n:'Night School',d:'Finish a staff training',p:()=>[(S.staff&&S.staff.trained)||0,1]},
   {id:'skill10',g:'sys',t:'gold',e:'🧑‍🏫',n:'Master Class',d:'Train a staff member to skill 10',p:()=>[Math.max(0,...((S.staff&&S.staff.team)||[]).filter(w=>!w.founding).map(w=>w.skill||1)),10]},
+  {id:'depot5',g:'sys',t:'silver',e:'🚜',n:'Pallet Pro',d:'Raise the Forklift Depot to Lv 5',p:()=>[(S.logi&&S.logi.fk)||0,5]},
+  {id:'depot10',g:'sys',t:'gold',e:'🏗️',n:'Depot Master',d:'Max out the Forklift Depot (Lv 10)',p:()=>[(S.logi&&S.logi.fk)||0,10]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
@@ -312,7 +314,8 @@ function freshState(keep){
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
-    spec:{},specStats:{picks:0,switches:0}};   // v2.17 line specialisations   // v2.7: one free planter, a full forest
+    spec:{},specStats:{picks:0,switches:0},logi:{fk:0}};   // v2.30 logistics (Forklift Depot level; rebuilt after a Replant)
+    // v2.17 line specialisations   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=canSell(r.id);});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
   BUILDINGS.forEach(b=>s.buildings[b.id]={lvl:0,on:true});
@@ -433,6 +436,7 @@ function sanitizeState(s){
   for(const k of ['coins','totalEarned','lifetimeEarned','seeds']) if(typeof s[k]==='number'&&s[k]<0) s[k]=0;
   if(s.res&&typeof s.res==='object') for(const k in s.res) if(!(s.res[k]>=0)) s.res[k]=0;
   if(s.collectors&&typeof s.collectors==='object') for(const k in s.collectors) s.collectors[k]=Math.max(0,Math.floor(+s.collectors[k]||0));
+  if(!s.logi||typeof s.logi!=='object') s.logi={fk:0};s.logi.fk=Math.max(0,Math.min(10,Math.floor(+s.logi.fk||0)));   // v2.30
   return s;
 }
 
@@ -492,7 +496,7 @@ function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,
    (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
 function plyYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-10)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
 function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
-function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1);}
+function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1);}   // v2.30 Forklift Depot
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}

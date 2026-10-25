@@ -94,7 +94,11 @@ with sync_playwright() as p:
     for dev in ['iPhone 13','Pixel 7']:
         ctx,pg,errs,bad=page(dev)
         E(pg,"(()=>{S.coins=1e9;for(const c of COLLECTORS) TT.buyCollector(c.id,10);S.buildings.sawmill.lvl=1;for(const b of ['carpentry']) S.buildings[b].lvl=30;S.res.planks=0;M=computeMods();for(let k=0;k<30;k++){S.res.logs=1e9;tick(1,false);}TT.openSheet('bld','carpentry');})()")
-        pg.wait_for_timeout(600); pg.screenshot(path='/tmp/p151/'+dev.replace(' ','')+'.png'); b=pg.locator('#bpShort .bp-short-go'); bb=b.bounding_box() if b.count() else None
+        pg.wait_for_timeout(600); pg.screenshot(path='/tmp/p151/'+dev.replace(' ','')+'.png'); b=pg.locator('#bpShort .bp-short-go'); bb=None
+        for _ in range(6):   # v2.30: the hint row is re-rendered when its numbers change; retry if the node was just swapped
+            bb=b.bounding_box() if b.count() else None
+            if bb: break
+            pg.wait_for_timeout(200)
         ok(bb and bb['height']>=38,f'{dev}: shortage hint button is a real touch target ({bb and bb["height"]})')
         if bb: pg.tap('#bpShort .bp-short-go'); pg.wait_for_timeout(400)
         ok(E(pg,'sheetBld')=='sawmill',f'{dev}: tap jumps to the Sawmill')

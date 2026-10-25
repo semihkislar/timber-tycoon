@@ -5,6 +5,64 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.30] — 2026-10-25
+
+**Logistics tiers, part 1 (item 8): calm forklifts and the Forklift Depot.** Semih's feedback from Oct 20: the forklifts moved far
+too fast, looked silly and tired the eyes. Conveyor belts (tier 2) and cargo drones (tier 3) follow in the next releases.
+
+### Why the forklifts were so fast
+- Their screen speed came from `shForkSpeed()`: 3.4 tiles/s at the start (twice the v2.12 speed), and every *Forklift Speed*
+  and *Gantry Crane* level made it faster, up to about 11 tiles/s.
+- They also turned instantly at every corner (or snapped to 8 headings), and never stopped at either end.
+
+### Changed
+- **Calm forklifts, all three fleets** (Phase I → II across the lane, Phase II → III through the gates, and down to the Shipping
+  dock), in the new `js/logistics.js`:
+  - one readable cruising speed of about 1 tile/s, the same at every upgrade level;
+  - smooth acceleration and braking, slower through corners, which are now rounded;
+  - a short stop at each end to load and unload: the pallet appears or disappears halfway through the stop;
+  - a limit on how fast they can turn, and a gentle bounce only while they move.
+- **More capacity shows as more forklifts and bigger loads, never as faster driving.**
+  - *Forklift Speed* in the Shipping Yard is now **Forklift Loads** (id kept, same loading bonus). From Lv 3 the dock forklifts
+    carry double-stacked pallets.
+- The Shipping Yard's menu line reads "Docks, logistics & contracts".
+
+### Added
+- **Forklift Depot (logistics tier 1)**, in a new 🚜 Logistics section of the Shipping Yard sheet:
+  - Lv 0–10. It unlocks with your first Phase II building.
+  - Every level gives Phase II and Phase III buildings **+5 % output from the same inputs** (fuller pallets, less handling loss),
+    up to ×1.5. It adds supply without adding demand, so no line can starve because of it.
+  - Cost: 20K × 5^level × the run's forest value, so prices fit the run after a Replant. The depot is rebuilt each run.
+  - Lv 4 adds a forklift to every Phase I → II link (at most 3 per link). From Lv 7 they carry double loads.
+  - The card shows the next level's gain in coins per second.
+- **Logistics ladder:** the sheet lists the Forklift Depot (tier 1), then conveyor belts (tier 2) and cargo drones (tier 3),
+  which are marked as coming.
+- **Supply Flow** shows a line with the forklift tier and the Phase II–III boost. Its **Logistics** button opens the
+  section.
+- **Trophies:** *Pallet Pro* (Forklift Depot Lv 5) and *Depot Master* (Lv 10).
+
+### Saves
+- New `S.logi = {fk}`. Older saves start at Lv 0. A damaged value (null, text, out of range) is clamped by `sanitizeState()`.
+
+### Tests
+- New `test/v230.py`. It drives the real scene for every fleet, before and after maxing every speed and capacity upgrade, and checks:
+  - top speed ≤ 1.1 tiles/s at every upgrade level;
+  - acceleration and braking ≤ 1.44 tiles/s²;
+  - turn rate ≤ 2.6 rad/s;
+  - they roll into each stop below 0.2 tiles/s, and they really stop;
+  - loaded on the way out, empty on the way back.
+- It also checks the depot:
+  - exactly ×1.5 output from the same input at Lv 10, with Phase I untouched;
+  - locked before Phase II, forest-value costs and the cap;
+  - the trophies, the Replant reset, and old or damaged saves;
+  - more forklifts per link (at most 3) and the double loads.
+- UI checks:
+  - the sheet text, and the click and tap to buy on desktop and iPhone 13, with nothing running off the screen;
+  - the Supply Flow line and its jump button;
+  - no console errors.
+- `v2151`: the phone hint check now retries if the hint row was just re-rendered (a timing flake, also seen in v2.29.1).
+- The full suite (41 files) passes, including the `v28` long-session perf test.
+
 ## [2.29.1] — 2026-10-24
 
 **Chip balance patch.** Semih: "Wood chipperda dar boğaz var yetmiyor" (the Wood Chipper is a bottleneck and can't keep

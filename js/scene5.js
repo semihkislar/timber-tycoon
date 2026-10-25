@@ -143,7 +143,7 @@ function syncEntities(){
 }
 function mkForklift(src,k){
   const from=src?convOf(LOTS[src]).end:LOGPICK, to=dockDrop(), off=k%2?.55:-.55;
-  return {src,res:src?OUT_OF[src]:'logs',p:k*.45,path:mkPath([from,lanePt(from,off),lanePt(to,off),to])};
+  return {src,res:src?OUT_OF[src]:'logs',p:k*.45,path:fkPath([from,lanePt(from,off),lanePt(to,off),to])};   // v2.30 rounded corners, calm motion
 }
 function updateEntities(dt){
   const t=scene.t;
@@ -154,8 +154,7 @@ function updateEntities(dt){
     w.p=(w.p+dt*1.25*w.sp*slow/w.path.tot)%2; w.ph+=dt*9*slow;
   }
   if(typeof tierLiftTick==='function') tierLiftTick(dt);   // v2.20 phase-1 → phase-2 shuttles
-  for(const fl of scene.forklifts){fl.p=(fl.p+dt*shForkSpeed()/fl.path.tot)%2;const f=fl.p<1?fl.p:2-fl.p;const q=pathAt(fl.path,f);const sg=fl.p<1?1:-1;
-    fl.i=q[0];fl.j=q[1];if(Math.abs(q[2])+Math.abs(q[3])>1e-6){const y=Math.atan2(q[3]*sg,q[2]*sg);fl.yaw=fl.yaw===undefined?y:angLerp(fl.yaw,y,Math.min(1,dt*7));}fl.ph=(fl.ph||0)+dt*6;}
+  for(const fl of scene.forklifts) fkStep(fl,dt,FK_V);   // v2.30 calm forklifts: one readable speed, easing, stops to load
   // forest crew
   for(const p of scene.jacks){stepJack(p,dt);}
   if(scene.foreman) stepForeman(scene.foreman,dt);

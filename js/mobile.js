@@ -5,7 +5,7 @@
 UI_ICONS.more=`<svg viewBox="0 0 32 32"><rect x="3" y="3" width="11" height="11" rx="3" fill="#5fb441"/><rect x="18" y="3" width="11" height="11" rx="3" fill="#3e86c8"/><rect x="3" y="18" width="11" height="11" rx="3" fill="#f5b52e"/><rect x="18" y="18" width="11" height="11" rx="3" fill="#e85a4a"/><path d="M21 23.5h5M23.5 21v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 SHEETS.more={title:'More',icon:'more'};
 const OVF=['ship','staff','rnd','power','build','risk','ach','co','set'];
-const OVF_LBL={ship:['Shipping','Docks, forklifts & contracts'],staff:['Staff','Team, hires & fire'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],risk:['Safety','Insurance & bad luck'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
+const OVF_LBL={ship:['Shipping','Docks, logistics & contracts'],staff:['Staff','Team, hires & fire'],rnd:['R&D','Research & trade'],power:['Power','Biomass power plant'],build:['Builders','Construction crews'],risk:['Safety','Insurance & bad luck'],ach:['Trophies','Achievements'],co:['Replant','Prestige & stats'],set:['Settings','Sound, camera, save']};
 function prefs(){if(!S.prefs||typeof S.prefs!=='object') S.prefs={autoFocus:true,haptics:true,fatigue:true};if(typeof S.prefs.fatigue!=='boolean') S.prefs.fatigue=true;return S.prefs;}
 function haptic(ms){try{if(prefs().haptics&&navigator.vibrate) navigator.vibrate(ms||8);}catch(_){}}
 function railMode(){return window.matchMedia('(max-height:520px) and (orientation:landscape)').matches;}
