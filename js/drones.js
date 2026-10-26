@@ -13,7 +13,7 @@
      Each drone pose is a cached sprite (64 headings × 3 rotor frames × cargo); the pad is one cached sprite.
    Save: S.logi.drone (level). */
 const CD_MAX=10, CD_P3=.08, CD_P2=.04, CD_RANGE=5, CD_UNLOCK=6, CD_BASE=4e8, CD_GROW=3, CD_NMAX=8;
-const CD_V=1.25, CD_ACC=.5, CD_CLIMB=2.0, CD_DWELL=2.6, CD_HOVER=2.4, CD_TURN=1.5, CD_CRUISE=104;   // tiles/s, tiles/s², s, s, s, rad/s, px
+const CD_V=1.25, CD_ACC=.5, CD_CLIMB=2.6, CD_DWELL=2.6, CD_HOVER=2.4, CD_TURN=1.5, CD_CRUISE=104;   // tiles/s, tiles/s², s, s, s, rad/s, px
 /* the pad sits on stilts over the Shipping building's roof (ridge 54 px), toward its back end */
 const CD_PAD=[DOCK.ci-1.05,DOCK.cj-.575], CD_PADH=.6, CD_PADZ=62;
 function cdLvl(){const v=S&&S.logi?S.logi.drone:0;return isFinite(v)?Math.max(0,Math.min(CD_MAX,v|0)):0;}
