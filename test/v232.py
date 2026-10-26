@@ -57,6 +57,7 @@ with sync_playwright() as p:
     ok(abs(r['a'][1]-r['c'][1])/r['a'][1]<1e-9 and abs(r['a'][2]-r['c'][2])/r['a'][2]<1e-9 and abs(r['c'][0]/r['a'][0]-1.8)<1e-6,f"Drone Port Lv 10: same pellets and paper in, ×1.8 gift boxes out of the Atelier ({r})")
     # ---- balance: drones only add supply, nothing ends up less fed (sim) ----
     E(pg,"for(const k in S.autosell) S.autosell[k]=true")
+    E(pg,STEADY+'(0)')   # warm-up: the sales-rate averages settle after the experiments above
     a=E(pg,STEADY+'(0)'); c5=E(pg,STEADY+'(5)'); c=E(pg,STEADY+'(10)'); E(pg,"S.logi.drone=0;M=computeMods()")
     for nm,x in [('Lv 5',c5),('Lv 10',c)]:
         worse=[f"{k}:{a['f'][k]:.3f}→{x['f'][k]:.3f}" for k in a['f'] if x['f'][k]<a['f'][k]-1e-3]
