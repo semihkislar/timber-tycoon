@@ -39,7 +39,8 @@ veneered panels, and decor furniture from those panels.
   no Phase 1 building faces the press across the lane.
 
 ### Changed
-- **Plywood glue:** the Plywood Mill needs less glue (tar 0.65 → 0.7 glue per tar) so it is no longer glue-short (fed 0.94 → 1.0 late).
+- **Pine tar glue:** the Charcoal Kiln's pine tar now gives 0.7 glue per charcoal instead of 0.65, so the Plywood Mill is no
+  longer glue-short late (fed 0.94 → 1.0).
 - The fit view frames the larger south yard and the new row III end. The camera can pan a little further south.
 
 ### Balance (steady-state sim, list prices, v2.32 → v2.33 on the same factory)
