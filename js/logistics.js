@@ -9,7 +9,7 @@
      buildings +5 % output from the same inputs (fuller pallets, less handling loss). It raises supply and never demand, so no
      line can starve because of it. Costs scale with the run's forest value (cs()); the depot is rebuilt after a Replant.
      Lv 4 adds a forklift per cross-lane link, Lv 7 doubles the loads.
-   - Conveyor belts (tier 2) and cargo drones (tier 3) follow in later releases; the ladder is shown in the Shipping sheet.
+   - Conveyor belts (tier 2, js/belts.js, v2.31) and cargo drones (tier 3, js/drones.js, v2.32); the ladder is shown in the Shipping sheet.
    Save: S.logi = {fk}. */
 const FK_V=1.05, FK_A=.9, FK_DWELL=1.5, FK_TURN=2.6;   // tiles/s, tiles/s², s, rad/s
 const LOGI_MAX=10, LOGI_STEP=.05, LOGI_MORE=4, LOGI_BIG=7;
@@ -77,18 +77,18 @@ function logiHtml(){const l=logiLvl(),u=logiUnlocked(),mx=l>=LOGI_MAX;
     <div class="card lg-tier on"><div class="ic">🚜</div><div><div class="nm">Forklift Depot <span class="cnt" id="lgL">Lv ${l}/${LOGI_MAX}</span> <span class="lg-tg">Tier 1</span></div>
       <div class="ds" id="lgD"></div></div><button class="btn buy" id="lgBuy"></button></div>
     ${typeof beltHtml==='function'?beltHtml():''}
-    <div class="card lg-tier lock"><div class="ic">🚁</div><div><div class="nm">Cargo drones <span class="lg-tg">Tier 3</span></div><div class="ds">Drones between the buildings and the dock. Coming later.</div></div></div>
-    <div class="legend">${u?'Forklifts carry goods from Phase I to II and from II to III. Every depot level adds 5 % output to every Phase II and III building. They drive at the same calm speed at every level: more capacity means more forklifts and bigger loads. Depot Lv '+BELT_UNLOCK+' unlocks conveyor belts: a belt replaces the forklifts on its link.':'Unlocks with your first Phase II building (the Carpentry Workshop).'} Rebuilt after a Replant at that run's prices.</div></div>`;}
+    ${typeof cdHtml==='function'?cdHtml():''}
+    <div class="legend">${u?'Forklifts carry goods from Phase I to II and from II to III. Every depot level adds 5 % output to every Phase II and III building. They drive at the same calm speed at every level: more capacity means more forklifts and bigger loads. Depot Lv '+BELT_UNLOCK+' unlocks conveyor belts: a belt replaces the forklifts on its link. Depot Lv '+(typeof CD_UNLOCK==='number'?CD_UNLOCK:6)+' with a belt unlocks the Drone Port: cargo drones fly the workshops\' goods to the dock.':'Unlocks with your first Phase II building (the Carpentry Workshop).'} Rebuilt after a Replant at that run's prices.</div></div>`;}
 function logiUpdate(){const b=$('lgBuy');if(!b) return;const l=logiLvl(),c=logiCost(l),mx=!isFinite(c),u=logiUnlocked();
   const bh=mx?'MAX':!u?'🔒':costBtnHtml('⬆',c);if(b._h!==bh){b.innerHTML=bh;b._h=bh;}b.disabled=mx||!u||S.coins+1e-9<c;
   const L=$('lgL'),lt=`Lv ${l}/${LOGI_MAX}`;if(L&&L._t!==lt){L.textContent=lt;L._t=lt;}
   const d=$('lgD'),g=logiGain();
   const dt=!u?'Needs a Phase II building':mx?`Phase II–III output ×${logiMultAt(l).toFixed(2)} · double loads`:`Phase II–III output ×${logiMultAt(l).toFixed(2)} → ×${logiMultAt(l+1).toFixed(2)}${g>0?` (≈ +${fmt(g)}/s)`:''}${l+1===LOGI_MORE?' · +1 forklift per link':''}${l+1===LOGI_BIG?' · double loads':''}`;
   if(d&&d._t!==dt){d.textContent=dt;d._t=dt;}
-  if(typeof beltUpdate==='function') beltUpdate();}   // v2.31
-function logiBind(){const b=$('lgBuy');if(b) b.onclick=()=>{if(logiBuy()){if(typeof haptic==='function') haptic(8);logiUpdate();if(typeof render==='function') render();}};if(typeof beltBind==='function') beltBind();}
+  if(typeof beltUpdate==='function') beltUpdate();if(typeof cdUpdate==='function') cdUpdate();}   // v2.31 belts · v2.32 drones
+function logiBind(){const b=$('lgBuy');if(b) b.onclick=()=>{if(logiBuy()){if(typeof haptic==='function') haptic(8);logiUpdate();if(typeof render==='function') render();}};if(typeof beltBind==='function') beltBind();if(typeof cdBind==='function') cdBind();}
 /* Supply Flow legend line */
 function logiFlowLine(){if(!logiUnlocked()) return '';const l=logiLvl();
-  return `<div class="lg-flow">🚜 <b>Forklifts</b> Lv ${l} · Phase II–III output <b>×${logiMultAt(l).toFixed(2)}</b>${typeof beltFlowText==='function'?beltFlowText():''} <button class="btn small lg-go" id="lgFlowGo">Logistics</button></div>`;}
+  return `<div class="lg-flow">🚜 <b>Forklifts</b> Lv ${l} · Phase II–III output <b>×${logiMultAt(l).toFixed(2)}</b>${typeof beltFlowText==='function'?beltFlowText():''}${typeof cdFlowText==='function'?cdFlowText():''} <button class="btn small lg-go" id="lgFlowGo">Logistics</button></div>`;}
 function logiOpen(){if(typeof openSheet==='function') openSheet('ship');if(typeof focusLot==='function') focusLot('dock');
   setTimeout(()=>{const e=$('lgBox');if(e&&e.scrollIntoView) e.scrollIntoView({block:'start',behavior:'smooth'});},60);}

@@ -180,7 +180,8 @@ function drawScene(dt){
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=dk(28.35,22.15),b=dk(28.62,20.55);const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
   if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}
-  if(typeof beltDraw==='function') beltDraw(ctx,objs,inView);   // v2.31 conveyor belts   // v2.20 factory tiers
+  if(typeof beltDraw==='function') beltDraw(ctx,objs,inView);if(typeof cdDraw==='function') cdDraw(ctx,objs,inView);   // v2.32 drone pad
+    // v2.31 conveyor belts   // v2.20 factory tiers
   premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView); if(typeof swDraw==='function') swDraw(ctx,objs,inView);   // v2.15 staff in the world
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
@@ -201,6 +202,7 @@ function drawScene(dt){
   for(const h of scene.helis){const T=16,tt=(h.ph%T)/T;const A=P(-14,-1),B=P(3.2,3.6);let e,carry;if(tt<.5){e=tt*2;carry=true;}else{e=1-(tt-.5)*2;carry=false;}const s=e*e*(3-2*e);
     const x=A[0]+(B[0]-A[0])*s,y=A[1]+(B[1]-A[1])*s;heli(ctx,x,y,74,h.ph,carry);}
   forestAir(ctx,dt);
+  if(typeof cdDrawAir==='function') cdDrawAir(ctx,inView);   // v2.32 cargo drones (above the sorted world)
   // smoke & particles (world space)
   drawSmoke(ctx);   // v2.10.1: soft layered puffs (js/chimney.js)
   for(const p of scene.particles){const k2=p.life/p.max;

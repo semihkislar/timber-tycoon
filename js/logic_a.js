@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.31';
+const VERSION='2.32';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -296,6 +296,9 @@ const ACH=[
   {id:'depot10',g:'sys',t:'gold',e:'🏗️',n:'Depot Master',d:'Max out the Forklift Depot (Lv 10)',p:()=>[(S.logi&&S.logi.fk)||0,10]},
   {id:'belt1',g:'sys',t:'bronze',e:'🛤️',n:'Conveyor Age',d:'Build your first conveyor belt',p:()=>[typeof beltCount==='function'?Math.min(1,beltCount()):0,1]},
   {id:'belt5',g:'sys',t:'gold',e:'🏭',n:'Belt Baron',d:'Raise all four conveyor belts to Lv 5',p:()=>[typeof beltAtLeast==='function'?beltAtLeast(5):0,4]},
+  {id:'drone1',g:'sys',t:'bronze',e:'🚁',n:'Air Freight',d:'Build the Drone Port',p:()=>[typeof cdLvl==='function'?Math.min(1,cdLvl()):0,1]},   // v2.32
+  {id:'drone5',g:'sys',t:'silver',e:'📡',n:'Long Range',d:'Raise the Drone Port to Lv 5 (drones reach Phase II)',p:()=>[typeof cdLvl==='function'?cdLvl():0,5]},
+  {id:'drone10',g:'sys',t:'gold',e:'🛰️',n:'Sky Highway',d:'Max out the Drone Port (Lv 10)',p:()=>[typeof cdLvl==='function'?cdLvl():0,10]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
@@ -316,7 +319,7 @@ function freshState(keep){
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
-    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{}}};   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; rebuilt after a Replant)
+    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0}};   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; v2.32 Drone Port level; rebuilt after a Replant)
     // v2.17 line specialisations   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=canSell(r.id);});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
@@ -440,6 +443,7 @@ function sanitizeState(s){
   if(s.collectors&&typeof s.collectors==='object') for(const k in s.collectors) s.collectors[k]=Math.max(0,Math.floor(+s.collectors[k]||0));
   if(!s.logi||typeof s.logi!=='object'||Array.isArray(s.logi)) s.logi={fk:0};s.logi.fk=Math.max(0,Math.min(10,Math.floor(+s.logi.fk||0)));   // v2.30
   {const b=s.logi.belt&&typeof s.logi.belt==='object'&&!Array.isArray(s.logi.belt)?s.logi.belt:{},o={};for(const k of ['sawmill','chipper','peeler','beamsaw']) o[k]=Math.max(0,Math.min(10,Math.floor(+b[k]||0)));s.logi.belt=o;}   // v2.31 belts (v2.30 saves have none)
+  s.logi.drone=Math.max(0,Math.min(10,Math.floor(+s.logi.drone||0)));   // v2.32 Drone Port (v2.31 saves have none)
   return s;
 }
 
@@ -499,7 +503,7 @@ function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,
    (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
 function plyYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-10)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
 function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
-function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination
+function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
 function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
