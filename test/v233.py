@@ -7,7 +7,7 @@
 from playwright.sync_api import sync_playwright
 import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-from _server import URL,ver
+from _server import URL,ROOT,ver
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
@@ -44,6 +44,7 @@ with sync_playwright() as p:
     E=lambda pg,js: pg.evaluate(js)
     ctx,pg=page()
     ok(ver(E(pg,"TT.VERSION"))>=(2,33),'version ≥ 2.33')
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,33),'sw cache bumped')
     # ---- definitions ----
     r=E(pg,"[BMAP.panelpress&&[BTIER.panelpress,BMAP.panelpress.inp,BMAP.panelpress.out,BMAP.panelpress.cost,!!BMAP.panelpress.premium],BMAP.decorstudio&&[BTIER.decorstudio,BMAP.decorstudio.inp,BMAP.decorstudio.out,BMAP.decorstudio.cost,!!BMAP.decorstudio.premium],RMAP.panels&&RMAP.panels.price,RMAP.decor&&RMAP.decor.price,MAIN_BLD.map(b=>b.id).indexOf('panelpress')>MAIN_BLD.map(b=>b.id).indexOf('glulam'),PREM_BLD.map(b=>b.id).indexOf('decorstudio')>PREM_BLD.map(b=>b.id).indexOf('framer')]")
     ok(r[0]==[2,{'veneer':8,'planks':2},{'panels':3},6e7,False] and r[1]==[3,{'panels':6,'plywood':2},{'decor':1},2.5e9,True],f'Veneer Panel Press (Phase II: 8 veneer + 2 planks → 3 panels) and Decor Studio (Phase III: 6 panels + 2 plywood → decor furniture) ({r[:2]})')
