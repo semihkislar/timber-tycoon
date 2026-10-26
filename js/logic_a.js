@@ -78,8 +78,8 @@ const RES=[
   {id:'glulam',name:'Glulam Beams',icon:'🌉',svg:'glulam',price:220},
   {id:'houses',name:'Timber-frame Houses',icon:'🏡',svg:'houses',price:3200,premium:true},
   // v2.33 Veneer & Decor line (bottom of the Phase 2 column / row III)
-  {id:'panels',name:'Veneered Panels',icon:'🟫',svg:'panels',price:60},
-  {id:'decor',name:'Decor Furniture',icon:'🪞',svg:'decor',price:1500,premium:true},
+  {id:'panels',name:'Veneered Panels',icon:'🟫',svg:'panels',price:30},
+  {id:'decor',name:'Decor Furniture',icon:'🪞',svg:'decor',price:1200,premium:true},
 ];
 const RMAP={}; RES.forEach(r=>RMAP[r.id]=r);
 const COLLECTORS=[
@@ -104,7 +104,7 @@ const BUILDINGS=[
   {id:'beamsaw',name:'Beam Saw',icon:'🪜',svg:'beamsaw',inp:{logs:6},out:{beams:2,chips:2},cost:2e6,scale:1.19,spd:6,desc:'Squares big logs into heavy timber beams; the slabs and offcuts are chipped, feeding the pellet and paper lines.'},
   {id:'glulam',name:'Glulam Plant',icon:'🌉',svg:'glulam_b',inp:{beams:4},out:{glulam:1},cost:2.5e7,scale:1.21,spd:5,desc:'Laminates timber beams into long, strong glulam beams.'},
   // v2.33 Veneer & Decor line: the Panel Press runs on spare veneer and planks only (SURPLUS_IN), so it never starves the Furniture Factory or the Plywood Mill
-  {id:'panelpress',name:'Veneer Panel Press',icon:'🟫',svg:'panelpress',inp:{veneer:6,planks:2},out:{panels:2},cost:6e7,scale:1.21,spd:4,desc:'Presses figured veneer onto a solid plank core into decor panels. Runs on the veneer and planks the other lines leave over.'},
+  {id:'panelpress',name:'Veneer Panel Press',icon:'🟫',svg:'panelpress',inp:{veneer:8,planks:2},out:{panels:3},cost:6e7,scale:1.21,spd:5,desc:'Presses figured veneer onto a solid plank core into decor panels. Runs on the veneer and planks the other lines leave over.'},
   // v2.2 premium workshops (need the Premium Area; spd = base throughput multiplier)
   {id:'atelier',name:'Gift Box Atelier',icon:'🎁',svg:'giftbox',inp:{pellets:5,paper:2},out:{giftbox:1},cost:1.5e6,scale:1.21,premium:true,spd:5,desc:'Packs pellets in printed paper into grill gift boxes.'},
   {id:'parquet',name:'Parquet Workshop',icon:'🪵',svg:'flooring',inp:{plywood:1,paper:2},out:{flooring:1},cost:4e6,scale:1.21,premium:true,spd:5,desc:'Engineered parquet: a plywood core on a paper underlay, finished by hand.'},
@@ -117,7 +117,7 @@ const BUILDINGS=[
   {id:'boatyard',name:'Boat Yard',icon:'⛵',svg:'boats',inp:{plywood:8,chairs:2},out:{boats:1},cost:4e8,scale:1.23,tech:true,spd:4,desc:'Builds wooden boats on the slipway at the harbour.'},
   {id:'showroom',name:'Luxury Showroom',icon:'👑',svg:'luxfurn',inp:{furniture:1,chairs:2},out:{luxfurn:1},cost:1.5e8,scale:1.23,premium:true,spd:5,desc:'Hand-finishes furniture sets into luxury collections.'},
   {id:'framer',name:'Timber-frame Houses',icon:'🏡',svg:'houses',inp:{glulam:4,plywood:2},out:{houses:1},cost:6e8,scale:1.23,premium:true,spd:5,desc:'Raises timber-frame house kits: a glulam frame sheathed in plywood.'},   // v2.28 bottom of row III
-  {id:'decorstudio',name:'Decor Studio',icon:'🪞',svg:'decor',inp:{panels:3,plywood:1},out:{decor:1},cost:2.5e9,scale:1.23,premium:true,spd:5,desc:'Builds veneered sideboards and wall panelling on a plywood carcass. Uses the plywood the other workshops leave over.'},   // v2.33 bottom of row III
+  {id:'decorstudio',name:'Decor Studio',icon:'🪞',svg:'decor',inp:{panels:6,plywood:2},out:{decor:1},cost:2.5e9,scale:1.23,premium:true,spd:8,desc:'Builds veneered sideboards and wall panelling on a plywood carcass. Uses the plywood the other workshops leave over.'},   // v2.33 bottom of row III
 ];
 const MAIN_BLD=BUILDINGS.filter(b=>!b.premium&&!b.tech), PREM_BLD=BUILDINGS.filter(b=>b.premium), TECH_BLD=BUILDINGS.filter(b=>b.tech);
 const BMAP={}; BUILDINGS.forEach(b=>BMAP[b.id]=b);
@@ -497,7 +497,7 @@ function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkC
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1);}   // v2.22 workstations   // v2.17 specialisation / retool
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id);}   // v2.22 workstations   // v2.17 specialisation / retool
 /* v2.17: input per item = manager thrift × specialisation (lean −20…40 %, high-speed +15 %) */
 function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1)*(typeof wsIn==='function'?wsIn(id):1);}
 /* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),
@@ -516,11 +516,7 @@ function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,
 /* The Plywood Mill gets an early start too (+5 % per level from Lv 10): otherwise the extra paper just moves the wait to plywood
    (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
 function plyYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-10)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
-/* v2.33 peel yield: the Peeler feeds the Furniture Factory (6 veneer) and the Plywood Mill (4 × speed 4), so between Lv 25 and 50
-   both often waited on veneer. It now gets +5 % veneer per level from Lv 25 (the Sawmill-style curve still applies where it is
-   higher). Lv ≤ 25 is unchanged. Late surplus veneer goes to the Panel Press. */
-function peelYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-25)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
-function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);if(id==='peeler') return peelYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
+function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
 function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
@@ -539,6 +535,10 @@ const SHARED_GOODS=['planks','veneer','plywood'];
 /* v2.33: surplus consumers take a good only after every other consumer has its fill (the Panel Press on veneer and planks,
    the Decor Studio on plywood), so the new line soaks up late surpluses without ever starving an older line. */
 const SURPLUS_IN={panelpress:{veneer:1,planks:1},decorstudio:{plywood:1}};
+/* v2.33: the Panel Press gets bigger presses from Lv 50 (+5 % throughput per level), so a late Peeler's veneer surplus has
+   somewhere to go; it still only ever takes the surplus, so the bigger press never takes veneer from anyone else. */
+function pressCapAt(l){return 1+Math.max(0,l-50)/20;}
+function pressCap(id){return id==='panelpress'&&S.buildings.panelpress?pressCapAt(S.buildings.panelpress.lvl):1;}
 function surplusIn(id,k){const o=SURPLUS_IN[id];return !!(o&&o[k]);}
 function shareAlloc(r,active,demand,dt){
   if(!(S.prefs&&S.prefs.plankMode==='value')||!(demand[r]>S.res[r])) return null;
@@ -572,7 +572,7 @@ function tick(dt,offline){
   for(const k in PRI_TAKEN) PRI_TAKEN[k]=0;
   const pend={};
   // v2.2 storage: each building's output stockpile has a capacity; when it's full the building pauses
-  const caps=stockCaps(), want={}, pre=[];
+  const caps=stockCaps(), want={}, pre=[], loUsed={};
   for(const [b,sp] of active){
     let f=1,lim=null;
     for(const k in b.inp){const fk=surplusIn(b.id,k)?lfr[k]:pfr[k]?pfr[k][b.id]:frac[k];if(fk<f-1e-9){f=fk;lim=k;}}
@@ -583,7 +583,7 @@ function tick(dt,offline){
     let f=f0,full=null;
     for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
     const mi=bInMult(b.id), mo=bOutMult(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
-    for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
+    for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;if(surplusIn(b.id,k)) loUsed[k]=(loUsed[k]||0)+a;}
     for(const k in b.out){const a=b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo*(typeof beltSrcMult==='function'?beltSrcMult(b.id,k):1));pend[k]=(pend[k]||0)+a;}   // v2.31 belts   // v2.24: peel yield makes more veneer, not more bark
     if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+2*sp*dt*f;}
     if(b.id==='kiln'&&M.tar){pend.glue=(pend.glue||0)+b.out.charcoal*sp*dt*f*mo*TAR_GLUE;}   // v2.5 pine tar glue (v2.24: .5 → .65 so late Plywood Mills aren't glue-bound)
@@ -595,7 +595,7 @@ function tick(dt,offline){
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
     if(!S.autosell[r.id]||!canSell(r.id)) continue;
-    const reserve=(demand[r.id]/dt)*Math.max(BUFFER_SEC,dt*1.5);
+    const reserve=((dHi[r.id]+(loUsed[r.id]||0)*1.05)/dt)*Math.max(BUFFER_SEC,dt*1.5);   // v2.33: a surplus consumer only reserves what it actually used (an idle Panel Press must not hoard planks)
     const sell=S.res[r.id]-reserve;
     if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*price(r.id);sold[r.id]=sell;}
   }
