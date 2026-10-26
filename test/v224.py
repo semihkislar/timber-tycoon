@@ -26,7 +26,7 @@ HOOK='''{gain:()=>pendingSeeds(),cur:()=>S.seeds,prestige:()=>doPrestige(),
  spend:()=>{for(const n of RNODES) S.research[n.id]=1;S.premium.lvl=Math.max(1,S.premium.lvl);if(S.trade) S.trade.lvl=Math.max(1,S.trade.lvl||0);
    S.power.lvl=Math.max(S.power.lvl,6);S.power.logs=window._pm;S.power.res=30;M=computeMods();window._cs={};},
  want:(g,c,T)=>g>=Math.max(1,Math.ceil(c*0.5))&&T>=900,
- hold:()=>{const C=window._cs;for(const r of ['veneer','plywood']){const us=BUILDINGS.filter(b=>b.inp[r]&&S.buildings[b.id].lvl&&S.buildings[b.id].on&&bldUnlocked(b.id));if(!us.length) continue;
+ hold:()=>{const C=window._cs;for(const r of ['veneer','plywood']){const us=BUILDINGS.filter(b=>b.inp[r]&&S.buildings[b.id].lvl&&S.buildings[b.id].on&&bldUnlocked(b.id)&&!(typeof surplusIn==='function'&&surplusIn(b.id,r)));   // v2.33: spare-stock lines (Panel Press, Decor Studio) wait by designif(!us.length) continue;
    const x=C[r]||(C[r]={a:[]});x.a.push(us.some(b=>bstat[b.id].lim===r&&bstat[b.id].f<.95)?1:0);}
    const lg=C.logs||(C.logs={n:0,cf:0,bn:0});lg.n++;const ls=['sawmill','peeler'].some(id=>S.buildings[id].lvl&&bstat[id]&&bstat[id].lim==='logs'&&bstat[id].f<.95);
    if(ls&&pwLastLogs>0) lg.cf++;if(pwLastLogs>0) lg.bn++;return false;}}'''
@@ -49,7 +49,7 @@ with sync_playwright() as p:
     # ---------------- recipes / yield ----------------
     r=E(pg,"""({pe:BMAP.peeler.out.veneer,bark:BMAP.peeler.out.bark,pi:BMAP.peeler.inp.logs,pmv:BMAP.plymill.inp.veneer,pmg:BMAP.plymill.inp.glue,pmo:BMAP.plymill.out.plywood,
       fv:BMAP.furniture.inp.veneer,by:BMAP.boatyard.inp.plywood,tg:TAR_GLUE,dry:wsKind('peeler',2)})""")
-    ok(r=={'pe':4,'bark':1,'pi':4,'pmv':4,'pmg':2,'pmo':3,'fv':6,'by':8,'tg':.65,'dry':'yld'},f'v2.24 recipes: peeler 4 logs→4 veneer+1 bark, plymill 4 veneer+2 glue→3 plywood, furniture 6 veneer, boat 8 plywood, glue .65, Veneer Dryer = yield ({r})')
+    ok(r=={'pe':4,'bark':1,'pi':4,'pmv':4,'pmg':2,'pmo':3,'fv':6,'by':8,'tg':.7,'dry':'yld'},f'v2.24 recipes: peeler 4 logs→4 veneer+1 bark, plymill 4 veneer+2 glue→3 plywood, furniture 6 veneer, boat 8 plywood, glue .7 (v2.33), Veneer Dryer = yield ({r})')
     r=E(pg,"""(()=>{const o={};for(const id of ['sawmill','peeler','plymill','furniture']){o[id]=[];for(const l of [49,60,100]){S.buildings[id].lvl=l;o[id].push(+chainYield(id).toFixed(3));}S.buildings[id].lvl=0;}return o;})()""")
     ok(r['peeler']==r['sawmill'] and r['peeler'][0]==1 and r['peeler'][1]>1.4 and r['peeler'][2]>r['peeler'][1],f"Peeler gets the Sawmill yield curve from Lv 50 ({r['peeler']})")
     ok(all(a>=b for a,b in zip(r['plymill'],r['sawmill'])) and r['plymill'][0]>1,f"Plywood Mill: at least the Sawmill curve, with the v2.29.1 early start ({r['plymill']})")
@@ -64,7 +64,8 @@ with sync_playwright() as p:
     for B in [1e8,1e10,1e12,1e14]:
         pg.goto(URL+'?bal='+str(B)); pg.wait_for_timeout(900); E(pg,QUIET); E(pg,"window.save=()=>{};window.sfx=()=>{};window.confettiBurst=()=>{}")
         r=E(pg,f"({BAL})({B})")
-        short=[k for k,v in r['f'].items() if v[0] in ('veneer','plywood') and v[1]<.95]
+        SP=E(pg,'typeof SURPLUS_IN==="object"?SURPLUS_IN:{}')   # v2.33: spare-stock lines wait by design
+        short=[k for k,v in r['f'].items() if v[0] in ('veneer','plywood') and v[1]<.95 and not (SP.get(k) or {}).get(v[0])]
         ok(not short and r['vp']>=r['vd'] and r['pp']>=r['pd'],f"cost-balanced {B:.0e}: veneer {r['vp']:.3g}/{r['vd']:.3g}/s, plywood {r['pp']:.3g}/{r['pd']:.3g}/s, no consumer veneer/plywood-bound ({short})")
     ctx.close()
     # ---------------- greedy play over several Replants, log fuel 'first' ----------------

@@ -55,7 +55,8 @@ const PSRC={chairs:'carpentry',pellets:'pellet',paper:'paper',furniture:'furnitu
 function premLinks(){const out=[];
   for(const b of PREM_BLD){if(!S.buildings[b.id].lvl) continue;
     for(const k in b.inp){const src=PSRC[k];if(!src||!S.buildings[src]||!S.buildings[src].lvl||!PGATES[src]) continue;out.push({src,dst:b.id,k});}}
-  return out.slice(0,6);}   // ≤ 6 lifts keeps the forklift sprite cache warm
+  const seen={},first=[],rest=[];for(const l of out){(seen[l.dst]?rest:first).push(l);seen[l.dst]=1;}   // v2.33: every workshop gets a lift before any gets a second
+  return first.concat(rest).slice(0,6);}   // ≤ 6 lifts keeps the forklift sprite cache warm
 function doorUV(L){const d=doorOf(L);return [d[0]+d[1],d[0]-d[1],d];}
 function premLiftPath(src,dst,k){const gu=PGATES[src],L=LOTS[dst],[du,dv,d]=doorUV(L),off=(k%3-1)*.28;
   return fkPath([uvIJ(gu,-10.55),uvIJ(gu,PROW.va+off),uvIJ(du,PROW.va+off),uvIJ(du,dv+.1),d]);}

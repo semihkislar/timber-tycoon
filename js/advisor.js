@@ -50,10 +50,11 @@ function advList(force){
   if(!force&&now-advC.t<400) return advC.L;
   const g={};
   for(const b of BUILDINGS){const L=LOTS[b.id];if(L&&L.prem&&!S.premium.lvl) continue;const w=advWait(b.id);if(!w) continue;
-    (g[w.k]=g[w.k]||{k:w.k,users:[],lost:0,worst:1,spare:true}).users.push({id:b.id,fs:w.fs});g[w.k].lost+=advLost(b.id,w.fs);g[w.k].worst=Math.min(g[w.k].worst,w.fs);if(!w.spare) g[w.k].spare=false;}
+    const gk=(w.spare?'spare|':'')+w.k;   // v2.33: lines on spare stock form their own calm group
+    (g[gk]=g[gk]||{k:w.k,users:[],lost:0,worst:1,spare:true}).users.push({id:b.id,fs:w.fs});g[gk].lost+=advLost(b.id,w.fs);g[gk].worst=Math.min(g[gk].worst,w.fs);if(!w.spare) g[gk].spare=false;}
   // group by ROOT fix: ten lines starved because the yard is short of logs are one bottleneck ("hire collectors"), not ten
   const R={};
-  for(const e of Object.values(g)){const f=advFix(e.k),key=f?f.kind+':'+f.id:'?:'+e.k;
+  for(const e of Object.values(g)){const f=advFix(e.k),key=(e.spare?'spare|':'')+(f?f.kind+':'+f.id:'?:'+e.k);   // v2.33: spare-stock waits never merge into a real bottleneck
     const r=R[key]||(R[key]={k:f?f.k:e.k,fix:f,users:[],lost:0,worst:1,via:[],spare:true});if(!e.spare) r.spare=false;
     for(const u of e.users) if(!r.users.some(x=>x.id===u.id)) r.users.push(u);
     r.lost+=e.lost;r.worst=Math.min(r.worst,e.worst);if(r.via.indexOf(e.k)<0) r.via.push(e.k);}
