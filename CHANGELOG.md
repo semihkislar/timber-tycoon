@@ -5,6 +5,76 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.32] — 2026-10-26
+
+**Logistics tiers, part 3 (item 8): cargo drones.** A Drone Port on the Shipping dock's roof is the top logistics tier. Cargo
+drones fly the workshops' goods to the dock, so the workshops never wait for an outbound pallet. This completes the ladder:
+forklifts (tier 1) → conveyor belts (tier 2) → drones (tier 3).
+
+### Added
+- **Drone Port (logistics tier 3):**
+  - Unlocks at **Forklift Depot Lv 6**, once at least one conveyor belt is built and the Premium Area is open.
+  - Lv 0–10. Every level gives the **Phase III workshops +8 %** output from the same inputs (×1.8 at Lv 10).
+  - **Range:** from **Lv 5** the long-range drones also reach the **Phase II** buildings, with +4 % output per level from there
+    (×1.04 at Lv 5, ×1.24 at Lv 10).
+  - Drones add supply and never demand, so no line can starve because of them.
+  - Cost: 400M × 3^level × the run's forest value: 400M, 1.2B, 3.6B … 7.9T for Lv 10. The port is rebuilt each run at that
+    run's prices, like the depot and the belts.
+- **In the scene:**
+  - A steel landing deck on four legs over the Shipping building's roof, with a hazard-striped rim, a landing ring and corner
+    beacons that blink in turn.
+  - The fleet is 1 + level drones, at most 8 (2 at Lv 1). Each drone takes off from its own spot on the deck, climbs, cruises at
+    one calm speed (1.25 tiles/s, the same at every level), descends over a workshop's roof and hovers while a crate of that
+    workshop's product is hooked on. It then flies the crate back and lands. More capacity means more drones, never faster ones.
+  - The drones are isometric quadcopters: a white shell with a blue canopy, four arms with motors and blurred rotors, skids,
+    nav lights and a crate on a short sling, tinted with the good's Supply Flow colour.
+  - In flight they bob gently. Their soft shadow lands on whatever is below (the ground, a roof or the deck) and fades with height.
+  - A small fleet visits the busiest workshops first; a big one rotates through every building in range.
+- **Logistics ladder:** the Shipping sheet's Tier 3 card is now live. It shows the level, the next level's gain (for example
+  "Phase III output ×1.32 → ×1.40 · Phase II ×1.00 → ×1.04 (≈ +21.6K/s)"), the fleet and its range, and a build / upgrade
+  button. Before the unlock it shows a locked card with the rule. Phones get the short name "Drones".
+- **Supply Flow:** the logistics line lists the drones' level and multipliers ("🚁 drones Lv 4 (III ×1.32)"), and arcs from
+  drone-served buildings carry a 🚁 on their rate label.
+- **Bottleneck Advisor:** if a Phase III workshop is waiting on a Phase II good, the next Drone Port level reaches that maker
+  and costs no more than upgrading the maker itself, the fix becomes
+  "🚁 Upgrade the Drone Port (Lv 5): Pellet Press ×1.04", and the button opens the Drone Port row. Otherwise it is still
+  "upgrade the maker".
+- **Trophies:** *Air Freight* (build the Drone Port), *Long Range* (Lv 5), *Sky Highway* (Lv 10).
+
+### Fixed
+- **Conveyor belts (v2.31 follow-up):** a forklift or worker just south of a belt arm was drawn behind the whole bridge. The
+  bridge sorted as one object at the lane centre. Each belt is now cut into vertical strips, and every strip is a cached sprite
+  with its own depth, so traffic in front of an arm is drawn in front and traffic behind it behind. The bridge also stands
+  higher (deck at 34 px instead of 22, longer ramps), so vans and forklifts clearly pass underneath.
+
+### Balance (steady-state sim, 120 s, mid/late factory with four Premium workshops)
+- No building is less fed with the Drone Port at Lv 5 or Lv 10 than without it, and no line that was fed starts to starve.
+- Sales at list prices: ×1.17 at Lv 5, ×1.46 at Lv 10.
+- Payback of Lv 1 (time for the extra income to repay the cost) is about 24 min right at the unlock (Depot Lv 6, buildings around Lv 20) and
+  about 4 min in a Lv 30 factory. Each level costs ×3 more, so Lv 10 is a late-run goal.
+
+### Performance
+- The deck is one cached sprite, and every drone pose (64 headings × 3 rotor frames × cargo) is a cached sprite. Per frame a
+  drone costs one shadow ellipse and one blit. With 8 drones and the deck on screen the frame cost is unchanged (median about 6.5–6.9 ms
+  headless, either way). In 60 frames, 357 drone draws needed only 3 sprite renders.
+
+### Saves
+- New `S.logi.drone` (Drone Port level). v2.31 saves load at Lv 0. `sanitizeState()` clamps damaged values (null, text,
+  arrays, out of range, fractions).
+
+### Tests
+- New `test/v232.py` (desktop, iPhone 13 and Pixel 7 touch). It checks:
+  - the unlock rule;
+  - the exact multipliers per level, and ×1.8 Atelier output from the same pellets and paper at Lv 10;
+  - the steady-state "nobody less fed" sim at Lv 5 and Lv 10, and the income gain range;
+  - costs and forest-value scaling, the cap, the trophies and the Replant reset;
+  - fleet size and routes, and calm cruise and climb speeds;
+  - hovering above the roof, each crate carrying the right product, landing on free pad spots, and shadow surfaces;
+  - cached pad and drone sprites, and a flat frame cost;
+  - the Advisor fix and its Top bottlenecks button, the sheet (click and tap) and Supply Flow;
+  - round-trip, v2.31 and damaged saves, and no console errors.
+- `test/v231.py`: the belt-frame cache check now expects one cached sprite per depth strip.
+
 ## [2.31] — 2026-10-26
 
 **Logistics tiers, part 2 (item 8): conveyor belts.** Raised belts carry goods straight across the lane between neighbouring
