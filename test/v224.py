@@ -27,7 +27,7 @@ HOOK='''{gain:()=>pendingSeeds(),cur:()=>S.seeds,prestige:()=>doPrestige(),
  spend:()=>{for(const n of RNODES) S.research[n.id]=1;S.premium.lvl=Math.max(1,S.premium.lvl);if(S.trade) S.trade.lvl=Math.max(1,S.trade.lvl||0);
    S.power.lvl=Math.max(S.power.lvl,6);S.power.logs=window._pm;S.power.res=30;M=computeMods();window._cs={};},
  want:(g,c,T)=>g>=Math.max(1,Math.ceil(c*0.5))&&T>=900,
- hold:()=>{const C=window._cs;for(const r of ['veneer','plywood']){const us=BUILDINGS.filter(b=>b.inp[r]&&S.buildings[b.id].lvl&&S.buildings[b.id].on&&bldUnlocked(b.id)&&!(typeof surplusIn==='function'&&surplusIn(b.id,r)));   // v2.33: spare-stock lines (Panel Press, Decor Studio) wait by designif(!us.length) continue;
+ hold:()=>{const C=window._cs;for(const r of ['veneer','plywood']){const us=BUILDINGS.filter(b=>b.inp[r]&&S.buildings[b.id].lvl&&S.buildings[b.id].on&&bldUnlocked(b.id)&&!(typeof surplusIn==='function'&&surplusIn(b.id,r)));/* v2.33: spare-stock lines (Panel Press, Decor Studio) wait by design */if(!us.length) continue;
    const x=C[r]||(C[r]={a:[]});x.a.push(us.some(b=>bstat[b.id].lim===r&&bstat[b.id].f<.95)?1:0);}
    const lg=C.logs||(C.logs={n:0,cf:0,bn:0});lg.n++;const ls=['sawmill','peeler'].some(id=>S.buildings[id].lvl&&bstat[id]&&bstat[id].lim==='logs'&&bstat[id].f<.95);
    if(ls&&pwLastLogs>0) lg.cf++;if(pwLastLogs>0) lg.bn++;return false;}}'''
