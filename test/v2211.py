@@ -60,11 +60,11 @@ with sync_playwright() as p:
     # --- open + built ---
     E(pg,CLEAN+FULL); pg.wait_for_timeout(1500)
     ok(E(pg,"JUMPS.find(j=>j.id==='prem').lock()") is False,'Phase 3 chip unlocks with the area')
-    L=E(pg,"TT.premLinks()"); ok(len(L)>=5 and all(l['src'] in ['carpentry','pellet','paper','furniture'] for l in L),f'II → III links from phase-2 buildings ({len(L)})')
+    L=E(pg,"TT.premLinks()"); ok(len(L)>=5 and all(l['src'] in ['carpentry','pellet','paper','furniture','glulam','panelpress'] for l in L),f'II → III links from phase-2 buildings ({len(L)})')
     r=E(pg,"""(()=>{const out=[];for(const f of scene.plifts){const pts=f.path.pts.map(([i,j])=>[i+j,i-j]);
       out.push({src:f.src,dst:f.dst,start:pts[0][1],gate:Math.abs(pts[1][0]-PGATES[f.src])<.01,inRow:pts.slice(1).every(([u,v])=>v<=PROW.v1+.01&&v>=PROW.v0),
         end:inPremRow(f.path.pts[f.path.pts.length-1][0],f.path.pts[f.path.pts.length-1][1],.6)});}return out;})()""")
-    ok(len(r)==len(L) and len(r)<=6,f'one forklift per link, capped at 6 ({len(r)})')
+    ok(len(r)==len(L) and len(r)<=7,f'one forklift per link, capped at 7, one per workshop (v2.33) ({len(r)})')
     ok(all(x['start']>-11.2 and x['gate'] and x['inRow'] and x['end'] for x in r),f'lifts leave phase-2 racks, pass their gate, run the row aisle to the workshop ({r[:2]})')
     pg.wait_for_timeout(1500); mv=E(pg,"TT.plifts().filter(f=>f.i!==undefined).length"); ok(mv==len(r),f'lifts move in the scene ({mv})')
     fe=E(pg,"flowEdges().map(e=>e.from+'>'+e.to)")

@@ -14,6 +14,7 @@ function advDown(id){return onFire(id)||(typeof mishBroken==='function'&&mishBro
 function advWait(id){
   const st=S.buildings[id],bs=bstat[id];if(!st||!st.lvl||!st.on||!bs||!bs.lim||advDown(id)) return null;
   const fs=advFs(bs);if(!(fs<ADV_TH)) return null;
+  if(typeof surplusIn==='function'&&surplusIn(id,bs.lim)) return {k:bs.lim,fs,bad:false,spare:true};   // v2.33: the Panel Press / Decor Studio run on spare stock by design: never red
   return {k:bs.lim,fs,bad:fs<ADV_BAD};
 }
 /* who makes k: the first built producer, else the first one (same rule as shortInfo) */
@@ -49,15 +50,16 @@ function advList(force){
   if(!force&&now-advC.t<400) return advC.L;
   const g={};
   for(const b of BUILDINGS){const L=LOTS[b.id];if(L&&L.prem&&!S.premium.lvl) continue;const w=advWait(b.id);if(!w) continue;
-    (g[w.k]=g[w.k]||{k:w.k,users:[],lost:0,worst:1}).users.push({id:b.id,fs:w.fs});g[w.k].lost+=advLost(b.id,w.fs);g[w.k].worst=Math.min(g[w.k].worst,w.fs);}
+    const gk=(w.spare?'spare|':'')+w.k;   // v2.33: lines on spare stock form their own calm group
+    (g[gk]=g[gk]||{k:w.k,users:[],lost:0,worst:1,spare:true}).users.push({id:b.id,fs:w.fs});g[gk].lost+=advLost(b.id,w.fs);g[gk].worst=Math.min(g[gk].worst,w.fs);if(!w.spare) g[gk].spare=false;}
   // group by ROOT fix: ten lines starved because the yard is short of logs are one bottleneck ("hire collectors"), not ten
   const R={};
-  for(const e of Object.values(g)){const f=advFix(e.k),key=f?f.kind+':'+f.id:'?:'+e.k;
-    const r=R[key]||(R[key]={k:f?f.k:e.k,fix:f,users:[],lost:0,worst:1,via:[]});
+  for(const e of Object.values(g)){const f=advFix(e.k),key=(e.spare?'spare|':'')+(f?f.kind+':'+f.id:'?:'+e.k);   // v2.33: spare-stock waits never merge into a real bottleneck
+    const r=R[key]||(R[key]={k:f?f.k:e.k,fix:f,users:[],lost:0,worst:1,via:[],spare:true});if(!e.spare) r.spare=false;
     for(const u of e.users) if(!r.users.some(x=>x.id===u.id)) r.users.push(u);
     r.lost+=e.lost;r.worst=Math.min(r.worst,e.worst);if(r.via.indexOf(e.k)<0) r.via.push(e.k);}
   const L=Object.values(R);for(const e of L) e.users.sort((a,b)=>a.fs-b.fs);
-  L.sort((a,b)=>(b.lost-a.lost)||(b.users.length-a.users.length)||(a.worst-b.worst));
+  L.sort((a,b)=>(a.spare-b.spare)||(b.lost-a.lost)||(b.users.length-a.users.length)||(a.worst-b.worst));   // v2.33: a surplus line that only waits on spare stock ranks after every real bottleneck
   advC={t:now,L};return L;
 }
 function advPhone(){return scene.w<700;}
@@ -67,11 +69,11 @@ function advBadge(ctx,id,sx,sy,t,o){o=o||{};
   const z=scene.cam.z/Math.max(1e-6,scene.cam.fitZ), sel=scene.hover===id||sheetBld===id;
   const by=sy-8+(bad?Math.sin(t*4)*2.5:0);
   if(!o.compact&&!advPhone()&&z>=.95||sel){   // desktop (or the selected building): a short readable pill
-    pill(ctx,sx,by,`⏳ ${ic} ${R?R.name:'input'}${bad?' · '+Math.round(w.fs*100)+'%':''}`,{fs:sel?11.5:10.5,bg:bad?'#c4463d':'#c98a1e',fg:'#fff',stroke:bad?'#ffd2cc':'#ffe6b0',padX:12,padY:7});
+    pill(ctx,sx,by,w.spare?`♻ ${ic} spare ${R?R.name.toLowerCase():'input'} · ${Math.round(w.fs*100)}%`:`⏳ ${ic} ${R?R.name:'input'}${bad?' · '+Math.round(w.fs*100)+'%':''}`,{fs:sel?11.5:10.5,bg:w.spare?'#7a6a4a':bad?'#c4463d':'#c98a1e',fg:'#fff',stroke:bad?'#ffd2cc':'#ffe6b0',padX:12,padY:7});
     return true;}
   // phones / zoomed out: a calm round badge with the input's icon; only real starvation is red and bobs
   const r=bad?11:9;ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(sx,by+2,r,0,TAU);ctx.fill();
-  ctx.fillStyle=bad?'#e8473c':'#e3a32a';ctx.beginPath();ctx.arc(sx,by,r,0,TAU);ctx.fill();
+  ctx.fillStyle=w.spare?'#8a7a56':bad?'#e8473c':'#e3a32a';ctx.beginPath();ctx.arc(sx,by,r,0,TAU);ctx.fill();
   ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
   ctx.font=`${bad?12:10}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(ic,sx,by+1);
   return true;
@@ -87,9 +89,10 @@ function advOverlay(ctx,dt){
   ctx.restore();
 }
 /* ---- building sheet: chip text + the "fix" hint ---- */
-function advChip(id){const w=advWait(id);if(!w) return null;const n=RMAP[w.k]?RMAP[w.k].name:'input';return w.fs<.9?`⏳ Waiting on ${n}`:`Slightly short on ${n}`;}
+function advChip(id){const w=advWait(id);if(!w) return null;const n=RMAP[w.k]?RMAP[w.k].name:'input';if(w.spare) return `♻ Running on spare ${n.toLowerCase()} · ${Math.round(w.fs*100)}%`;return w.fs<.9?`⏳ Waiting on ${n}`:`Slightly short on ${n}`;}
 function advHintHtml(id){
   const w=advWait(id);if(!w) return '';const f=advFix(w.k);if(!f) return '';
+  if(w.spare){const nm=BMAP[id].name;return `<div class="adv-why">♻ The ${nm} only takes the ${RMAP[w.k].name.toLowerCase()} the other lines leave over, so it never slows them down. More ${RMAP[w.k].name.toLowerCase()} keeps it busy.</div><button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;}
   const chain=f.via.length?` · the ${f.via.map(v=>BMAP[v].name).join(' and the ')} ${f.via.length>1?'are':'is'} waiting too, so the real fix is ${f.kind==='crew'?'more logs':'the '+(BMAP[f.id]?BMAP[f.id].name:'source')}`:'';
   return `${chain?`<div class="adv-why">👉 <b>Fix:</b> ${f.short}${chain}.</div>`:''}<button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
 }
@@ -110,7 +113,7 @@ function advSummaryUpdate(box){
   if(box._k!==key){box.innerHTML=advSummaryHtml();box._k=key;}
   if(!L.length) return;
   const sm=box.querySelector('.adv-h small'),more=L.length>n?`+${L.length-n} more · tap one to jump`:'tap one to jump';if(sm&&sm._t!==more){sm.textContent=more;sm._t=more;}
-  box.querySelectorAll('.adv-row').forEach((r,i)=>{const e=top[i];if(!e) return;r.classList.toggle('bad',e.worst<ADV_BAD);
+  box.querySelectorAll('.adv-row').forEach((r,i)=>{const e=top[i];if(!e) return;r.classList.toggle('bad',e.worst<ADV_BAD&&!e.spare);
     const t=advRowText(e),f=(e.fix?(advPhone()?e.fix.btn||e.fix.label:e.fix.label):'Open')+' →',a=r.querySelector('.adv-t'),b=r.querySelector('.adv-f');
     if(a._h!==t){a.innerHTML=t;a._h=t;}if(b._h!==f){b.textContent=f;b._h=f;}});
 }

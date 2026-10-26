@@ -60,16 +60,16 @@ with sync_playwright() as p:
     ok(r['mil'] and r['craft'],'research branches cover the new buildings (milling / craft)')
     ok(all(r['ws']),'each new building has 3 workstations'); ok(all(r['mgr']),'each new building has a manager')
     ok(all(r['lots']) and all(r['draw']),'each new building has a lot and art'); ok(all(r['unl']),'Beam Saw / Glulam Plant need no research')
-    ok(E(pg,"PREM_BLD.slice(-1)[0].id==='framer'&&MAIN_BLD.some(b=>b.id==='beamsaw')&&MAIN_BLD.some(b=>b.id==='glulam')"),'framer is the last premium workshop; beam saw / glulam are main buildings')
+    ok(E(pg,"PREM_BLD[PREM_BLD.findIndex(b=>b.id==='showroom')+1].id==='framer'&&MAIN_BLD.some(b=>b.id==='beamsaw')&&MAIN_BLD.some(b=>b.id==='glulam')"),'framer follows the showroom (v2.33: the Decor Studio comes after it); beam saw / glulam are main buildings')
     # ---------------- layout ----------------
     col=E(pg,"""(()=>{const o={};for(const id in LOTS){const L=LOTS[id];if(L.tech) continue;(o[L.side]=o[L.side]||[]).push({id,u:L.ci+L.cj,v:L.ci-L.cj});}
       for(const k in o) o[k].sort((a,b)=>a.u-b.u);return o;})()""")
     ok(col['R'][-1]['id']=='beamsaw',f"Beam Saw at the bottom of Phase 1 ({[x['id'] for x in col['R']]})")
-    ok(col['L'][-1]['id']=='glulam',f"Glulam Plant at the bottom of Phase 2 ({[x['id'] for x in col['L']]})")
-    ok(col['P'][-1]['id']=='framer',f"Timber-frame Houses at the bottom of Phase 3 ({[x['id'] for x in col['P']]})")
+    ok([x['id'] for x in col['L'] if x['id']!='panelpress'][-1]=='glulam',f"Glulam Plant at the bottom of Phase 2 (v2.33: then the Panel Press past the south gate) ({[x['id'] for x in col['L']]})")
+    ok([x['id'] for x in col['P'] if x['id']!='decorstudio'][-1]=='framer',f"Timber-frame Houses at the bottom of Phase 3 (v2.33: then the Decor Studio) ({[x['id'] for x in col['P']]})")
     for s in 'RLP':
         vs=[x['v'] for x in col[s]]; ok(max(vs)-min(vs)<.01,f"column {s} stays one straight line")
-    ok(abs(col['R'][-1]['u']-col['L'][-1]['u'])<.01,'Beam Saw sits straight across the lane from the Glulam Plant')
+    ok(abs(col['R'][-1]['u']-[x for x in col['L'] if x['id']=='glulam'][0]['u'])<.01,'Beam Saw sits straight across the lane from the Glulam Plant')
     ok(col['R'][-1]['u']>55.5,f"the new row lies in the south yard, below the old lane end (u {col['R'][-1]['u']})")
     bx=E(pg,BOXES)
     names=list(bx); bad=[(a,c) for k,a in enumerate(names) for c in names[k+1:] if overlap(bx[a],bx[c],.02)]
@@ -130,7 +130,7 @@ with sync_playwright() as p:
     # ---------------- trophies ----------------
     r=E(pg,"(()=>{for(const id of ['beams2','house1','house50']) delete S.ach[id];S.buildings.framer.lvl=Math.max(50,S.buildings.framer.lvl);checkAch();const o=['beams2','house1','house50'].map(x=>!!S.ach[x]);S.buildings.framer.lvl=5;return o;})()")
     ok(r==[True,True,True],f"Timber Line / Raise the Roof / Chalet Village unlock ({r})")
-    ok(E(pg,"ACH.find(a=>a.id==='prem5').p()[1]===PREM_BLD.length&&PREM_BLD.length===6"),'Premium Row counts all 6 workshops')
+    ok(E(pg,"ACH.find(a=>a.id==='prem5').p()[1]===PREM_BLD.length&&PREM_BLD.length>=6"),'Premium Row counts every workshop (6 in v2.28, 7 from v2.33)')
     # ---------------- camera fit, taps, render ----------------
     E(pg,"(()=>{closeSheet&&closeSheet();fitCamera(true);TT.render();})()"); pg.wait_for_timeout(200)
     r=E(pg,"(()=>{const L=LOTS.beamsaw,s=w2s(...P(L.ci,L.cj,10)),[t,b]=barH();return [s[0]>0&&s[0]<scene.w,s[1]>t&&s[1]<scene.h-b];})()")

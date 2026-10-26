@@ -5,8 +5,8 @@
    Phase 3 (premium area, toy workshop, boat yard): fed only by phase-2 goods.
    Every tier can export; value per unit rises by tier. Forklifts shuttle pallets across the lane from phase 1 to phase 2.
    Design: docs/tiers-v2.20.md */
-const BTIER={peeler:1,sawmill:1,chipper:1,kiln:1,beamsaw:1, carpentry:2,pellet:2,paper:2,furniture:2,glulam:2,plymill:2,
-  atelier:3,parquet:3,stationer:3,cabinetry:3,showroom:3,framer:3,toyshop:3,boatyard:3, lab:0};   // v2.28: Beam Saw (I), Glulam Plant (II), Timber-frame Houses (III)
+const BTIER={peeler:1,sawmill:1,chipper:1,kiln:1,beamsaw:1, carpentry:2,pellet:2,paper:2,furniture:2,glulam:2,panelpress:2,plymill:2,
+  atelier:3,parquet:3,stationer:3,cabinetry:3,showroom:3,framer:3,decorstudio:3,toyshop:3,boatyard:3, lab:0};   // v2.28: Beam Saw (I), Glulam Plant (II), Timber-frame Houses (III)
 const TIER_N=['Raw','Phase 1 · Primary','Phase 2 · Secondary','Phase 3 · Premium'];
 const TIER_S=['Raw','I','II','III'];
 const TIER_C=['#8a6a48','#c8742e','#3f86c8','#a8508a'];
@@ -97,6 +97,34 @@ function bGlulam(ctx,L,B,run,t){
   return top+10;
 }
 if(typeof BDRAW==='object'){BDRAW.beamsaw=bBeamSaw;BDRAW.glulam=bGlulam;}
+// v2.33: Veneer Panel Press (phase 2) — figured veneer laid on a plank core and cured in a multi-daylight hot press
+function bPanelPress(ctx,L,B,run,t){
+  const lf=L.face,of=lf==='I'?'J':'I',ms=B.ms,wall='#e6d6b8',roof='#6a3a2a',h=28+ms*4;
+  bShadow(ctx,B.i0,B.j0,B.i1,B.j1,.25);
+  box(ctx,B.i0,B.j0,B.i1,B.j1,0,h,wall,{top:false});
+  wallFace(ctx,B,lf,0,h,wall,'plank');wallFace(ctx,B,of,0,h,wall,'plank');
+  fillP(ctx,fq(lf,fK(B,lf),fA(B,lf,0),fA(B,lf,1),0,3),'#8a5a3a');fillP(ctx,fq(of,fK(B,of),fA(B,of,0),fA(B,of,1),0,3),'#7a4a2c');
+  rollerDoor(ctx,B,lf,.08,.54,h-10,true);
+  for(const a of [.14,.44,.74]) winFramed(ctx,B,of,a,.16,h-17,10,true);
+  if(ms>=1) winFramed(ctx,B,lf,.68,.2,h-15,9,true);
+  const ax=lf==='I'?'i':'j',top=roofGable(ctx,B.i0,B.j0,B.i1,B.j1,h,13+ms,ax,roof,wall,'tile');
+  signBand(ctx,B,of,h-7,5,'PANELS','#3a2418','#f3e2c0');
+  // the hot press in the open bay: steel frame, heated platens closing on a panel (light face veneer over a darker core)
+  ctx.save();fxf(ctx,lf,fK(B,lf)+(lf==='I'?.06:0),fA(B,lf,.31),8);
+  const cl=run?(.5+.5*Math.sin(t*1.6)):1, gap=1.6+cl*2.2;
+  ctx.fillStyle='#3a3e46';ctx.fillRect(-13,-14,2.4,22);ctx.fillRect(10.6,-14,2.4,22);ctx.fillRect(-13,-15,26,2.4);
+  ctx.fillStyle='#8a9098';for(let k=0;k<3;k++) ctx.fillRect(-11,-10+k*(gap+2.4),22,1.6);
+  for(let k=0;k<2;k++){const y=-8.4+k*(gap+2.4);ctx.fillStyle='#e8c48c';ctx.fillRect(-10,y,20,1.1);ctx.fillStyle='#8a5a34';ctx.fillRect(-10,y+1.1,20,1);}
+  ctx.fillStyle=run?'#e86a2a':'#7a5a4a';ctx.fillRect(-12.6,4,1.6,1.6);
+  ctx.restore();
+  if(run&&Math.random()<scene.dtF*3){const p=fPt(B,lf,.3,h-6,.1);emitP(p[0],p[1],'dust');}
+  // finished panels stacked on stickers beside the shed: face veneer on top, edge banding showing
+  const si=of==='J'?B.i0+.2:B.i1+.15, sj=of==='J'?B.j1+.15:B.j0+.2, n=2+Math.min(4,ms), li=of==='J'?1.1:.62, lj=of==='J'?.62:1.1;
+  for(let k=0;k<n;k++){box(ctx,si,sj,si+li,sj+lj,k*2.2,k*2.2+1.6,k%2?'#8a5a34':'#d9a865',{top:k===n-1?'#e8c48c':undefined});}
+  tierExtras(ctx,L,B,ms,h,top,wall,roof,'plank','#d9a865');
+  return top+10;
+}
+if(typeof BDRAW==='object') BDRAW.panelpress=bPanelPress;
 /* ---------- scene: forklifts shuttling pallets from phase 1 to phase 2 ---------- */
 function tierLinks(){const out=[];
   for(const b of MAIN_BLD){if(BTIER[b.id]!==2||!S.buildings[b.id].lvl) continue;

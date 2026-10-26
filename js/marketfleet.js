@@ -22,7 +22,7 @@ function mktSellBids(){
   const out=[];
   for(const b of MAIN_BLD){
     if(!S.buildings[b.id]||!S.buildings[b.id].lvl||!S.buildings[b.id].on) continue;
-    const L=LOTS[b.id]; if(!L||L.prem) continue;
+    const L=LOTS[b.id]; if(!L||L.prem) continue; if(L.ci+L.cj>MKT_LANE_END+1) continue;   // v2.33: the Panel Press (past the south gate) ships by forklift only
     let best=null,bestS=0;
     for(const k in b.out){ if(!canSell(k)) continue; const s=(rates[k]&&rates[k].s)||0; const as=!!S.autosell[k];
       if((as||s>0.01)&&s+ (as?0.1:0)>=bestS){best=k;bestS=s+(as?0.1:0);} }

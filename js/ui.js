@@ -102,6 +102,7 @@ function statusOf(b){
   if(typeof mishBroken==='function'&&mishBroken(b.id)){const br=S.mish.broke[b.id];if(!br.slow) return {cls:'bad',txt:`🔧 Broken down · ${Math.ceil(br.left)}s`,f:0};}   // v2.26
   if(bs.full&&bs.f<0.985) return {cls:'bad',txt:`⛔ Storage FULL: ${RMAP[bs.full].name}`,f:bs.f};
   const fs=isFinite(bs.fs)?bs.fs:bs.f, nm=RMAP[bs.lim]?RMAP[bs.lim].name:'input';   // v2.15.1: smoothed, so a one-tick dip doesn't flash a warning
+  if(bs.lim&&fs<0.985&&typeof surplusIn==='function'&&surplusIn(b.id,bs.lim)) return {cls:'',txt:`♻ Running on spare ${nm.toLowerCase()} · ${Math.round(fs*100)}%`,f:bs.f};   // v2.33 surplus line
   if(bs.lim&&fs<0.9) return {cls:'bad',txt:`⏳ Waiting on ${nm}`,f:bs.f};   // v2.29 advisor wording
   if(bs.lim&&bs.f<0.985) return {cls:'',txt:`Slightly short on ${nm}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};

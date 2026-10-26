@@ -14,7 +14,7 @@ const RBRANCH=[
   {id:'cra',name:'Craft',icon:'🪑',c:'#a8508a'},{id:'log',name:'Trade',icon:'⚓',c:'#2f6f8f'}];   // v2.29: branch was "Logistics" (id kept)
 const RTIER=[null,{L:0,n:'Tier I'},{L:25,n:'Tier II'},{L:150,n:'Tier III'},{L:800,n:'Tier IV'},{L:2500,n:'Tier V',ms:true}];
 const blv=id=>(S.buildings[id]&&S.buildings[id].lvl)||0, anyLv=l=>BUILDINGS.some(b=>blv(b.id)>=l);
-const MIL=['peeler','sawmill','chipper','kiln','pellet','paper','beamsaw','glulam'], CRAFT=['carpentry','furniture','atelier','parquet','stationer','cabinetry','showroom','framer','toyshop','boatyard'];   // v2.28: Beam Saw + Glulam Plant are mills, Timber-frame Houses a craft
+const MIL=['peeler','sawmill','chipper','kiln','pellet','paper','beamsaw','glulam'], CRAFT=['carpentry','furniture','panelpress','atelier','parquet','stationer','cabinetry','showroom','framer','decorstudio','toyshop','boatyard'];   // v2.33: Panel Press + Decor Studio are crafts   // v2.28: Beam Saw + Glulam Plant are mills, Timber-frame Houses a craft
 const PREM_RES=()=>RES.filter(r=>r.premium||r.tech).map(r=>r.id);
 const mulB=(ids,k)=>m=>{for(const id of ids) if(m.bld[id]!==undefined) m.bld[id]*=k;};
 const mulP=(ids,k)=>m=>{for(const id of (typeof ids==='function'?ids():ids)) m.price[id]*=k;};
@@ -132,10 +132,10 @@ function resMigrate(o){
 const HARBOR_COST=2.5e7, HARBOR_MAX=5, SPIKE_MULT=2;
 const CITIES=[
   {id:'ist',name:'Istanbul', flag:'🇹🇷',mode:'train',trip:70, cost:2e7, base:1.11,x:.6,y:.39,likes:{furniture:1.38,toys:1.34,chairs:1.26,flooring:1.22,giftbox:1.22}},
-  {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22,glulam:1.36}},
+  {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22,glulam:1.36,panels:1.32}},
   {id:'rot',name:'Rotterdam',flag:'🇳🇱',mode:'ship', trip:190,cost:3e8, base:1.16,x:.42,y:.24,likes:{pellets:1.52,charcoal:1.41,plywood:1.34,boats:1.30,paper:1.22,beams:1.26}},
-  {id:'dxb',name:'Dubai',    flag:'🇦🇪',mode:'ship', trip:250,cost:1e9, base:1.19,x:.74,y:.6,likes:{luxfurn:1.68,furniture:1.49,cabinets:1.45,giftbox:1.38,boats:1.45}},
-  {id:'nyc',name:'New York', flag:'🇺🇸',mode:'ship', trip:330,cost:4e9, base:1.22, x:.27,y:.31,likes:{stationery:1.60,toys:1.56,boats:1.52,luxfurn:1.38,flooring:1.34,houses:1.42}},
+  {id:'dxb',name:'Dubai',    flag:'🇦🇪',mode:'ship', trip:250,cost:1e9, base:1.19,x:.74,y:.6,likes:{luxfurn:1.68,furniture:1.49,cabinets:1.45,giftbox:1.38,boats:1.45,decor:1.52}},
+  {id:'nyc',name:'New York', flag:'🇺🇸',mode:'ship', trip:330,cost:4e9, base:1.22, x:.27,y:.31,likes:{stationery:1.60,toys:1.56,boats:1.52,luxfurn:1.38,flooring:1.34,houses:1.42,decor:1.38}},
   {id:'tyo',name:'Tokyo',    flag:'🇯🇵',mode:'ship', trip:420,cost:1.5e10,base:1.26,x:.92,y:.36,likes:{paper:1.68,toys:1.64,stationery:1.49,boats:1.60,plywood:1.38}},
 ];
 const HOME={name:'Bartın',x:.67,y:.355};   // our mill: Black Sea timber coast
