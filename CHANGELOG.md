@@ -5,6 +5,65 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.33] — 2026-10-26
+
+**Veneer & Decor line (item 10).** Late in a run the Veneer Peeler made far more veneer than the furniture, plywood and glulam
+lines could use, so most of it was sold raw at a low price. Two new buildings now turn that spare veneer into a finishing line:
+veneered panels, and decor furniture from those panels.
+
+### Added
+- **Veneer Panel Press (Phase 2):** 8 veneer + 2 planks → 3 Veneered Panels (🟫, list price 30). It shows from 15M earned and
+  costs 60M × the run's forest value (×1.21 per level).
+  - It stands at the bottom of the Phase 2 column, past the south gate. The yard and its conveyor run on to reach it.
+  - From **Lv 50** bigger presses add +5 % capacity per level (×2 at Lv 70), so a late press keeps up with a late peeler.
+- **Decor Studio (Phase 3, Premium Row):** 6 panels + 2 plywood → 1 Decor Furniture (🪞, list price 1,200, premium). It costs
+  2.5B × forest value (×1.23 per level) and is the last workshop in the Premium Row, with its own gate and a forklift from the press.
+- **Spare stock only:** both buildings use their veneer, planks and plywood only *after* every other line has taken what it
+  needs. They never slow an older line down. An idle press reserves no planks, so the Sawmill never backs up because of it.
+  The panels are the press's own product, so the studio gets them first.
+- **Art:** the press is a cream plank hall with a dark tile gable roof, a "PANELS" sign, an animated hot press and stacks of
+  panels. The studio is a showroom-style workshop with sideboards, plants and mirrors inside and a roof terrace with a
+  sideboard and a potted tree. Crates on the dock use the new decor colour. There are new lamps and planters along the row.
+- **Demand:** the Boutique Hotel Group is a new premium client (decor, panels, cabinets, luxury furniture). The Alpine Chalet
+  now also likes decor. Trade: Hamburg pays ×1.32 for panels, Dubai ×1.52 and New York ×1.38 for decor.
+- **Managers:** Leyla (Panel Press, thrift, from Düzce) and Matteo (Decor Studio, speed, from Milano).
+- **Workstations:** Panel Press: Veneer Splicer, Hot Press, Wide-belt Sander. Decor Studio: Veneer Matching, Cabinet Bench,
+  French Polish. Both are in craft research. The press has a fire risk like the other wood shops.
+- **Bottleneck Advisor, Supply Flow, status:** a line waiting on spare stock shows a calm brown "♻ Running on spare veneer · N %"
+  instead of a red bottleneck. It forms its own group, ranks after every real bottleneck, and the hint explains that it only
+  takes what the other lines leave over. Supply Flow has arcs Peeler + Sawmill → Press → Studio ← Plywood Mill, and spare
+  arcs are never red.
+- **Trophies:** *Face Veneer* (build the Panel Press), *Interior Design* (build the Decor Studio), *Grand Interiors* (Decor Studio Lv 50).
+- **Logistics:** forklifts bring veneer and planks to the press and carry panels to the studio. The Premium Row now runs one
+  forklift per workshop (7). Drones serve the press and studio by tier like every other building. There is no belt, because
+  no Phase 1 building faces the press across the lane.
+
+### Changed
+- **Plywood glue:** the Plywood Mill needs less glue (tar 0.65 → 0.7 glue per tar) so it is no longer glue-short (fed 0.94 → 1.0 late).
+- The fit view frames the larger south yard and the new row III end. The camera can pan a little further south.
+
+### Balance (steady-state sim, list prices, v2.32 → v2.33 on the same factory)
+- **Early and mid game unchanged:** a 2 h scripted early run earns exactly the same (3,666,495) with the same levels, and mid
+  stages earn ×1.00.
+- **Veneer sold raw / sales:** late A 18 % → 0 % (×1.03), late B 51 % → 0 % (×1.06), late C 83 % → 0 % (×1.12), end game
+  87 % → 0 % (×1.16). After Replant: 1st run ×1.00, 2nd run 51 % → 0 % (×1.06).
+- No older building is less fed at any stage, and nothing backs up.
+- **Plywood** still piles up late (sold raw 88 % → 86 % late B, 87 % → 83 % end). That comes from the Plywood Mill's own yield
+  curve. The Decor Studio uses part of it; a later item can tune the mill.
+- Mid-game veneer is still tight for furniture and plywood (a veneer-hungry factory runs them at about half speed). The
+  existing "best value first" sharing setting is the tool for that, and the press never takes from them.
+
+### Performance
+- The median frame cost is flat with both buildings, their forklifts and stock on screen (6.20 → 6.10 ms headless).
+
+### Saves
+- v2.32 saves load with both buildings at Lv 0. Damaged levels are clamped by `sanitizeState()`. Replant resets both
+  buildings to the new run's prices; trophies stay.
+
+### Tests
+- New `test/v233.py` (desktop, iPhone 13 and Pixel 7 touch). Older tests know about the new buildings (v224 glue 0.7, spare
+  lines are not shortages; v228 column ends and Premium Row count; v2211 forklift sources).
+
 ## [2.32] — 2026-10-26
 
 **Logistics tiers, part 3 (item 8): cargo drones.** A Drone Port on the Shipping dock's roof is the top logistics tier. Cargo
