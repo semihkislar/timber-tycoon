@@ -60,7 +60,7 @@ function flowOverlay(ctx){
   // rate labels (plain text, no cached pills: the numbers change every frame), declutter overlaps
   ctx.font=`800 ${Math.round(10.5*Math.min(1.15,z))}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
   const placed=[];
-  for(let k=labels.length-1;k>=0;k--){const L=labels[k],txt=`${RMAP[L.e.k]?RMAP[L.e.k].icon:''} ${fr(L.e.rate)}/s`,tw=ctx.measureText(txt).width+14;
+  for(let k=labels.length-1;k>=0;k--){const L=labels[k],txt=`${typeof beltOnEdge==='function'&&beltOnEdge(L.e.from,L.e.to)?'🛤️':''}${RMAP[L.e.k]?RMAP[L.e.k].icon:''} ${fr(L.e.rate)}/s`,tw=ctx.measureText(txt).width+14;
     if(placed.some(p=>Math.abs(p.x-L.x)<(p.w+tw)/2&&Math.abs(p.y-L.y)<18)) continue;placed.push({x:L.x,y:L.y,w:tw});
     ctx.fillStyle=L.e.state==='bad'?'rgba(150,30,22,.92)':L.e.state==='warn'?'rgba(140,90,10,.92)':'rgba(43,27,14,.85)';rr(ctx,L.x-tw/2,L.y-9,tw,18,9);ctx.fill();
     ctx.strokeStyle=L.col;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#fff6e0';ctx.fillText(txt,L.x,L.y+.5);}

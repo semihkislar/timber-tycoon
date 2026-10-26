@@ -65,7 +65,7 @@ function specEstimate(id,k){
   const b=BMAP[id],st=S.buildings[id],d=SPMAP[k],t=Math.max(1,specTier(id)),i=t-1; if(!st.lvl) return '';
   const f=st.on&&bstat[id]?bstat[id].f:0, base=bSpeed(id)/Math.max(1e-9,specSpd(id)), inBase=mgrIn(id);
   const ok=Object.keys(b.out)[0]; if(!ok) return '';
-  if(k==='speed'){const o=b.out[ok]*base*f*bOutMult(id)*(d.spd[i]-1);return `≈ +${fr(o)} ${RMAP[ok].name}/s`;}
+  if(k==='speed'){const o=b.out[ok]*base*f*bOutK(id,ok)*(d.spd[i]-1);return `≈ +${fr(o)} ${RMAP[ok].name}/s`;}
   if(k==='lean'){let s=0,ik=null;for(const q in b.inp){const v=b.inp[q]*base*f*inBase*(1-d.inp[i]);if(!ik||v>s){s=v;ik=q;}}return ik?`saves ≈ ${fr(s)} ${RMAP[ik].name}/s`:'';}
   let c=0;for(const q in b.out){const R=rates[q];if(!R) continue;const pb=price(q)/specPriceMult(id);c+=R.s*pb*(d.price[i]-1);}
   return c>0?`≈ +🪙${fmt(c)}/s at today's sales`:'pays off when its goods are sold';

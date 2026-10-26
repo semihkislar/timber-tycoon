@@ -179,7 +179,8 @@ function drawScene(dt){
   if(typeof mktFleetDraw==='function') mktFleetDraw(ctx,objs,inView);
   if(scene.dockHand&&scene.dockHand.active){const dh=scene.dockHand,f=dh.p<1?dh.p:2-dh.p;const a=dk(28.35,22.15),b=dk(28.62,20.55);const i=lerp(a[0],b[0],f),j=lerp(a[1],b[1],f);const [x,y]=P(i,j,7);
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:dh.look,fx:dh.p<1?1:-1,back:dh.p<1,pose:dh.p<1?'box':'walk',ph:dh.ph,cargo:dh.p<1?'furniture':null})});}
-  if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}   // v2.20 factory tiers
+  if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}
+  if(typeof beltDraw==='function') beltDraw(ctx,objs,inView);   // v2.31 conveyor belts   // v2.20 factory tiers
   premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView); if(typeof swDraw==='function') swDraw(ctx,objs,inView);   // v2.15 staff in the world
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
@@ -256,7 +257,7 @@ function drawOverlays(ctx){
     const bs=bstat[b.id], bfs=isFinite(bs.fs)?bs.fs:bs.f, starved=st.on&&!!bs.lim&&bfs<0.95, ms=msCount(st.lvl);   // v2.15.1: smoothed, small dips stay quiet
     if(showTags){
       const hov=scene.hover===b.id||sheetBld===b.id;
-      const fp=L.prem?P(L.ci-.2,L.cj-.2,L.id==='showroom'?62:44):P(L.ci+(L.face==='I'?1.95:.2),L.cj+(L.face==='I'?.2:1.95),0); let [px,py]=w2s(fp[0],fp[1]); if(L.prem) px-=30*Math.max(.8,Math.min(1.4,scene.cam.z)); // v2.2: premium tags float above the roof so they never cover a name board
+      const bo=typeof beltTagShift==='function'?beltTagShift(L.id):0, fp=L.prem?P(L.ci-.2,L.cj-.2,L.id==='showroom'?62:44):P(L.ci+(L.face==='I'?1.95:.2+bo),L.cj+(L.face==='I'?.2+bo:1.95),0); let [px,py]=w2s(fp[0],fp[1]); if(L.prem) px-=30*Math.max(.8,Math.min(1.4,scene.cam.z)); // v2.2: premium tags float above the roof so they never cover a name board · v2.31: bo = the tag steps aside for a conveyor belt
       const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'')+(typeof specTag==='function'?specTag(b.id):'')+(typeof wsBlocked==='function'&&wsBlocked(b.id)?' 🔒':'');   // v2.22: capped at a workstation gate   // v2.17: line icon
       pill(ctx,px,py+2,txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
     }

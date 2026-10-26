@@ -5,6 +5,62 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.31] — 2026-10-26
+
+**Logistics tiers, part 2 (item 8): conveyor belts.** Raised belts carry goods straight across the lane between neighbouring
+buildings of the chain, so those links no longer need forklifts. Cargo drones (tier 3) come next.
+
+### Added
+- **Conveyor belts (logistics tier 2)** on four links, one per row of the column layout:
+  - Sawmill → Carpentry Workshop (planks), Wood Chipper → Pellet Press (chips), Veneer Peeler → Furniture Factory (veneer),
+    Beam Saw → Glulam Plant (beams).
+  - They unlock at **Forklift Depot Lv 3**. A link needs both of its buildings.
+  - Each link has its own level, Lv 0–10. Every level gives:
+    - the source **+10 %** of the good the belt carries, from the same logs (×2.0 at Lv 10);
+    - the destination **+5 %** output from the same inputs (×1.5 at Lv 10).
+  - Belts add supply and never demand, so no line can starve because of them. In a 120 s steady-state test with all
+    four belts at Lv 10, no building is less fed than without belts, and the factory earns about 2.5× more.
+  - Cost: (2M + 20 × the destination's base price) × 4^level × the run's forest value. Lv 1 costs 2.16M (Sawmill → Carpentry),
+    2.5M (Chipper → Pellet Press), 14M (Peeler → Furniture) and 502M (Beam Saw → Glulam). Lv 10 of the first one costs about 566B.
+    After a Replant everything scales with the new forest value. Belts are rebuilt each run, like the depot.
+- **In the scene:** an L-shaped raised belt leaves the middle of the Phase I building's lane wall, rises to
+  bridge height, turns above the middle of the lane and runs into the Phase II building's wall.
+  - Both runs follow the iso grid. The steel supports stand just outside the lane, with a light truss over it, so traffic
+    drives underneath.
+  - Goods ride on the belt at a calm 0.8 tiles/s: 3 at Lv 1, up to 8 at Lv 10, fewer while the line is idle.
+  - The building's "Lv n" tag steps aside so it never sits on the belt.
+  - A belted link has no cross-lane forklifts any more. The other links keep theirs, with the same calm motion.
+- **Logistics ladder:** the Shipping sheet shows the four belt rows: level, the next level's gain (for example
+  "Planks ×1.60 → ×1.70 · output ×1.30 → ×1.35 (≈ +2.06K/s)") and a build / upgrade button. Before Depot Lv 3 it shows a locked card. Phones get short names.
+- **Supply Flow:** the logistics line lists the belts and their levels, and belted arcs carry a 🛤️ on their rate label.
+- **Bottleneck Advisor:** if a building is waiting on a good that a belt carries, and you can afford that belt's next level,
+  the fix becomes "🛤️ Build / Upgrade the Sawmill → Carpentry Workshop belt", and the button opens the belt row.
+  Otherwise it is still "upgrade the source".
+- **Trophies:** *Conveyor Age* (build your first belt) and *Belt Baron* (all four belts at Lv 5).
+
+### Performance
+- Each belt frame (supports, truss, bed, wall ports) is drawn once into a cached sprite and then only copied to the screen.
+  Per frame a belt costs one stroked path for the moving slats and at most 8 cached cargo icons.
+
+### Saves
+- New `S.logi.belt = {sawmill, chipper, peeler, beamsaw}`. v2.30 saves load with every belt at Lv 0.
+- `sanitizeState()` clamps damaged values: null, text, arrays, out of range, or fractions.
+
+### Tests
+- New `test/v231.py`, desktop and iPhone 13 touch. It checks:
+  - the links and unlock rules;
+  - exact ×2 source output and ×1.5 destination output at Lv 10, from the same inputs;
+  - the steady-state "nobody less fed" sim, costs, the cap, trophies and the Replant reset;
+  - grid-aligned geometry: the corner sits above the lane centre, the posts stand outside the lane, and the belt runs wall to
+    wall without passing through a building;
+  - goods move and sit on the belt line, at a calm speed, with at most 8 per belt;
+  - belted links drop their forklifts;
+  - belt frames are cached and never redrawn in steady state;
+  - the Advisor fix, the sheet (click and tap) and Supply Flow;
+  - round-trip, v2.30 and damaged saves;
+  - calm forklifts and no console errors.
+- New `test/shot_v231.py` (screenshots).
+
 ## [2.30] — 2026-10-25
 
 **Logistics tiers, part 1 (item 8): calm forklifts and the Forklift Depot.** Semih's feedback from Oct 20: the forklifts moved far

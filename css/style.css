@@ -860,3 +860,13 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 #flowLegend .lg-flow{display:flex;align-items:center;gap:6px;white-space:normal;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,246,224,.18);pointer-events:auto;font-size:12px}
 #flowLegend .lg-flow .lg-go{margin-left:auto;min-height:32px;padding:4px 10px;font-size:11.5px}
 @media (max-width:520px){#flowLegend .lg-flow{font-size:11px}#flowLegend .lg-flow .lg-go{min-height:36px}}
+/* v2.31 conveyor belts (logistics tier 2) */
+.lg-box .lg-belts{margin:2px 0 8px;padding:8px;border-radius:12px;background:rgba(90,138,58,.08);border:1px solid rgba(90,138,58,.25)}
+.lg-box .lg-bh{font-size:13px;margin:0 2px 6px;line-height:1.35}
+.lg-box .lg-bh small{display:block;opacity:.75;font-size:11px;margin-top:1px}
+.lg-box .lg-belt{margin-bottom:6px}
+.lg-box .lg-belt:last-child{margin-bottom:0}
+.lg-box .lg-belt.lock{opacity:.6;filter:saturate(.6)}
+.lg-box .lg-belt.lg-ping{box-shadow:0 0 0 3px #ffe066;transition:box-shadow .3s}
+.lg-box .lg-short{display:none}
+@media (max-width:520px){.lg-box .lg-full{display:none}.lg-box .lg-short{display:inline}.lg-box .lg-belts{padding:6px 4px}}
