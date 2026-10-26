@@ -27,7 +27,7 @@ function logiBuy(){const L=logiState();if(!logiUnlocked()) return false;const c=
   if(typeof checkAch==='function') checkAch();return true;}
 /* extra coins per second the next level would bring (Phase II–III goods only), for the cost-vs-benefit line */
 function logiGain(){let v=0;for(const b of BUILDINGS){if(!(BTIER[b.id]>=2)||!S.buildings[b.id].lvl) continue;const bs=bstat[b.id];if(!bs) continue;
-  for(const k in b.out) v+=b.out[k]*(bs.speed||0)*(bs.f||0)*bOutMult(b.id)*(typeof saleValue==='function'?saleValue(k):price(k));}
+  for(const k in b.out) v+=b.out[k]*(bs.speed||0)*(bs.f||0)*bOutK(b.id,k)*(typeof saleValue==='function'?saleValue(k):price(k));}
   const l=logiLvl();return v*(logiMultAt(l+1)/logiMultAt(l)-1);}
 function logiBig(){return logiLvl()>=LOGI_BIG;}
 /* ---------- calm forklift motion ---------- */
@@ -76,18 +76,19 @@ function logiHtml(){const l=logiLvl(),u=logiUnlocked(),mx=l>=LOGI_MAX;
   return `<div class="lg-box" id="lgBox">
     <div class="card lg-tier on"><div class="ic">🚜</div><div><div class="nm">Forklift Depot <span class="cnt" id="lgL">Lv ${l}/${LOGI_MAX}</span> <span class="lg-tg">Tier 1</span></div>
       <div class="ds" id="lgD"></div></div><button class="btn buy" id="lgBuy"></button></div>
-    <div class="card lg-tier lock"><div class="ic">🛤️</div><div><div class="nm">Conveyor belts <span class="lg-tg">Tier 2</span></div><div class="ds">Belts between neighbouring buildings in the chain. Coming in the next update.</div></div></div>
+    ${typeof beltHtml==='function'?beltHtml():''}
     <div class="card lg-tier lock"><div class="ic">🚁</div><div><div class="nm">Cargo drones <span class="lg-tg">Tier 3</span></div><div class="ds">Drones between the buildings and the dock. Coming later.</div></div></div>
-    <div class="legend">${u?'Forklifts carry goods from Phase I to II and from II to III. Every depot level adds 5 % output to every Phase II and III building. They drive at the same calm speed at every level: more capacity means more forklifts and bigger loads.':'Unlocks with your first Phase II building (the Carpentry Workshop).'} Rebuilt after a Replant at that run's prices.</div></div>`;}
+    <div class="legend">${u?'Forklifts carry goods from Phase I to II and from II to III. Every depot level adds 5 % output to every Phase II and III building. They drive at the same calm speed at every level: more capacity means more forklifts and bigger loads. Depot Lv '+BELT_UNLOCK+' unlocks conveyor belts: a belt replaces the forklifts on its link.':'Unlocks with your first Phase II building (the Carpentry Workshop).'} Rebuilt after a Replant at that run's prices.</div></div>`;}
 function logiUpdate(){const b=$('lgBuy');if(!b) return;const l=logiLvl(),c=logiCost(l),mx=!isFinite(c),u=logiUnlocked();
   const bh=mx?'MAX':!u?'🔒':costBtnHtml('⬆',c);if(b._h!==bh){b.innerHTML=bh;b._h=bh;}b.disabled=mx||!u||S.coins+1e-9<c;
   const L=$('lgL'),lt=`Lv ${l}/${LOGI_MAX}`;if(L&&L._t!==lt){L.textContent=lt;L._t=lt;}
   const d=$('lgD'),g=logiGain();
   const dt=!u?'Needs a Phase II building':mx?`Phase II–III output ×${logiMultAt(l).toFixed(2)} · double loads`:`Phase II–III output ×${logiMultAt(l).toFixed(2)} → ×${logiMultAt(l+1).toFixed(2)}${g>0?` (≈ +${fmt(g)}/s)`:''}${l+1===LOGI_MORE?' · +1 forklift per link':''}${l+1===LOGI_BIG?' · double loads':''}`;
-  if(d&&d._t!==dt){d.textContent=dt;d._t=dt;}}
-function logiBind(){const b=$('lgBuy');if(b) b.onclick=()=>{if(logiBuy()){if(typeof haptic==='function') haptic(8);logiUpdate();if(typeof render==='function') render();}};}
+  if(d&&d._t!==dt){d.textContent=dt;d._t=dt;}
+  if(typeof beltUpdate==='function') beltUpdate();}   // v2.31
+function logiBind(){const b=$('lgBuy');if(b) b.onclick=()=>{if(logiBuy()){if(typeof haptic==='function') haptic(8);logiUpdate();if(typeof render==='function') render();}};if(typeof beltBind==='function') beltBind();}
 /* Supply Flow legend line */
 function logiFlowLine(){if(!logiUnlocked()) return '';const l=logiLvl();
-  return `<div class="lg-flow">🚜 <b>Forklifts</b> Lv ${l} · Phase II–III output <b>×${logiMultAt(l).toFixed(2)}</b> <button class="btn small lg-go" id="lgFlowGo">Logistics</button></div>`;}
+  return `<div class="lg-flow">🚜 <b>Forklifts</b> Lv ${l} · Phase II–III output <b>×${logiMultAt(l).toFixed(2)}</b>${typeof beltFlowText==='function'?beltFlowText():''} <button class="btn small lg-go" id="lgFlowGo">Logistics</button></div>`;}
 function logiOpen(){if(typeof openSheet==='function') openSheet('ship');if(typeof focusLot==='function') focusLot('dock');
   setTimeout(()=>{const e=$('lgBox');if(e&&e.scrollIntoView) e.scrollIntoView({block:'start',behavior:'smooth'});},60);}

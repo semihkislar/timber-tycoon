@@ -16,7 +16,7 @@ function resTier(k){if(k==='logs') return 0;if(k==='glue') return 1;const b=BUIL
 function tierViolations(){const v=[];for(const b of BUILDINGS){const t=BTIER[b.id];if(!t) continue;for(const k in b.inp){const rt=resTier(k);if(rt!==t-1) v.push(`${b.id}:${k}(${rt})`);}}return v;}
 /* processing margin per second: goods out minus what the inputs would sell for raw */
 function bMargin(id){const b=BMAP[id],bs=bstat[id];if(!b||!bs||!S.buildings[id].lvl) return 0;const sp=(bs.speed||0)*(bs.f||0);
-  let o=0,i=0;for(const k in b.out) o+=b.out[k]*price(k)*bOutMult(id);for(const k in b.inp) i+=b.inp[k]*saleValue(k)*bInMult(id);return (o-i)*sp;}
+  let o=0,i=0;for(const k in b.out) o+=b.out[k]*price(k)*bOutK(id,k);for(const k in b.inp) i+=b.inp[k]*saleValue(k)*bInMult(id);return (o-i)*sp;}
 function unitMargin(id){const b=BMAP[id];let o=0,i=0;for(const k in b.out) o+=b.out[k]*RMAP[k].price;for(const k in b.inp) i+=b.inp[k]*(canSell(k)?RMAP[k].price:0);const n=Object.values(b.out).reduce((a,x)=>a+x,0)||1;return (o-i)/n;}
 function tierBadge(id){const t=BTIER[id];return t?`<span class="tier-b t${t}" title="${TIER_N[t]}">${TIER_S[t]}</span>`:'';}
 function tierIntro(){if(S.tierNote) return;S.tierNote=1;
@@ -101,6 +101,7 @@ if(typeof BDRAW==='object'){BDRAW.beamsaw=bBeamSaw;BDRAW.glulam=bGlulam;}
 function tierLinks(){const out=[];
   for(const b of MAIN_BLD){if(BTIER[b.id]!==2||!S.buildings[b.id].lvl) continue;
     for(const k in b.inp){const src=SRC_OF[k];if(!src||BTIER[src]!==1||!S.buildings[src].lvl||!LOTS[src]||!LOTS[b.id]) continue;
+      if(typeof beltOnEdge==='function'&&beltOnEdge(src,b.id)) continue;   // v2.31: a conveyor belt carries this link, no forklifts
       const bs=bstat[b.id],rate=bs?b.inp[k]*(bs.speed||0)*(bs.f||0):0;out.push({src,dst:b.id,k,rate});}}
   return out;}
 function tierLiftsFor(rate){return rate<=0?0:Math.min(3,(rate<500?1:2)+(typeof logiLvl==='function'&&logiLvl()>=LOGI_MORE?1:0));}   // ≤ 3 per link keeps the sprite cache warm (v2.30: +1 from Forklift Depot Lv 4)

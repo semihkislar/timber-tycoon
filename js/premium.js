@@ -51,7 +51,7 @@ const ORDER_OFFER_SEC=240;   // v2.25: offers wait on the board longer (was 75 s
 function prodRate(k){
   if(k==='logs') return logRate();
   let p=0; for(const b of BUILDINGS){const st=S.buildings[b.id]; if(!st.lvl||!st.on) continue; const f=Math.max(.3,bstat[b.id].f||0);
-    if(b.out[k]) p+=b.out[k]*bSpeed(b.id)*f*bOutMult(b.id); if(k==='chips'&&b.id==='sawmill'&&M.sawdust) p+=2*bSpeed(b.id)*f;}
+    if(b.out[k]) p+=b.out[k]*bSpeed(b.id)*f*bOutK(b.id,k); if(k==='chips'&&b.id==='sawmill'&&M.sawdust) p+=2*bSpeed(b.id)*f;}
   return p;
 }
 function niceNum(x){if(!(x>0)) return 0;if(x<10) return Math.max(1,Math.round(x));const e=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/e)*e;}

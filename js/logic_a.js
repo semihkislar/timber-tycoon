@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.30';
+const VERSION='2.31';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -294,6 +294,8 @@ const ACH=[
   {id:'skill10',g:'sys',t:'gold',e:'🧑‍🏫',n:'Master Class',d:'Train a staff member to skill 10',p:()=>[Math.max(0,...((S.staff&&S.staff.team)||[]).filter(w=>!w.founding).map(w=>w.skill||1)),10]},
   {id:'depot5',g:'sys',t:'silver',e:'🚜',n:'Pallet Pro',d:'Raise the Forklift Depot to Lv 5',p:()=>[(S.logi&&S.logi.fk)||0,5]},
   {id:'depot10',g:'sys',t:'gold',e:'🏗️',n:'Depot Master',d:'Max out the Forklift Depot (Lv 10)',p:()=>[(S.logi&&S.logi.fk)||0,10]},
+  {id:'belt1',g:'sys',t:'bronze',e:'🛤️',n:'Conveyor Age',d:'Build your first conveyor belt',p:()=>[typeof beltCount==='function'?Math.min(1,beltCount()):0,1]},
+  {id:'belt5',g:'sys',t:'gold',e:'🏭',n:'Belt Baron',d:'Raise all four conveyor belts to Lv 5',p:()=>[typeof beltAtLeast==='function'?beltAtLeast(5):0,4]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
@@ -314,7 +316,7 @@ function freshState(keep){
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
-    spec:{},specStats:{picks:0,switches:0},logi:{fk:0}};   // v2.30 logistics (Forklift Depot level; rebuilt after a Replant)
+    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{}}};   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; rebuilt after a Replant)
     // v2.17 line specialisations   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=canSell(r.id);});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
@@ -436,7 +438,8 @@ function sanitizeState(s){
   for(const k of ['coins','totalEarned','lifetimeEarned','seeds']) if(typeof s[k]==='number'&&s[k]<0) s[k]=0;
   if(s.res&&typeof s.res==='object') for(const k in s.res) if(!(s.res[k]>=0)) s.res[k]=0;
   if(s.collectors&&typeof s.collectors==='object') for(const k in s.collectors) s.collectors[k]=Math.max(0,Math.floor(+s.collectors[k]||0));
-  if(!s.logi||typeof s.logi!=='object') s.logi={fk:0};s.logi.fk=Math.max(0,Math.min(10,Math.floor(+s.logi.fk||0)));   // v2.30
+  if(!s.logi||typeof s.logi!=='object'||Array.isArray(s.logi)) s.logi={fk:0};s.logi.fk=Math.max(0,Math.min(10,Math.floor(+s.logi.fk||0)));   // v2.30
+  {const b=s.logi.belt&&typeof s.logi.belt==='object'&&!Array.isArray(s.logi.belt)?s.logi.belt:{},o={};for(const k of ['sawmill','chipper','peeler','beamsaw']) o[k]=Math.max(0,Math.min(10,Math.floor(+b[k]||0)));s.logi.belt=o;}   // v2.31 belts (v2.30 saves have none)
   return s;
 }
 
@@ -496,7 +499,9 @@ function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,
    (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
 function plyYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-10)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
 function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
-function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1);}   // v2.30 Forklift Depot
+function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination
+/* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
+function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
 function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
@@ -545,7 +550,7 @@ function tick(dt,offline){
   for(const [b,sp] of active){
     let f=1,lim=null;
     for(const k in b.inp){const fk=pfr[k]?pfr[k][b.id]:frac[k];if(fk<f-1e-9){f=fk;lim=k;}}
-    pre.push([b,sp,f,lim]); const mo=bOutMult(b.id); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo);
+    pre.push([b,sp,f,lim]); const mo=bOutMult(b.id); for(const k in b.out) want[k]=(want[k]||0)+b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo*(typeof beltSrcMult==='function'?beltSrcMult(b.id,k):1));
   }
   const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
   for(const [b,sp,f0,lim] of pre){
@@ -553,7 +558,7 @@ function tick(dt,offline){
     for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
     const mi=bInMult(b.id), mo=bOutMult(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
     for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;}
-    for(const k in b.out){const a=b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo);pend[k]=(pend[k]||0)+a;}   // v2.24: peel yield makes more veneer, not more bark
+    for(const k in b.out){const a=b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo*(typeof beltSrcMult==='function'?beltSrcMult(b.id,k):1));pend[k]=(pend[k]||0)+a;}   // v2.31 belts   // v2.24: peel yield makes more veneer, not more bark
     if(b.id==='sawmill'&&M.sawdust){pend.chips=(pend.chips||0)+2*sp*dt*f;}
     if(b.id==='kiln'&&M.tar){pend.glue=(pend.glue||0)+b.out.charcoal*sp*dt*f*mo*TAR_GLUE;}   // v2.5 pine tar glue (v2.24: .5 → .65 so late Plywood Mills aren't glue-bound)
     const o0=bstat[b.id];bstat[b.id]={f,lim:full?null:lim,speed:sp,full,fs:(o0&&isFinite(o0.fs)?o0.fs:1)+(f-(o0&&isFinite(o0.fs)?o0.fs:1))*Math.min(1,dt/6)};   // fs: smoothed (~6 s) for warnings
