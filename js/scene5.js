@@ -154,7 +154,8 @@ function updateEntities(dt){
     w.p=(w.p+dt*1.25*w.sp*slow/w.path.tot)%2; w.ph+=dt*9*slow;
   }
   if(typeof tierLiftTick==='function') tierLiftTick(dt);
-  if(typeof beltTick==='function') beltTick(dt);   // v2.31 conveyor belts   // v2.20 phase-1 → phase-2 shuttles
+  if(typeof beltTick==='function') beltTick(dt);if(typeof cdTick==='function') cdTick(dt);   // v2.32 cargo drones
+    // v2.31 conveyor belts   // v2.20 phase-1 → phase-2 shuttles
   for(const fl of scene.forklifts) fkStep(fl,dt,FK_V);   // v2.30 calm forklifts: one readable speed, easing, stops to load
   // forest crew
   for(const p of scene.jacks){stepJack(p,dt);}

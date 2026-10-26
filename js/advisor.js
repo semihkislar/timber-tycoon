@@ -37,6 +37,7 @@ function advFix(k,seen,via){
   if(typeof wsBlocked==='function'&&wsBlocked(id)){const g=wsGate(id);
     return {id,kind:'ws',k,via,label:`🛠 ${wsName(id,g.k)} Lv ${g.n} (${nm})`,btn:`🛠 ${wsName(id,g.k)}`,short:`upgrade the ${nm}'s ${wsName(id,g.k)}`,open:advGo(id,'ws')};}
   {const bf=typeof beltFixFor==='function'?beltFixFor(k,id):null;if(bf){bf.via=via;return bf;}}   // v2.31: an affordable belt on this link is the quickest fix
+  {const df=typeof cdFixFor==='function'?cdFixFor(k,id):null;if(df){df.via=via;return df;}}   // v2.32: the Drone Port, when it is no dearer than upgrading the maker
   return {id,kind:'upg',k,via,label:`⬆ Upgrade the ${nm}`,btn:`⬆ ${nm}`,short:`upgrade the ${nm}`,open:advGo(id)};
 }
 /* coins/s a building would add if it ran at full speed (its sold value; intermediates count at their market price) */

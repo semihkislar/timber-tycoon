@@ -85,7 +85,7 @@ function cityOf(id){return CITIES.find(c=>c.id===id)||CITIES[0];}
 function updateShip(){
   const dot=$('shipDot'); if(dot) dot.classList.toggle('hidden',curSheet==='ship'||!(S.ship&&S.ship.offer));
   if(curSheet!=='ship') return; const s=shState();
-  const sig=[s.dock,s.fork,s.fspd,s.crane,typeof logiUnlocked==='function'?logiUnlocked():0,typeof beltSig==='function'?beltSig():'',shBays(),s.offer?s.offer.id:'-',s.contract?s.contract.id:'-'].join('|');
+  const sig=[s.dock,s.fork,s.fspd,s.crane,typeof logiUnlocked==='function'?logiUnlocked():0,typeof beltSig==='function'?beltSig():'',typeof cdSig==='function'?cdSig():'',shBays(),s.offer?s.offer.id:'-',s.contract?s.contract.id:'-'].join('|');
   if(sig!==shSig){shSig=sig;
     let h=`<div class="pw-hero sh-hero"><div class="ph-ic">${UI_ICONS.ship}</div><div style="flex:1"><div class="ph-t">Shipping Yard · Dock Lv ${s.dock}${s.dock>=SH_DOCK_MAX?' ★':''}</div>
       <div class="legend" style="margin:2px 0 0">${shBays()} loading bay${shBays()>1?'s':''} · ${s.fork} forklifts · export premium <b>+${Math.round(shPremium()*100)}%</b> on all sales</div></div></div>`;

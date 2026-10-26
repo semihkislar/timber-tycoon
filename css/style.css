@@ -867,6 +867,10 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 .lg-box .lg-belt{margin-bottom:6px}
 .lg-box .lg-belt:last-child{margin-bottom:0}
 .lg-box .lg-belt.lock{opacity:.6;filter:saturate(.6)}
-.lg-box .lg-belt.lg-ping{box-shadow:0 0 0 3px #ffe066;transition:box-shadow .3s}
+.lg-box .lg-drone.lg-ping,.lg-box .lg-belt.lg-ping{box-shadow:0 0 0 3px #ffe066;transition:box-shadow .3s}
 .lg-box .lg-short{display:none}
 @media (max-width:520px){.lg-box .lg-full{display:none}.lg-box .lg-short{display:inline}.lg-box .lg-belts{padding:6px 4px}}
+/* v2.32 cargo drones (logistics tier 3) */
+.lg-box .lg-drone{background:linear-gradient(180deg,rgba(63,134,200,.10),rgba(63,134,200,.03));border:1px solid rgba(63,134,200,.28)}
+.lg-box .lg-drone .lg-tg{background:#3f86c8}
+.lg-box .lg-drone .lg-dr{opacity:.8;font-size:11px;margin-top:2px}
