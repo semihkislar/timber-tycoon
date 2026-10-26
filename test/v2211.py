@@ -60,7 +60,7 @@ with sync_playwright() as p:
     # --- open + built ---
     E(pg,CLEAN+FULL); pg.wait_for_timeout(1500)
     ok(E(pg,"JUMPS.find(j=>j.id==='prem').lock()") is False,'Phase 3 chip unlocks with the area')
-    L=E(pg,"TT.premLinks()"); ok(len(L)>=5 and all(l['src'] in ['carpentry','pellet','paper','furniture','panelpress'] for l in L),f'II → III links from phase-2 buildings ({len(L)})')
+    L=E(pg,"TT.premLinks()"); ok(len(L)>=5 and all(l['src'] in ['carpentry','pellet','paper','furniture','glulam','panelpress'] for l in L),f'II → III links from phase-2 buildings ({len(L)})')
     r=E(pg,"""(()=>{const out=[];for(const f of scene.plifts){const pts=f.path.pts.map(([i,j])=>[i+j,i-j]);
       out.push({src:f.src,dst:f.dst,start:pts[0][1],gate:Math.abs(pts[1][0]-PGATES[f.src])<.01,inRow:pts.slice(1).every(([u,v])=>v<=PROW.v1+.01&&v>=PROW.v0),
         end:inPremRow(f.path.pts[f.path.pts.length-1][0],f.path.pts[f.path.pts.length-1][1],.6)});}return out;})()""")
