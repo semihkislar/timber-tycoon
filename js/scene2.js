@@ -26,9 +26,9 @@ function drawGround(ctx,x0,y0,x1,y1){
   for(let j=jMin;j<=jMax;j++){const a=P(iMin,j),b=P(iMax,j);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}
   ctx.stroke();
   // factory yard: tile-aligned packed-earth platform (raised lip), paved lane
-  if(!(x1<-13*HW||x0>13*HW||y1<3*HH||y0>74*HH)){
+  if(!(x1<-13*HW||x0>13*HW||y1<3*HH||y0>76*HH)){
     const tiles=[];
-    for(let u=Math.max(u0,3);u<=Math.min(u1,73);u++) for(let v=Math.max(v0,-13);v<=Math.min(v1,13);v++){
+    for(let u=Math.max(u0,3);u<=Math.min(u1,75);u++) for(let v=Math.max(v0,-13);v<=Math.min(v1,13);v++){
       if((u+v)&1) continue; const i=(u+v)/2,j=(u-v)/2; if(yardTile(i,j)) tiles.push([i,j]);
     }
     // lip (side faces) first, below front edges

@@ -190,7 +190,7 @@ function dockDrop(){const b=lotBox(DOCK);return [b.i0+b.bs*.3,b.j1+.42];}
 // v2.28: the yard runs on to u 66 (Beam Saw / Glulam Plant row), keeping a verge to the bent highway on the east side
 // v2.33: past the south gate road the Phase 2 half of the yard (and the lane) runs on to u 72 for the Veneer Panel Press
 function yardTile(i,j){const v=i-j,u=i+j+1;if(hStrip(i+.5,j+.5)) return true;if(u>=50&&v>9.5) return false;
-  if(u>66) return u<=72&&v>=-11&&v<=2&&!(u>=71&&v<=-9);
+  if(u>66) return u<=74&&v>=-11&&v<=2&&!(u>=73&&(v<=-9||v>=1));
   return Math.abs(v)<=11&&u>=5&&u<=66&&!(u<=6&&Math.abs(v)>=9)&&!(u>=65&&v>=9);}
 function laneTile(i,j){const v=i-j,u=i+j+1;return Math.abs(v)<=2&&u>=12&&u<=71;}
 function sGate(i,j){return j>=SGATE_J-.7&&j<SGATE_J+.7&&i>=31.6&&i<hwI(SGATE_J,-1);}   // v2.28 south gate road
@@ -220,7 +220,7 @@ function isForestPt(i,j){
   {const o=hwOff(i,j);if(o>=-3.4&&o<3.6) return false;}   // v2.28: highway verge follows the bend
   if(j>=4.8&&j<11.2&&i<7.5) return false;
   if(Math.abs(v)<=13&&u>=1&&u<=67.5) return false;
-  if(v>=-13&&v<=4&&u>=67&&u<=74) return false;   // v2.33 Panel Press yard
+  if(v>=-13&&v<=4&&u>=67&&u<=76) return false;   // v2.33 Panel Press yard
   if(j>=SGATE_J-1.6&&j<SGATE_J+1.6&&i>=30&&i<42) return false;   // v2.28 south gate
   if(v>=HSTRIP.v0-1&&v<HSTRIP.v1+1.2&&u>=HSTRIP.u0-1.5&&u<HSTRIP.u1+1&&i<30) return false;   // v2.27 helper strip
   if(v>=-23.4&&v<=-11&&u>=16&&u<=81) return false;   // v2.21.1: clearing round the Phase 3 row

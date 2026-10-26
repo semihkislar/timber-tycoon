@@ -11,7 +11,7 @@ function fitCamera(instant){
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1130:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
