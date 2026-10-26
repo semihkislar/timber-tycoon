@@ -42,7 +42,7 @@ function drawPremGround(ctx,x0,y0,x1,y1){
   {const p=PUV(R.u1-2.5,(R.v0+R.v1)/2);ctx.save();ctx.translate(p[0],p[1]);ctx.scale(1,.5);ctx.font='900 30px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=open?'rgba(245,211,106,.82)':'rgba(120,100,70,.45)';ctx.fillText('III · PREMIUM',0,0);ctx.restore();}
   // dock apron, spur and access road to the highway
-  uvRect(ctx,R.u1,-21.8,71.2,-12.6,open?'#5c5f66':'#b5a891');
+  uvRect(ctx,R.u1,-21.8,79.2,-12.6,open?'#5c5f66':'#b5a891');
   {const a=PDOCK.ci-1,b=PDOCK.ci+4.2;fillP(ctx,[P(a,PDOCK.cj-2),P(b,PDOCK.cj-2),P(b,PROAD_J),P(a,PROAD_J)],'#5c5f66');}
   {const e=hwI(PROAD_J,-.95);fillP(ctx,[P(PDOCK.ci-1,PROAD_J-.75),P(e,PROAD_J-.75),P(e,PROAD_J+.75),P(PDOCK.ci-1,PROAD_J+.75)],'#55585f');}
   ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1.6;ctx.beginPath();for(let i=PDOCK.ci+.4;i<hwI(PROAD_J,-1.4);i+=1){const a=P(i,PROAD_J),b=P(i+.5,PROAD_J);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();
@@ -51,7 +51,7 @@ function drawPremGround(ctx,x0,y0,x1,y1){
 /* ---------- sync / update ---------- */
 function premOpen(){return S.premium&&S.premium.lvl>0;}
 // v2.21.1: phase-2 sources feeding the row; their pallets travel by forklift through the gates into Phase 3
-const PSRC={chairs:'carpentry',pellets:'pellet',paper:'paper',furniture:'furniture',glulam:'glulam'};   // v2.28 glulam → Timber-frame Houses
+const PSRC={chairs:'carpentry',pellets:'pellet',paper:'paper',furniture:'furniture',glulam:'glulam',panels:'panelpress'};   // v2.33 panels → Decor Studio   // v2.28 glulam → Timber-frame Houses
 function premLinks(){const out=[];
   for(const b of PREM_BLD){if(!S.buildings[b.id].lvl) continue;
     for(const k in b.inp){const src=PSRC[k];if(!src||!S.buildings[src]||!S.buildings[src].lvl||!PGATES[src]) continue;out.push({src,dst:b.id,k});}}
@@ -166,6 +166,8 @@ function interiorItems(ctx,kind,B,z0,run,t){ // silhouettes behind the glass (+i
     else if(kind==='parquet'){ctx.fillStyle='#8a5428';ctx.fillRect(-5,-4,10,3);ctx.fillStyle='#b8763a';ctx.fillRect(-5,-7,10,3);ctx.fillStyle='#6a3e1c';ctx.fillRect(-5,-10,10,3);}
     else if(kind==='stationer'){ctx.fillStyle=['#1f3a5a','#6a1f3a','#2f5a3a','#3a2418'][k%4];ctx.fillRect(-3,-12,3,11);ctx.fillRect(1,-10,3,9);ctx.fillStyle=GOLD;ctx.fillRect(-3,-10,3,1);}
     else if(kind==='framer'){ctx.strokeStyle='#c48d4f';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(-5,-1);ctx.lineTo(-5,-8);ctx.lineTo(0,-13);ctx.lineTo(5,-8);ctx.lineTo(5,-1);ctx.moveTo(-5,-8);ctx.lineTo(5,-8);ctx.moveTo(-5,-1);ctx.lineTo(5,-8);ctx.moveTo(0,-13);ctx.lineTo(0,-1);ctx.stroke();}   // v2.28 house frames
+    else if(kind==='decorstudio'){ctx.fillStyle='#5a3a2a';ctx.fillRect(-6,-8,12,7);ctx.fillStyle='#a0683c';ctx.fillRect(-5.2,-7.2,5,5.4);ctx.fillRect(.2,-7.2,5,5.4);ctx.fillStyle=GOLD;ctx.fillRect(-.9,-5,.8,1.4);ctx.fillRect(.4,-5,.8,1.4);
+      if(k%2){ctx.fillStyle='#3f7a32';ctx.beginPath();ctx.arc(-3,-11,2.2,0,TAU);ctx.fill();}else{ctx.strokeStyle=GOLD;ctx.lineWidth=.9;ctx.strokeRect(-2,-15,4,5);}}   // v2.33 veneered sideboards, plants, mirrors
     else if(kind==='cabinetry'){ctx.fillStyle='#3a2418';ctx.fillRect(-4,-14,8,13);ctx.fillStyle='#6a4026';ctx.fillRect(-3.3,-13,3,11);ctx.fillRect(.3,-13,3,11);ctx.fillStyle=GOLD;ctx.fillRect(-1,-8,.8,3);ctx.fillRect(.6,-8,.8,3);}
     else {ctx.fillStyle='#6a1f3a';ctx.fillRect(-7,-6,14,5);ctx.fillRect(-8,-9,3,8);ctx.fillRect(5,-9,3,8);ctx.fillStyle='#a83a5e';ctx.fillRect(-5,-5,10,2);
       if(k===1){ctx.fillStyle='#2a2a30';ctx.fillRect(-.5,-22,1,20);ctx.fillStyle='#fff0c0';ctx.beginPath();ctx.moveTo(-4,-22);ctx.lineTo(4,-22);ctx.lineTo(2.5,-27);ctx.lineTo(-2.5,-27);ctx.closePath();ctx.fill();}}
@@ -173,7 +175,7 @@ function interiorItems(ctx,kind,B,z0,run,t){ // silhouettes behind the glass (+i
   if(run){const g=P(K,(B.j0+B.j1)/2,z0+8);ctx.fillStyle='rgba(255,220,140,.12)';ctx.beginPath();ctx.ellipse(g[0],g[1],span*20,9,0,0,TAU);ctx.fill();}
 }
 function premBuilding(kind){
-  const LABEL={atelier:'ATELIER',parquet:'PARQUET',stationer:'PAPETERIE',cabinetry:'CABINETS',showroom:'SHOWROOM',framer:'TIMBER HOMES'};
+  const LABEL={atelier:'ATELIER',parquet:'PARQUET',stationer:'PAPETERIE',cabinetry:'CABINETS',showroom:'SHOWROOM',framer:'TIMBER HOMES',decorstudio:'DECOR STUDIO'};
   return function(ctx,L,B,run,t){
     const ms=B.ms, big=kind==='showroom', h=(big?34:24)+ms*2.6, bs=B.bs;
     box(ctx,B.i0-.07,B.j0-.07,B.i1+.07,B.j1+.07,0,3,'#24201d',{hl:false});
@@ -205,6 +207,11 @@ function premBuilding(kind){
       {const p0=P(am,b0,zr),p1=P(am,b1,zr);ctx.moveTo(p0[0],p0[1]);ctx.lineTo(p1[0],p1[1]);}ctx.stroke();
       ctx.strokeStyle='#e2b877';ctx.lineWidth=.9;ctx.stroke();
       if(run){const c=P(am,(b0+b1)/2,zr+4);ctx.fillStyle='rgba(255,230,160,.5)';ctx.fillRect(c[0]-.5,c[1]-6,1,6);}}
+    if(kind==='decorstudio'){   // v2.33: a veneered sideboard on the roof terrace under a striped awning, with a potted tree
+      const a0=B.i0+.3,b0=B.j0+.35;box(ctx,a0,b0,a0+.95,b0+.42,h,h+6,'#7a4a2c',{top:'#a0683c',left:'#8a5a34',right:'#5a3a2a'});
+      fillP(ctx,fq('J',b0+.42,a0+.06,a0+.89,h+1.2,h+5),'#b07a48');ctx.strokeStyle=GOLD;ctx.lineWidth=.8;const m=fq('J',b0+.43,a0+.47,a0+.48,h+1.5,h+4.6);ctx.beginPath();ctx.moveTo(m[0][0],m[0][1]);ctx.lineTo(m[3][0],m[3][1]);ctx.stroke();
+      const c=P(B.i0+.45,B.j1-.45,h);box(ctx,B.i0+.3,B.j1-.6,B.i0+.6,B.j1-.3,h,h+4,'#e8dcc0',{hl:false});ell(ctx,c[0],c[1]-11,5.5,5.5,'#3f7a32');ell(ctx,c[0]-1.5,c[1]-13,2.6,2.2,'#5aa843');
+      if(run){const q=P(a0+.47,b0+.2,h+7);ctx.fillStyle='rgba(255,236,170,.35)';ctx.beginPath();ctx.arc(q[0],q[1]-2,2.2,0,TAU);ctx.fill();}}
     if(kind==='parquet'){for(let k=0;k<3;k++){const a=B.i0+.25+k*.1;box(ctx,a,B.j0+.3+k*.08,a+.9,B.j0+.48+k*.08,h+k*2.5,h+2.5+k*2.5,['#b8763a','#8a5428','#a06830'][k],{hl:false});}}
     if(kind==='stationer'){const p=P((B.i0+B.i1)/2,(B.j0+B.j1)/2,h);ctx.save();ctx.translate(p[0],p[1]-6);ctx.rotate(-.5);ctx.fillStyle='#1a1a1e';rr(ctx,-3,-20,6,24,2);ctx.fill();ctx.fillStyle=GOLD;ctx.fillRect(-3,-12,6,2);ctx.beginPath();ctx.moveTo(-3,4);ctx.lineTo(3,4);ctx.lineTo(0,11);ctx.closePath();ctx.fill();ctx.restore();}
     if(big){const p=P((B.i0+B.i1)/2,(B.j0+B.j1)/2,h+2);ctx.fillStyle=GOLD;ctx.beginPath();ctx.moveTo(p[0]-9,p[1]);ctx.lineTo(p[0]-9,p[1]-7);ctx.lineTo(p[0]-4.5,p[1]-3);ctx.lineTo(p[0],p[1]-10);ctx.lineTo(p[0]+4.5,p[1]-3);ctx.lineTo(p[0]+9,p[1]-7);ctx.lineTo(p[0]+9,p[1]);ctx.closePath();ctx.fill();ctx.strokeStyle='#8a6a10';ctx.lineWidth=1;ctx.stroke();
@@ -217,7 +224,7 @@ function premBuilding(kind){
     return top+12;
   };
 }
-for(const k of ['atelier','parquet','stationer','cabinetry','showroom','framer']) BDRAW[k]=premBuilding(k);
+for(const k of ['atelier','parquet','stationer','cabinetry','showroom','framer','decorstudio']) BDRAW[k]=premBuilding(k);
 function premConstruction(ctx,L,can){
   const e=(L.bs0+.42)/2+.1,{ci,cj}=L;
   ctx.save();ctx.setLineDash([5,4]);ctx.lineDashOffset=-scene.t*10*(can?1:0);ctx.strokeStyle=can?'#f5c84c':'rgba(216,169,48,.55)';ctx.lineWidth=2;
@@ -244,7 +251,7 @@ function drawPremDock(ctx){
   ctx.save();fxf(ctx,'J',B.j1,B.i0+.1,19.5);ctx.fillStyle=GOLD_L;ctx.font='900 6.5px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('RESERVE',(B.i1-B.i0-.2)*16,0);ctx.restore();
   ctx.strokeStyle=GOLD;ctx.lineWidth=1.2;pth(ctx,[P(B.i0,B.j0,34),P(B.i1,B.j0,34),P(B.i1,B.j1,34),P(B.i0,B.j1,34)]);ctx.stroke();
   // waiting crates on the dock apron
-  const pal=[RCOL.giftbox,RCOL.flooring,RCOL.stationery,RCOL.cabinets,RCOL.luxfurn,RCOL.houses];
+  const pal=[RCOL.giftbox,RCOL.flooring,RCOL.stationery,RCOL.cabinets,RCOL.luxfurn,RCOL.houses,RCOL.decor];
   for(let k=0;k<3;k++){const a=ci+.5,b=cj-1.05+k*.36;box(ctx,a-.12,b,a+.16,b+.28,7,12,pal[(k+Math.floor(scene.t/6))%5],{hl:false});}
   PDOCK.hit=[P(ci-.8,cj-1.2,40),P(ci+.8,cj-1.2,40),P(ci+.8,cj-1.2,0),P(ci+.8,cj+1.2,0),P(ci-.8,cj+1.2,0),P(ci-.8,cj+1.2,40)];PDOCK.top=P(ci,cj,44);
 }
@@ -349,8 +356,8 @@ function premDraw(ctx,objs,inView){
     else {objs.push({k:L.ci+L.cj,f:()=>drawLot(ctx,L)});const so=stockObj(ctx,L);if(so) objs.push(so);}}
   objs.push({k:PDOCK.ci+PDOCK.cj,f:()=>drawPremDock(ctx)});
   // gold lamp posts + topiary planters
-  for(const [i,j] of [23.75,30.65,37.55,44.6,51.9,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
-  for(const [i,j] of [23.75,30.65,37.55,44.6,51.9].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
+  for(const [i,j] of [23.75,30.65,37.55,44.6,51.9,59.2,PROW.u1-.6].map(u=>uvIJ(u,PROW.v1-.38))){objs.push({k:i+j,f:()=>{const [x,y]=P(i,j);ell(ctx,x+2,y+1,4,2,'rgba(0,0,0,.2)');ctx.fillStyle='#1a1410';ctx.fillRect(x-1,y-26,2,26);ell(ctx,x,y-27,3,3,'#fff3c0');ctx.strokeStyle=GOLD;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y-27,3.4,0,TAU);ctx.stroke();}});}
+  for(const [i,j] of [23.75,30.65,37.55,44.6,51.9,59.2,66.9].map(u=>uvIJ(u,PROW.v0+.45))){objs.push({k:i+j,f:()=>{box(ctx,i-.16,j-.16,i+.16,j+.16,0,5,'#2a2420',{hl:false});const [x,y]=P(i,j,5);ell(ctx,x,y-5,6,6,'#3f7a32');ell(ctx,x-1.5,y-7,3,2.4,'#5aa843');}});}
   for(const f of scene.plifts||[]){if(f.i===undefined) continue;const [x,y]=P(f.i,f.j);if(!inView(x,y,40)) continue;const big=typeof logiBig==='function'&&logiBig();objs.push({k:f.i+f.j,f:()=>forklift(ctx,f.i,f.j,f.yaw||0,fkCargo(f),fkBounce(f),big)});}
   for(const w of scene.pworkers||[]){if(!w.route) continue;const q=w.p<1?w.p:2-w.p;const [i,j,di,dj]=pathAt(w.route,q);const sg=w.p<1?1:-1;const [x,y]=P(i,j);if(!inView(x,y,30)) continue;
     objs.push({k:i+j,f:()=>human(ctx,x,y,{look:w.look,fx:(di-dj)*sg>=0?1:-1,back:(di+dj)*sg<0,pose:w.p<1?'box':'walk',ph:w.ph,cargo:w.p<1?Object.keys(BMAP[w.tgt].inp)[0]:null})});}

@@ -7,7 +7,7 @@
    - a tap only fires when the pointer moved less than TAP_SLOP px (touch) and was not a long press
    - smooth eased camera fly-to (flyTo) used by quick-jump chips, the attention button, sheet prev/next and auto-focus */
 const TAP_SLOP={touch:10,pen:8,mouse:5};
-const CAM_WORLD={x0:-1000,x1:1240,y0:-300,y1:1480};   // v2.28: y1 1320 -> 1480 for the south yard (Beam Saw / Glulam row, longer Phase 3 row)
+const CAM_WORLD={x0:-1000,x1:1240,y0:-300,y1:1620};   // v2.33: y1 1480 → 1620 (Panel Press, Decor Studio, premium dock further south)   // v2.28: y1 1320 -> 1480 for the south yard (Beam Saw / Glulam row, longer Phase 3 row)
    // v2.21.1: x0 -860 -> -1000 (row III + the forest crew beyond it)
    // v2.10: x1 1060 -> 1240 so the power plant (far east) can be framed   // world rect the viewport may show (camera centre is limited from it)
 const GI={ptrs:new Map(),mode:null,start:null,last:null,samples:[],pinch:null,lastTap:null,noTap:false,touchedAt:0,taps:0,pans:0,pinches:0,dbl:0};
