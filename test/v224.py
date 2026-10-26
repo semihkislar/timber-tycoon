@@ -18,6 +18,7 @@ SETUP='''(()=>{S.coins=1e13;S.totalEarned=1e13;TT.buyCollector("lumberjack",60);
 BAL='''(B)=>{S.premium.lvl=Math.max(1,S.premium.lvl);for(const n of RNODES) S.research[n.id]=1;if(S.trade) S.trade.lvl=Math.max(1,S.trade.lvl||0);
  for(const b of BUILDINGS){S.buildings[b.id].lvl=Math.max(0,Math.floor(Math.log(B/b.cost)/Math.log(b.scale)));S.buildings[b.id].on=true;}
  for(const c of COLLECTORS) S.collectors[c.id]=400;for(const k in S.res) S.res[k]=0;S.forest.m=1e9;S.orders.active=null;if(S.daily) S.daily.active=[];if(S.trade) S.trade.fleet=[];
+ if(typeof SURPLUS_IN==='object') for(const id in SURPLUS_IN) S.buildings[id].lvl=0;   // v2.33: the older chain's balance; the spare-stock decor line is tested in v233.py
  M=computeMods();for(let k=0;k<120;k++){tick(1,false);S.forest.m=1e9;}
  const r={};for(const b of BUILDINGS){const st=S.buildings[b.id];if(!st.lvl||!bldUnlocked(b.id)||!(b.inp.veneer||b.inp.plywood)) continue;const bs=bstat[b.id];r[b.id]=[bs.lim||'-',+bs.f.toFixed(2)];}
  return {f:r,vp:rates.veneer.p,vd:rates.veneer.d,pp:rates.plywood.p,pd:rates.plywood.d};}'''
