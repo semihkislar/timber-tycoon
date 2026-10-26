@@ -66,7 +66,7 @@ function beltBind(){for(const L of BELT_LINKS){const b=$('lgBB_'+L.src);if(b) b.
 function beltFlowText(){if(!beltUnlocked()) return '';const n=beltCount();if(!n) return ' · 🛤️ belts ready to build';
   return ' · 🛤️ <b>'+n+'</b> belt'+(n>1?'s':'')+' '+BELT_LINKS.filter(L=>beltLvl(L.src)).map(L=>RMAP[L.k].icon+'Lv '+beltLvl(L.src)).join(' ');}
 /* ---------- scene geometry ---------- */
-const BELT_Z0=12, BELT_ZH=22, BELT_RAMP=.9, BELT_W=.22, BELT_V=.8;   // px, px, tiles, tiles, tiles/s
+const BELT_Z0=14, BELT_ZH=34, BELT_RAMP=1.5, BELT_W=.22, BELT_V=.8;   // px, px, tiles, tiles, tiles/s
 /* the belt's centre line: [i,j,z] points. Leaves the source's J wall (Phase I side) at its middle, rises, runs along +j to the
    middle of the lane, turns and runs along −i into the destination's I wall. src.ci === dst.cj (the lots sit straight across). */
 function beltGeom(L){const s=LOTS[L.src],d=LOTS[L.dst];if(!s||!d) return null;const A=lotBox(s),B=lotBox(d),sig=A.bs.toFixed(3)+'|'+B.bs.toFixed(3);
@@ -125,19 +125,33 @@ function beltRun(L){const a=S.buildings[L.src],b=S.buildings[L.dst];return a.on&
 function beltItems(L){return Math.min(BELT_ITEMS,3+Math.ceil(beltLvl(L.src)/2));}
 function beltTick(dt){if(!scene.belts) scene.belts={};for(const L of beltLive()){const st=scene.belts[L.src]||(scene.belts[L.src]={off:Math.random()});
   if(beltRun(L)) st.off=(st.off+dt*BELT_V/Math.max(1,(beltGeom(L)||{tot:9}).tot))%1;}}
+/* Depth: the belt is one V in screen space (x = 32·v runs monotonically from the source wall, through the corner above the lane
+   centre, to the destination wall), so it is cut into vertical strips (BELT_STRIP tiles of v each). Every strip is its own cached
+   sprite with its own sort key (the belt's u at that v), so a forklift or van just south of one arm is drawn in front of it and one
+   just north of it behind, instead of the whole bridge sorting as one object. Goods and slats are drawn with their strip. */
+const BELT_STRIP=.6, BELT_KB=1.0;   // the bridge clears every vehicle (ZH > tallest van + 5 px), so it can sort a tile late without covering anything in front of it
+function beltV(q){return q[0]-q[1];}
 function beltDraw(ctx,objs,inView){for(const L of beltLive()){const G=beltGeom(L);if(!G) continue;const an=G.an;
   if(!inView(an[0],an[1]-10,180)) continue;
-  objs.push({k:G.ci+G.cj+.35,f:()=>{
-    sprite(ctx,'belt|'+L.src+'|'+G.sig,an[0],an[1],G.bb,(g,ax,ay)=>{g.save();g.translate(ax-an[0],ay-an[1]);beltFrameRaw(g,G);g.restore();});
-    const st=(scene.belts&&scene.belts[L.src])||{off:0},run=beltRun(L);
-    // moving slats: one path
-    const sp=.36,o=(st.off*G.tot)%sp;ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1;ctx.beginPath();
-    for(let s=o+.1;s<G.tot-.05;s+=sp){const q=beltAt(G,s),ax=q[3].a[0]===q[3].b[0];const a=ax?P(q[0]-BELT_W*.8,q[1],q[2]+.4):P(q[0],q[1]-BELT_W*.8,q[2]+.4),b=ax?P(q[0]+BELT_W*.8,q[1],q[2]+.4):P(q[0],q[1]+BELT_W*.8,q[2]+.4);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}
-    ctx.stroke();
-    // goods riding on the belt (cached icons, bounded count)
-    const n=run?beltItems(L):Math.min(2,beltItems(L));
-    for(let k=0;k<n;k++){const s=((st.off+k/n)%1)*G.tot;if(s<.25||s>G.tot-.25) continue;const q=beltAt(G,s),p=P(q[0],q[1],q[2]+1);cargoIcon(ctx,p[0],p[1]-1,L.k,.72);}
-  }});}}
+  const st=(scene.belts&&scene.belts[L.src])||{off:0},run=beltRun(L);
+  const vS=G.pts[0][0]-G.pts[0][1],vD=G.pts[4][0]-G.pts[4][1],nS=Math.max(1,Math.ceil((vS-vD)/BELT_STRIP)),w=(vS-vD)/nS,u0=G.ci+G.cj;
+  // per frame: slats + goods with their v (bucketed into strips)
+  const sl=[],it=[];
+  {const sp=.36,o=(st.off*G.tot)%sp;for(let s=o+.1;s<G.tot-.05;s+=sp){const q=beltAt(G,s);sl.push(q);}
+   const n=run?beltItems(L):Math.min(2,beltItems(L));for(let k=0;k<n;k++){const s=((st.off+k/n)%1)*G.tot;if(s<.25||s>G.tot-.25) continue;it.push(beltAt(G,s));}}
+  for(let k=0;k<nS;k++){const v1=vS-k*w,v0=v1-w,vm=(v0+v1)/2,x0=v0*HW,x1=v1*HW;
+    const sx=an[0]+(x0+x1)/2;if(!inView(sx,an[1]-10,60)) continue;
+    const last=k===nS-1,first=k===0;
+    objs.push({k:u0-Math.abs(vm)+BELT_KB,f:()=>{
+      const bx0=(first?G.bb[2]:x1)+(first?0:.5),bx1=(last?G.bb[0]:x0)-(last?0:.5);   // first strip keeps the source-wall port, last the destination's
+      const bb=[Math.min(bx0,bx1),G.bb[1],Math.max(bx0,bx1),G.bb[3]];
+      sprite(ctx,'belt|'+L.src+'|'+G.sig+'|'+k,an[0],an[1],bb,(g,ax,ay)=>{g.save();g.beginPath();g.rect(ax+bb[0],ay+bb[1],bb[2]-bb[0],bb[3]-bb[1]);g.clip();g.translate(ax-an[0],ay-an[1]);beltFrameRaw(g,G);g.restore();});
+      const inS=q=>{const v=beltV(q);return (v<=v1+1e-9||first)&&(v>v0+1e-9||last);};
+      ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1;ctx.beginPath();let any=false;
+      for(const q of sl){if(!inS(q)) continue;any=true;const ax=q[3].a[0]===q[3].b[0];const a=ax?P(q[0]-BELT_W*.8,q[1],q[2]+.4):P(q[0],q[1]-BELT_W*.8,q[2]+.4),b=ax?P(q[0]+BELT_W*.8,q[1],q[2]+.4):P(q[0],q[1]+BELT_W*.8,q[2]+.4);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}
+      if(any) ctx.stroke();
+      for(const q of it){if(!inS(q)) continue;const p=P(q[0],q[1],q[2]+1);cargoIcon(ctx,p[0],p[1]-1,L.k,.72);}
+    }});}}}
 /* test / debug: where the items are right now (tile coords + height) */
 function beltItemPos(src){const L=BELT_BY_SRC[src];if(!L) return [];const G=beltGeom(L),st=scene.belts&&scene.belts[src];if(!G||!st) return [];
   const n=beltRun(L)?beltItems(L):Math.min(2,beltItems(L)),o=[];for(let k=0;k<n;k++){const s=((st.off+k/n)%1)*G.tot;o.push(beltAt(G,s).slice(0,3));}return o;}
