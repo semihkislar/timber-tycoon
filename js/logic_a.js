@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.33';
+const VERSION='2.34';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -313,6 +313,9 @@ const ACH=[
   {id:'panel1',g:'sys',t:'bronze',e:'🟫',n:'Face Veneer',d:'Build the Veneer Panel Press',p:()=>[S.buildings.panelpress&&S.buildings.panelpress.lvl>0?1:0,1]},
   {id:'decor1',g:'sys',t:'silver',e:'🪞',n:'Interior Design',d:'Build the Decor Studio',p:()=>[S.buildings.decorstudio&&S.buildings.decorstudio.lvl>0?1:0,1]},
   {id:'decor50',g:'sys',t:'gold',e:'🏛️',n:'Grand Interiors',d:'Decor Studio Lv 50',p:()=>[(S.buildings.decorstudio&&S.buildings.decorstudio.lvl)||0,50]},
+  // v2.34 order chains
+  {id:'chain1',g:'sys',t:'bronze',e:'🔗',n:'Project Partner',d:'Complete a client project (order chain)',p:()=>[(S.orders&&S.orders.chDone)||0,1]},
+  {id:'chain10',g:'sys',t:'gold',e:'🏗️',n:'Master Contractor',d:'Complete 10 client projects',p:()=>[(S.orders&&S.orders.chDone)||0,10]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
@@ -325,7 +328,7 @@ function freshState(keep){
   const s={v:1,version:VERSION,coins:0,res:{},collectors:{},buildings:{},upgrades:{},ws:{},autosell:{},tree:0,
     seeds:0,legacy:0,oldRep:0,tierNote:0,shop:{},runCS:1,run:{goals:{},peak:0,start:0,charter:false},rpStats:{runs:[],best:0},prestiges:0,totalEarned:0,lifetimeEarned:0,clicks:0,lifetimeClicks:0,time:0,playTime:0,
     events:[],nextEvent:75,lastSave:Date.now(),runStart:Date.now(),firstStart:Date.now(),muted:true,ach:{},golden:0,
-    storage:{},premium:{lvl:0},orders:{offer:null,active:null,offers:[],acts:[],next:100,done:0,failed:0,hist:[]},
+    storage:{},premium:{lvl:0},orders:{offer:null,active:null,offers:[],acts:[],next:100,done:0,failed:0,hist:[],chain:null,chNext:0,chDone:0,chFailed:0,chEarned:0,chHist:[]},
     wx:{clock:126,w:'clear',ends:0,next:201},
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
@@ -700,7 +703,8 @@ function doPrestige(){
   const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,...rpKeep(g),lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
     firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false,capHi:Object.assign({},st.capHi||{}),capNoted:st.capNoted||0};})(),   // v2.22.1: hiring limits never drop
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
-    orders:{offer:null,active:null,offers:[],acts:[],next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5)},
+    orders:{offer:null,active:null,offers:[],acts:[],next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5),
+      chain:null,chNext:0,chDone:(S.orders&&S.orders.chDone)||0,chFailed:(S.orders&&S.orders.chFailed)||0,chEarned:(S.orders&&S.orders.chEarned)||0,chHist:((S.orders&&S.orders.chHist)||[]).slice(-4)},   // v2.34: the project in hand ends, counters stay
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
   keep.tierNote=S.tierNote||0;   // v2.20

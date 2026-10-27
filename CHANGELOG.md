@@ -5,6 +5,74 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.34] — 2026-10-27
+
+**Order chains (item 11).** Clients now also bring **projects**: a chain of 3 orders for the same client, such as the Royal
+Embassy's library (archive paper → reading-room chairs → library cabinets). Only the first order is on offer. Each delivery
+unlocks the next, larger order, and the last one pays a chain bonus on top. The project card sits at the top of the Clients
+board and shows its progress.
+
+### Added
+- **Client projects:** 7 story projects from clients already on the board: Mountain Chalet, Hotel Refit, Suite Interiors,
+  Embassy Library, Yacht Fit-out, Grill Season and New District. Each step has a list of goods that fit the story. The project
+  uses the first one your factory makes now and never asks for the same good twice. Projects start after your first 2 client
+  orders. A new one comes 1.5–3.5 minutes after the last one ends.
+- **How a project runs:**
+  - 🔗 *Start project* puts step 1 on the board as a normal running order. It needs a free order slot, like any order.
+  - Delivering a step pays its reward and moves the next step straight into the same slot.
+  - Each step has its own timer (3 / 4 / 5 min, longer for big amounts, at most 15 min). It collects from the line (≥ 70 % of
+    the output) and can deliver from storage, like every client order.
+  - If a step runs out of time, the project ends. The steps already delivered stay paid, and there is no penalty.
+  - An offer you don't start waits 5 min.
+- **Escalating rewards, built on the v2.25 rules:**
+  - Every step is sized with the v2.25 order sizing (`ordPlan`: real output, at least 20 units, at least 5 s of this run's
+    income with forest value as the floor). A growing difficulty factor of ×1 / ×1.5 / ×2.2 is applied, the same knob daily
+    contracts use.
+  - Each step is worth at least 1.4× the goods of the step before. Earlier steps are kept small enough that the later ones can
+    still grow within a 15-minute timer.
+  - Every step pays exactly a v2.25 client order (`ordPay`: goods value × 1.5–2.5, × 1.25 premium, × managers × research),
+    times a small loyalty step of ×1 / ×1.1 / ×1.2.
+  - Each step pays at least 1.25× the one before, and never more than the v2.25 band allows.
+  - **Chain bonus:** 30 % of all step rewards, paid with the last delivery. Premium projects late in a run (from 10M × forest
+    value earned) also give +1 🌱 Seed, like premium client orders.
+- **Board card:** client and project name, progress pips with 🎁, and one row per step: ✔ delivered, ▶ in progress, or locked
+  with "≈" (the amount is an estimate until the step unlocks). There is a chain bonus row, a progress bar with "Step 2/3 · got /
+  need · ⏱", a live hint and a Start / Decline or 📦 Deliver from storage button. A running step shows only on the project
+  card, so it is not listed twice.
+  - Phones: every row and button is ≥ 44 px, and nothing scrolls sideways. In the full-height sheet the whole card fits on
+    an iPhone 13.
+- **HUD order card:** a running step shows a green 🔗2/3 tag. The Orders dot also lights up for a waiting project. Opening
+  Orders with a project in hand opens the Clients tab.
+- **Order book:** a "🔗 Projects done" line. Delivered steps are marked 🔗 1/3, 2/3, 3/3 in the history.
+- **Trophies:** *Project Partner* (complete a project) and *Master Contractor* (10 projects), both in the Factory systems
+  section.
+
+### After Replant
+- Replant clears the project in hand and keeps the counters. The next run sizes every step on that run's output and forest
+  value. The value floor and the minimum reward follow forest value. With no income yet, ×1000 forest value gives ×36 the
+  units and 🪙50K instead of 🪙420.
+- Multi-Replant sims (5 runs, 4 Replants, late-game and greedy players): no step is ever under 20 units or worth less than
+  1 s of income in any run (the direct checks on 350 projects, before and after Replant, find at least 5 s). Step rewards stay at 1.44–2.62× the goods (× loyalty) up to forest value ×14,000. About 2
+  projects start in each 30-minute run.
+
+### Saves
+- v2.33 and older saves load with no project and zero counters. A damaged project is dropped. A project step whose project
+  is missing becomes a plain client order. A saved running project resumes, and offline time fills its step like any order.
+
+### Performance
+- The median frame cost is flat with the project card open and updating (5.60 → 5.90 ms headless, inside the ×1.2 + 1 ms
+  budget).
+
+### Tests
+- New `test/v234.py` (desktop, iPhone 13 and Pixel 7 touch): definitions, offer → start → 3 deliveries → bonus, busy slots,
+  failure / decline / expiry, 250-project reward math, Replant scaling, two multi-Replant sims, board UI and HUD, saves
+  (round trip, v2.33, v2.24, damaged), offline, flat frame cost, no console errors or 404s.
+
+### Next
+- **Item 12: Replant Blueprints.** Before a Replant, save the build order of up to 3 lines. The next run builds them
+  automatically as coins allow.
+- Ideas for later chain work: 4-step premium projects, and a story line across projects for the same client.
+
 ## [2.33] — 2026-10-26
 
 **Veneer & Decor line (item 10).** Late in a run the Veneer Peeler made far more veneer than the furniture, plywood and glulam
