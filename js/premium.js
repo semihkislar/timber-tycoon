@@ -98,6 +98,7 @@ function ordNorm(O){
   if(ordValid(ac)&&!O.acts.some(x=>x.id===ac.id)){if(!isFinite(ac.ends)) ac.ends=(S.time||0)+(ac.dur||180);if(!isFinite(ac.got)) ac.got=0;O.acts.unshift(ac);}
   for(const o of O.offers) if(!isFinite(o.expires)) o.expires=(S.time||0)+ORDER_OFFER_SEC;
   if(!isFinite(O.next)) O.next=(S.time||0)+60; if(!Array.isArray(O.hist)) O.hist=[]; O.done=O.done||0; O.failed=O.failed||0;
+  if(typeof chainNorm==='function') chainNorm(O);   // v2.34 order chains
   Object.defineProperty(O,'offer',{get(){return this.offers[0]||null;},set(v){this.offers=ordValid(v)?[v]:[];},enumerable:true,configurable:true});
   Object.defineProperty(O,'active',{get(){return this.acts[0]||null;},set(v){this.acts=ordValid(v)?[v]:[];},enumerable:true,configurable:true});
   return O;
@@ -144,7 +145,8 @@ function completeOrder(offline,o){
   let extra='';
   if(o.bonus&&o.bonus.type==='seeds'){S.seeds+=o.bonus.n;extra=` +${o.bonus.n} 🌱 Seed`;}
   else if(o.bonus&&o.bonus.type==='boost'&&!offline){S.events=S.events.filter(e=>e.id!=='viprush');S.events.push({id:'viprush',ends:S.time+EMAP.viprush.dur});extra=' + 🎩 VIP Rush (all prices 2× for 45s)';}
-  O.hist.push({item:o.item,amt:o.amt,reward:o.reward,client:o.client,e:o.e,ok:true}); O.hist=O.hist.slice(-6);
+  O.hist.push({item:o.item,amt:o.amt,reward:o.reward,client:o.client,e:o.e,ok:true,ch:o.ch!==undefined?`${o.chStep+1}/${o.chN}`:undefined}); O.hist=O.hist.slice(-6);
+  if(o.ch!==undefined&&typeof chainStepDone==='function') extra+=chainStepDone(o,offline);   // v2.34: unlock the next step / chain bonus
   O.next=Math.min(O.next,S.time+30+Math.random()*20); M=computeMods();
   if(!offline){toast(`${o.e} <b>${o.client}</b> is thrilled! Order delivered: +🪙${fmt(o.reward)}${extra}`,5000,'ms-toast');confettiBurst();sfx('unlock');orderFx('done',o);renderEvents(true);}
 }
@@ -152,7 +154,9 @@ function orderTick(dt,offline){
   const O=ordNorm(); if(!O) return;
   for(const o of O.offers.slice()) if(S.time>=o.expires){O.offers.splice(O.offers.indexOf(o),1);O.next=Math.min(O.next,S.time+30);if(!offline) orderFx('expire');}
   for(const o of O.acts.slice()) if(S.time>=o.ends){O.acts.splice(O.acts.indexOf(o),1);O.failed++;O.hist.push({item:o.item,amt:o.amt,reward:o.reward,client:o.client,e:o.e,ok:false});O.hist=O.hist.slice(-6);O.next=Math.min(O.next,S.time+45);
+    if(o.ch!==undefined&&typeof chainStepFail==='function'){chainStepFail(o,offline);if(!offline) orderFx('fail',o);continue;}   // v2.34
     if(!offline){toast(`${o.e} ${o.client}'s order ran out of time (${fmt(o.got)}/${fmt(o.amt)}). No penalty — another client will call soon.`,4500);orderFx('fail',o);}}
+  if(typeof chainTick==='function') chainTick(dt,offline);   // v2.34 order chains
   if(offline){if(O.next<S.time) O.next=S.time+30;return;}
   const room=O.offers.length<ordBoardMax()&&!(O.acts.length>=ordSlots()&&O.offers.length>=1);
   if(room&&S.time>=O.next&&ordersOpen()){O.next=S.time+(offerOrder()?ordGap():30);}
@@ -342,18 +346,18 @@ function bonusTxt(o){return o.bonus?(o.bonus.type==='seeds'?` + ${o.bonus.n} �
 let ordCardSig='';
 function renderOrderCard(){
   const c=$('orderCard'); if(!c) return; const O=ordNorm(); const o=O.offer||O.active;
-  $('ordDot').classList.toggle('hidden',!(O.offers.length||dailyAwaiting()));
+  $('ordDot').classList.toggle('hidden',!(O.offers.length||dailyAwaiting()||(O.chain&&O.chain.state==='offer')));
   if(!o){if(c.dataset.on){c.dataset.on='';c.className='hidden';} return;}
   const mode=O.offer?'offer':'active', more=O.offers.length+O.acts.length-1, full=O.acts.length>=ordSlots();
-  const sig=mode+o.id+'|'+more+'|'+full;
-  if(sig!==ordCardSig){ordCardSig=sig;const pop=!c.dataset.on||c.dataset.oid!==String(o.id);c.dataset.on='1';c.dataset.oid=o.id;c.className=(mode==='offer'?'offer'+(pop?' pop':''):'active');
+  const sig=mode+o.id+'|'+more+'|'+full+'|'+(o.ch!==undefined?o.chStep:'');
+  if(sig!==ordCardSig){ordCardSig=sig;const pop=!c.dataset.on||c.dataset.oid!==String(o.id);c.dataset.on='1';c.dataset.oid=o.id;c.className=(mode==='offer'?'offer'+(pop?' pop':''):'active'+(o.ch!==undefined?' chain':''));
     const mb=more>0?`<span class="oc-more" title="More orders on the board">+${more}</span>`:'';
     c.innerHTML=mode==='offer'
       ?`<div class="oc-h"><span class="oc-e">${o.e}</span><div class="oc-t"><small>${o.premium?'💎 PREMIUM ORDER':'📋 NEW ORDER'}</small><b>${o.client}</b></div>${mb}</div>
         <div class="oc-b"><span class="oc-ic">${svgIcon(RMAP[o.item].svg,26)}</span><div>wants ${orderLine(o)}<br>within <b>${fmtTime(o.dur)}</b></div></div>
         <div class="oc-r">Reward <b>🪙 ${fmt(o.reward)}</b>${bonusTxt(o)}</div>
         <div class="oc-btns"><button class="btn small red" id="ocNo">Decline</button><button class="btn small gold" id="ocYes" ${full?'disabled':''}>${full?'Slots full':'✔ Accept'}</button></div><div class="oc-exp"><i id="ocExp"></i></div>`
-      :`<span class="oc-e">${o.e}</span><span class="oc-ic">${svgIcon(RMAP[o.item].svg,20)}</span><div class="oc-pr"><div class="oc-l"><span id="ocGot"></span><span id="ocTm"></span></div><div class="oc-bar"><i id="ocBar"></i></div></div>${mb}`;
+      :`<span class="oc-e">${o.e}</span><span class="oc-ic">${svgIcon(RMAP[o.item].svg,20)}</span><div class="oc-pr"><div class="oc-l"><span id="ocGot"></span><span id="ocTm"></span></div><div class="oc-bar"><i id="ocBar"></i></div></div>${o.ch!==undefined?`<span class="oc-more oc-ch" title="Project step">🔗${o.chStep+1}/${o.chN}</span>`:''}${mb}`;
     if(mode==='offer'){const id=o.id;$('ocYes').onclick=e=>{e.stopPropagation();acceptOrder(id);};$('ocNo').onclick=e=>{e.stopPropagation();declineOrder(id);};}
     c.onclick=()=>{if(curSheet!=='ord'){ordTab='clients';openSheet('ord');}};
   }
@@ -366,7 +370,7 @@ function updateOrders(){
   if(curSheet!=='ord') return;
   ensureDailyDay(); if(dailyOpen()) makeDailyOffers();
   const O=ordNorm(), D=S.daily;
-  const sig=ordTab+'|'+O.offers.map(x=>'o'+x.id).join(',')+'/'+O.acts.map(x=>'a'+x.id).join(',')+'|'+ordSlots()+'|'+O.done+'|'+O.failed+'|'+ordersOpen()+'|'+S.premium.lvl+'|'+(D?(D.offers.map(x=>x.id+':'+x.amt).join(',')+'/'+D.active.map(x=>x.id+':'+Math.floor(x.got)).join(',')+'/'+D.doneToday+'/'+D.streak+'/'+D.total):'')+'|'+dailyOpen();
+  const sig=ordTab+'|'+O.offers.map(x=>'o'+x.id).join(',')+'/'+O.acts.map(x=>'a'+x.id).join(',')+'|'+ordSlots()+'|'+O.done+'|'+O.failed+'|'+ordersOpen()+'|'+S.premium.lvl+'|'+(D?(D.offers.map(x=>x.id+':'+x.amt).join(',')+'/'+D.active.map(x=>x.id+':'+Math.floor(x.got)).join(',')+'/'+D.doneToday+'/'+D.streak+'/'+D.total):'')+'|'+dailyOpen()+'|'+(typeof chainSigOf==='function'?chainSigOf():'');
   if(sig!==ordSig){ordSig=sig;
     let h=`<div class="seg" id="ordTabs" style="margin-bottom:8px"><button data-t="daily" class="${ordTab==='daily'?'on':''}">📅 Daily</button><button data-t="clients" class="${ordTab==='clients'?'on':''}">📋 Clients</button></div>`;
     if(ordTab==='daily'){
@@ -398,7 +402,8 @@ function updateOrders(){
       // Clients tab — v2.25: an order board (several clients wait, several orders run at once)
       const slots=ordSlots(), full=O.acts.length>=slots;
       h+=`<div class="ord-board"><span>📋 <b>${O.acts.length}/${slots}</b> in progress</span><span>☎️ <b>${O.offers.length}</b> waiting</span><small>${slots<3?(slots<2?'+1 slot with a Phase II line':'+1 slot with the Premium Area'):'3 of 3 slots unlocked'}</small></div>`;
-      O.acts.forEach((o,i)=>{const r=RMAP[o.item];
+      if(typeof chainCardHtml==='function') h+=chainCardHtml(slots,full);   // v2.34: the project in hand (its running step lives on this card)
+      O.acts.filter(o=>o.ch===undefined).forEach((o,i)=>{const r=RMAP[o.item];
         h+=`<div class="ord-card act${o.premium?' prem':''}" data-oid="${o.id}"><div class="oc-h"><span class="oc-e big">${o.e}</span><div class="oc-t"><small>${o.premium?'💎 Premium order':'Client order'} · in progress</small><b>${o.client}</b></div></div>
           <div class="io" style="margin:8px 0"><div class="r">${svgIcon(r.svg,22)}<div>${fmt(o.amt)}<small>${r.name}</small></div></div><span class="arr">➜</span><div class="r">${svgIcon('coins',22)}<div>${fmt(o.reward)}<small>reward${bonusTxt(o)}</small></div></div></div>
           <div class="bstatus"><div class="bar"><i id="opBar${o.id}"></i></div><span class="chip" id="opChip${o.id}"></span></div>
@@ -410,11 +415,12 @@ function updateOrders(){
           <div class="bstatus"><div class="bar"><i id="opBar${o.id}"></i></div><span class="chip off" id="opChip${o.id}"></span></div>
           <div class="legend" id="opTx${o.id}"></div>
           <div class="brow"><button class="btn red" ${i===0?'id="opNo" ':''}data-ono="${o.id}">Decline</button><button class="btn gold" ${i===0?'id="opYes" ':''}data-oyes="${o.id}" style="flex:1" ${full?'disabled':''}>${full?`All ${slots} slots busy`:'✔ Accept order'}</button></div></div>`;});
-      if(!O.offers.length&&!O.acts.length) h+=`<div class="hint" id="opNone"></div>`;
-      h+=`<h4>📈 Order book</h4><div class="kv"><div>Completed</div><div>${O.done}</div><div>Missed</div><div>${O.failed}</div></div>`;
-      if(O.hist.length) h+=`<div class="list" style="margin-top:7px">${O.hist.slice().reverse().map(x=>`<div class="hrow ${x.ok?'ok':'no'}"><span>${x.e}</span><span>${fmt(x.amt)} × ${resName(x.item)}<small>${x.client}</small></span><b>${x.ok?'+🪙'+fmt(x.reward):'missed'}</b></div>`).join('')}</div>`;
+      if(!O.offers.length&&!O.acts.length&&!O.chain) h+=`<div class="hint" id="opNone"></div>`;
+      h+=`<h4>📈 Order book</h4><div class="kv"><div>Completed</div><div>${O.done}</div><div>Missed</div><div>${O.failed}</div><div>🔗 Projects done</div><div>${O.chDone||0}</div></div>`;
+      if(!O.chain&&ordersOpen()&&typeof chainsOpen==='function') h+=`<div class="hint ch-hint" id="chNone"></div>`;
+      if(O.hist.length) h+=`<div class="list" style="margin-top:7px">${O.hist.slice().reverse().map(x=>`<div class="hrow ${x.ok?'ok':'no'}"><span>${x.e}</span><span>${fmt(x.amt)} × ${resName(x.item)}<small>${x.client}${x.ch?` · 🔗 ${x.ch}`:''}</small></span><b>${x.ok?'+🪙'+fmt(x.reward):'missed'}</b></div>`).join('')}</div>`;
       h+=`<button class="btn wood big" id="opPrem" style="margin-top:10px">🏛️ Premium Factory Area${S.premium.lvl?` · Lv ${S.premium.lvl}`:''}</button>`;
-      h+=`<div class="legend">Clients call every minute or so and wait on the board (up to ${ordBoardMax()}). Run up to <b>${slots}</b> order${slots>1?'s':''} at once (more slots with Phase II goods and the Premium Area). Amounts follow what your lines make, and rewards are about 1.5–2.5× the goods' value. Accepted orders are priority contracts: they take the surplus plus at least 70% of the item's output until they're filled, or deliver straight from storage.</div>`;
+      h+=`<div class="legend">Clients call every minute or so and wait on the board (up to ${ordBoardMax()}). Run up to <b>${slots}</b> order${slots>1?'s':''} at once (more slots with Phase II goods and the Premium Area). Amounts follow what your lines make, and rewards are about 1.5–2.5× the goods' value. Accepted orders are priority contracts: they take the surplus plus at least 70% of the item's output until they're filled, or deliver straight from storage. 🔗 Client projects are chains of orders: each delivery unlocks the next, bigger one, and the last pays a chain bonus.</div>`;
     }
     $('ordBody').innerHTML=h;
     document.querySelectorAll('#ordTabs button').forEach(b=>b.onclick=()=>{ordTab=b.dataset.t;ordSig='';updateOrders();});
@@ -423,6 +429,7 @@ function updateOrders(){
       document.querySelectorAll('[data-ono]').forEach(b=>b.onclick=()=>declineOrder(+b.dataset.ono));
       document.querySelectorAll('[data-odel]').forEach(b=>b.onclick=()=>{const n=deliverFromStock(+b.dataset.odel); if(n>0){const rc=b.getBoundingClientRect();floatText(rc.left+rc.width/2,rc.top-4,'+'+fmt(n),$('fxLayer'));}});
       if($('opPrem')) $('opPrem').onclick=()=>openSheet('prem');
+      if(typeof chainBind==='function') chainBind();
     } else {
       document.querySelectorAll('[data-yes]').forEach(b=>b.onclick=()=>acceptDaily(+b.dataset.yes));
       document.querySelectorAll('[data-no]').forEach(b=>b.onclick=()=>declineDaily(+b.dataset.no));
@@ -438,6 +445,8 @@ function updateOrders(){
       bar.style.width=Math.min(100,o.got/o.amt*100)+'%';const left=o.ends-S.time;chip.className='chip'+(left<30?' bad':'');chip.textContent=`${fmt(o.got)} / ${fmt(o.amt)} · ⏱ ${fmtTime(Math.max(0,left))}`;
       const t=`Collecting ${resName(o.item)} off the line (≈${fr(prodRate(o.item))}/s produced, ≥70% goes to this order). In storage: <b>${fmt(S.res[o.item])}</b>.`;if(tx._t!==t){tx.innerHTML=t;tx._t=t;}
       const d=document.querySelector(`[data-odel="${o.id}"]`),n=Math.min(S.res[o.item],o.amt-o.got);const dh=`📦 Deliver from storage (${fmt(n)})`;if(d&&d._h!==dh){d.innerHTML=dh;d._h=dh;}if(d) d.disabled=n<1;}
+    if(typeof chainLive==='function') chainLive();
+    {const e=$('chNone');if(e){const t=chainsOpen()?`🔗 Next client project in about <b>${fmtTime(Math.max(0,(O.chNext||0)-S.time))}</b>: a chain of ${CH_STEPS} orders that grow step by step, with a bonus at the end.`:`🔗 Client projects (chains of ${CH_STEPS} growing orders with a bonus at the end) start after your first 2 client orders.`;if(e._t!==t){e.innerHTML=t;e._t=t;}}}
     const e=$('opNone');if(e){const t=ordersOpen()?`☎️ No client on the line. Next call in about <b>${fmtTime(Math.max(0,O.next-S.time))}</b>.`:'📋 Clients start calling once your <b>Sawmill</b> is running.';if(e._t!==t){e.innerHTML=t;e._t=t;}}}
   if(ordTab==='daily'&&D&&D.active){for(const c of D.active){const chip=$('dcChip'+c.id);if(chip) chip.textContent=`${fmt(c.got)} / ${fmt(c.amt)} · ⏱ ${fmtTime(Math.max(0,c.ends-S.time))}`;
       const btn=document.querySelector(`[data-del="${c.id}"]`); if(btn){const n=Math.min(S.res[c.item],c.amt-c.got);const dh=`📦 Deliver from storage (${fmt(n)})`;if(btn._h!==dh){btn.innerHTML=dh;btn._h=dh;}btn.disabled=n<1;}}}

@@ -31,7 +31,7 @@ function openSheet(name,arg){
   const prev=curSheet;
   if(prev==='ach'&&name!=='ach') achFresh={};
   curSheet=name; sheetBld=name==='bld'?arg:null;
-  if(name==='ord'&&dailyAwaiting()&&!S.orders.offer&&!S.orders.active) ordTab='daily';
+  if(name==='ord'&&dailyAwaiting()&&!S.orders.offer&&!S.orders.active&&!S.orders.chain) ordTab='daily';   // v2.34: a client project keeps the Clients tab
   Object.keys(SHEETS).forEach(k=>$('pane-'+k).classList.toggle('hidden',k!==name));
   const sh=$('sheet'); sh.dataset.s=name; sh.classList.add('open'); document.body.classList.add('sheet-on'); sh.setAttribute('aria-hidden','false');
   if(name==='bld'){ const b=BMAP[arg]; $('shTitle').textContent=b.name; $('shIc').innerHTML=svgIcon(b.svg,30); }
