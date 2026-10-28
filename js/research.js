@@ -24,9 +24,11 @@ const RNODES=[
   {id:'science', b:'sci',t:1,name:'Wood Science',    icon:'🔬',rp:5,    req:[],          d:'Research Lab +25 % RP',fx:m=>{m.lab*=1.25;}},
   {id:'firesci', b:'sci',t:1,name:'Fire Science',    icon:'🧯',rp:60,   req:['science'], d:'Fire risk −20 %',fx:m=>{m.fire*=.8;}},
   {id:'labx',    b:'sci',t:1,name:'Lab Robotics',    icon:'🦾',rp:900,  req:['firesci'], d:'Research Lab +50 % RP',fx:m=>{m.lab*=1.5;}},
+  {id:'blueprint',b:'sci',t:1,name:'Site Blueprints', icon:'📐',rp:400,  req:['science'], d:'Unlocks Replant Blueprints: save your factory as a plan and a planning office rebuilds it after each Replant as coins allow',gate:{f:()=>(S.prestiges||0)>=1,t:'1 Replant done'}},   // v2.35
   {id:'nightsh', b:'sci',t:2,name:'Night Shift',     icon:'🌙',rp:2500, req:['labx'],    d:'Offline earnings cap +2 h (8 h → 10 h)',fx:m=>{m.offH+=2;}},
   {id:'gridtune',b:'sci',t:2,name:'Grid Tuning',     icon:'⚡',rp:3000, req:['labx'],    d:'Power Plant boost +25 %',fx:m=>{m.pw*=1.25;}},
   {id:'peer',    b:'sci',t:2,name:'Peer Review',     icon:'📑',rp:4000, req:['nightsh','gridtune'],d:'Research Lab +40 % RP',fx:m=>{m.lab*=1.4;}},
+  {id:'masterplan',b:'sci',t:2,name:'Master Plans',  icon:'🗺️',rp:3500, req:['blueprint'],d:'Replant Blueprints: 3 plan slots (A / B / C), steps twice as fast and up to 25 levels per step'},   // v2.35
   {id:'procsim', b:'sci',t:3,name:'Process Simulation',icon:'🖥️',rp:9000,req:['peer'],  d:'Every building +12 %',fx:m=>{m.bldAll*=1.12;}},
   {id:'dreamsh', b:'sci',t:3,name:'Remote Control Room',icon:'📡',rp:10000,req:['peer'], d:'Offline earnings cap +4 h',fx:m=>{m.offH+=4;}},
   {id:'labnet',  b:'sci',t:3,name:'Lab Network',     icon:'🧠',rp:12000,req:['procsim'],d:'Research Lab +60 % RP',fx:m=>{m.lab*=1.6;},gate:{f:()=>blv('lab')>=25,t:'Research Lab Lv 25'}},

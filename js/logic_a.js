@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.34';
+const VERSION='2.35';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -316,6 +316,9 @@ const ACH=[
   // v2.34 order chains
   {id:'chain1',g:'sys',t:'bronze',e:'🔗',n:'Project Partner',d:'Complete a client project (order chain)',p:()=>[(S.orders&&S.orders.chDone)||0,1]},
   {id:'chain10',g:'sys',t:'gold',e:'🏗️',n:'Master Contractor',d:'Complete 10 client projects',p:()=>[(S.orders&&S.orders.chDone)||0,10]},
+  {id:'bp1',g:'sys',t:'bronze',e:'📐',n:'Draughtsman',d:'Save a Replant Blueprint',p:()=>[(S.bp&&S.bp.stats&&S.bp.stats.saved)||0,1]},   // v2.35
+  {id:'bpfull',g:'sys',t:'silver',e:'🏗️',n:'Back to Plan',d:'Restore a whole blueprint after a Replant',p:()=>[(S.bp&&S.bp.stats&&S.bp.stats.full)||0,1]},
+  {id:'bp10',g:'sys',t:'gold',e:'🗺️',n:'Master Planner',d:'Restore a blueprint 10 times',p:()=>[(S.bp&&S.bp.stats&&S.bp.stats.full)||0,10]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
@@ -336,7 +339,8 @@ function freshState(keep){
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
-    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0}};   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; v2.32 Drone Port level; rebuilt after a Replant)
+    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0},
+    bp:{act:0,slots:[null,null,null],run:true,budget:.5,cool:0,stats:{steps:0,spent:0,lv:0,full:0,saved:0},r:{staff:{},set:0,done:0,t0:0}}};   // v2.35 Replant Blueprints (plans kept through Replant)   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; v2.32 Drone Port level; rebuilt after a Replant)
     // v2.17 line specialisations   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=canSell(r.id);});
   COLLECTORS.forEach(c=>s.collectors[c.id]=0);
@@ -615,6 +619,7 @@ function tick(dt,offline){
     for(const r of RES) rates[r.id].d=demand[r.id]/dt;
   }
   if(typeof byTick==='function') byTick(dt,offline);   // v2.12: construction crews
+  if(typeof bpTick==='function') bpTick(dt,offline);   // v2.35: blueprint restore queue
   orderTick(dt,offline); dailyTick(dt,offline); tradeTick(dt,offline);
   S.events=S.events.filter(e=>e.ends>S.time);
   if(offline){ if(S.nextEvent<S.time) S.nextEvent=S.time+60; }
@@ -713,7 +718,8 @@ function doPrestige(){
   keep.spec=typeof specKeep==='function'?specKeep():{}; keep.specStats=Object.assign({picks:0,switches:0},S.specStats||{});   // v2.17: picks are remembered, retooling is dropped
   keep.ship=typeof shKeep==='function'?shKeep():S.ship;   // v2.13: docks, forklifts and crane are kept through Replant
   {const B=S.builders||{};keep.builders={lvl:B.lvl||0,on:B.on!==false,plan:B.plan||'ms',budget:B.budget||.25,off:Object.assign({},B.off||{}),jobs:[],stats:Object.assign({lv:0,spent:0,jobs:0},B.stats||{}),seq:B.seq||0,cool:0};}   // v2.12: the yard stays built, jobs are dropped
-  S=freshState(keep); rpStartRun(); M=computeMods();   // v2.18: Seed Shop start bonuses, fresh run goals
+  keep.bp=typeof bpKeep==='function'?bpKeep():S.bp;   // v2.35: blueprints stay, the run's restore progress starts over
+  S=freshState(keep); rpStartRun(); M=computeMods(); if(typeof bpStartRun==='function') bpStartRun();   // v2.18: Seed Shop start bonuses, fresh run goals
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! <b>+${g}</b> Seeds · Legacy <b>${fmt(S.legacy)}</b> (production ×${legacyMult().toFixed(2)}) · ${fmt(S.seeds)} 🌱 to spend in the Seed Shop`,5200);
   confettiBurst(); sfx('unlock');

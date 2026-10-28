@@ -248,6 +248,7 @@ function drawConstruction(ctx,L,vis,can){
   ctx.save();ctx.setLineDash([6,5]);ctx.lineDashOffset=-scene.t*12*(can?1:0);ctx.strokeStyle=can?'#3f9a2a':'rgba(120,100,70,.7)';ctx.lineWidth=2.2;
   pth(ctx,[P(ci-e,cj-e),P(ci+e,cj-e),P(ci+e,cj+e),P(ci-e,cj+e)]);ctx.stroke();ctx.restore();
   if(can){ctx.fillStyle=`rgba(120,220,90,${.12+.08*Math.sin(scene.t*4)})`;pth(ctx,[P(ci-e,cj-e),P(ci+e,cj-e),P(ci+e,cj+e),P(ci-e,cj+e)]);ctx.fill();}
+  if(typeof bpLotPlanned==='function'&&bpLotPlanned(L.id)) bpDrawLot(ctx,L);   // v2.35: a blueprint sheet on a planned lot
   if(!vis){ // brambles
     for(const [a,b,s] of [[-.8,-.6,1],[.5,-.9,.8],[-.3,.6,.9],[.8,.5,.75],[0,0,1.1]]){const [x,y]=P(ci+a,cj+b);ell(ctx,x+2,y+1,9*s,4*s,'rgba(30,50,10,.2)');ell(ctx,x-3*s,y-4*s,6*s,5*s,'#4f8a35');ell(ctx,x+3*s,y-4*s,6*s,5*s,'#47803a');ell(ctx,x,y-7*s,6*s,5*s,'#5a9a40');}
   } else {

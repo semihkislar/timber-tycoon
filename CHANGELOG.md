@@ -5,6 +5,95 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.35] — 2026-10-28
+
+**Replant Blueprints (item 12).** Save your factory as a plan: the building levels to aim for, your priorities, the crew and
+upgrades, and the settings. After a Replant a planning office rebuilds it for you as coins allow. It pays the normal prices with
+the coins you earn, so a new run starts without the repetitive clicking but costs exactly what it did before. This completes
+the planning list (items 1–12).
+
+### Added
+- **Unlock (research):** *Site Blueprints* (📐, Science · Tier I, 400 RP before tier price and node growth) opens once you have
+  done 1 Replant. *Master Plans* (🗺️, Science · Tier II, needs Site Blueprints) adds slots B and C and makes the office twice as fast
+  (a step every 0.3 s instead of 0.6 s, up to 25 levels per step instead of 10). Research is kept through Replant, so the unlock
+  is permanent.
+- **📐 Blueprint tab** in the Replant sheet (next to Replant, Seed Shop and Goals):
+  - **📸 Save current layout** stores the factory as it is now. Saving over a plan asks first.
+  - **Target levels:** one row per building with its level, the target and a progress bar. Use − / + to change the target in
+    steps of 5, and add a building that is not in the plan yet with +.
+  - **Priority** per building: • normal, ⏫ high (treated as 4× cheaper), ⏬ low (4× dearer).
+  - **Next up:** the next 5 steps with their price. A step the budget can't pay yet is shown in brown.
+  - **Status** (restoring / saving up for X / paused / plan complete), a progress bar (levels reached / levels planned),
+    ⏸ Pause / ▶ Resume, and a budget of 25 %, 50 % (default) or all of your coins.
+  - **Also restore** crew (collectors, planters), upgrades, the wood species, storage, workstations and logistics
+    (Forklift Depot, belts, Drone Port). This is one switch, on by default. The Premium Area is always restored when the plan
+    has premium workshops.
+  - **Settings applied after each Replant:** power fuel, log mode and reserve, plank sharing, auto-sell, staff posts and the
+    Builders' Yard picks. *Apply now* applies them mid-run. Staff posts come back as soon as their building is rebuilt.
+  - Clear the plan. With Master Plans there are three independent slots: A, B and C.
+- **How the planning office works:**
+  - It buys through the same purchase functions as a tap, at this run's normal (forest-value) prices.
+  - It never spends more than the budget share of the coins you hold at that moment. Anything you buy by hand is simply not
+    bought again.
+  - It does one step at a time, every 0.6 s. Building steps can buy several levels in one go, up to 10, but only as many as the
+    budget pays for.
+  - The cheapest step goes first, weighted by your priorities, the way a careful player would buy.
+  - It waits for the same unlocks you do: a revealed lot, research, the Premium Area, the workstation a milestone gate needs,
+    and the Sawmill built from 🪵 40 logs. The free first lumberjack is the only other step that costs no coins.
+  - It also works while you are offline. It stops when the plan is complete.
+- **HUD chip 📐 N %** in the sub bar while a plan is being restored (grey with ⏸ when paused). Tap it to open the Blueprint tab.
+- **On the map:** an empty lot in the plan shows a blueprint sheet (blue paper, white grid, a dashed outline of the building)
+  and a "📐 Plan · Lv 25" tag ("📐 Lv 25" on phones). Levels bought by the office float up as "📐 +3 Lv".
+- **Replant confirm:** "📐 Save this factory as Blueprint A first" (ticked when the slot is empty), a line saying the plan is
+  rebuilt after the Replant, and 📐 Blueprints in the *Stays* list.
+- **Trophies (Factory systems):** *Draughtsman* (save a blueprint), *Back to Plan* (restore a whole blueprint), *Master
+  Planner* (restore one 10 times).
+
+### Changed
+- Phones: the Replant sheet tabs read 🌱 Replant · 🛒 Shop · 🎯 Goals · 📐 Blueprint, so all four fit on one line (≥ 44 px).
+
+### Balance (pacing sim, `test/sim_v235.js`)
+The same Replant is played three ways: by the greedy test player (buys the cheapest thing every 2 s with all its coins), by the
+planning office alone with a 50 % budget, and by the office alone with all coins. The plan is the factory at the end of the
+previous greedy run. The game's random luck is seeded, so every mode gets the same events.
+
+| Legacy (forest value) | | greedy | office 50 % | office all |
+|---|---|---|---|---|
+| 0 (×1.36) | earned at 10 / 20 min | 0.92M / 15.3M | ×0.75 / ×0.77 | ×0.83 / ×0.85 |
+| | levels in the first minute | 14 | 11 | 12 |
+| 400 (×49.7) | earned at 10 / 20 min | 814M / 19.7B | ×0.64 / ×0.74 | ×0.66 / ×0.76 |
+| | levels in the first minute | 72 | 61 | 51 |
+| 3,000 (×621) | earned at 10 / 15 min | 103B / 597B | ×0.66 / ×0.82 | ×0.72 / ×0.85 |
+
+- The office is never faster than a greedy player. It takes the clicking away, not the cost.
+- The cheapest building still costs 1.6–3.9 s of income mid-run (median), as with Replant 2.0.
+- Every paid step in the queue costs at least 20 × the forest value. At ×675 forest value the cheapest is 46 ×, so no silly small
+  numbers after a Replant.
+- An early plan (7 buildings, 119 levels) is fully rebuilt in about 19–20 min. Larger plans reach 86–94 % in 15–20 min.
+
+### Saves
+- v2.34 and older saves load with no plan, a 50 % budget and the queue running. A damaged blueprint is replaced by an empty one.
+  A damaged plan keeps its valid entries: unknown buildings are dropped, levels are clamped to 0–2,000 and bad settings fall back
+  to the defaults.
+
+### Performance
+- The median frame cost is flat with the queue running and the chip updating (2.00 → 2.10 ms headless).
+
+### Tests
+- New `test/v235.py` (desktop, iPhone 13 and Pixel 7 touch). It covers the unlock (research + 1 Replant) and capture
+  (levels, crew, upgrades, stations, settings, staff posts). It edits targets and priorities, then replants: the settings are
+  applied, each step is charged exactly the normal price, and no step goes over the budget share, the 0.6 s gap or the unlocks.
+  It also covers the free lumberjack and the log-built Sawmill, premium waits, priority order, pause and resume, a 25 % budget,
+  the full restore and its trophies, and staff posts. Further checks: a huge forest value (×675), Master Plans slots, three pacing
+  sims, the UI (chip, tab, buttons, rows, Replant confirm, planned lots), flat frame cost, saves (round trip, v2.34, damaged
+  blueprint, damaged plan), offline, and no console errors or 404s.
+- `test/v218.py` accepts the fourth Replant tab.
+
+### Next
+- The planning list is complete (items 1–12). Proposals for what comes next are in `docs/maintenance-v2.28.1.md`, section (b):
+  for example *Workstation sets*, *Seasonal contracts*, *Town growth* and *Photo mode*.
+- Blueprint follow-ups: an "auto-save at Replant" switch, and sharing a plan between slots.
+
 ## [2.34] — 2026-10-27
 
 **Order chains (item 11).** Clients now also bring **projects**: a chain of 3 orders for the same client, such as the Royal
