@@ -113,7 +113,7 @@ let rpTab='replant';
 function setupReplantUI(){
   const T=$('rpTabs');if(!T) return;
   T.querySelectorAll('button').forEach(b=>b.onclick=()=>{rpTab=b.dataset.t;rpSig='';T.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-    for(const [k,id] of [['replant','rpReplant'],['shop','rpShop'],['goals','rpGoals']]) $(id).classList.toggle('hidden',k!==rpTab);
+    for(const [k,id] of [['replant','rpReplant'],['shop','rpShop'],['goals','rpGoals'],['bp','rpBlue']]) $(id).classList.toggle('hidden',k!==rpTab);
     const sb=$('shBody');if(sb) sb.scrollTop=0;});
   $('rpShopList').addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(b&&buyShop(b.dataset.buy)){rpSig='';updateCompany();}});
 }
@@ -145,6 +145,7 @@ function updateCompany(){
           <div class="ds">${l?u.d(l):'Not owned'}${mx?'':` → <b>${u.d(l+1)}</b>`}</div></div>
           ${mx?'<span class="chip">Max</span>':av?`<button class="btn ${c<=S.seeds?'gold':''}" data-buy="${u.id}" ${c<=S.seeds?'':'disabled'}>🌱 ${fmt(c)}</button>`:'<span class="chip off">After 2 Replants</span>'}</div>`;}).join('');}
   }
+  if(rpTab==='bp'&&typeof updateBlueprint==='function') updateBlueprint();   // v2.35 Replant Blueprints
   if(rpTab==='goals'){
     const r=runState();$('rpGoalsHead').innerHTML=`Each goal reached this run adds <b>+${Math.round(RPC.goal*100)}%</b> to the Seeds of your next Replant. Goals restart every run; coin goals follow this run's forest value (×${fx2(cs())}).`;
     const h=GOALS.map(x=>{const [c,t]=x.p(),d=!!r.goals[x.id],k=Math.min(1,t>0?c/t:0);const nm=x.n.replace(/Earn [0-9.]+[KMBT]? this run/,`Earn ${fmt(t)} this run`);
@@ -165,8 +166,8 @@ function rpConfirm(){
   const body=`<div class="rp-cf-gain">+${fmt(g)} 🌱 <small>Legacy ${fmt(L)} → <b>${fmt(L+g)}</b> · production ×${fx2(P)} → <b>×${fx2(P2)}</b></small></div>
   <div class="rp-cf">
    <div class="rp-cf-col reset"><b>🔄 Resets</b><ul><li>Coins &amp; stock</li><li>Buildings &amp; levels</li><li>Collectors &amp; planters</li><li>Upgrades &amp; wood species</li><li>Premium Area</li><li>Storage, orders in progress</li><li>Run goals</li></ul></div>
-   <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li></ul></div>
-  </div>
+   <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li>${typeof bpUnlocked==='function'&&bpUnlocked()?'<li>📐 Blueprints</li>':''}</ul></div>
+  </div>${typeof bpReplantHtml==='function'?bpReplantHtml():''}
   <div class="legend">The new run is priced in your forest's value (×${fx2(Math.pow(legacyOf(L+g)*(1+.25*shopLvl('soil'))*Math.sqrt((1+.5*shopLvl('crews'))*(1+.5*shopLvl('mills')))*(1+.1*shopLvl('market'))*TREES[Math.min(shopLvl('arbor'),TREES.length-1)].mult,RPC.csE))}): costs and goals grow with it, so the climb stays meaningful.</div>`;
-  confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{if(curSheet) return;openSheet('co');rpTabOpen('shop');},700);/* v2.28.1: never replaces a sheet the player opened meanwhile */}});
+  confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(typeof bpBeforeReplant==='function') bpBeforeReplant();if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{if(curSheet) return;openSheet('co');rpTabOpen('shop');},700);/* v2.28.1: never replaces a sheet the player opened meanwhile */}});
 }

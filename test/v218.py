@@ -92,7 +92,7 @@ with sync_playwright() as p:
     for dev in ['iPhone 13','Pixel 7']:
         ctx,pg,errs,bad=page(dev); E(pg,CLEAN+'S.seeds=50;S.legacy=50;S.prestiges=2;M=computeMods();'); E(pg,"TT.openSheet('co')"); pg.wait_for_timeout(500)
         h=E(pg,"[...document.querySelectorAll('#rpTabs button')].map(b=>b.getBoundingClientRect().height)")
-        ok(len(h)==3 and min(h)>=44,f'{dev}: three Replant tabs, >=44 px ({h})')
+        ok(len(h)>=3 and min(h)>=44,f'{dev}: Replant tabs (3, + 📐 Blueprint since v2.35), >=44 px ({h})')
         E(pg,"rpTabOpen('shop')"); pg.wait_for_timeout(300)
         bh=E(pg,"[...document.querySelectorAll('#rpShopList [data-buy]')].map(b=>b.getBoundingClientRect().height)")
         ok(bh and min(bh)>=44,f'{dev}: shop buttons >=44 px')

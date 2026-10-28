@@ -16,7 +16,7 @@ function render(){
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }
@@ -47,7 +47,7 @@ function setupUI(){
   setupReplantUI();
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
-  setupPremiumUI(); setupWx(); setupRndUI();
+  setupPremiumUI(); setupWx(); setupRndUI(); if(typeof setupBlueprintUI==='function') setupBlueprintUI();
   $('forestChip').onclick=()=>{if(curSheet==='crew') closeSheet(); else openSheet('crew');};
   setupMobile();
   updateMuteBtn();
@@ -155,5 +155,8 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   BY_MAX,BY_LV,BY_PLANS,BY_BUDGETS,BY_PERKS,BY_WAIT,BYZ,byLvl,byCost,byUnlocked,byVisible,byCrews,byBatch,byDur,byBudget,byAfford,byPick,byStatus,byJobOf,byAllowed,
   buyBuilders,setBuildersOn,setBuildersPlan,setBuildersBudget,setBuildersAllow,byTrucks:()=>(scene.by?scene.by.trucks:[]).map(t=>({id:t.job,bid:t.bid,li:t.li,s:t.s,v:t.v,i:t.i,j:t.j,crew:t.crew,done:!!t.done,walk:!!t.walk})),
   byScreen:()=>{const p=P(BYZ.ci,BYZ.cj,16);return w2s(p[0],p[1]);},byPeople:()=>scene.by?scene.by.people:[],
+  // v2.35 Replant Blueprints
+  BP_SLOTS,BP_GAP,BP_BATCH,BP_BUDGETS,BP_PRI,BP_STEP,bpTier,bpUnlocked,bpSlotsOpen,bpClean,bpState,bpPlan,bpActive,bpCapture,bpClear,bpSetTarget,bpBump,bpSetPri,bpCyclePri,bpSetRun,bpSetBudget,bpSetSlot,bpSetInc,
+  bpSteps,bpBudget,bpDo,bpApplySettings,bpStartRun,bpKeep,bpProgress,bpLeft,bpStatus,bpTick,updateBlueprint,updateBpChip,bpOpenTab,rpTabOpen,
   get cam(){return scene.cam;}};
 init();

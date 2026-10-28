@@ -895,3 +895,40 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 .lg-box .lg-drone{background:linear-gradient(180deg,rgba(63,134,200,.10),rgba(63,134,200,.03));border:1px solid rgba(63,134,200,.28)}
 .lg-box .lg-drone .lg-tg{background:#3f86c8}
 .lg-box .lg-drone .lg-dr{opacity:.8;font-size:11px;margin-top:2px}
+/* ===== v2.35 Replant Blueprints ===== */
+.fchip.bluchip{background:rgba(31,78,140,.82)}
+.fchip.bluchip .fbar{background:rgba(14,40,80,.85)}.fchip.bluchip .fbar i{background:linear-gradient(90deg,#5aa8ff,#bfe4ff)}
+.fchip.bluchip.paused{background:rgba(70,80,96,.82)}.fchip.bluchip .blu-pz{font-size:10px;margin-left:1px}
+.blu-slots{display:flex;margin-bottom:8px}.blu-slots button{flex:1;min-height:44px}
+.blu-hero{display:flex;gap:10px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:12px;background:linear-gradient(160deg,#e6f1fc,#cfe2f6);border:1.5px solid #8fb5dc;
+  background-image:linear-gradient(rgba(255,255,255,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px),linear-gradient(160deg,#e6f1fc,#cfe2f6);background-size:14px 14px,14px 14px,auto}
+.blu-hero.lock{filter:saturate(.6)}
+.blu-hero .blu-ic{font-size:30px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#2f6fb5;box-shadow:inset 0 0 0 2px #9fd0ff}
+.blu-hero .ph-t{color:#1d4a7c;font-weight:900;font-size:15px;line-height:1.2}
+.blu-lockmsg{padding:10px 12px;border-radius:12px;background:#f3ead8;border:1.5px dashed #c9a870;font-size:13px;margin-bottom:8px}
+.blu-prog{display:flex;align-items:center;gap:8px;margin:-2px 0 8px}.blu-prog .pbar{flex:1;height:9px}.blu-prog .pbar i{background:linear-gradient(90deg,#3f86d6,#7cc0ff)}.blu-prog b{font-size:13px;color:#1d4a7c;min-width:38px;text-align:right}
+.blu-btns{display:flex;gap:8px;margin-bottom:8px}.blu-btns .btn{flex:1;min-height:44px}
+.blu-q{display:grid;gap:4px;margin-bottom:6px}
+.blu-qi{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#f6f0e4;font-size:12.5px;min-height:32px}
+.blu-qi.first{background:#e3effb;box-shadow:inset 0 0 0 1.5px #8fb5dc}.blu-qi.wait i{color:#9a6a2a}
+.blu-qi span{font-size:15px;width:20px;text-align:center}.blu-qi b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.blu-qi em{font-style:normal;color:var(--ink2);white-space:nowrap}.blu-qi i{font-style:normal;font-weight:800;color:#2f6a1c;white-space:nowrap}
+.blu-h4s{font-weight:700;font-size:11px;color:var(--ink2);margin-left:6px}
+.blu-rows{display:grid;gap:6px;margin-bottom:6px}
+.blu-row{display:flex;align-items:center;gap:6px;padding:4px 6px 4px 8px;border-radius:12px;background:#fffaf0;border:1.5px solid var(--line);min-height:50px}
+.blu-row.ok{background:#eef6e4;border-color:#b9d79a}.blu-row.off{opacity:.62}
+.blu-bi{font-size:20px;width:26px;text-align:center}
+.blu-bm{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.blu-bm b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.blu-bm small{font-size:11.5px;color:var(--ink2)}
+.blu-bar{display:block;height:5px;border-radius:3px;background:#e6dcc8;overflow:hidden}.blu-bar i{display:block;height:100%;background:linear-gradient(90deg,#3f86d6,#7cc0ff)}.blu-row.ok .blu-bar i{background:#5aa83a}
+.blu-st,.blu-pri{width:44px;height:44px;flex:none;border-radius:10px;border:1.5px solid var(--line);background:#fff;font:900 18px system-ui;color:var(--ink);cursor:pointer;touch-action:manipulation}
+.blu-st:disabled,.blu-pri:disabled{opacity:.35;cursor:default}
+.blu-pri{font-size:15px}.blu-pri.hi{background:#ffe9b8;border-color:#e0a840}.blu-pri.lo{background:#ece8f6;border-color:#a89cc8}
+.rep-row small{display:block;font-weight:600;font-size:11px;color:var(--ink2);margin-top:2px}
+.blu-clear{margin-top:8px}
+.rp-bpsave{display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:#e6f1fc;border:1.5px solid #8fb5dc;font-size:13px;cursor:pointer;min-height:44px}
+.rp-bpsave input{width:20px;height:20px;flex:none}
+.rp-bpnote{margin:4px 2px 0}
+@media (max-width:720px){.rp-tabs{gap:4px}.rp-tabs button{font-size:12px;padding:0 2px;white-space:nowrap}}
+@media (max-width:460px){.rp-tabs .rp-tl{display:none}}
+/* v2.35: the sticky Replant tabs cover the sheet's top padding too, so nothing peeks out above them while scrolling */
+.rp-tabs{top:-10px;margin-top:-10px;padding-top:12px}
+@media (max-width:720px){.rp-tabs{top:-12px;margin-top:-12px;padding-top:14px}}

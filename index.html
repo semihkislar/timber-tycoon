@@ -30,6 +30,7 @@
 </header>
 <div id="subbar"><div class="scene-label" id="sceneLabel">🌲 Pine Forest</div>
   <button class="fchip ok" id="forestChip" title="Grown trees (tap for Crew & Forest)"><span class="fi">🌲</span><span class="fbar"><i id="fBarI"></i></span><b id="fPct">1.2K</b></button>
+  <button class="fchip bluchip hidden" id="bluChip" title="Blueprint restore (tap to open)"></button>
   <div id="wxChip" class="wx" title="Season, weather and time of day (tap for details)"><span class="wx-dial" id="wxDial"><i id="wxSun"></i></span><span class="wx-s" id="wxS">🌸</span><span class="wx-t"><b id="wxT1">Spring · Day 1</b><small id="wxT2">⛅ Fair</small></span><span class="wx-clk" id="wxClk">07:10</span></div>
   <div id="events"></div></div>
 <div id="wxPop" class="hidden"></div>
@@ -122,7 +123,7 @@
       <div class="legend" style="margin-top:8px">✨ Watch the forest for <b>Golden Logs</b>: tap one before it vanishes for a lucky bonus. Trophies survive replanting.</div>
     </div>
     <div class="pane" id="pane-co">
-      <div class="rp-tabs" id="rpTabs" role="tablist"><button data-t="replant" class="on">🌱 Replant</button><button data-t="shop">🛒 Seed Shop<span class="dot hidden" id="rpShopDot"></span></button><button data-t="goals">🎯 Goals</button></div>
+      <div class="rp-tabs" id="rpTabs" role="tablist"><button data-t="replant" class="on">🌱 Replant</button><button data-t="shop">🛒 <span class="rp-tl">Seed </span>Shop<span class="dot hidden" id="rpShopDot"></span></button><button data-t="goals">🎯 Goals</button><button data-t="bp">📐 Blueprint</button></div>
       <div class="rp-pane" id="rpReplant">
         <div class="prestige-box rp-box">
           <div class="rp-legacy" id="rpLegacy"></div>
@@ -135,6 +136,7 @@
         <div class="rp-explain legend">Seeds you earn grow your <b>Forest Legacy</b> forever (a production bonus that never goes down, even when you spend Seeds). Spend Seeds in the <b>Seed Shop</b>. Each Replant prices the new run in your forest's value, so it starts faster but never trivially.</div>
       </div>
       <div class="rp-pane hidden" id="rpShop"><div class="rp-wallet" id="rpWallet"></div><div class="rp-list" id="rpShopList"></div></div>
+      <div class="rp-pane hidden" id="rpBlue"></div>
       <div class="rp-pane hidden" id="rpGoals"><div class="legend" id="rpGoalsHead"></div><div class="rp-list" id="rpGoalList"></div></div>
       <h4>📊 Company stats</h4>
       <div class="kv" id="statsKv"></div>
@@ -200,6 +202,7 @@
 <script src="js/logistics.js"></script>
 <script src="js/belts.js"></script>
 <script src="js/drones.js"></script>
+<script src="js/blueprint.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
