@@ -4,7 +4,8 @@
 from playwright.sync_api import sync_playwright
 import os,sys
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+import sys as _s,os as _o; _s.path.insert(0,_o.path.dirname(_o.path.abspath(__file__))); from shots import shot_dir
+R=shot_dir('2.27')
 if 'TT_URL' in os.environ: URL=os.environ['TT_URL']
 else:
     from _server import URL
@@ -27,16 +28,16 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate(ST); pg.wait_for_timeout(2600); pg.evaluate(CLEAN)
         tag='mobile' if dev else 'desktop'
         pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(1400); pg.evaluate(CLEAN); pg.wait_for_timeout(300)
-        pg.screenshot(path=R+f'screenshot-v227-{tag}-layout.png')
-        aim(pg,21.5,9.5,1.6 if not dev else 2.0); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v227-{tag}-helpers.png')
-        aim(pg,24.5,20.5,1.6 if not dev else 2.0); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v227-{tag}-peeler.png')
-        pg.evaluate("TT.setClock&&TT.setClock(22*60)"); aim(pg,20,14,1.15 if not dev else 1.5); pg.wait_for_timeout(800); pg.screenshot(path=R+f'screenshot-v227-{tag}-night.png')
+        pg.screenshot(path=R+f'{tag}-layout.png')
+        aim(pg,21.5,9.5,1.6 if not dev else 2.0); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-helpers.png')
+        aim(pg,24.5,20.5,1.6 if not dev else 2.0); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-peeler.png')
+        pg.evaluate("TT.setClock&&TT.setClock(22*60)"); aim(pg,20,14,1.15 if not dev else 1.5); pg.wait_for_timeout(800); pg.screenshot(path=R+f'{tag}-night.png')
         pg.evaluate("TT.setClock&&TT.setClock(9*60)"); pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(600)
         if dev: pg.locator('#jumpBtn').tap()
         else: pg.locator('#jumpBtn').click()
-        pg.wait_for_timeout(500); pg.screenshot(path=R+f'screenshot-v227-{tag}-jump.png')
+        pg.wait_for_timeout(500); pg.screenshot(path=R+f'{tag}-jump.png')
         pg.evaluate("TT.openSheet('ach')"); pg.wait_for_timeout(700)
         if dev: pg.evaluate("TT.setSheetState&&TT.setSheetState('full')"); pg.wait_for_timeout(500)
         pg.evaluate("document.querySelector('#achGrid .ach-h').scrollIntoView({block:'start'})"); pg.wait_for_timeout(400)
-        pg.screenshot(path=R+f'screenshot-v227-{tag}-trophies.png')
+        pg.screenshot(path=R+f'{tag}-trophies.png')
         print(tag,errs); ctx.close()

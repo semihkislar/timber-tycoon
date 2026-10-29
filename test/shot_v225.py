@@ -2,7 +2,8 @@
 # Serve the repo root on :9400 (python3 -m http.server 9400) or set TT_URL.
 from playwright.sync_api import sync_playwright
 import os
-R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+import sys as _s,os as _o; _s.path.insert(0,_o.path.dirname(_o.path.abspath(__file__))); from shots import shot_dir
+R=shot_dir('2.25')
 URL=os.environ.get('TT_URL','http://localhost:9400/index.html')
 ST='''(()=>{const B=1e10;window.toast=()=>{};S.premium.lvl=1;for(const n of RNODES) S.research[n.id]=1;S.trade.lvl=Math.max(1,S.trade.lvl||0);
  for(const b of BUILDINGS){S.buildings[b.id].lvl=Math.max(0,Math.floor(Math.log(B/b.cost)/Math.log(b.scale)));S.buildings[b.id].on=true;}
@@ -22,13 +23,13 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate(ST); pg.wait_for_timeout(2500)
         tag='mobile' if dev else 'desktop'
         pg.evaluate("for(const o of S.orders.acts) o.amt=Math.max(o.amt,o.got*1.6)")
-        pg.screenshot(path=R+f'screenshot-v225-{tag}-scene.png')
+        pg.screenshot(path=R+f'{tag}-scene.png')
         pg.evaluate("TT.ordTab='clients';TT.openSheet('ord')"); pg.wait_for_timeout(1800)
         if dev: pg.evaluate("TT.setSheetState&&TT.setSheetState('full')"); pg.wait_for_timeout(800)
-        pg.screenshot(path=R+f'screenshot-v225-{tag}-board.png')
+        pg.screenshot(path=R+f'{tag}-board.png')
         if dev:
             pg.evaluate("document.querySelector('#ordBody .ord-card.offer').scrollIntoView({block:'start'})"); pg.wait_for_timeout(500)
-            pg.screenshot(path=R+f'screenshot-v225-{tag}-offers.png')
+            pg.screenshot(path=R+f'{tag}-offers.png')
         # the day's contracts right after a Replant (forest value ×90), once the first lines run
         pg.evaluate('''(()=>{TT.closeSheet();S.totalEarned=1e15;S.seeds=0;S.legacy=Math.max(S.legacy||0,2000);doPrestige();window.toast=()=>{};S.orders.next=S.time+1e6;
           buyBuilding('sawmill',1,{logsOnly:true});S.coins=1e9*cs();buyCollector('lumberjack',40);
@@ -36,6 +37,6 @@ with sync_playwright() as p:
           for(let k=0;k<90;k++){S.forest.m=1e9;tick(1,false);}S.coins=coinRate*45;TT.rebuildAll&&TT.rebuildAll();TT.render();})()'''); pg.wait_for_timeout(1500)
         pg.evaluate("TT.ordTab='daily';TT.openSheet('ord')"); pg.wait_for_timeout(1800)
         if dev: pg.evaluate("TT.setSheetState&&TT.setSheetState('full')"); pg.wait_for_timeout(800)
-        pg.screenshot(path=R+f'screenshot-v225-{tag}-daily.png')
+        pg.screenshot(path=R+f'{tag}-daily.png')
         print(tag,errs)
         ctx.close()

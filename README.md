@@ -1,54 +1,140 @@
-# Timber Tycoon
+<h1 align="center">🌲 Timber Tycoon</h1>
 
-Isometric lumber factory idle game: a static multi-file web app (no bundler).
+<p align="center">
+  <b>An isometric lumber-factory idle game for your browser and phone.</b><br>
+  Chop logs, build a sawmill, and grow it into a three-phase timber empire with belts, drones, clients and research.
+</p>
 
-- Play: https://semihkislar.github.io/timber-tycoon/
-- All versions: https://semihkislar.github.io/timber-tycoon/versions.html
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
+<p align="center">
+  <a href="https://semihkislar.github.io/timber-tycoon/"><b>▶&nbsp;&nbsp;Play now</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://semihkislar.github.io/timber-tycoon/versions.html">All versions</a>
+  &nbsp;·&nbsp;
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
-## Layout (since v2.8)
-- `index.html`: slim shell (markup + ordered `<script>` list)
-- `css/style.css`: styles
-- `js/*.js`: game code as ordered classic scripts sharing one global scope (order = the script list in `index.html`)
-- `assets/`: pre-rendered sprite atlases (`atlas-trees.png` + `.json`) and PWA icons (`icon-*.png`)
-- `js/input.js` (v2.9): camera + pointer/touch gestures (pan momentum, pinch, double-tap, rubber band, fly-to, hit areas)
-- `js/mobile.js` (v2.9): mobile UI (quick-jump chips, needs-attention, auto-focus, More overflow, draggable sheets, compact HUD, hold-to-repeat/Buy max, haptics, landscape rail, SW registration)
-- `js/power.js` + `js/scene12.js` (v2.10): biomass power plant (sim, sheet UI; v2.24: surplus-log fuel with Off / Backup / Logs first and a yard reserve that never starves Phase I) and its isometric scene (plant, cooling tower, chimneys, silos, power line)
-- `js/scene1.js` world layout (v2.27/v2.28, design: `docs/layout-v2.27.md`, `docs/layout-v2.28.md`): every tier is a column running down the screen in chain order (Phase 1 right of the lane: Sawmill → Chipper → Kiln → Veneer Peeler → Beam Saw; Phase 2 left, ending with the Glulam Plant; Phase 3 its own row, ending with Timber-frame Houses). The highway bends around the south yard (`HWY`, `hwI`/`hwSeg`/`hwOff`/`hwAt`); a south gate road (`SGATE_J`) joins the lane end to it, and helpers sit in a strip on the right (`HSTRIP`: Fire Station, R&D, Contract Office, Builders' Yard, Shipping dock; `dk()` moves old dock-relative points). Trophies for the newer systems are the `g:'sys'` entries in `ACH` (`js/logic_a.js`)
-- `js/mishaps.js` (v2.26): bad-luck events / setbacks (`MISH_DEF`: storm damage, Log Yard flood, night theft, machine breakdown, lightning, tax audit, market crash). Online-only rolls every 8–15 min after a 15 min game / 5 min run grace, season/weather/night odds, loss caps, Repair now, Insurance (`S.mish.ins`, kept through Replant), Fire Station and workstation cuts, scene tags, and the Safety & Insurance sheet with an event log
-- `js/stations.js` (v2.22): building workstations (3 per production building, levels 0–10, speed/output/input/price effects, milestone gates at Lv 25/50/100/200/400, Workstations tab with an iso mini interior; v2.36 sets `WS_SETS`: all three at Lv 5 → ×1.10 speed, at Lv 10 → ×1.25 and the manager skill ×2 via `wsSetMgr` in `mgrSkill`); leveled upgrades live in `js/logic_a.js` (`upLvl`, `upApply`, `upReqOk`) (design: `docs/stations-v2.22.md`)
-- `js/logistics.js` (v2.30, item 8 part 1): logistics tiers. Calm forklift motion for all three fleets (`fkStep`: one cruising speed `FK_V`, easing, rounded corners `fkPath`, load/unload stops, turn-rate limit; capacity shows as more forklifts / bigger loads), the Forklift Depot (`S.logi.fk` 0–10, Phase II–III output +5 %/level via `logiOut` in `bOutMult`, forest-value costs, rebuilt each run), the Logistics ladder in the Shipping sheet and the Supply Flow line. Conveyor belts (tier 2) are in `js/belts.js`; cargo drones (tier 3) in `js/drones.js`
-- `js/belts.js` (v2.31, item 8 part 2): conveyor belts, logistics tier 2. Four links straight across the lane (`BELT_LINKS`: Sawmill → Carpentry, Chipper → Pellet Press, Peeler → Furniture, Beam Saw → Glulam), unlocked at Depot Lv 3 (`BELT_UNLOCK`). Per-link Lv 0–10 (`S.logi.belt`): +10 % of the carried good at the source (`beltSrcMult`, via `bOutK` in `tick`) and +5 % destination output (`beltDstMult` in `bOutMult`). Supply only, so nothing starves. Costs (2M + 20 × destination base) × 4^L × `cs()`, rebuilt each run. Raised L-shaped belts (`beltGeom`): along j out of the source wall, a turn above the lane centre, then along i into the destination wall. The frame is a cached sprite (`beltFrameRaw`); slats are one path and goods are cached icons (≤ `BELT_ITEMS`). Belted links drop their forklifts (`tierLinks`). Ladder rows sit in the Shipping sheet, with a Supply Flow line and a Bottleneck Advisor fix (`beltFixFor`)
-- `js/drones.js` (v2.32, item 8 part 3): cargo drones, the top logistics tier. Drone Port on the Shipping dock's roof (`S.logi.drone` 0–10, unlocks at Forklift Depot Lv 6 with a belt and the Premium Area; Phase III +8 %/level, Phase II +4 %/level from Lv 5 via `cdOut` in `bOutMult`; forest-value costs, rebuilt each run), calm drone flights (`cdTick`: take off, cruise at `CD_V`, hover over the roof, crate back, land on a free pad spot), cached pad + drone sprites, shadows on the surface below (`cdGroundZ`), ladder card, Supply Flow line, Advisor fix (`cdFixFor`).
-- Decor line (v2.33, item 10): the Veneer Panel Press (Phase 2, `panelpress`, bottom of the left column past the south gate) and the Decor Studio (Phase 3, `decorstudio`, last in the Premium Row) live in the normal tables in `js/logic_a.js`. They take inputs only after every other consumer (`SURPLUS_IN`, `surplusIn()`), and the Advisor, the Supply Flow and the status chip show their waits as calm "♻ spare" stock. The press has a capacity bonus from Lv 50 (`pressCapAt`). Sprites: `bPanelPress` in `js/tiers.js`, the studio in `js/scene7.js`.
-- `js/blueprint.js` (v2.35, item 12): Replant Blueprints — save the factory as a plan (`S.bp.slots`, `bpCapture`: target levels, priorities, crew, upgrades, wood, Premium Area, storage, workstations, logistics + settings: power, plank sharing, auto-sell, staff posts, Builders' Yard picks) that a planning office rebuilds after each Replant (`bpTick` in `tick`: one step every `BP_GAP` s, the cheapest × priority step from `bpSteps`, bought through the normal purchase functions within the budget share). Unlocked by research (`blueprint` Science T1 after 1 Replant; `masterplan` T2: 3 slots, faster). The 📐 Blueprint tab in the Replant sheet, the HUD chip `#bluChip`, planned-lot sheets (`bpDrawLot` in `drawConstruction`) and the Replant-confirm "save first" box (`bpReplantHtml`)
-- `js/chains.js` (v2.34, item 11): order chains — client projects of 3 orders for the same client (`CHAINS`, `S.orders.chain`). Each delivery unlocks the next, larger step in the same slot (`chainStepDone`), and the last pays a 30 % chain bonus (`CH_BONUS`). Steps are v2.25 orders: `ordPlan` with difficulty `CH_MULT`, ≥ `CH_GROW` × the previous step's value (`chPlanAll` leaves room for later steps), and `ordPay` × loyalty `CH_STEP`. A failed step ends the project with no penalty. The project card leads the Clients tab (`chainCardHtml` / `chainLive`). Hooks in `js/premium.js`: `ordNorm` → `chainNorm` (old saves), `completeOrder`, `orderTick` → `chainTick`
-- `js/marketfleet.js` (v2.21): Town Market Fleet — small delivery vans / early-game carts that pick up auto-sold goods at Phase 1–2 stock piles and drive off-screen with a coin float (cosmetic; dock trucks stay for shipping)
-- `js/tiers.js` (v2.20): factory tiers — Phase 1 (logs only) → Phase 2 → Premium, the new Veneer Peeler, processing margins, tier badges, cross-lane forklifts, ground signs (design: `docs/tiers-v2.20.md`); v2.20.1: logs are raw material only (`canSell`, Log Yard cap `logCap`, first Sawmill built with 🪵 `SAW_LOGS`, free first Lumberjack); v2.21.1: Phase 3 (Premium) is its own row beyond Phase 2 (`PROW` in `js/scene1.js`, row drawing in `js/scene7.js`) — three parallel rows I → II → III, II → III forklift gates, Phase 3 dock
-- `js/premium.js` (v2.2 storage, Premium Area, client orders; v2.6 daily contracts): v2.25 order sizing (`ordRate`, `ordPlan`, `ordPay`, `ordInc`: amounts follow real output with a value floor of 5 s of income / forest value, ≥ 20 units, rewards 1.5–2.5× the goods), the client order board (`S.orders.offers` / `acts`, `ordSlots` 1–3, `ordBoardMax`, `ordNorm` keeps `.offer` / `.active` as accessors), daily contracts drawn once lines run and resized until accepted (`dailyReady`, `dailyResize`); export contracts in `js/shipping.js` use the same floors
-- `js/research.js` (v2.19 Research 2.0): 67-node tree in 5 branches × 5 Legacy-gated tiers, milestone gates, growing costs, ♾️ repeatables, R&D sheet + trade map (design: `docs/research-v2.19.md`)
-- `js/replant.js` (v2.18): Replant 2.0 — Forest Legacy, Seed Shop, run goals, forest-value cost scaling, ideal-time advice, confirm sheet, migration (design: `docs/replant-v2.18.md`)
-- `js/spec.js` (v2.17): line specialisations — ⚡ High-speed / ♻️ Lean / 💎 Master craft from Lv 50 (tiers at 50/100/200), advisor, retool on switch, building-sheet block and the scene banner
-- `js/flow.js` (v2.16): Supply flow view (isometric producer → consumer arcs with rates and health colours, 🔀 button / F key)
-- `js/shipping.js` (v2.13): Shipping Yard (loading bays, departures, export contracts, dock/forklift/crane upgrades, sheet UI)
-- `js/forestveh.js` (v2.13): cached forest machines (harvester, forwarder, skidder) with lights
-- `js/staffsys.js` (v2.14): staff system — roles, wages, rotating candidates, training, assignment, light fatigue; managers migrate to founding foremen; v2.22.1: per-role hiring limits (`STAFF_CAPS`, `staffCap`, never drop, kept through Replant; over-limit saves keep everyone) — the Assign picker is a modal in `#modalRoot` (`staffAssignSheet` / `staffPickForBld` in `js/staff.js`); v2.23: staff prices scale with forest value and this run's income (`staffEco`, `staffIncRef`), per-skill effects in `STAFF_FX`, "next level" gains (`staffTrainGain`) and 🎓 Train all (`staffTrainAllPlan` / `staffTrainAll`, confirm sheet in `js/staff.js`)
-- `js/staffworld.js` (v2.15): staff in the world — hired staff walk and work in their area (cached role-coloured sprites, draw cap), campfire breaks, tap a worker → Team card, 📍 on a card → camera
-- `js/builders.js` + `js/scene13.js` (v2.12): Builders' Yard (construction crews that auto-upgrade buildings: plans, budget, sheet UI) and its scene (yard, crane, crew trucks, scaffolding)
-- `js/chimney.js` (v2.10.1): shared high-quality chimney renderer (square + round stacks seated on roofs, cached sprites) and the soft layered smoke puffs
-- `js/facade.js` (v2.11): factory facelift helpers — plank/brick/metal walls, shingle/tile/corrugated roofs, framed windows, roller doors, contact shadows, level-tier extras, and stock-yard goods with quantised fill steps
-- `manifest.webmanifest` + `sw.js` (v2.9): installable PWA; the service worker is network-first for everything and ignores `releases/`
-- `releases/`: every release. v1.0–v2.7 are single HTML files; v2.8+ are folder snapshots `releases/vX.Y/`
-- `tools/`: build, profiling and release scripts
-- `test/`: Playwright suites (served over HTTP automatically via `test/_server.py`)
+<p align="center">
+  <img src="https://img.shields.io/badge/version-2.36-6b8e23" alt="version 2.36">
+  <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
+  <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
+</p>
 
-## Workflow
-- Run locally: `python3 -m http.server` in the repo root, then open http://localhost:8000/ (module-free, but needs http:// for the atlas fetch).
-- Edit `js/`, `css/` and `index.html` directly. There is no build step for the game itself.
-- After changing tree art, rebuild the atlas: `python3 tools/build_assets.py`
-- Tests: `python3 test/v236.py` (workstation sets: tiers, effects, manager doubling within caps, buy flow, trophies, Replant reset, UI, saves, iPhone/Pixel touch), `python3 test/v235.py` (Replant Blueprints: research unlock, capture incl. settings/staff, normal prices + budget share + 0.6 s pacing, unlock waits, priorities, pause, full restore + trophies, huge forest value, Master Plans slots, pacing sims vs a greedy player, tab/chip/confirm UI, saves incl. v2.34/damaged, offline, flat frame cost, desktop + iPhone/Pixel touch), `python3 test/v234.py` (order chains: offer → start → unlock → chain bonus, failure/decline/expiry, rewards proportional to v2.25 × loyalty, growing steps, forest-value scaling after Replant + multi-Replant sims with no tiny numbers, board card + HUD progress, saves incl. v2.33/v2.24/damaged, offline, flat frame cost, desktop + iPhone/Pixel touch), `python3 test/v233.py` (Veneer & Decor line: recipes, costs × forest value, unlock, early game identical to v2.32, spare-stock rule, steady-state balance at late B/C/end and after Replant, Advisor/Supply Flow/status, managers/stations/trophies, layout and forklifts, flat frame cost, fit view, saves, iPhone/Pixel touch), `python3 test/v232.py` (cargo drones: Drone Port unlock, ×1.8 Phase III / ×1.24 Phase II from the same inputs, steady-state "nobody less fed" sim, costs/Replant/trophies, calm flights, hover over roofs, crates, pad spots, cached sprites + flat frame cost, Advisor fix, sheet + Supply Flow, saves + v2.31 migration, desktop + iPhone/Pixel touch), `python3 test/v231.py` (conveyor belts: links/unlock, ×2 / ×1.5 at Lv 10 from the same inputs, steady-state "nobody less fed" sim, costs/Replant/trophies, grid-aligned geometry, moving goods, forklifts leave belted links, cached frames, Advisor fix, sheet + Supply Flow, saves + v2.30 migration, desktop + touch), `python3 test/v230.py` (logistics part 1: calm forklift motion on every fleet at every upgrade level, Forklift Depot output/costs/Replant/saves/trophies, Shipping sheet + Supply Flow, desktop + touch), `python3 test/v2291.py` (chip balance: Wood Chipper yield curve, Plywood Mill early start, cost-balanced + greedy sims), `python3 test/v229.py` (Bottleneck Advisor: waiting-on badges, root fix, Supply Flow top bottlenecks, phone fit with the dock, Logistics renames), `python3 test/v2281.py` (maintenance: damaged saves, mobile market fit, toasts vs full sheets, mishap callouts, recipe tweaks; audit + proposals in `docs/maintenance-v2.28.1.md`), `python3 test/v228.py` (south yard + timber-frame line: Beam Saw, Glulam Plant, Timber-frame Houses; bent highway, vehicle paths, flow, orders, trophies, old saves, desktop + touch), `python3 test/v227.py` (layout: columns, no overlaps, helper strip, vehicle paths clear of buildings, chips, taps on moved buildings; 21 system trophies; old saves; desktop + touch), `python3 test/v226.py` (bad-luck events: grace, offline, frequency, loss caps, counter-play, multi-Replant sim, old saves, desktop + touch), `python3 test/v225.py` (order sizing after Replant + client order board, multi-Replant sims, desktop + touch; `python3 test/sim_v225.py [releases/vX.Y/index.html]` prints the order sim for any version), `python3 test/v224.py` (power-plant log fuel + veneer/plywood balance, sims across Replants, desktop + touch), `python3 test/v2221.py` (staff hiring limits + Assign picker, desktop + touch), `python3 test/v222.py` (leveled upgrades + workstations), `python3 test/v221.py` (town market vans + peeler manager), `python3 test/v217.py` (line specialisations), `python3 test/v216.py` (supply flow), `python3 test/v215.py` (staff in the world), `python3 test/v214.py` (staff system), `python3 test/v213.py` (shipping), `python3 test/v212.py` (builders), `python3 test/v211.py` (factory facelift), `python3 test/v2101.py` (fire station + chimneys), `python3 test/v210.py` (power plant), `python3 test/v29.py` (phone emulation, touch gestures) and `python3 test/v28.py` (layout + long-session perf), plus the older `test/v*.py` and `test/functional.py`. Balance: `python3 test/balance.py`
-- Screenshots: `python3 test/shot.py` (desktop + feature shots, `ONLY=name` to filter) and `python3 test/shot_mobile.py` (phone portrait/sheet/jump/landscape), plus per-feature scripts such as `python3 test/shot_staff_v215.py`
-- PWA icons: `python3 tools/build_icons.py` (from the in-game logo). When releasing, bump `CACHE` in `sw.js` to the new version.
-- Phone UX rules (v2.9): ≥44–48 px touch targets, phones (≤720 px) show 5 bottom buttons + More, landscape phones (height ≤520 px) use the left rail + right side sheet; test both with `test/v29.py`.
-- Perf: `python3 tools/bench.py <url>` (frame cost), `python3 tools/panbench.py <url> [label] [device]` (pan/pinch on a phone), `python3 tools/profile.py <url> out.json [realSec] [gameSecPerSec]` (long session: heap, GC, DOM), `python3 tools/cpuprof.py <url>`
-- Release: bump `VERSION` in `js/logic_a.js` (and `CACHE` in `sw.js`), update CHANGELOG, `python3 tools/release.py` (snapshot to `releases/vX.Y/` + `versions.html`), commit, tag, push. GitHub Pages serves the repo root.
+<p align="center">
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.36: the factory in the late game" width="900"></a>
+</p>
+
+No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
+(PWA). Your progress is saved in the browser, and your crews keep working while you are away.
+
+---
+
+## ✨ Highlights
+
+### New in v2.36: Workstation sets
+Every production building has three workstations. Level all three together and the building earns a set bonus:
+- **🧰 Tuned Line:** all three at Lv 5 give **×1.10 speed**.
+- **🏅 Master Set:** all three at Lv 10 give **×1.25 speed** and **double the building manager's skill**. Capped skills keep
+  their caps.
+
+The Workstations tab shows each set's progress and how many station levels are still missing. Finished sets get a badge on
+the building in the scene, and there are three new trophies.
+
+<p align="center"><img src="screenshots/highlights/desktop-workstation-sets.png" alt="Workstation sets in the Sawmill's Workstations tab" width="720"></p>
+
+### Recent releases
+| Version | Feature | What it does |
+|---|---|---|
+| **v2.35** | 📐 **Replant Blueprints** | Save your factory as a plan: target levels, priorities, crew, upgrades, logistics and settings. After a Replant, a planning office rebuilds it with real coins at normal prices. You choose its budget (25 / 50 / 100 %) and can pause it any time. It is unlocked by research and has up to three plan slots (A/B/C). |
+| **v2.34** | 🔗 **Order chains** | Clients bring three-step projects, such as the Royal Embassy library: archive paper → reading-room chairs → library cabinets. Each delivery unlocks a bigger step, and finishing all three pays a **30 % chain bonus**. |
+| **v2.33** | 🪞 **Veneer & Decor line** | The Veneer Panel Press (Phase 2) and the Decor Studio (Phase 3) turn spare veneer into veneered panels and decor furniture. They use only stock that no other line needs. |
+| **v2.30–2.32** | 🚜 **Logistics tiers** | **Forklift Depot** with calm forklifts (tier 1), **conveyor belts** across the lane (tier 2) and a **Drone Port** on the dock roof (tier 3). Each tier boosts output from the same inputs. |
+| **v2.29** | 🔍 **Bottleneck Advisor** | Starved buildings show what they are waiting for. The building card points at the root fix, and Supply Flow lists the top bottlenecks. |
+
+### The core game
+- 🏭 **Isometric production chain.** 6 kinds of collectors bring in logs for 22 buildings making 24 goods: planks, chips,
+  veneer, plywood, glulam beams, furniture, timber-frame houses and more. Watch trucks, forklifts and workers move every
+  good across the yard.
+- 🪜 **Three factory phases.** Phase 1 turns logs into raw materials, Phase 2 processes them, and the Phase 3 Premium Row
+  builds luxury goods. Logs are raw material only, so value comes from processing.
+- 🛠️ **Leveled upgrades and workstations** with milestone gates, plus **line specialisations** (⚡ High-speed, ♻️ Lean,
+  💎 Master craft) from Lv 50.
+- 🔬 **Research 2.0.** A 67-node tree in 5 branches and 5 tiers, fuelled by paper in the Research Lab. Repeatable nodes keep the
+  late game going.
+- 👷 **Staff and managers.** Hire, train and assign staff with roles and wages. Named managers bring skills, and your staff
+  walk and work in the world.
+- 🌱 **Replant (prestige).** Restart the forest for Forest Legacy, then spend it in the Seed Shop and chase run goals. Costs
+  scale with forest value, so every run stays meaningful.
+- 📋 **Clients and contracts.** A client order board, daily contracts, export contracts at the Shipping Yard,
+  and a trade map with a harbour and rail.
+- ⚡ **Biomass power plant**, a 🚒 **fire station**, 🏗️ **Builders' Yard** crews that auto-upgrade, and a 🌳 planting crew
+  that keeps the forest stocked.
+- ⛈️ **Setbacks and insurance.** Occasional storms, floods, thefts, breakdowns and audits, capped small and fair, with
+  repairs, insurance and safety upgrades as counter-play. Setbacks only happen while you play.
+- 🌗 **Day–night cycle, four seasons and weather**, each with gameplay effects. Windows light up at night, and trucks drive
+  with headlights.
+- 🔀 **Supply Flow view.** Isometric producer → consumer arcs with rates and colour-coded health.
+- 🏆 **Trophies** for milestones and every factory system.
+- 📱 **Mobile-first.** Touch camera with momentum, pinch and double-tap. Draggable sheets, a needs-attention list, hold-to-buy,
+  landscape mode and haptics. Installable as an app.
+
+## 🖼️ Gallery
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="screenshots/highlights/desktop-night.png" alt="Night shift" width="300"><br>**Night shift** | <img src="screenshots/highlights/desktop-supply-flow.png" alt="Supply Flow with the Bottleneck Advisor" width="300"><br>**Supply Flow + Advisor** | <img src="screenshots/highlights/blueprint.png" alt="Replant Blueprints tab" width="300"><br>**Replant Blueprints** |
+| <img src="screenshots/highlights/order-chains.png" alt="Order chain project card" width="300"><br>**Order chains** | <img src="screenshots/highlights/drones.png" alt="Drone Port on the Shipping dock" width="300"><br>**Drone Port** | <img src="screenshots/highlights/belts.png" alt="Conveyor belts across the lane" width="300"><br>**Conveyor belts** |
+
+**On a phone (iPhone 13):**
+
+| | | | |
+|:---:|:---:|:---:|:---:|
+| <img src="screenshots/highlights/mobile.png" alt="Phone: the factory" width="190"><br>Factory | <img src="screenshots/highlights/mobile-workstation-sets.png" alt="Phone: workstation sets" width="190"><br>Workstation sets | <img src="screenshots/highlights/mobile-order-chains.png" alt="Phone: order chains" width="190"><br>Order chains | <img src="screenshots/highlights/mobile-night.png" alt="Phone: night" width="190"><br>Night |
+
+Screenshots from every release are in [`screenshots/history/`](screenshots/history/).
+
+## 🎮 How to play
+1. **Tap the trees** to chop your first logs, then hire **Lumberjacks**. Logs flow into the Log Yard by themselves.
+2. **Build a Sawmill** and the next buildings in the chain. Turn on **auto-sell** for goods you don't process further.
+3. **Upgrade** buildings, buy **workstations** and **upgrades**, and hire **staff** and **managers** to speed up each line.
+4. When a building waits on an input, follow the **Advisor's** hint or open **Supply Flow** (🔀) to find the bottleneck.
+5. Take **client orders**, **projects** and **daily contracts** for big rewards. Open Phase 2, then the Premium Row.
+6. When growth slows, **Replant** for Forest Legacy, buy Seed Shop perks, and come back faster. A **Blueprint** rebuilds
+   your layout for you.
+
+**Controls:** drag to pan, scroll or pinch to zoom, double-tap to zoom in, tap a building to open its card. On desktop:
+arrow keys pan, <kbd>+</kbd>/<kbd>−</kbd> zoom, <kbd>F</kbd> toggles Supply Flow, <kbd>Esc</kbd> closes a sheet.
+
+## 💻 Run locally
+The game is a static site with no build step and no dependencies.
+
+```bash
+git clone https://github.com/semihkislar/timber-tycoon.git
+cd timber-tycoon
+python3 -m http.server 8000
+# open http://localhost:8000/
+```
+
+It needs `http://`, not `file://`, because the sprite atlas is fetched. Tests use Python + Playwright
+(`pip install playwright && playwright install chromium`), for example `python3 test/v236.py`.
+
+## 🗂️ Project structure
+```
+index.html             game shell (markup + ordered <script> list)
+css/style.css          styles
+js/                    game code: classic scripts sharing one global scope (order = index.html)
+assets/                sprite atlases and PWA icons
+manifest.webmanifest   PWA manifest      sw.js  service worker (network-first)
+releases/vX.Y/         playable snapshot of every release (see versions.html)
+docs/                  design notes and DEVELOPMENT.md (code map, workflow, conventions)
+test/                  Playwright suites and screenshot scripts
+tools/                 release, asset, icon and profiling scripts
+screenshots/           highlights/ (README images) and history/vX.Y/ (per-release shots)
+lumber-idle.html       redirect for the old single-file URL
+```
+
+For the code map, tests and the release workflow, see **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
+
+## 📜 History
+Timber Tycoon has shipped a new version almost every day since v1.0 (Oct 6, 2026).
+- **[CHANGELOG.md](CHANGELOG.md):** every change, version by version.
+- **[versions.html](https://semihkislar.github.io/timber-tycoon/versions.html):** play any past release in your browser.

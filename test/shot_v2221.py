@@ -1,11 +1,12 @@
 # v2.22.1 screenshots: staff panel with team limits (x/y) and a working assignment, plus the Assign picker.
-#   python3 test/shot_v2221.py -> screenshot-v2221-desktop.png, screenshot-v2221-desktop-picker.png,
-#                                 screenshot-v2221-mobile.png, screenshot-v2221-mobile-picker.png
+#   python3 test/shot_v2221.py -> screenshots/history/v2.22.1/desktop.png, desktop-picker.png,
+#                                 mobile.png, mobile-picker.png
 from playwright.sync_api import sync_playwright
 import sys,os
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL
-OUT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+import sys as _s,os as _o; _s.path.insert(0,_o.path.dirname(_o.path.abspath(__file__))); from shots import shot_dir
+OUT=shot_dir('2.22.1')
 SEED='''Math.random=(()=>{let a=2221;return ()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};})();'''
 SETUP='''(()=>{const S=TT.S;S.coins=1e12;S.totalEarned=1e12;for(const c of COLLECTORS) TT.buyCollector(c.id,30);
  for(const b of BUILDINGS) if(!b.premium) TT.buyBuilding(b.id,25);S.coins=1e12;TT.buyStation();TT.S.events=[];TT.S.nextEvent=TT.S.time+1e6;TT.S.orders.next=TT.S.time+1e6;
@@ -39,9 +40,9 @@ with sync_playwright() as p:
         if tag=='mobile': pg.evaluate("document.getElementById('shSize').click()"); pg.wait_for_timeout(600)
         pg.evaluate("(()=>{const b=document.getElementById('shBody'),c=document.querySelector('.staff-caps');b.scrollTop+=c.getBoundingClientRect().top-b.getBoundingClientRect().top-6;})()"); pg.wait_for_timeout(900); pg.evaluate(CLEAN)
         if tag=='mobile': pg.evaluate("document.querySelector('.sc-chip[data-cap=forklift]').click()"); pg.wait_for_timeout(200)
-        pg.screenshot(path=OUT+f'screenshot-v2221-{tag}.png')
+        pg.screenshot(path=OUT+f'{tag}.png')
         if tag=='mobile': pg.evaluate("document.getElementById('shSize').click()"); pg.wait_for_timeout(500)
         pg.evaluate("(()=>{const w=TT.S.staff.team.find(x=>x.name==='Sena Yılmaz');TT.staffAssignSheet(w.id);})()"); pg.wait_for_timeout(600); pg.evaluate(CLEAN)
-        pg.screenshot(path=OUT+f'screenshot-v2221-{tag}-picker.png')
+        pg.screenshot(path=OUT+f'{tag}-picker.png')
         ctx.close()
     print('errors:',errs[:5]); print('OK' if not errs else 'ERR')

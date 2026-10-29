@@ -1,10 +1,11 @@
 # v2.15 feature screenshots: staff in the world (desktop close-up with a tapped worker's card, phone portrait).
-#   python3 test/shot_staff_v215.py -> screenshot-staff-world-v215.png, screenshot-staff-world-v215-scene.png, screenshot-mobile-staff-world-v215.png
+#   python3 test/shot_staff_v215.py -> staff-world.png, staff-world-scene.png, mobile-staff-world.png
 from playwright.sync_api import sync_playwright
 import sys,os
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL
-OUT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+import sys as _s,os as _o; _s.path.insert(0,_o.path.dirname(_o.path.abspath(__file__))); from shots import shot_dir
+OUT=shot_dir('2.15')
 SEED='''Math.random=(()=>{let a=4242;return ()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};})();'''
 SETUP='''(()=>{const S=TT.S;S.coins=1e12;S.totalEarned=1e12;for(const c of COLLECTORS) TT.buyCollector(c.id,30);
  for(const b of BUILDINGS) if(!b.premium) TT.buyBuilding(b.id,25);S.coins=1e12;TT.buyStation();TT.S.events=[];TT.S.nextEvent=TT.S.time+1e6;TT.S.orders.next=TT.S.time+1e6;
@@ -30,23 +31,23 @@ with sync_playwright() as p:
     ctx,pg=page(viewport={'width':1280,'height':800})
     pg.wait_for_timeout(6000); cam(pg,float(os.environ.get('CI',6.2)),float(os.environ.get('CJ',4.6)),float(os.environ.get('CZ',1.55))); pg.wait_for_timeout(3500)
     pg.evaluate("TT.SW.list.forEach((a,k)=>{a.nb=k%3?30:0;})"); pg.wait_for_timeout(700); pg.evaluate(CLEAN)
-    pg.screenshot(path=OUT+'screenshot-staff-world-v215-scene.png'); print('screenshot-staff-world-v215-scene.png')
+    pg.screenshot(path=OUT+'staff-world-scene.png'); print('staff-world-scene.png')
     # tap a mill worker in the world -> Team card
     v=pg.evaluate('''(()=>{const L=TT.staffPeople().filter(a=>a.vis&&a.alpha>=1&&a.st!=='go'&&!a.rest&&a.sx>120&&a.sx<760&&a.sy>140&&a.sy<700);const m=L.find(a=>a.role==='mill')||L.find(a=>a.role==='driver')||L[0];return m||null;})()''')
     print('tap',v)
     if v: pg.mouse.click(v['sx'],v['sy']-18)
     pg.wait_for_timeout(1500); pg.evaluate(CLEAN)
-    pg.screenshot(path=OUT+'screenshot-staff-world-v215.png'); print('screenshot-staff-world-v215.png')
+    pg.screenshot(path=OUT+'staff-world.png'); print('staff-world.png')
     ctx.close()
     # phone portrait: campfire + yard, then a tapped worker's card in the half sheet
     ctx,pg=page(viewport={'width':390,'height':844},device_scale_factor=3,is_mobile=True,has_touch=True,
         user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1')
     pg.wait_for_timeout(6000); cam(pg,float(os.environ.get('MI',5.4)),float(os.environ.get('MJ',1.6)),float(os.environ.get('MZ',1.45))); pg.wait_for_timeout(3000); pg.evaluate(CLEAN)
-    pg.screenshot(path=OUT+'screenshot-mobile-staff-world-v215-scene.png'); print('screenshot-mobile-staff-world-v215-scene.png')
+    pg.screenshot(path=OUT+'mobile-staff-world-scene.png'); print('mobile-staff-world-scene.png')
     v=pg.evaluate('''(()=>{const L=TT.staffPeople().filter(a=>a.vis&&a.alpha>=1&&a.st!=='go'&&a.sx>40&&a.sx<350&&a.sy>120&&a.sy<400);return L.find(a=>a.rest)||L[0]||null;})()''')
     print('tap',v)
     if v: pg.evaluate(f"swOpenCard('{v['wid']}')")
     pg.wait_for_timeout(1600); pg.evaluate(CLEAN)
-    pg.screenshot(path=OUT+'screenshot-mobile-staff-world-v215.png'); print('screenshot-mobile-staff-world-v215.png')
+    pg.screenshot(path=OUT+'mobile-staff-world.png'); print('mobile-staff-world.png')
     ctx.close(); b.close()
 print('errs',errs)

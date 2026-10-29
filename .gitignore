@@ -1,4 +1,6 @@
-# Test artifacts / generated screenshots (keep root screenshot.png)
+# Screenshots live in screenshots/ (highlights/ + history/vX.Y/); never in the repo root
+/*.png
+# Test artifacts / scratch screenshots
 test/*.png
 test/__pycache__/
 *.pyc

@@ -3,6 +3,7 @@ from playwright.sync_api import sync_playwright
 import sys,os
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,ROOT
+from shots import shot_dir; OUT=shot_dir('2.17')
 SET='''(()=>{const S=TT.S;S.coins=5e12;S.totalEarned=6e12;for(const c of COLLECTORS) TT.buyCollector(c.id,60);for(const p of PLANTERS) buyPlanter(p.id,25);
  for(const b of BUILDINGS) if(!b.premium&&!b.tech) TT.buyBuilding(b.id,30);
  Object.assign(S.buildings.sawmill,{lvl:120});Object.assign(S.buildings.chipper,{lvl:205});Object.assign(S.buildings.kiln,{lvl:210});Object.assign(S.buildings.carpentry,{lvl:58});
@@ -18,14 +19,14 @@ with sync_playwright() as p:
     ctx=br.new_context(viewport={'width':1400,'height':900},service_workers='block'); pg=ctx.new_page()
     pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate(SET); pg.wait_for_timeout(2500); pg.evaluate(CLEAN)
     pg.evaluate("(()=>{const L=TT.LOTS.carpentry;const p=TT.P(L.ci-1.5,L.cj-2.5,30);flyToWorld(p[0],p[1],1.25,10);})()"); pg.wait_for_timeout(1500)
-    pg.screenshot(path=ROOT+'/screenshot-v217-banners.png')
+    pg.screenshot(path=OUT+'banners.png')
     pg.evaluate("TT.openSheet('bld','carpentry')"); pg.wait_for_timeout(1500); pg.evaluate(CLEAN)
     pg.evaluate("document.getElementById('bpSpec').scrollIntoView({block:'end'})"); pg.wait_for_timeout(600); pg.evaluate(CLEAN)
-    pg.screenshot(path=ROOT+'/screenshot-v217.png'); ctx.close()
+    pg.screenshot(path=OUT+'desktop.png'); ctx.close()
     d=dict(p.devices['iPhone 13']); d.pop('default_browser_type',None)
     ctx=br.new_context(**d,service_workers='block'); pg=ctx.new_page()
     pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate(SET); pg.wait_for_timeout(2500)
     pg.evaluate("TT.openSheet('bld','carpentry')"); pg.wait_for_timeout(1500); pg.evaluate(CLEAN)
     pg.evaluate("(()=>{const b=document.getElementById('shBody'),e=document.getElementById('bpSpec');b.scrollTop+=e.getBoundingClientRect().top-b.getBoundingClientRect().top-6;})()"); pg.wait_for_timeout(600); pg.evaluate(CLEAN)
-    pg.screenshot(path=ROOT+'/screenshot-v217-mobile.png'); ctx.close()
+    pg.screenshot(path=OUT+'mobile.png'); ctx.close()
 print('ok')

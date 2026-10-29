@@ -1,10 +1,11 @@
 # v2.31 screenshots: conveyor belts (logistics tier 2) across the lane, close-ups, the Logistics ladder in the Shipping sheet,
-# Supply Flow and night, desktop + iPhone 13. Writes screenshot-v2.31.png (desktop overview) and screenshot-v231-*.png.
+# Supply Flow and night, desktop + iPhone 13. Writes screenshots/history/v2.31/desktop.png, mobile.png and <device>-*.png.
 # Serve the repo root or set TT_URL; without it, test/_server.py is used.
 from playwright.sync_api import sync_playwright
 import os,sys
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+import sys as _s,os as _o; _s.path.insert(0,_o.path.dirname(_o.path.abspath(__file__))); from shots import shot_dir
+R=shot_dir('2.31')
 if 'TT_URL' in os.environ: URL=os.environ['TT_URL']
 else:
     from _server import URL
@@ -29,13 +30,13 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate(ST); pg.wait_for_timeout(2600); pg.evaluate(CLEAN)
         tag='mobile' if dev else 'desktop'
         aim(pg,16,15,1.25 if not dev else 1.7); pg.evaluate(CLEAN); pg.wait_for_timeout(300)
-        pg.screenshot(path=R+('screenshot-v2.31.png' if not dev else 'screenshot-v2.31-mobile.png'))
-        aim(pg,12,11,3.0 if not dev else 2.4); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v231-{tag}-belts.png')
-        aim(pg,29,28,2.2 if not dev else 2.2); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v231-{tag}-southbelts.png')
+        pg.screenshot(path=R+('desktop.png' if not dev else 'mobile.png'))
+        aim(pg,12,11,3.0 if not dev else 2.4); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-belts.png')
+        aim(pg,29,28,2.2 if not dev else 2.2); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-southbelts.png')
         pg.evaluate("TT.openSheet('ship')"); pg.wait_for_timeout(900); pg.evaluate("(()=>{const e=$('lgBox');if(e) e.scrollIntoView({block:'start'});})()"); pg.wait_for_timeout(500)
-        pg.screenshot(path=R+f'screenshot-v231-{tag}-ladder.png'); pg.evaluate(CLEAN)
+        pg.screenshot(path=R+f'{tag}-ladder.png'); pg.evaluate(CLEAN)
         pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(600); pg.evaluate("toggleFlow(true)"); pg.wait_for_timeout(900)
-        pg.screenshot(path=R+f'screenshot-v231-{tag}-flow.png'); pg.evaluate("toggleFlow(false)")
-        pg.evaluate("TT.setClock&&TT.setClock(22*60)"); aim(pg,16,15,1.8); pg.wait_for_timeout(800); pg.screenshot(path=R+f'screenshot-v231-{tag}-night.png')
+        pg.screenshot(path=R+f'{tag}-flow.png'); pg.evaluate("toggleFlow(false)")
+        pg.evaluate("TT.setClock&&TT.setClock(22*60)"); aim(pg,16,15,1.8); pg.wait_for_timeout(800); pg.screenshot(path=R+f'{tag}-night.png')
         pg.evaluate("TT.setClock&&TT.setClock(9*60)")
         print(tag,errs); ctx.close()

@@ -4,7 +4,8 @@
 from playwright.sync_api import sync_playwright
 import os,sys
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+'/'
+import sys as _s,os as _o; _s.path.insert(0,_o.path.dirname(_o.path.abspath(__file__))); from shots import shot_dir
+R=shot_dir('2.28')
 if 'TT_URL' in os.environ: URL=os.environ['TT_URL']
 else:
     from _server import URL
@@ -28,13 +29,13 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(1500); pg.evaluate(ST); pg.wait_for_timeout(2600); pg.evaluate(CLEAN)
         tag='mobile' if dev else 'desktop'
         pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(1400); pg.evaluate(CLEAN); pg.wait_for_timeout(300)
-        pg.screenshot(path=R+f'screenshot-v228-{tag}-layout.png')
-        aim(pg,31,30,1.7 if not dev else 2.1); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v228-{tag}-southyard.png')
-        aim(pg,36,25,.95 if not dev else 1.2); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v228-{tag}-highway.png')
+        pg.screenshot(path=R+f'{tag}-layout.png')
+        aim(pg,31,30,1.7 if not dev else 2.1); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-southyard.png')
+        aim(pg,36,25,.95 if not dev else 1.2); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-highway.png')
         pg.evaluate("(()=>{const L=LOTS.framer;window._fp=[L.ci,L.cj];})()"); fi,fj=pg.evaluate("window._fp")
-        aim(pg,fi,fj,1.7 if not dev else 2.1); pg.evaluate(CLEAN); pg.screenshot(path=R+f'screenshot-v228-{tag}-houses.png')
+        aim(pg,fi,fj,1.7 if not dev else 2.1); pg.evaluate(CLEAN); pg.screenshot(path=R+f'{tag}-houses.png')
         pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(600); pg.evaluate("toggleFlow(true)"); pg.wait_for_timeout(900)
-        pg.screenshot(path=R+f'screenshot-v228-{tag}-flow.png'); pg.evaluate("toggleFlow(false)")
-        pg.evaluate("TT.setClock&&TT.setClock(22*60)"); aim(pg,29,29,1.3 if not dev else 1.6); pg.wait_for_timeout(800); pg.screenshot(path=R+f'screenshot-v228-{tag}-night.png')
+        pg.screenshot(path=R+f'{tag}-flow.png'); pg.evaluate("toggleFlow(false)")
+        pg.evaluate("TT.setClock&&TT.setClock(22*60)"); aim(pg,29,29,1.3 if not dev else 1.6); pg.wait_for_timeout(800); pg.screenshot(path=R+f'{tag}-night.png')
         pg.evaluate("TT.setClock&&TT.setClock(9*60)")
         print(tag,errs); ctx.close()
