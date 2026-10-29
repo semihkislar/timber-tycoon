@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.35';
+const VERSION='2.36';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -319,6 +319,9 @@ const ACH=[
   {id:'bp1',g:'sys',t:'bronze',e:'📐',n:'Draughtsman',d:'Save a Replant Blueprint',p:()=>[(S.bp&&S.bp.stats&&S.bp.stats.saved)||0,1]},   // v2.35
   {id:'bpfull',g:'sys',t:'silver',e:'🏗️',n:'Back to Plan',d:'Restore a whole blueprint after a Replant',p:()=>[(S.bp&&S.bp.stats&&S.bp.stats.full)||0,1]},
   {id:'bp10',g:'sys',t:'gold',e:'🗺️',n:'Master Planner',d:'Restore a blueprint 10 times',p:()=>[(S.bp&&S.bp.stats&&S.bp.stats.full)||0,10]},
+  {id:'wsset1',g:'sys',t:'bronze',e:'🧰',n:'Tuned Line',d:'Get all three workstations of a building to Lv 5',p:()=>[typeof wsSetCount==='function'?Math.min(1,wsSetCount(1)):0,1]},   // v2.36
+  {id:'wsset2',g:'sys',t:'silver',e:'🏅',n:'Master Set',d:'Get all three workstations of a building to Lv 10',p:()=>[typeof wsSetCount==='function'?Math.min(1,wsSetCount(2)):0,1]},
+  {id:'wsset5',g:'sys',t:'gold',e:'🧑‍🏭',n:'Fully Kitted',d:'Have 5 buildings with a Master Set in one run',p:()=>[typeof wsSetCount==='function'?wsSetCount(2):0,5]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}

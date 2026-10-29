@@ -5,6 +5,36 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.36] — 2026-10-29
+
+**Workstation sets** (maintenance proposal 5 from `docs/maintenance-v2.28.1.md`). Levelling all three workstations of a building
+together now pays a set bonus, which gives the stations system a mid-term goal and a reason to max one line.
+
+### Added
+- **🧰 Tuned Line:** all three workstations of a building at Lv 5 give that building **×1.10 speed**.
+- **🏅 Master Set:** all three at Lv 10 give **×1.25 speed** in total, and the building's **manager skill is doubled**
+  (for example Emre's Pace Setter on the Sawmill). Skills with a cap keep it: Lucky Batch stays ≤ 60 %, Lean Line ≤ 50 %,
+  Fire Marshal ≤ 90 %. A manager never gets a skill they do not have.
+- **Workstations tab:** two set rows under the gate line show what each set gives, how many stations already qualify (2/3)
+  or ✅, and the manager's name. When a set is at most 4 station levels away, a hint reads "N station levels to 🏅 Master Set ·
+  cost".
+- **Toast** when a set completes, and a 🧰 / 🏅 badge on the building's level tag in the scene.
+- **Trophies (Factory systems):** *Tuned Line* (a Lv 5 set), *Master Set* (a Lv 10 set), *Fully Kitted* (5 Master Sets in one run).
+
+### Balance
+- Sets are a speed multiplier on top of everything else, like the stations themselves. Set levels are bought at the normal
+  station prices (Lv 5 stations are priced at the building's Lv 150 cost, Lv 10 at Lv 600, × forest value), so a Master Set is
+  a late-run goal. Stations reset on Replant, so the sets do too; the trophies stay.
+- The Replant Blueprints pacing sims (`test/v235.py`) and the workstation pacing checks (`test/v222.py`) still pass unchanged.
+
+### Saves
+- Older saves load as they are: a building whose stations already meet a set gets the bonus at once. Damaged station data
+  counts as no set.
+
+### Tests
+- New `test/v236.py`: set tiers and effects, manager doubling within caps, buy flow at normal prices, trophies, Replant reset,
+  sheet UI and scene badge, saves (v2.35, no stations, damaged), iPhone/Pixel touch. The whole suite (47 files) passes.
+
 ## [2.35] — 2026-10-28
 
 **Replant Blueprints (item 12).** Save your factory as a plan: the building levels to aim for, your priorities, the crew and

@@ -46,7 +46,19 @@ function wsBlocked(id){return wsHas(id)&&S.buildings[id].lvl>0&&wsRoom(id)===0;}
 function wsCost(id,k,L){L=L||wsLvl(id,k)+1;const b=BMAP[id];return WS_K*b.cost*cs()*Math.pow(b.scale,WS_LV[Math.min(WS_MAX,L)]);}
 function wsEffAt(kind,L){const p=WS_KIND[kind].per;return kind==='inp'?Math.max(.5,1-p*L):1+p*L;}
 function wsMult(id,kind){if(!wsHas(id)||!S.ws||!S.ws[id]) return 1;let m=1;const D=WS_DEF[id];for(let k=0;k<3;k++) if(D[k][3]===kind) m*=wsEffAt(kind,wsLvl(id,k));return m;}
-function wsSpd(id){return wsMult(id,'spd');}
+/* v2.36 workstation sets (maintenance proposal 5): all three stations of a building at Lv 5 → 🧰 Tuned Line (×1.10 speed);
+   all three at Lv 10 → 🏅 Master Set (×1.25 speed and the building's manager skill doubled, within the skill's own caps) */
+const WS_SETS=[{lv:5,e:'🧰',n:'Tuned Line',spd:1.10,mgr:1},{lv:10,e:'🏅',n:'Master Set',spd:1.25,mgr:2}];
+function wsSetTier(id){if(!wsHas(id)||!S.ws||!S.ws[id]) return 0;const m=Math.min(wsLvl(id,0),wsLvl(id,1),wsLvl(id,2));return m>=10?2:m>=5?1:0;}
+function wsSetDef(id){const t=wsSetTier(id);return t?WS_SETS[t-1]:null;}
+function wsSetSpd(id){const d=wsSetDef(id);return d?d.spd:1;}
+function wsSetMgr(id){const d=wsSetDef(id);return d?d.mgr:1;}
+function wsSetCount(t){let n=0;if(S.ws) for(const id in S.ws) if(BMAP[id]&&wsSetTier(id)>=t) n++;return n;}
+function wsSetTag(id){const d=wsSetDef(id);return d?' '+d.e:'';}
+/* the cheapest station levels still missing for the next set: {t,list:[[k,L]],cost} or null */
+function wsSetNeed(id){const t=wsSetTier(id);if(t>=2||!wsHas(id)) return null;const tg=WS_SETS[t].lv;const list=[];let c=0;
+  for(let k=0;k<3;k++) for(let L=wsLvl(id,k)+1;L<=tg;L++){list.push([k,L]);c+=wsCost(id,k,L);}return {t:t+1,lv:tg,list,cost:c};}
+function wsSpd(id){return wsMult(id,'spd')*wsSetSpd(id);}
 function wsOut(id){return wsMult(id,'yld');}
 function wsIn(id){return wsMult(id,'inp');}
 function wsApplyPrice(m){if(!S.ws) return;for(const id in S.ws){const b=BMAP[id];if(!b||!wsHas(id)) continue;const q=wsMult(id,'prc');if(q!==1) for(const k in b.out) if(m.price[k]!==undefined) m.price[k]*=q;}}
@@ -57,7 +69,9 @@ function wsNeedFor(id,to){const out=[];if(!wsHas(id)) return {list:out,cost:0};c
   return {list:out,cost:c};}
 function buyWs(id,k,quiet){
   if(!wsHas(id)||!S.buildings[id].lvl) return false;const L=wsLvl(id,k)+1;if(L>WS_MAX) return false;const c=wsCost(id,k,L);
-  if(S.coins+1e-9<c) return false;S.coins-=c;wsSt(id)[k]=L;M=computeMods();
+  if(S.coins+1e-9<c) return false;const t0=wsSetTier(id);S.coins-=c;wsSt(id)[k]=L;M=computeMods();const t1=wsSetTier(id);
+  if(t1>t0){if(!S.wsSets||typeof S.wsSets!=='object') S.wsSets={n1:0,n2:0};S.wsSets['n'+t1]=(S.wsSets['n'+t1]|0)+1;
+    if(!quiet){const d=WS_SETS[t1-1];setTimeout(()=>toast(`${d.e} <b>${d.n}</b> · ${BMAP[id].name}: all three workstations at Lv ${d.lv} · ×${d.spd.toFixed(2)} speed${d.mgr>1?' · manager skill ×2':''}`,4200),350);}}
   if(!quiet){const D=WS_DEF[id][k],gp=WS_GATES.find(x=>x[1]===k&&x[2]===L),opened=gp&&S.buildings[id].lvl>=gp[0]&&wsCap(id)>gp[0];
     toast(`${D[2]} <b>${D[1]}</b> Lv ${L} · ${wsEffTxt(D[3],L)}${opened?` · 🔓 <b>${BMAP[id].name}</b> can pass Lv ${gp[0]}`:''}`,3200);
     sfx('buy');if(typeof wsFx==='function') wsFx(id,k);}
@@ -114,14 +128,22 @@ function updateBldWs(b){
   if(sig!==wsSig){wsSig=sig;
     let gh;if(!g) gh=`<div class="ws-gate ok">✅ Every milestone gate cleared</div>`;
     else{const at=st.lvl>=g.lv;gh=`<div class="ws-gate${at?' now':''}">${at?'🔒 <b>Capped at Lv '+g.lv+'</b>':'Next gate: <b>Lv '+g.lv+'</b>'} · needs ${D[g.k][2]} <b>${D[g.k][1]} Lv ${g.n}</b> <span>(now Lv ${lv[g.k]})</span></div>`;}
-    let h=`<canvas class="ws-cv" id="bpWsCv"></canvas>${gh}<div class="list ws-list">`;
+    let h=`<canvas class="ws-cv" id="bpWsCv"></canvas>${gh}${wsSetHtml(b.id)}<div class="list ws-list">`;
     for(let k=0;k<3;k++){const [,nm,ic,kind]=D[k],L=lv[k],K=WS_KIND[kind],mx=L>=WS_MAX,gk=g&&g.k===k;
       const pips=Array.from({length:WS_MAX},(_,i)=>`<i class="${i<L?'on':''}${g&&g.k===k&&i<g.n&&i>=L?' need':''}"></i>`).join('');
       h+=`<div class="card ws-card${gk?' gate':''}" data-k="${k}"><div class="ic" style="background:${WS_COL[kind]}22">${ic}</div><div><div class="nm">${nm} <span class="ulv">Lv ${L}/${WS_MAX}</span></div>
         <div class="ds">${K.e} ${K.n}: ${L?'<b>'+wsEffTxt(kind,L)+'</b>':'none yet'}${mx?'':' → '+wsEffTxt(kind,L+1)}${gk?` · <b class="gtag">🔓 Lv ${g.n} lets ${BMAP[b.id].name} pass Lv ${g.lv}</b>`:''}</div>
         <div class="upips">${pips}</div></div><button class="btn buy" data-k="${k}">${mx?'Max':costBtnHtml('⬆ Lv '+(L+1),wsCost(b.id,k))}</button></div>`;}
-    h+=`</div><div class="legend">Each building has three workstations. They add their bonus on top of levels, research, specialisations and staff, and reset on Replant like the building. Gates: Lv 25 · 50 · 100 · 200 · 400.</div>`;
+    h+=`</div><div class="legend">Each building has three workstations. They add their bonus on top of levels, research, specialisations and staff, and reset on Replant like the building. Gates: Lv 25 · 50 · 100 · 200 · 400. Sets: all three at Lv 5 · Lv 10.</div>`;
     W.innerHTML=h;W.querySelectorAll('button[data-k]').forEach(x=>x.onclick=()=>{if(buyWs(b.id,+x.dataset.k)){wsSig='';render();}});
     requestAnimationFrame(()=>{const cv=$('bpWsCv');if(cv) wsDrawInterior(cv,b.id);});}
   W.querySelectorAll('button[data-k]').forEach(x=>{const k=+x.dataset.k,L=wsLvl(b.id,k);const dis=L>=WS_MAX||S.coins+1e-9<wsCost(b.id,k);if(x.disabled!==dis) x.disabled=dis;x.parentElement.classList.toggle('afford',!dis);});
 }
+
+/* v2.36: set-bonus block in the Workstations tab */
+function wsSetHtml(id){const t=wsSetTier(id),lv=[0,1,2].map(k=>wsLvl(id,k)),m=MGR_OF&&MGR_OF[id];
+  const row=(d,i)=>{const on=t>i,have=lv.filter(L=>L>=d.lv).length;
+    return `<div class="ws-set${on?' on':''}"><span class="se">${d.e}</span><div><b>${d.n}</b> <small>all three at Lv ${d.lv}</small><div class="sd">×${d.spd.toFixed(2)} speed${d.mgr>1?` · manager skill ×2${m?' ('+m.name.split(' ')[0]+')':''}`:''}</div></div><span class="sp">${on?'✅':have+'/3'}</span></div>`;};
+  let h=`<div class="ws-sets">`+WS_SETS.map(row).join('');const nd=wsSetNeed(id);
+  if(nd&&nd.list.length<=4) h+=`<div class="ws-setnext">${nd.list.length} station level${nd.list.length>1?'s':''} to ${WS_SETS[nd.t-1].e} ${WS_SETS[nd.t-1].n} · ${fmt(nd.cost)} coins</div>`;
+  return h+`</div>`;}

@@ -932,3 +932,10 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 /* v2.35: the sticky Replant tabs cover the sheet's top padding too, so nothing peeks out above them while scrolling */
 .rp-tabs{top:-10px;margin-top:-10px;padding-top:12px}
 @media (max-width:720px){.rp-tabs{top:-12px;margin-top:-12px;padding-top:14px}}
+
+/* v2.36 workstation sets */
+.ws-sets{display:flex;flex-direction:column;gap:4px;margin:0 0 6px}
+.ws-set{display:flex;align-items:center;gap:8px;padding:5px 9px;border-radius:10px;background:#f5efe3;border:1.5px dashed #d9c6a2;font-size:13px}
+.ws-set .se{font-size:20px;filter:grayscale(.8);opacity:.6}.ws-set.on{background:#eef7e6;border:1.5px solid #a8d58c}.ws-set.on .se{filter:none;opacity:1}
+.ws-set small{color:#8a7558}.ws-set .sd{font-size:12px;color:#5a4630}.ws-set>div{flex:1;min-width:0}.ws-set .sp{font-weight:800;color:#8a7558}
+.ws-setnext{font-size:12px;color:#8a5a20;padding:0 4px}

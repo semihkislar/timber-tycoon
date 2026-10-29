@@ -45,7 +45,8 @@ const MGR_OF={}; MANAGERS.forEach(m=>MGR_OF[m.bid]=m);
 const MGR_MAP={}; MANAGERS.forEach(m=>MGR_MAP[m.id]=m);
 function mgrLvl(bid){const m=MGR_OF[bid];return (m&&S.mgr&&S.mgr[m.id])||0;}
 function mgrRm(bid){return RARITY[MGR_OF[bid].r].rm;}
-function mgrSkill(bid,k){const l=mgrLvl(bid);if(!l) return 0;const m=MGR_OF[bid];return m.skill===k?mgrSkillV(k,l,RARITY[m.r].rm):0;}
+const MGR_SKCAP={double:.6,thrift:.5,safety:.9};
+function mgrSkill(bid,k){const l=mgrLvl(bid);if(!l) return 0;const m=MGR_OF[bid];if(m.skill!==k) return 0;const v=mgrSkillV(k,l,RARITY[m.r].rm),x=typeof wsSetMgr==='function'?wsSetMgr(bid):1;return x>1?Math.min(MGR_SKCAP[k]||Infinity,v*x):v;}   // v2.36: 🏅 Master Set doubles the skill
 function mgrSpd(bid){const l=mgrLvl(bid);if(!l) return 1;return (1+.02+.01*l)*(1+mgrSkill(bid,'speed'));}   // every manager: +3..12% base, plus their skill
 function mgrIn(bid){return 1-mgrSkill(bid,'thrift');}
 function mgrOut(bid){return 1+mgrSkill(bid,'double');}
