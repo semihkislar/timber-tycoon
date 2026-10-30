@@ -1,5 +1,5 @@
 # README highlight screenshots of the current build (late game with every line, logistics tiers, decor line and
-# workstation sets). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
+# workstation sets, seasonal export contracts). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
 #   python3 test/shot_highlights.py            (set TT_URL to shoot another server, e.g. the live Pages site)
 from playwright.sync_api import sync_playwright
 import os,sys,shutil
@@ -39,11 +39,17 @@ with sync_playwright() as p:
         pg.evaluate("openSheet('bld','sawmill');bpTab('ws')"); pg.wait_for_timeout(800)
         pg.evaluate("(()=>{const e=document.querySelector('#bpWs .ws-sets');if(e) e.scrollIntoView({block:'center'});document.querySelectorAll('.toast').forEach(t=>t.remove());})()"); pg.wait_for_timeout(400)
         pg.screenshot(path=highlight_path(f'{tag}-workstation-sets.png')); pg.evaluate(CLEAN)
+        # v2.37 seasonal export contracts: winter, signed and part filled, Orders → Season tab
+        pg.evaluate('''(()=>{TT.setClock(TT.DAY_LEN*TT.SEASON_DAYS*3+600);S.seas.key=-1;S.seas.next=0;tick(.1,false);S.seas.next=0;S.time+=1;tick(.1,false);
+          if(S.seas.st==='offer') scAccept();for(let k=0;k<30;k++){S.forest.m=1e9;tick(1,false);}TT.setClock(TT.DAY_LEN*TT.SEASON_DAYS*3+640);openSeason();})()''')
+        pg.wait_for_timeout(900); pg.evaluate("(()=>{document.querySelectorAll('.toast').forEach(t=>t.remove());scene.particles.length=0;const f=document.getElementById('fxLayer');if(f) f.innerHTML='';if(innerWidth<=720&&TT.setSheetState) TT.setSheetState('full');document.getElementById('shBody').scrollTop=0;})()"); pg.wait_for_timeout(400)
+        pg.screenshot(path=highlight_path(f'{tag}-seasonal.png')); pg.evaluate(CLEAN); pg.evaluate("TT.setClock&&TT.setClock(10*60)")
         if not dev:
             pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(700); pg.evaluate("toggleFlow(true)"); pg.wait_for_timeout(1000)
             pg.screenshot(path=highlight_path('desktop-supply-flow.png')); pg.evaluate("toggleFlow(false)")
         ctx.close()
     b.close()
-for n in ['desktop','mobile','desktop-workstation-sets','mobile-workstation-sets']:
+for n in ['desktop','mobile','mobile-seasonal']:
     shutil.copy(highlight_path(n+'.png'),H+n+'.png')
+shutil.copy(highlight_path('desktop-seasonal.png'),H+'seasonal.png')
 print('errors:',errs[:5]); print('wrote',os.path.dirname(highlight_path('x')),'and',H)

@@ -16,11 +16,11 @@ function render(){
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip();
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }
-function rebuildAll(){cSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';pwSig='';bySig='';M=computeMods();render();}
+function rebuildAll(){cSig='';scSig='';scBadgeSig='';plSig='';bpSig='';mktSig='';upgSig='';treeSig='';evSig='';achSig='';yardSigV='';scene._fsig='';ordSig='';dailySig='';dailyChipSig='';premSig='';ordCardSig='';wxSig='';staffSig='';resSig='';tradeSig='';pwSig='';bySig='';M=computeMods();render();}
 function toggleMute(){S.muted=!S.muted; updateMuteBtn(); save(true);}
 function updateMuteBtn(){const b=$('muteBtn'); if(b) b.textContent=S.muted?'🔇':'🔊'; const t=$('sndToggle'); if(t) t.checked=!S.muted;}
 
@@ -125,6 +125,8 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   // v2.5 research / trade helpers
   RNODES,CITIES,CMAP,bldUnlocked,freeSlot,harborAvail,labBuilt,nodeAvail,openResearch,openTrade,vesselPose,hasRes,doResearch,canResearch,labRP,buyHarbor,openRoute,dispatch,departNow,harborLvl,harborCost,routeOpen,tradeMult,tradeGoods,campusOpen,harborOpen,HOME,
   // v2.6 daily contracts
+  // v2.37 seasonal export contracts
+  SC_THEMES,SC_IDS,SC_LINES,SC_WIN,SC_FRAC,SC_MULT,SC_PAY,SC_SHARE,SC_UNLOCK,SC_MIN_LEFT,scLen,scKey,scLeft,scState,scNorm,scOpen,scGoods,scLine,scReward,scMake,scResize,scOffer,scAccept,scSkip,scDeliver,scPct,scTick,scKeep,scYear,scWon,scAttn,openSeason,updateScBadge,
   dailyOpen,makeDailyOffers,acceptDaily,declineDaily,deliverDaily,makeDailyContract,dayKey,streakMult,openDaily,dailyAwaiting,dailyActiveN,DAILY_MAX_ACTIVE,DAILY_DIFFS,OFFICE,spawnCourierVan,get ordTab(){return ordTab;},set ordTab(v){ordTab=v;},
 
   // v2.4 managers / fire helpers

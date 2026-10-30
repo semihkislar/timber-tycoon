@@ -5,6 +5,68 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.37] — 2026-10-30
+
+**Seasonal export contracts** (maintenance proposal 9 from `docs/maintenance-v2.28.1.md`). Every season of the world clock
+(v2.3) now brings one themed export contract from a foreign buyer, with a trophy for each season. It ties the seasons and
+weather into goals and gives daily play a 21-minute target.
+
+### Added
+- **One contract per season** (a season lasts 21 min), in a new **Season** tab of the Orders sheet (📅 Daily · 📋 Clients ·
+  ❄️ Season):
+
+  | Season | Contract | Buyer | Goods it asks for (first the factory makes) | Trophy |
+  |---|---|---|---|---|
+  | 🌸 Spring | Spring Building Season | Nordic Housing Fair | timber-frame houses, glulam, beams, veneered panels, planks | Spring Builder |
+  | 🌻 Summer | Summer Leisure Export | Riviera Leisure Co. | boats, toys, artisan flooring (decking), grill gift boxes, chairs, bark mulch | Summer Trader |
+  | 🍂 Autumn | Autumn Home Fair | Harvest Home Fair | luxury furniture, decor, cabinets, furniture sets, stationery, chairs, paper | Harvest Fair |
+  | ❄️ Winter | Winter Heating Export | Nordic Heating Co-op | pellets, charcoal, toys, gift boxes, wood chips | Winter Supplier |
+
+- **Two lines per contract:** the season's headline good (the first one on the list that your factory really makes) plus the
+  most valuable other themed good you make. A late factory gets glulam + planks in spring or pellets + toys in winter; an
+  early one gets planks, chairs or pellets. Logs are never asked for.
+- **Sign, skip or let it pass.** Until you sign, the amounts follow your output. A signed contract runs in **its own slot** (it
+  does not use a client order slot) until the season ends. Each line takes at least 50 % of that good's output (loaded before
+  the power plant takes its fuel) plus any surplus, and **📦 Deliver from storage** tops it up. When the season ends unfilled,
+  the contract is simply missed, with no penalty. An unsigned offer is withdrawn in the season's last 3 minutes.
+- **Season tab:** a hero in the season's colours, the time to the next season, the contract card (lines with progress, reward,
+  trophy), a four-season row with your wins, totals (delivered / missed / earned) and the last contracts.
+- **Minimal HUD:** a small **📦 New** / **📦 42 %** badge on the season chip (tap → Season tab), a line in the season popup,
+  and the Orders button dot for a new offer. The isometric scene stays as it was. A delivered contract sends an EXPORT van off
+  the yard.
+- **Trophies (Factory systems):** *Spring Builder*, *Summer Trader*, *Harvest Fair*, *Winter Supplier* (one per season),
+  *Four Seasons* (gold: all four) and *Seasoned Exporter* (silver: 10 contracts).
+
+### Balance (v2.25 rules)
+- **Amounts:** each line is half of what the line really makes (smoothed output, never above its potential) over a window of
+  min(8 min, 60 % of the season left). Each line is ≥ 20 units, worth at least the forest-value floor (10 s × 2 🪙/s × forest
+  value), and deliverable (≤ 60 % of the output over the window plus stock). A starved workshop is not asked for. The whole
+  contract must be worth ≥ 1 s of this run's income (low enough for cheap heating goods in a big factory). Otherwise the two
+  most valuable themed goods are used, and if even they are too small there is no contract that season.
+- **Rewards:** 1.5–2.5 × the goods' value (v2.25 `ordPay`), × 1.2 seasonal premium, × 1.25 for premium goods, × managers and
+  research. A premium line late in a run also pays +1 🌱, like premium client orders.
+- **Unlock:** a Phase II line running and 🪙50K × forest value earned this run. In the greedy bot run the first offer comes
+  after about 8 minutes, so the first minutes of every run play as before.
+- **Replant:** the contract in hand ends. Trophies, counters and "this season is done" stay, and the new run unlocks it again.
+- Fill sims (`test/v237.py`): a signed contract is filled by the lines alone in 5–12 minutes of the 21-minute season, mid game
+  and late game (with the power plant burning pellets).
+
+### Saves
+- v2.36 and older saves load with no seasonal history. A damaged contract is dropped, damaged counters fall back to 0.
+
+### Tests
+- New `test/v237.py`: unlock and early game (greedy bot), the four themes (themed goods only, headline first, no logs),
+  amount and reward rules, re-sizing, priority fill over ticks, own slot, deliver from storage, trophies, one contract per
+  season, season end (no penalty), skip and withdraw, Replant, forest value ×1 / ×50 / ×675, fill sims for every season (mid
+  and late game), saves (round trip, v2.36, damaged), offline, HUD badge and popup, desktop + iPhone/Pixel touch, no console
+  errors or 404s.
+
+### Next ideas
+- Late-game plywood balance (Parquet, Toy Workshop and Timber-frame Houses all wait on the Plywood Mill).
+- Onboarding for new players (a pointer to "tap the forest", first-build guidance).
+- Insurance claims & safety drills (maintenance proposal 7).
+- Photo mode / share card (maintenance proposal 12).
+
 ## [2.36] — 2026-10-29
 
 **Workstation sets** (maintenance proposal 5 from `docs/maintenance-v2.28.1.md`). Levelling all three workstations of a building

@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.36-6b8e23" alt="version 2.36">
+  <img src="https://img.shields.io/badge/version-2.37-6b8e23" alt="version 2.37">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.36: the factory in the late game" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.37: the factory in the late game" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,25 +30,27 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.36: Workstation sets
-Every production building has three workstations. Level all three together and the building earns a set bonus:
-- **🧰 Tuned Line:** all three at Lv 5 give **×1.10 speed**.
-- **🏅 Master Set:** all three at Lv 10 give **×1.25 speed** and **double the building manager's skill**. Capped skills keep
-  their caps.
+### New in v2.37: Seasonal export contracts
+Every season of the world clock brings one themed export contract, with a trophy for each season:
+- 🌸 **Spring Building Season:** timber-frame houses, glulam, beams and planks for the Nordic Housing Fair.
+- 🌻 **Summer Leisure Export:** boats, toys, decking, grill gift boxes and chairs for the Riviera.
+- 🍂 **Autumn Home Fair:** luxury furniture, decor, cabinets, furniture sets and stationery.
+- ❄️ **Winter Heating Export:** pellets and charcoal by the shipload, plus toys and gift boxes for the holidays.
 
-The Workstations tab shows each set's progress and how many station levels are still missing. Finished sets get a badge on
-the building in the scene, and there are three new trophies.
+Each contract asks for two of the season's goods that your factory really makes, sized on your output and forest value. It
+pays 1.5–2.5× the goods' value plus a 20 % seasonal premium. It opens once a Phase II line runs and uses its own slot in
+**Orders → Season**. Deliver all four seasons for the *Four Seasons* trophy. Missing one costs nothing.
 
-<p align="center"><img src="screenshots/highlights/desktop-workstation-sets.png" alt="Workstation sets in the Sawmill's Workstations tab" width="720"></p>
+<p align="center"><img src="screenshots/highlights/desktop-seasonal.png" alt="A winter export contract in the Orders sheet's Season tab" width="720"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.36** | 🧰 **Workstation sets** | Level all three workstations of a building together: Lv 5 gives 🧰 Tuned Line (×1.10 speed), Lv 10 gives 🏅 Master Set (×1.25 speed and the manager's skill doubled, within its caps). |
 | **v2.35** | 📐 **Replant Blueprints** | Save your factory as a plan: target levels, priorities, crew, upgrades, logistics and settings. After a Replant, a planning office rebuilds it with real coins at normal prices. You choose its budget (25 / 50 / 100 %) and can pause it any time. It is unlocked by research and has up to three plan slots (A/B/C). |
 | **v2.34** | 🔗 **Order chains** | Clients bring three-step projects, such as the Royal Embassy library: archive paper → reading-room chairs → library cabinets. Each delivery unlocks a bigger step, and finishing all three pays a **30 % chain bonus**. |
 | **v2.33** | 🪞 **Veneer & Decor line** | The Veneer Panel Press (Phase 2) and the Decor Studio (Phase 3) turn spare veneer into veneered panels and decor furniture. They use only stock that no other line needs. |
 | **v2.30–2.32** | 🚜 **Logistics tiers** | **Forklift Depot** with calm forklifts (tier 1), **conveyor belts** across the lane (tier 2) and a **Drone Port** on the dock roof (tier 3). Each tier boosts output from the same inputs. |
-| **v2.29** | 🔍 **Bottleneck Advisor** | Starved buildings show what they are waiting for. The building card points at the root fix, and Supply Flow lists the top bottlenecks. |
 
 ### The core game
 - 🏭 **Isometric production chain.** 6 kinds of collectors bring in logs for 22 buildings making 24 goods: planks, chips,
@@ -64,8 +66,8 @@ the building in the scene, and there are three new trophies.
   walk and work in the world.
 - 🌱 **Replant (prestige).** Restart the forest for Forest Legacy, then spend it in the Seed Shop and chase run goals. Costs
   scale with forest value, so every run stays meaningful.
-- 📋 **Clients and contracts.** A client order board, daily contracts, export contracts at the Shipping Yard,
-  and a trade map with a harbour and rail.
+- 📋 **Clients and contracts.** A client order board, three-step client projects, daily contracts, seasonal export
+  contracts, export contracts at the Shipping Yard, and a trade map with a harbour and rail.
 - ⚡ **Biomass power plant**, a 🚒 **fire station**, 🏗️ **Builders' Yard** crews that auto-upgrade, and a 🌳 planting crew
   that keeps the forest stocked.
 - ⛈️ **Setbacks and insurance.** Occasional storms, floods, thefts, breakdowns and audits, capped small and fair, with
@@ -88,7 +90,7 @@ the building in the scene, and there are three new trophies.
 
 | | | | |
 |:---:|:---:|:---:|:---:|
-| <img src="screenshots/highlights/mobile.png" alt="Phone: the factory" width="190"><br>Factory | <img src="screenshots/highlights/mobile-workstation-sets.png" alt="Phone: workstation sets" width="190"><br>Workstation sets | <img src="screenshots/highlights/mobile-order-chains.png" alt="Phone: order chains" width="190"><br>Order chains | <img src="screenshots/highlights/mobile-night.png" alt="Phone: night" width="190"><br>Night |
+| <img src="screenshots/highlights/mobile.png" alt="Phone: the factory" width="190"><br>Factory | <img src="screenshots/highlights/mobile-seasonal.png" alt="Phone: seasonal export contract" width="190"><br>Seasonal contract | <img src="screenshots/highlights/mobile-order-chains.png" alt="Phone: order chains" width="190"><br>Order chains | <img src="screenshots/highlights/mobile-night.png" alt="Phone: night" width="190"><br>Night |
 
 Screenshots from every release are in [`screenshots/history/`](screenshots/history/).
 
@@ -97,7 +99,7 @@ Screenshots from every release are in [`screenshots/history/`](screenshots/histo
 2. **Build a Sawmill** and the next buildings in the chain. Turn on **auto-sell** for goods you don't process further.
 3. **Upgrade** buildings, buy **workstations** and **upgrades**, and hire **staff** and **managers** to speed up each line.
 4. When a building waits on an input, follow the **Advisor's** hint or open **Supply Flow** (🔀) to find the bottleneck.
-5. Take **client orders**, **projects** and **daily contracts** for big rewards. Open Phase 2, then the Premium Row.
+5. Take **client orders**, **projects**, **daily** and **seasonal contracts** for big rewards. Open Phase 2, then the Premium Row.
 6. When growth slows, **Replant** for Forest Legacy, buy Seed Shop perks, and come back faster. A **Blueprint** rebuilds
    your layout for you.
 
@@ -115,7 +117,7 @@ python3 -m http.server 8000
 ```
 
 It needs `http://`, not `file://`, because the sprite atlas is fetched. Tests use Python + Playwright
-(`pip install playwright && playwright install chromium`), for example `python3 test/v236.py`.
+(`pip install playwright && playwright install chromium`), for example `python3 test/v237.py`.
 
 ## 🗂️ Project structure
 ```

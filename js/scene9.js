@@ -144,7 +144,7 @@ function spawnCourierVan(o){
     {pa:crPath([[30.35,cj-2],[28.4,cj-1.1],[26.4,cj-.1],[park[0],park[1]]],8),vmax:2.8,hold:(v,dt)=>{v.load=Math.min(1,(v.load||0)+dt*.55);v.doors=Math.min(1,(v.doors||0)+dt*1.4);return v.load<1||v.wait<1.6;}},
     {pa:crPath([[park[0],park[1]],[ci+2.6,cj-.3],[ci+4.4,cj-1.7],[30.35,cj-3.3],[30.35,cj-9],[30.35,-26]],10),vmax:3.6}
   ];
-  scene.couriers.push({kind:'courier',legs,li:0,s:0,v:0,load:0,doors:0,col:'#2f6fb0',box:'#f4f1e8',stripe:'#e8a020',item:o&&o.item,logo:'DAILY CO.'});
+  scene.couriers.push({kind:'courier',legs,li:0,s:0,v:0,load:0,doors:0,col:'#2f6fb0',box:'#f4f1e8',stripe:'#e8a020',item:o&&o.item,logo:(o&&o.logo)||'DAILY CO.'});
 }
 function courierUpdate(dt){
   for(const tk of scene.couriers){if(tk.li===0){/* loading at office */} if(tk.li===1) tk.doors=Math.max(0,(tk.doors||0)-dt*1.8); stepVeh(tk,dt);}

@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.36';
+const VERSION='2.37';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -322,6 +322,13 @@ const ACH=[
   {id:'wsset1',g:'sys',t:'bronze',e:'🧰',n:'Tuned Line',d:'Get all three workstations of a building to Lv 5',p:()=>[typeof wsSetCount==='function'?Math.min(1,wsSetCount(1)):0,1]},   // v2.36
   {id:'wsset2',g:'sys',t:'silver',e:'🏅',n:'Master Set',d:'Get all three workstations of a building to Lv 10',p:()=>[typeof wsSetCount==='function'?Math.min(1,wsSetCount(2)):0,1]},
   {id:'wsset5',g:'sys',t:'gold',e:'🧑‍🏭',n:'Fully Kitted',d:'Have 5 buildings with a Master Set in one run',p:()=>[typeof wsSetCount==='function'?wsSetCount(2):0,5]},
+  // v2.37 seasonal export contracts
+  {id:'sc_spring',g:'sys',t:'bronze',e:'🌸',n:'Spring Builder',d:'Deliver a spring export contract (Spring Building Season)',p:()=>[Math.min(1,typeof scWon==='function'?scWon('spring'):0),1]},
+  {id:'sc_summer',g:'sys',t:'bronze',e:'🌻',n:'Summer Trader',d:'Deliver a summer export contract (Summer Leisure Export)',p:()=>[Math.min(1,typeof scWon==='function'?scWon('summer'):0),1]},
+  {id:'sc_autumn',g:'sys',t:'bronze',e:'🍂',n:'Harvest Fair',d:'Deliver an autumn export contract (Autumn Home Fair)',p:()=>[Math.min(1,typeof scWon==='function'?scWon('autumn'):0),1]},
+  {id:'sc_winter',g:'sys',t:'bronze',e:'❄️',n:'Winter Supplier',d:'Deliver a winter export contract (Winter Heating Export)',p:()=>[Math.min(1,typeof scWon==='function'?scWon('winter'):0),1]},
+  {id:'sc_year',g:'sys',t:'gold',e:'🗓️',n:'Four Seasons',d:'Deliver a seasonal contract in every season',p:()=>[typeof scYear==='function'?scYear():0,4]},
+  {id:'sc_10',g:'sys',t:'silver',e:'🚢',n:'Seasoned Exporter',d:'Deliver 10 seasonal export contracts',p:()=>[(S.seas&&+S.seas.total)||0,10]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
@@ -339,6 +346,7 @@ function freshState(keep){
     mgr:{},station:{lvl:0},fires:{},fireStats:{n:0,tap:0},fireCool:0,
     research:{},rp:0,trade:{lvl:0,routes:{},fleet:[],dem:{},spike:null,nextDrift:0,nextSpike:0,stats:{trips:0,earned:0},seq:0},
     daily:{day:'',offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0},
+    seas:{key:-1,st:'wait',c:null,won:{spring:0,summer:0,autumn:0,winter:0},total:0,failed:0,earned:0,hist:[],next:0},   // v2.37 seasonal export contracts
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
@@ -600,8 +608,9 @@ function tick(dt,offline){
     const o0=bstat[b.id];bstat[b.id]={f,lim:full?null:lim,speed:sp,full,fs:(o0&&isFinite(o0.fs)?o0.fs:1)+(f-(o0&&isFinite(o0.fs)?o0.fs:1))*Math.min(1,dt/6)};   // fs: smoothed (~6 s) for warnings
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
+  if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'pri');   // v2.37: a signed seasonal contract loads its share before the boiler
   if(typeof powerTick==='function') powerTick(demand,dt,fl,frac);   // v2.10: the power plant takes its fuel before auto-sell
-  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
+  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'sur'); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
     if(!S.autosell[r.id]||!canSell(r.id)) continue;
@@ -623,7 +632,7 @@ function tick(dt,offline){
   }
   if(typeof byTick==='function') byTick(dt,offline);   // v2.12: construction crews
   if(typeof bpTick==='function') bpTick(dt,offline);   // v2.35: blueprint restore queue
-  orderTick(dt,offline); dailyTick(dt,offline); tradeTick(dt,offline);
+  orderTick(dt,offline); dailyTick(dt,offline); if(typeof scTick==='function') scTick(dt,offline); tradeTick(dt,offline);
   S.events=S.events.filter(e=>e.ends>S.time);
   if(offline){ if(S.nextEvent<S.time) S.nextEvent=S.time+60; }
   else if(S.time>=S.nextEvent){ triggerEvent(); S.nextEvent=S.time+90+Math.random()*90; }
@@ -715,6 +724,7 @@ function doPrestige(){
       chain:null,chNext:0,chDone:(S.orders&&S.orders.chDone)||0,chFailed:(S.orders&&S.orders.chFailed)||0,chEarned:(S.orders&&S.orders.chEarned)||0,chHist:((S.orders&&S.orders.chHist)||[]).slice(-4)},   // v2.34: the project in hand ends, counters stay
     daily:{day:'',offers:[],active:[],doneToday:0,streak:(S.daily&&S.daily.streak)||0,bestStreak:(S.daily&&S.daily.bestStreak)||0,total:(S.daily&&S.daily.total)||0,hist:[],failedToday:0}};
   keep.forestLife=Object.assign({},S.forestLife||{planted:0});
+  keep.seas=typeof scKeep==='function'?scKeep():S.seas;   // v2.37: the contract in hand ends; trophies, counters and "done this season" stay
   keep.tierNote=S.tierNote||0;   // v2.20
   keep.mish=typeof mishKeep==='function'?mishKeep():S.mish;   // v2.26: insurance, log and stats stay; breakdowns are cleared
   keep.power={lvl:pwLvl(),on:S.power?S.power.on!==false:true,fuel:(S.power&&S.power.fuel)||'mix',logs:pwLogMode(),res:pwReserveSec(),eff:0,burn:{}};   // v2.10: the plant stays built

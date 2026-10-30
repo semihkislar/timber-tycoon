@@ -346,7 +346,7 @@ function bonusTxt(o){return o.bonus?(o.bonus.type==='seeds'?` + ${o.bonus.n} �
 let ordCardSig='';
 function renderOrderCard(){
   const c=$('orderCard'); if(!c) return; const O=ordNorm(); const o=O.offer||O.active;
-  $('ordDot').classList.toggle('hidden',!(O.offers.length||dailyAwaiting()||(O.chain&&O.chain.state==='offer')));
+  $('ordDot').classList.toggle('hidden',!(O.offers.length||dailyAwaiting()||(O.chain&&O.chain.state==='offer')||(typeof scAttn==='function'&&scAttn())));
   if(!o){if(c.dataset.on){c.dataset.on='';c.className='hidden';} return;}
   const mode=O.offer?'offer':'active', more=O.offers.length+O.acts.length-1, full=O.acts.length>=ordSlots();
   const sig=mode+o.id+'|'+more+'|'+full+'|'+(o.ch!==undefined?o.chStep:'');
@@ -370,10 +370,11 @@ function updateOrders(){
   if(curSheet!=='ord') return;
   ensureDailyDay(); if(dailyOpen()) makeDailyOffers();
   const O=ordNorm(), D=S.daily;
-  const sig=ordTab+'|'+O.offers.map(x=>'o'+x.id).join(',')+'/'+O.acts.map(x=>'a'+x.id).join(',')+'|'+ordSlots()+'|'+O.done+'|'+O.failed+'|'+ordersOpen()+'|'+S.premium.lvl+'|'+(D?(D.offers.map(x=>x.id+':'+x.amt).join(',')+'/'+D.active.map(x=>x.id+':'+Math.floor(x.got)).join(',')+'/'+D.doneToday+'/'+D.streak+'/'+D.total):'')+'|'+dailyOpen()+'|'+(typeof chainSigOf==='function'?chainSigOf():'');
+  const sig=ordTab+'|'+O.offers.map(x=>'o'+x.id).join(',')+'/'+O.acts.map(x=>'a'+x.id).join(',')+'|'+ordSlots()+'|'+O.done+'|'+O.failed+'|'+ordersOpen()+'|'+S.premium.lvl+'|'+(D?(D.offers.map(x=>x.id+':'+x.amt).join(',')+'/'+D.active.map(x=>x.id+':'+Math.floor(x.got)).join(',')+'/'+D.doneToday+'/'+D.streak+'/'+D.total):'')+'|'+dailyOpen()+'|'+(typeof chainSigOf==='function'?chainSigOf():'')+'|'+(ordTab==='season'&&typeof scSigOf==='function'?scSigOf():'');
   if(sig!==ordSig){ordSig=sig;
-    let h=`<div class="seg" id="ordTabs" style="margin-bottom:8px"><button data-t="daily" class="${ordTab==='daily'?'on':''}">📅 Daily</button><button data-t="clients" class="${ordTab==='clients'?'on':''}">📋 Clients</button></div>`;
-    if(ordTab==='daily'){
+    let h=`<div class="seg" id="ordTabs" style="margin-bottom:8px"><button data-t="daily" class="${ordTab==='daily'?'on':''}">📅 Daily</button><button data-t="clients" class="${ordTab==='clients'?'on':''}">📋 Clients</button><button data-t="season" class="${ordTab==='season'?'on':''}">${season().e} Season${typeof scAttn==='function'&&scAttn()?' <i class="tdot"></i>':''}</button></div>`;
+    if(ordTab==='season'){h+=scPaneHtml();}   // v2.37 seasonal export contracts (js/seasonal.js)
+    else if(ordTab==='daily'){
       const sm=streakMult(); const awaitN=(D.offers||[]).length;
       h+=`<div class="daily-hero"><div class="dh-ic">📅</div><div style="flex:1"><div class="dh-t">Daily Contracts${D.streak?` · 🔥 ${D.streak}-day streak`:''}</div>
         <div class="legend" style="margin:2px 0 0">${dailyOpen()?`Three contracts each local day, sized on what your lines make (until you accept, they follow your output). Accept up to <b>${DAILY_MAX_ACTIVE}</b> at once. Declining frees the slot (no replacement). ${streakLabel()}${sm>1?` · current bonus <b>×${sm.toFixed(2)}</b>`:''}`:'🔓 Unlocks once your <b>Sawmill</b> is running and you have earned ~🪙500.'}</div></div>
@@ -424,7 +425,8 @@ function updateOrders(){
     }
     $('ordBody').innerHTML=h;
     document.querySelectorAll('#ordTabs button').forEach(b=>b.onclick=()=>{ordTab=b.dataset.t;ordSig='';updateOrders();});
-    if(ordTab==='clients'){
+    if(ordTab==='season') scBind();
+    else if(ordTab==='clients'){
       document.querySelectorAll('[data-oyes]').forEach(b=>b.onclick=()=>acceptOrder(+b.dataset.oyes));
       document.querySelectorAll('[data-ono]').forEach(b=>b.onclick=()=>declineOrder(+b.dataset.ono));
       document.querySelectorAll('[data-odel]').forEach(b=>b.onclick=()=>{const n=deliverFromStock(+b.dataset.odel); if(n>0){const rc=b.getBoundingClientRect();floatText(rc.left+rc.width/2,rc.top-4,'+'+fmt(n),$('fxLayer'));}});
@@ -437,6 +439,7 @@ function updateOrders(){
     }
   }
   // live progress updates
+  if(ordTab==='season') scLive();
   if(ordTab==='clients'){
     for(const o of O.offers){const bar=$('opBar'+o.id),chip=$('opChip'+o.id),tx=$('opTx'+o.id);if(!bar) continue;
       bar.style.width=Math.max(0,(o.expires-S.time)/ORDER_OFFER_SEC*100)+'%';chip.textContent='Offer ends in '+fmtTime(Math.max(0,o.expires-S.time));

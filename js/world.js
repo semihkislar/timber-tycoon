@@ -50,7 +50,7 @@ function wxTick(dt,offline){
 let wxSig='', wxOpen=false;
 function updateWx(){
   const el=$('wxChip'); if(!el) return; const s=season(),w=WEATHER[weatherId()],c=wxClock();
-  const sig=s.id+'|'+weatherId()+'|'+dayNum(c)+'|'+wxOpen;
+  const sig=s.id+'|'+weatherId()+'|'+dayNum(c)+'|'+wxOpen+'|'+(S.seas?S.seas.st:'');
   const ph=dayPhase(c), night=isNight(c);
   $('wxClk').textContent=clockStr(c);
   $('wxSun').style.setProperty('--a',(ph*360-180)+'deg'); el.classList.toggle('night',night);
@@ -63,8 +63,10 @@ function updateWx(){
   if(wxOpen){const left=(SEASON_DAYS-dayNum(c)%SEASON_DAYS)*DAY_LEN-(c%DAY_LEN);
     pop.innerHTML=`<div class="wx-row"><b>${s.e} ${s.n}</b><span>${s.fx}</span></div>
       <div class="wx-row"><b>${w.e} ${w.n}</b><span>${w.fx}</span></div>
+      ${typeof scPopHtml==='function'?scPopHtml():''}
       <div class="wx-seasons">${SEASONS.map((x,k)=>`<div class="${k===seasonIdx(c)?'on':''}"><i>${x.e}</i><small>${x.n}</small></div>`).join('')}</div>
       <div class="wx-foot">${SEASONS[(seasonIdx(c)+1)%4].n} in ${fmtTime(left)} · a day lasts ${fmtTime(DAY_LEN)}, a season ${SEASON_DAYS} days</div>`;}
+  if(wxOpen){const b=$('wxScGo');if(b) b.onclick=e=>{e.stopPropagation();wxOpen=false;wxSig='';updateWx();openSeason();};}
 }
 function setupWx(){const el=$('wxChip'); if(el) el.onclick=e=>{e.stopPropagation();wxOpen=!wxOpen;wxSig='';updateWx();};
   document.addEventListener('pointerdown',e=>{if(wxOpen&&!e.target.closest('#wxChip,#wxPop')){wxOpen=false;wxSig='';updateWx();}});}

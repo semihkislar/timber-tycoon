@@ -939,3 +939,28 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 .ws-set .se{font-size:20px;filter:grayscale(.8);opacity:.6}.ws-set.on{background:#eef7e6;border:1.5px solid #a8d58c}.ws-set.on .se{filter:none;opacity:1}
 .ws-set small{color:#8a7558}.ws-set .sd{font-size:12px;color:#5a4630}.ws-set>div{flex:1;min-width:0}.ws-set .sp{font-weight:800;color:#8a7558}
 .ws-setnext{font-size:12px;color:#8a5a20;padding:0 4px}
+/* v2.37 seasonal export contracts (Orders → Season) */
+.sc-hero{display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;color:#fff8e8;border:2px solid rgba(255,255,255,.35);margin-bottom:6px}
+.sc-hero .legend{color:rgba(255,248,232,.88)}.sc-hero .dh-ic{background:rgba(0,0,0,.22);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.sc-spring{background:linear-gradient(135deg,#4f8a3a,#7cb35a)}.sc-summer{background:linear-gradient(135deg,#c9821c,#e8b43a)}
+.sc-autumn{background:linear-gradient(135deg,#8a3a1a,#c2622a)}.sc-winter{background:linear-gradient(135deg,#2a4a7a,#5a86b8)}
+.ord-card.sc-card{background:linear-gradient(160deg,#f2f7fb,#e2ecf4);border:2px solid #5a86b8;margin-top:8px}
+.ord-card.sc-card.run{border-color:#e8b13a;background:linear-gradient(160deg,#fffaf0,#f3ecd0)}
+.sc-lines{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.sc-line{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.7);border-radius:10px;padding:6px 8px}
+.sc-line .oc-ic{width:26px;height:26px;display:inline-flex;flex:none}
+.sc-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.sc-tx b{font-size:13px}.sc-tx small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.sc-tx .bar{height:7px}
+.sc-rw{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:12.5px;margin-bottom:4px}.sc-rw b{font-size:14px}
+.sc-tr{margin-left:auto;font-size:11px;font-weight:800;background:#efe2c8;color:#6b4c2a;padding:2px 8px;border-radius:999px}.sc-tr.on{background:#d8efc4;color:#2e6a1e}
+.sc-year{display:flex;gap:4px;margin:4px 0 8px}
+.sc-year div{flex:1;min-width:0;text-align:center;background:rgba(0,0,0,.06);border-radius:10px;padding:5px 2px;opacity:.7}
+.sc-year div.on{opacity:1;background:#e6f3d8}.sc-year div.cur{box-shadow:0 0 0 2px #e8a020;opacity:1}
+.sc-year i{font-style:normal;font-size:18px;display:block}.sc-year small{display:block;font-size:9.5px;font-weight:800;line-height:1.1;color:#6b4c2a}.sc-year b{font-size:11px}
+#ordTabs .tdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e84a2a;vertical-align:top;margin-left:2px}
+.wx-sc{font-size:10.5px;font-weight:900;background:#2f6fb0;color:#fff;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.wx-sc.new{background:#e8742a;animation:scPulse 1.6s ease-in-out infinite}.wx-sc.hidden{display:none}
+@keyframes scPulse{50%{box-shadow:0 0 0 3px rgba(232,116,42,.35)}}
+#wxPop .wx-sc-row{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:2px 0 6px;font-size:11.5px}
+#wxPop .wx-sc-row button{min-height:28px}
+@media (max-width:720px){.sc-year small{font-size:8.5px}.ord-card.sc-card .brow .btn{min-height:44px}}

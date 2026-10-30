@@ -1,7 +1,7 @@
 /* Timber Tycoon service worker (v2.9): makes the game installable and playable offline.
    Network-first for EVERYTHING (index.html, css, js, assets): a new GitHub Pages deploy is picked up on the next load;
    the cache is only a fallback when the network is unavailable. Release snapshots (releases/…) are never touched. */
-const CACHE='timber-tycoon-v2.36';
+const CACHE='timber-tycoon-v2.37';
 const CORE=['./','index.html','css/style.css','manifest.webmanifest','assets/icon-192.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{}));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('timber-tycoon-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
