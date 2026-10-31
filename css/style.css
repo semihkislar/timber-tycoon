@@ -964,3 +964,33 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 #wxPop .wx-sc-row{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:2px 0 6px;font-size:11.5px}
 #wxPop .wx-sc-row button{min-height:28px}
 @media (max-width:720px){.sc-year small{font-size:8.5px}.ord-card.sc-card .brow .btn{min-height:44px}}
+/* ---------- v2.38 onboarding: first-steps guide card, scene pointer, highlight ring ---------- */
+#obCard{position:fixed;left:10px;top:120px;z-index:23;width:300px;background:linear-gradient(160deg,#fff8e6,#f7e3c0);color:var(--ink);
+  border:2.5px solid #c99560;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.32);padding:8px 10px 8px;font-size:13px;line-height:1.3;
+  animation:obIn .4s cubic-bezier(.2,1.3,.4,1);transition:left .25s ease,top .25s ease}
+@keyframes obIn{from{opacity:0;transform:translateY(14px) scale(.94)}}
+#obCard.flash{animation:obOk .7s ease-out}
+@keyframes obOk{0%{box-shadow:0 10px 26px rgba(0,0,0,.32),0 0 0 0 rgba(95,180,65,.7)}60%{box-shadow:0 10px 26px rgba(0,0,0,.32),0 0 0 10px rgba(95,180,65,0)}}
+.ob-h{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:900;letter-spacing:.4px;color:#9a5c10;text-transform:uppercase}
+.ob-n{color:var(--ink2);font-weight:800;letter-spacing:0;text-transform:none;font-size:11px}
+.ob-dots{display:flex;gap:3px;margin-left:auto}.ob-dots i{width:7px;height:7px;border-radius:50%;background:#e3cfa9}.ob-dots i.ok{background:var(--green)}.ob-dots i.on{background:#e8a020;box-shadow:0 0 0 2px rgba(232,160,32,.3)}
+.ob-x{border:0;background:transparent;color:var(--ink2);font-size:11px;font-weight:800;letter-spacing:0;text-transform:none;height:28px;padding:0 8px;margin:-6px -6px -6px 0;border-radius:14px;cursor:pointer;flex:none;white-space:nowrap}
+.ob-x:hover{background:rgba(122,85,54,.12)}
+.ob-b{display:flex;gap:9px;align-items:flex-start;margin-top:5px}
+.ob-e{font-size:21px;width:36px;height:36px;border-radius:11px;background:#2a1d14;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 2px #f5c84c;flex:none}
+.ob-tx{flex:1;min-width:0}.ob-t{font-size:14.5px;display:block}.ob-d{font-size:12.5px;color:var(--ink2);margin-top:2px}.ob-d b{color:var(--ink)}
+.ob-p{flex:1;display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;color:var(--ink2)}.ob-p span{flex:none;min-width:64px}
+.ob-p em{flex:1;height:6px;border-radius:3px;background:#ead6b2;overflow:hidden}.ob-p em i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5fb441,#9bd86a);transition:width .3s}
+.ob-f{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:6px;min-height:22px}
+.ob-go{min-width:92px;margin-left:auto}
+#obCard.mini{padding:6px 10px}#obCard.mini .ob-d,#obCard.mini .ob-p,#obCard.mini .ob-f{display:none}#obCard.mini .ob-b{margin-top:3px;align-items:center}#obCard.mini .ob-e{width:26px;height:26px;font-size:15px;border-radius:8px}#obCard.mini .ob-t{font-size:13px}
+@media (pointer:coarse){.ob-x{height:36px;padding:0 10px;margin:-9px -8px -9px 0}.ob-go{min-height:40px}}
+@media (max-width:720px){#obCard{padding:7px 9px;font-size:12.5px}.ob-t{font-size:14px}.ob-d{font-size:12px}.ob-e{width:32px;height:32px;font-size:18px}.ob-n{display:none}}
+#obHand{position:fixed;left:0;top:0;z-index:12;pointer-events:none;width:0;height:0}
+#obHand .ob-ring{position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,214,96,.95);box-shadow:0 0 10px rgba(255,200,60,.7);animation:obRing 1.3s ease-out infinite}
+#obHand .ob-fg{position:absolute;left:-14px;top:6px;font-size:30px;line-height:1;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));animation:obTap 1.3s ease-in-out infinite}
+@keyframes obRing{0%{transform:scale(.45);opacity:1}100%{transform:scale(1.5);opacity:0}}
+@keyframes obTap{0%,100%{transform:translateY(10px)}45%{transform:translateY(0)}55%{transform:translateY(0) scale(.94)}}
+.ob-hl{animation:obHl 1.4s ease-in-out infinite!important}
+@keyframes obHl{0%,100%{box-shadow:0 0 0 2px rgba(245,200,76,.95),0 0 0 0 rgba(245,200,76,.6)}50%{box-shadow:0 0 0 3px rgba(245,200,76,1),0 0 0 9px rgba(245,200,76,0)}}
+@media (prefers-reduced-motion:reduce){#obHand .ob-ring,#obHand .ob-fg,.ob-hl,#obCard{animation:none!important}}

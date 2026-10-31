@@ -5,6 +5,61 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.38] — 2026-10-31
+
+**Onboarding for new players** (maintenance notes item 7 from `docs/maintenance-v2.28.1.md`, and a next idea from v2.37). A
+fresh game used to open on 16 locked lots with no hint to tap the forest. A brand-new save now gets a short **First steps**
+guide for its first minutes. It is a small card plus a pointer on the scene, it can be skipped, and it never gives anything.
+
+### Added
+- **Six steps** (the card shows "Step N of 6" with progress dots and a bar where it helps):
+
+  | # | Step | Done when | Pointer / highlight |
+  |---|---|---|---|
+  | 1 | 🪓 Tap the forest to chop logs | 5 chops (or a Lumberjack / Sawmill) | 👆 on a forest spot next to the Log Yard |
+  | 2 | 🧔 Hire your first Lumberjack (free) | 1 Lumberjack | gold ring on 👷 Crew, then on the Lumberjack's **Hire** |
+  | 3 | 🪚 Build the Sawmill with 🪵 40 logs | Sawmill Lv 1 | 👆 on the forest until you have 40 logs, then on the Sawmill lot; ring on **🔨 Build** in its sheet |
+  | 4 | 🪙 Earn your first coins | coins for the next Sawmill level | 👆 on the forest (more logs → more planks) |
+  | 5 | ⬆️ Upgrade the Sawmill | Sawmill Lv 2 | 👆 on the Sawmill; ring on **Upgrade** |
+  | 6 | 📋 Take your first client order | an accepted order or daily contract | ring on the order card's **✔ Accept** (before 🪙250: progress to the first call) |
+
+  A wrap-up card ("You're set, Tycoon!") points to ⚠️ hints, 🔀 Supply Flow and the replay in Settings, then closes on
+  **Let's go!** or after 40 s. Steps you have already done are skipped, so a player who plays ahead is never held back.
+- **Skip ✕** in the card header ends the guide at once (a toast says where to replay it).
+- **Settings → First-steps guide → 📘 Replay** shows it again at any time, also for older saves. In a replay, steps that are
+  already done show ✅ and wait for **Next ›** instead of skipping by themselves.
+- **Layout.** On desktop the card is 300 px wide at the bottom left. On phones it sits above the bottom bar, left of the round
+  side buttons. Each time the HUD updates, the card picks the first spot that covers none of the open sheet, the order card,
+  the daily chip, the side buttons, the jump bar or the Supply Flow legend. Above a tall sheet it shrinks to a slim strip under
+  the HUD. On landscape phones it sits right of the rail and clear of the side sheet. The scene pointer hides behind sheets
+  and the card, and the pointer and highlights ignore taps (`pointer-events:none`), so the scene stays the main part of the
+  screen. `prefers-reduced-motion` stops the animations.
+
+### Rules
+- **Brand-new saves only.** The guide starts when the game finds no save (first visit, or after ⟲ Reset). Every save from
+  v2.37 or older loads with the guide marked as not needed (`S.ob.st='old'`) and never sees it unless you press Replay.
+- **No free resources.** The guide only reads the game state. It gives no coins, logs, levels or boosts, and there is no
+  trophy (a trophy is +2 % production). The early-run pacing and `test/balance.py` are unchanged.
+- A run that is already far past the first minutes (🪙1M earned, or after a Replant) ends a running guide quietly. Replant
+  keeps the guide state.
+
+### Saves
+- New `S.ob` (`st` on / done / skip / old / off, `step`, `rep`). Older saves get `old`. A damaged value (text, null, an
+  array, an unknown state, a step out of range) is repaired on load and the guide does not show.
+
+### Tests
+- New `test/v238.py`: the whole walkthrough on desktop, iPhone 13 and Pixel 7 by mouse and touch. It taps at the pointer
+  to chop, hires through the highlighted buttons, builds the Sawmill by tapping the lot and through its Build button,
+  upgrades and accepts the first order. It checks that the card never covers the sheet, bottom bar, side buttons or order
+  card, that the pointer stays off sheets, the full-height sheet and landscape layouts, skip (mouse + touch, kept after
+  reload), Replay from Settings with Next, reset, the quiet end, Replant, 7 old or damaged saves, that no state outside
+  `S.ob` changes while the guide runs, and no console errors or 404s.
+
+### Next ideas
+- Late-game plywood balance (Parquet, Toy Workshop and Timber-frame Houses all wait on the Plywood Mill).
+- Insurance claims & safety drills (maintenance proposal 7).
+- Photo mode / share card (maintenance proposal 12).
+
 ## [2.37] — 2026-10-30
 
 **Seasonal export contracts** (maintenance proposal 9 from `docs/maintenance-v2.28.1.md`). Every season of the world clock

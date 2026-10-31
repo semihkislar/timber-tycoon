@@ -13,7 +13,8 @@ function load(){
 function hardReset(){
   try{localStorage.removeItem(SAVE_KEY);}catch(e){}
   S=freshState(); M=computeMods(); RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
-  rebuildAll(); toast('🌲 Fresh start. Happy chopping!');
+  if(typeof obClear==='function') obClear();
+  rebuildAll(); if(typeof obStart==='function') obStart(false);   // v2.38: a wiped save is a brand-new save toast('🌲 Fresh start. Happy chopping!');
 }
 
 /* ===================== FORMAT ===================== */

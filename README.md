@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.37-6b8e23" alt="version 2.37">
+  <img src="https://img.shields.io/badge/version-2.38-6b8e23" alt="version 2.38">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.37: the factory in the late game" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.38: the factory in the late game" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,22 +30,26 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.37: Seasonal export contracts
-Every season of the world clock brings one themed export contract, with a trophy for each season:
-- 🌸 **Spring Building Season:** timber-frame houses, glulam, beams and planks for the Nordic Housing Fair.
-- 🌻 **Summer Leisure Export:** boats, toys, decking, grill gift boxes and chairs for the Riviera.
-- 🍂 **Autumn Home Fair:** luxury furniture, decor, cabinets, furniture sets and stationery.
-- ❄️ **Winter Heating Export:** pellets and charcoal by the shipload, plus toys and gift boxes for the holidays.
+### New in v2.38: First steps for new players
+A brand-new game now opens with a short **First steps** guide: a small card and a 👆 pointer on the scene that walk you
+through the first minutes:
+1. 🪓 tap the forest to chop logs,
+2. 🧔 hire your first Lumberjack (free),
+3. 🪚 build the Sawmill with 40 logs,
+4. 🪙 earn your first coins,
+5. ⬆️ upgrade the Sawmill,
+6. 📋 take your first client order.
 
-Each contract asks for two of the season's goods that your factory really makes, sized on your output and forest value. It
-pays 1.5–2.5× the goods' value plus a 20 % seasonal premium. It opens once a Phase II line runs and uses its own slot in
-**Orders → Season**. Deliver all four seasons for the *Four Seasons* trophy. Missing one costs nothing.
+The button to press gets a gold ring, and the card keeps clear of the bottom sheets, the order card and the side buttons on
+desktop and phones. **Skip ✕** hides it, and **Settings → 📘 Replay** brings it back. It gives nothing for free, so the early
+game plays exactly as before. Existing saves never see it unless you ask.
 
-<p align="center"><img src="screenshots/highlights/desktop-seasonal.png" alt="A winter export contract in the Orders sheet's Season tab" width="720"></p>
+<p align="center"><img src="screenshots/highlights/onboarding.png" alt="The First steps guide pointing at the Sawmill lot" width="720"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.37** | 📦 **Seasonal export contracts** | Every season brings one themed export contract (spring houses and glulam, summer boats and toys, autumn furniture, winter pellets and charcoal). It is sized on your output, pays 1.5–2.5× plus a 20 % seasonal premium, and has a trophy for each season. |
 | **v2.36** | 🧰 **Workstation sets** | Level all three workstations of a building together: Lv 5 gives 🧰 Tuned Line (×1.10 speed), Lv 10 gives 🏅 Master Set (×1.25 speed and the manager's skill doubled, within its caps). |
 | **v2.35** | 📐 **Replant Blueprints** | Save your factory as a plan: target levels, priorities, crew, upgrades, logistics and settings. After a Replant, a planning office rebuilds it with real coins at normal prices. You choose its budget (25 / 50 / 100 %) and can pause it any time. It is unlocked by research and has up to three plan slots (A/B/C). |
 | **v2.34** | 🔗 **Order chains** | Clients bring three-step projects, such as the Royal Embassy library: archive paper → reading-room chairs → library cabinets. Each delivery unlocks a bigger step, and finishing all three pays a **30 % chain bonus**. |
@@ -88,14 +92,15 @@ pays 1.5–2.5× the goods' value plus a 20 % seasonal premium. It opens once a 
 
 **On a phone (iPhone 13):**
 
-| | | | |
-|:---:|:---:|:---:|:---:|
-| <img src="screenshots/highlights/mobile.png" alt="Phone: the factory" width="190"><br>Factory | <img src="screenshots/highlights/mobile-seasonal.png" alt="Phone: seasonal export contract" width="190"><br>Seasonal contract | <img src="screenshots/highlights/mobile-order-chains.png" alt="Phone: order chains" width="190"><br>Order chains | <img src="screenshots/highlights/mobile-night.png" alt="Phone: night" width="190"><br>Night |
+| | | | | |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="screenshots/highlights/mobile.png" alt="Phone: the factory" width="190"><br>Factory | <img src="screenshots/highlights/mobile-onboarding.png" alt="Phone: First steps guide" width="190"><br>First steps | <img src="screenshots/highlights/mobile-seasonal.png" alt="Phone: seasonal export contract" width="190"><br>Seasonal contract | <img src="screenshots/highlights/mobile-order-chains.png" alt="Phone: order chains" width="190"><br>Order chains | <img src="screenshots/highlights/mobile-night.png" alt="Phone: night" width="190"><br>Night |
 
 Screenshots from every release are in [`screenshots/history/`](screenshots/history/).
 
 ## 🎮 How to play
 1. **Tap the trees** to chop your first logs, then hire **Lumberjacks**. Logs flow into the Log Yard by themselves.
+   New games show a short **First steps** guide for this (replay it in ⚙️ Settings).
 2. **Build a Sawmill** and the next buildings in the chain. Turn on **auto-sell** for goods you don't process further.
 3. **Upgrade** buildings, buy **workstations** and **upgrades**, and hire **staff** and **managers** to speed up each line.
 4. When a building waits on an input, follow the **Advisor's** hint or open **Supply Flow** (🔀) to find the bottleneck.
@@ -117,7 +122,7 @@ python3 -m http.server 8000
 ```
 
 It needs `http://`, not `file://`, because the sprite atlas is fetched. Tests use Python + Playwright
-(`pip install playwright && playwright install chromium`), for example `python3 test/v237.py`.
+(`pip install playwright && playwright install chromium`), for example `python3 test/v238.py`.
 
 ## 🗂️ Project structure
 ```

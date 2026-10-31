@@ -72,7 +72,7 @@ In priority order, with the reason each was left:
 6. **No upgrades for the newer lines.**
    - The Veneer Peeler, Plywood Mill, Beam Saw and Glulam Plant have workstations and research, but no ×2 upgrade like the older
      lines. That is new content and changes balance.
-7. **Onboarding.**
+7. *(Done in v2.38: the First steps guide, `js/onboard.js`.)* **Onboarding.**
    - A fresh game opens on 16 locked lots with "Earn 2.00K" style tags. The only call to action is "Build: 0/40 logs" on the
      Sawmill. There is no pointer to "tap the forest to chop".
 8. **Mobile clutter at late game.**

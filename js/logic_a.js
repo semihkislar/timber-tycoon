@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.37';
+const VERSION='2.38';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -350,7 +350,8 @@ function freshState(keep){
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
-    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0},
+    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0},ob:{st:'off',step:0},   // v2.38 first-steps guide (init turns it on for a brand-new save only)
+   
     bp:{act:0,slots:[null,null,null],run:true,budget:.5,cool:0,stats:{steps:0,spent:0,lv:0,full:0,saved:0},r:{staff:{},set:0,done:0,t0:0}}};   // v2.35 Replant Blueprints (plans kept through Replant)   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; v2.32 Drone Port level; rebuilt after a Replant)
     // v2.17 line specialisations   // v2.7: one free planter, a full forest
   RES.forEach(r=>{s.res[r.id]=0;s.autosell[r.id]=canSell(r.id);});
@@ -448,6 +449,7 @@ function migrateSave(o){
   // v2.21.1 -> v2.22: owned one-time upgrades become Lv 1 of their line; workstations start at what each building's level needs (free)
   if(!o.upgrades||typeof o.upgrades!=='object') o.upgrades={}; for(const k in o.upgrades){const v=o.upgrades[k];o.upgrades[k]=v===true?1:Math.max(0,Math.floor(+v||0));}
   if(typeof wsGrandfather==='function') wsGrandfather(o);
+  if(typeof obNorm==='function') obNorm(o); else if(!o.ob||typeof o.ob!=='object') o.ob={st:'old',step:0};   // v2.38: saves from before the guide never show it
   o.version=VERSION;
   return o;
 }
@@ -717,7 +719,7 @@ function sellAll(id){
 /* v2.18: seedsFor / pendingSeeds live in js/replant.js */
 function doPrestige(){
   const g=pendingSeeds(); if(g<1) return false;
-  const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,...rpKeep(g),lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,
+  const keep={seeds:S.seeds+g,prestiges:S.prestiges+1,...rpKeep(g),lifetimeEarned:S.lifetimeEarned,lifetimeClicks:S.lifetimeClicks,ob:Object.assign({},S.ob||{st:'old',step:0}),   // v2.38: the guide state survives a Replant
     firstStart:S.firstStart,playTime:S.playTime,autosell:Object.assign({},S.autosell),muted:S.muted,prefs:Object.assign({autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},S.prefs),wx:S.wx,mgr:Object.assign({},S.mgr),station:{lvl:stationLvl()},fireStats:Object.assign({},S.fireStats),research:Object.assign({},S.research),rp:S.rp,staff:(()=>{const st=S.staff||{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};return {team:(st.team||[]).map(w=>Object.assign({},w,{train:w.train?Object.assign({},w.train):null,traits:(w.traits||[]).slice(),energy:100})),candidates:[],nextRefresh:40,nextReroll:0,seq:st.seq||0,unpaid:false,capHi:Object.assign({},st.capHi||{}),capNoted:st.capNoted||0};})(),   // v2.22.1: hiring limits never drop
     trade:{lvl:harborLvl(),routes:Object.assign({},S.trade.routes),fleet:[],dem:S.trade.dem,spike:null,nextDrift:0,nextSpike:0,stats:Object.assign({},S.trade.stats),seq:S.trade.seq||0,repeat:S.trade.repeat},ach:Object.assign({},S.ach),golden:S.golden,
     orders:{offer:null,active:null,offers:[],acts:[],next:100,done:(S.orders&&S.orders.done)||0,failed:(S.orders&&S.orders.failed)||0,hist:((S.orders&&S.orders.hist)||[]).slice(-5),

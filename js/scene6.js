@@ -131,7 +131,7 @@ function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   camUpdate(dt);
   updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); if(typeof mktFleetUpdate==='function') mktFleetUpdate(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); bySceneUpdate(dt); if(typeof swUpdate==='function') swUpdate(dt); premUpdate(dt); updateGolden(dt);
-  drawScene(dt);
+  drawScene(dt); if(typeof obFrame==='function') obFrame();   // v2.38 guide pointer
   scene.firstFrame=false;
 }
 function drawScene(dt){

@@ -16,7 +16,7 @@ function render(){
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip();
+  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip(); if(typeof obTick==='function') obTick();   // v2.38 first-steps guide
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }
@@ -47,7 +47,7 @@ function setupUI(){
   setupReplantUI();
   document.addEventListener('visibilitychange',()=>{if(document.hidden) save(true);});
   window.addEventListener('beforeunload',()=>save(true));
-  setupPremiumUI(); setupWx(); setupRndUI(); if(typeof setupBlueprintUI==='function') setupBlueprintUI();
+  setupPremiumUI(); setupWx(); setupRndUI(); if(typeof setupBlueprintUI==='function') setupBlueprintUI(); if(typeof setupOnboardUI==='function') setupOnboardUI();
   $('forestChip').onclick=()=>{if(curSheet==='crew') closeSheet(); else openSheet('crew');};
   setupMobile();
   updateMuteBtn();
@@ -95,6 +95,7 @@ function init(){
   }
   scene.lastEarned=S.totalEarned;
   rebuildAll();
+  if(!loaded&&typeof obStart==='function') obStart(false);   // v2.38: the first-steps guide, brand-new saves only
   lastNow=Date.now();
   setInterval(loop,100);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){save(true);lastSaveAt=Date.now();} else loop();});
@@ -159,6 +160,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   byScreen:()=>{const p=P(BYZ.ci,BYZ.cj,16);return w2s(p[0],p[1]);},byPeople:()=>scene.by?scene.by.people:[],
   // v2.35 Replant Blueprints
   BP_SLOTS,BP_GAP,BP_BATCH,BP_BUDGETS,BP_PRI,BP_STEP,bpTier,bpUnlocked,bpSlotsOpen,bpClean,bpState,bpPlan,bpActive,bpCapture,bpClear,bpSetTarget,bpBump,bpSetPri,bpCyclePri,bpSetRun,bpSetBudget,bpSetSlot,bpSetInc,
+  OB_STEPS,OB_FAR,OB_BLD,obFar,obStart,obSkip,obNext,obActive,obState,obTarget,obNorm,obPointer,   // v2.38 onboarding
   bpSteps,bpBudget,bpDo,bpApplySettings,bpStartRun,bpKeep,bpProgress,bpLeft,bpStatus,bpTick,updateBlueprint,updateBpChip,bpOpenTab,rpTabOpen,
   get cam(){return scene.cam;}};
 init();

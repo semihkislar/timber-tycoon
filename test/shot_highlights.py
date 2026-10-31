@@ -1,5 +1,5 @@
 # README highlight screenshots of the current build (late game with every line, logistics tiers, decor line and
-# workstation sets, seasonal export contracts). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
+# workstation sets, seasonal export contracts; v2.38 copies the First steps shots that test/v238.py writes). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
 #   python3 test/shot_highlights.py            (set TT_URL to shoot another server, e.g. the live Pages site)
 from playwright.sync_api import sync_playwright
 import os,sys,shutil
@@ -52,4 +52,6 @@ with sync_playwright() as p:
 for n in ['desktop','mobile','mobile-seasonal']:
     shutil.copy(highlight_path(n+'.png'),H+n+'.png')
 shutil.copy(highlight_path('desktop-seasonal.png'),H+'seasonal.png')
+for n in ['onboarding','mobile-onboarding']:   # v2.38: the First steps guide shots come from test/v238.py (a fresh save)
+    if os.path.exists(H+n+'.png'): shutil.copy(H+n+'.png',highlight_path(n+'.png'))
 print('errors:',errs[:5]); print('wrote',os.path.dirname(highlight_path('x')),'and',H)
