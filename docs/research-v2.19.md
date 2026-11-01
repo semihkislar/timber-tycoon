@@ -90,7 +90,7 @@ They interlock without overlap:
 | IV | 🏭 Robotic Mill | 160K | Laser Grading | Sawmill, Chipper, Kiln, Pellet Press & Paper Mill +50 % |
 | IV | 🧊 Cold Press | 170K | Twin-wire Paper | Plywood Mill +60 % |
 | IV | ♾️ Throughput ♾️ | 200K | Robotic Mill | Primary mills +5 % × level^0.7 (repeatable) |
-| V | ♻️ Zero-waste Mill | 1.50M | Robotic Mill, Cold Press | All mills ×2 |
+| V | ♻️ Zero-waste Mill | 1.50M | Robotic Mill, Cold Press | All primary mills ×2 (v2.39: no longer the Plywood Mill, see supply parity) |
 
 ### 🪑 Craft
 | tier | node | base RP | needs | effect |

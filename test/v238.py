@@ -153,7 +153,7 @@ with sync_playwright() as p:
         sv=dict(sv); sv['lastSave']=0 if 'lastSave' not in sv else sv['lastSave']
         ctx,pg=page(tag=f'{name}: ',init=oldsave(sv)); E(pg,"document.querySelectorAll('.modal-bg').forEach(m=>m.remove());TT.render()"); pg.wait_for_timeout(300)
         r=E(pg,"({st:S.ob.st,step:S.ob.step,card:!!document.getElementById('obCard'),hand:!!document.getElementById('obHand'),ver:S.version})")
-        ok(r['st'] in ('old',) and not r['card'] and not r['hand'] and r['ver']=='2.38' and 0<=r['step']<=6,f'{name}: loads, no guide ({r})')
+        ok(r['st'] in ('old',) and not r['card'] and not r['hand'] and tuple(map(int,r['ver'].split('.')))>=(2,38) and 0<=r['step']<=6,f'{name}: loads, no guide ({r})')
         if name.startswith('v2.37 save with'):
             E(pg,"openSheet('set')"); pg.wait_for_timeout(300)
             ok(rect(pg,'#obReplay') is not None,'old save: Settings offers 📘 Replay')

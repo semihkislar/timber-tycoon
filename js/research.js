@@ -64,8 +64,8 @@ const RNODES=[
   {id:'twinwire',b:'mil',t:3,name:'Twin-wire Paper', icon:'📜',rp:12000,req:['liquor'],  d:'Paper Mill +50 %',fx:m=>{m.bld.paper*=1.5;}},
   {id:'robomill',b:'mil',t:4,name:'Robotic Mill',    icon:'🏭',rp:32000,req:['grading'], d:'Peeler, Sawmill, Chipper, Kiln, Beam Saw, Pellet Press, Paper Mill & Glulam Plant +50 %',fx:mulB(MIL,1.5)},
   {id:'coldpress',b:'mil',t:4,name:'Cold Press',     icon:'🧊',rp:34000,req:['twinwire'],d:'Plywood Mill +60 %',fx:m=>{m.bld.plymill*=1.6;}},
-  {id:'r_mil',   b:'mil',t:4,name:'Throughput',      icon:'♾️',rp:40000,req:['robomill'],rep:true,d:'Primary mills +5 % × level^0.7 (repeatable)',fx:(m,n)=>mulB(MIL.concat(['plymill']),1+repV(n))(m)},
-  {id:'zerowaste',b:'mil',t:5,name:'Zero-waste Mill',icon:'♻️',rp:250000,req:['robomill','coldpress'],d:'All mills ×2',fx:mulB(MIL.concat(['plymill']),2)},
+  {id:'r_mil',   b:'mil',t:4,name:'Throughput',      icon:'♾️',rp:40000,req:['robomill'],rep:true,d:'Primary mills +5 % × level^0.7 (repeatable)',fx:(m,n)=>mulB(MIL,1+repV(n))(m)},   // v2.39: the Plywood Mill follows its workshops (plyRes) instead
+  {id:'zerowaste',b:'mil',t:5,name:'Zero-waste Mill',icon:'♻️',rp:250000,req:['robomill','coldpress'],d:'All primary mills ×2',fx:mulB(MIL,2)},   // v2.39: no longer the Plywood Mill (it ran at 2–3× its workshops' needs)
   // ---------- Craft ----------
   {id:'bending', b:'cra',t:1,name:'Steam Bending',   icon:'🪑',rp:150,  req:['blades'],  d:'Carpentry & Furniture Factory +15 %',fx:m=>{m.bld.carpentry*=1.15;m.bld.furniture*=1.15;}},
   {id:'jigs2',   b:'cra',t:1,name:'Joinery Jigs',    icon:'📐',rp:300,  req:['bending'], d:'Carpentry +20 %',fx:m=>{m.bld.carpentry*=1.2;}},

@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.38';
+const VERSION='2.39';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -517,7 +517,7 @@ function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkC
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*M.bld[id]*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id);}   // v2.22 workstations   // v2.17 specialisation / retool
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*bRes(id)*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id);}   // v2.22 workstations   // v2.17 specialisation / retool
 /* v2.17: input per item = manager thrift × specialisation (lean −20…40 %, high-speed +15 %) */
 function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1)*(typeof wsIn==='function'?wsIn(id):1);}
 /* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),
@@ -535,7 +535,30 @@ const YIELD_BLD={sawmill:1,peeler:1,plymill:1};
 function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,msCount(l)-3));}
 /* The Plywood Mill gets an early start too (+5 % per level from Lv 10): otherwise the extra paper just moves the wait to plywood
    (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
-function plyYieldAt(l){return Math.max(sawYieldAt(l),(1+Math.max(0,l-10)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
+/* v2.39 late-game plywood balance. Five workshops (Parquet, Cabinets, Toys, Boats, Houses) wait on one Plywood Mill, and it fell
+   short for two reasons: (1) it levels ~7 levels behind them (it costs 3.75× the Parquet Workshop and is research-locked), so their
+   milestones (×2) land first: with research tiers I–III the mill made only 57–85 % of the plywood they could use right before each
+   of its own milestones; (2) research sped the workshops up (Atelier Methods, Toy Line, CNC Workshop, Craftsmanship) long before
+   the mill's own nodes, while the late Zero-waste ×2 and Throughput pushed it to 2–3× their needs (sold raw). Fix:
+   - press yield ×1.4 (PLY_PRESS) and the early start counts from Lv 1 instead of Lv 10: more plywood from the same veneer + glue;
+   - supply parity: the mill's research speed is at least the plywood-weighted research speed of the workshops it feeds (`plyRes`);
+   - Zero-waste and Throughput now boost the primary mills only (the parity covers the Plywood Mill). */
+const PLY_PRESS=1.4;
+function plyYieldAt(l){return PLY_PRESS*Math.max(sawYieldAt(l),(1+Math.max(0,l-1)/20)*Math.pow(1.6,Math.max(0,msCount(l)-3)));}
+let PLY_USERS=null;   // workshops that need plywood (the Decor Studio only takes spare plywood, so it never sets the pace)
+function plyUsers(){return PLY_USERS||(PLY_USERS=BUILDINGS.filter(b=>b.inp.plywood&&!(SURPLUS_IN[b.id]&&SURPLUS_IN[b.id].plywood)));}
+function plyParity(){let w=0,a=0;for(const b of plyUsers()){const st=S.buildings[b.id];if(!st||!st.lvl||(typeof bldUnlocked==='function'&&!bldUnlocked(b.id))) continue;
+  const d=b.inp.plywood*st.lvl*Math.pow(MS_MULT,msCount(st.lvl))*(b.spd||1),k=M.bld[b.id];if(!(d>0)||!isFinite(k)) continue;w+=d;a+=d*k;}return w>0?a/w:1;}
+function plyRes(){const own=M.bld.plymill;const p=plyParity();return p>own?p:own;}
+/* the Veneer Panel Press (spare stock only) keeps pace with the Peeler's research: late Robotic Mill / Zero-waste made ~3× the
+   veneer while the press got craft boosts only, so veneer piled up; it still only takes what every other line leaves over */
+function pressRes(){const own=M.bld.panelpress,pe=M.bld.peeler;return pe>own?pe:own;}
+function bRes(id){return id==='plymill'?plyRes():id==='panelpress'?pressRes():M.bld[id];}
+/* potential plywood made vs what its workshops can use (both at full speed); the Plywood Mill sheet and test/v239.py read it */
+function plyBal(){const st=S.buildings.plymill,on=st&&st.lvl>0&&(typeof bldUnlocked!=='function'||bldUnlocked('plymill'));
+  const made=on?BMAP.plymill.out.plywood*bSpeed('plymill')*bOutMult('plymill'):0;let need=0;
+  for(const b of plyUsers()){const s2=S.buildings[b.id];if(!s2||!s2.lvl||!s2.on||(typeof bldUnlocked==='function'&&!bldUnlocked(b.id))) continue;need+=b.inp.plywood*bSpeed(b.id)*bInMult(b.id);}
+  return {made,need,r:need>0?made/need:Infinity,own:M.bld.plymill,par:plyParity(),res:plyRes()};}
 function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */

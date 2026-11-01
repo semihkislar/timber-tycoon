@@ -45,7 +45,7 @@ with sync_playwright() as p:
     r=E(pg,"[26,50,75,99,100,150].map(l=>+chipYieldAt(l).toFixed(3))")
     ok(abs(r[0]-1.07)<1e-9 and abs(r[1]-2.75)<1e-9 and all(a<b for a,b in zip(r,r[1:])) and abs(r[4]/r[3]-1.6*(1+75*.07)/(1+74*.07))<1e-6,f'chip yield: +7 %/level from Lv 25, ×1.6 at Lv 100 ({r})')
     r=E(pg,"[10,20,40,49,60,100].map(l=>[+plyYieldAt(l).toFixed(3),+sawYieldAt(l).toFixed(3)])")
-    ok(all(a>=s for a,s in r) and r[0][0]==1 and r[1][0]>1.4 and r[3][0]>2.9,f'Plywood Mill: early start from Lv 10, never below the old curve ({r})')
+    ok(all(a>=s for a,s in r) and r[0][0]>=1 and r[1][0]>1.4 and r[3][0]>2.9,f'Plywood Mill: early start (v2.39: from Lv 1, ×1.4), never below the old curve ({r})')
     ok(E(pg,"[chainYield('sawmill'),chainYield('peeler'),chainYield('pellet'),chainYield('paper')].every(x=>x===1)") ,'producers at Lv 0 / consumers get no yield')
     r=E(pg,"""(()=>{for(const b of BUILDINGS) S.buildings[b.id].lvl=0;S.buildings.chipper.lvl=60;S.buildings.chipper.on=true;S.res.logs=1e12;S.res.chips=0;S.autosell.chips=false;S.upgrades.sawdust=0;
       M=computeMods();const l0=S.res.logs;tick(1,false);return {c:S.res.chips,l:l0-S.res.logs,y:chainYield('chipper'),f:bstat.chipper.f};})()""")

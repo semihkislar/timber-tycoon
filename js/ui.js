@@ -142,7 +142,7 @@ function updateBuildingSheet(){
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],chipper:['🍂 Chip yield','chips per log',25,chipYieldAt]}[b.id];   // v2.29.1: chipper too   // v2.24: Peeler + Plywood Mill too
-  const yl=YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'';
+  const yl=b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'';   // v2.39: the Plywood Mill has its own lines
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
@@ -305,4 +305,12 @@ function eventIll(id){
 function shortInfo(k){const src=(BUILDINGS.find(b=>b.out[k]&&S.buildings[b.id].lvl)||BUILDINGS.find(b=>b.out[k])||{}).id||null;
   const users=BUILDINGS.filter(b=>b.inp[k]&&S.buildings[b.id].lvl&&S.buildings[b.id].on).map(b=>b.id);
   return {src,users,prod:(rates[k]&&rates[k].p)||0,want:(rates[k]&&rates[k].d)||0};}
+/* v2.39 Plywood Mill sheet: press yield, plywood made vs what its workshops can use, supply parity */
+function plyYieldHtml(st){const l=st.lvl;
+  let h=`<div class="bp-yield">🟧 Press yield <b>×${plyYieldAt(Math.max(1,l)).toFixed(2)}</b> plywood per sheet · Lv ${l+1}: ×${plyYieldAt(l+1).toFixed(2)}</div>`;
+  if(!l) return h;const B=plyBal();
+  if(B.need>0){const r=B.r,c=r>=1.05?'ok':r>=.95?'tight':'short';
+    h+=`<div class="bp-yield ply-bal ${c}" id="plyBal">🏭 At full speed <b>${fr(B.made)}</b>/s · workshops can use <b>${fr(B.need)}</b>/s <span>(${r>=10?'10+':r.toFixed(2)}×${c==='short'?' · upgrade the mill':''})</span></div>`;}
+  if(B.par>B.own*1.0005) h+=`<div class="bp-yield" id="plyPar">🤝 Supply parity: research speed <b>×${B.res.toFixed(2)}</b>, the pace of the workshops it feeds</div>`;
+  return h;}
 function togglePlankMode(){S.prefs.plankMode=S.prefs.plankMode==='value'?'fair':'value';toast(S.prefs.plankMode==='value'?'🟫 Planks, veneer & plywood now go to the building that earns most per unit first':'🟫 Planks, veneer & plywood are now shared fairly between buildings');}

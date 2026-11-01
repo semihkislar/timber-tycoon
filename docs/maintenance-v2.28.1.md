@@ -57,10 +57,10 @@ In priority order, with the reason each was left:
    - Fixing it properly means changing early recipes (Chipper, Carpentry), which changes the first minutes of every run.
    - *Better:* a "bottleneck" hint in the building sheet ("Upgrade the Wood Chipper: +X/s for Pellet Press and Paper Mill").
      That needs UI work.
-2. **Late veneer surplus (v2.24 note).**
+2. *(Done in v2.33 + v2.39: the Veneer & Decor line, and the Panel Press keeps pace with the Peeler.)* **Late veneer surplus (v2.24 note).**
    - The Peeler is never input-bound, and spare veneer sells at $3.5.
    - It is harmless, but it is a dead end. A veneer consumer (for example a Veneer Dryer station, or decor panels) is a feature.
-3. **Plywood becomes the late bottleneck after this release.**
+3. *(Done in v2.39: press yield ×1.4 from Lv 1, supply parity with its workshops' research, Zero-waste/Throughput for the primary mills only; see CHANGELOG 2.39.)* **Plywood becomes the late bottleneck after this release.**
    - Parquet, Toy Workshop and Timber-frame Houses all wait on the Plywood Mill, which needs research to unlock.
    - Watch it; a Plywood Mill station or a manager perk would fix it. This is why the Paper Mill and Boat Yard tweaks were dropped. Any paper or chair relief has to come with more plywood.
 4. **Chopping upgrades are dead late.**

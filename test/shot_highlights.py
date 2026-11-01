@@ -1,5 +1,5 @@
 # README highlight screenshots of the current build (late game with every line, logistics tiers, decor line and
-# workstation sets, seasonal export contracts; v2.38 copies the First steps shots that test/v238.py writes). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
+# workstation sets, seasonal export contracts, v2.39 Plywood Mill sheet; v2.38 copies the First steps shots that test/v238.py writes). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
 #   python3 test/shot_highlights.py            (set TT_URL to shoot another server, e.g. the live Pages site)
 from playwright.sync_api import sync_playwright
 import os,sys,shutil
@@ -47,11 +47,18 @@ with sync_playwright() as p:
         if not dev:
             pg.evaluate("TT.fitCamera(true)"); pg.wait_for_timeout(700); pg.evaluate("toggleFlow(true)"); pg.wait_for_timeout(1000)
             pg.screenshot(path=highlight_path('desktop-supply-flow.png')); pg.evaluate("toggleFlow(false)")
+        # v2.39 late-game plywood balance: the Plywood Mill sheet (press yield, balance and supply-parity lines)
+        aim(pg,I,J,Z)
+        pg.evaluate("(()=>{TT.setClock&&TT.setClock(10*60);S.coins=1e16;TT.buyBuilding('peeler',30);for(const b of ['parquet','cabinetry','framer','decorstudio']) TT.buyBuilding(b,8);S.coins=3.2e11;M=computeMods();for(let k=0;k<30;k++){S.forest.m=1e9;tick(1,false);}TT.render();openSheet('bld','plymill');bpTab('ov');})()"); pg.wait_for_timeout(800)
+        pg.evaluate("(()=>{document.querySelectorAll('.toast').forEach(t=>t.remove());scene.particles.length=0;const f=document.getElementById('fxLayer');if(f) f.innerHTML='';for(const k in achFresh) delete achFresh[k];if(innerWidth<=720&&TT.setSheetState) TT.setSheetState('full');const e=document.getElementById('plyBal');if(e) e.scrollIntoView({block:'center'});})()"); pg.wait_for_timeout(500)
+        pg.screenshot(path=highlight_path(f'{tag}-plywood.png')); pg.evaluate(CLEAN)
         ctx.close()
     b.close()
 for n in ['desktop','mobile','mobile-seasonal']:
     shutil.copy(highlight_path(n+'.png'),H+n+'.png')
 shutil.copy(highlight_path('desktop-seasonal.png'),H+'seasonal.png')
+shutil.copy(highlight_path('desktop-plywood.png'),H+'plywood.png'); shutil.copy(highlight_path('mobile-plywood.png'),H+'mobile-plywood.png')
 for n in ['onboarding','mobile-onboarding']:   # v2.38: the First steps guide shots come from test/v238.py (a fresh save)
-    if os.path.exists(H+n+'.png'): shutil.copy(H+n+'.png',highlight_path(n+'.png'))
+    for src in [H+n+'.png',shot_dir('2.38')+n+'.png']:   # newest release that has them (v2.38 wrote them to its own folder)
+        if os.path.exists(src): shutil.copy(src,highlight_path(n+'.png')); break
 print('errors:',errs[:5]); print('wrote',os.path.dirname(highlight_path('x')),'and',H)

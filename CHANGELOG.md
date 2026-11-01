@@ -5,6 +5,70 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.39] — 2026-11-01
+
+**Late-game plywood balance** (a next idea from v2.37 / v2.38). Parquet, the Toy Workshop and Timber-frame Houses kept
+waiting on the Plywood Mill in the late game, while the Veneer & Decor line competed for the same plywood and veneer.
+
+### Root cause (found by simulation)
+- The Plywood Mill costs 3.75× the Parquet Workshop and unlocks through research, so for the same budget it sits about
+  7 levels behind its workshops. Their ×2 milestones always land first, and right before each of the mill's own milestones
+  it made only **57–85 %** of the plywood its workshops could use (research tiers I–III, cost-balanced 1e8 / 1e9 / 1e11).
+- Research sped the workshops up early (Atelier Methods, Toy Line, CNC Workshop, Craftsmanship) while the mill's own boosts
+  (Laser Grading, Cold Press) came late. With every other input topped up, all plywood workshops ran at **70–74 %**, and the
+  Decor Studio got only 9–39 % of its spare plywood at 1e14–1e15.
+- At tier V it flipped: Zero-waste ×2 and Throughput pushed the mill to 2–3× demand, so plywood and veneer were sold raw.
+
+### Changed
+- **Press yield ×1.4** (`PLY_PRESS`), and the yield curve's early start now begins at Lv 1 instead of Lv 10. Every sheet of
+  veneer gives more plywood; the recipe (4 veneer + 2 glue → 3 plywood), the cost (🪙15M × forest value) and glue use are
+  unchanged, so the mill takes no extra veneer or glue.
+- **Supply parity.** The Plywood Mill's research speed is now the higher of its own and the plywood-weighted research speed
+  of the workshops it feeds (Parquet, Cabinet Studio, Toy Workshop, Boat Yard, Timber-frame Houses). A workshop boost no
+  longer outruns the mill. The Decor Studio uses spare plywood only and never sets the pace.
+- **Zero-waste Mill ×2 and Throughput** now boost the primary mills only, no longer the Plywood Mill (parity already keeps
+  it in step), which removes the tier V over-supply.
+- **Veneer Panel Press** keeps pace with the Peeler's research. It still only takes spare veneer that no other line needs,
+  so late veneer no longer piles up.
+- **Plywood Mill sheet:** the yield line shows "×Y plywood per sheet · Lv N+1: ×Y2", a 🏭 balance line ("At full speed X/s ·
+  workshops can use Y/s", green / amber / red with "upgrade the mill" when short) and a 🤝 parity line when it applies. The
+  Panel Press sheet shows its Peeler pace. No new HUD elements.
+
+### Balance (from `test/v239.py`)
+- Plywood made ÷ what the workshops can use, cost-balanced 1e8–1e15: tier II **0.57–1.46 → 1.13–2.56**, tier III
+  **0.57–1.42 → 1.13–2.56**, tier V **1.22–3.04 → 1.20–2.66**.
+- Steady state (every input but plywood topped up and a normal factory, tiers II/III/V, 1e9–1e15): no workshop waits on
+  plywood, the mill never backs up, the Decor Studio is always fed, and the Furniture Factory and the mill never wait on
+  veneer. At tier V less veneer and plywood are sold raw than in v2.38.
+- Income in a normal factory: tier II +6 to +13 %, tier III +9 to +20 %, tier V −1 to −8 % (the Zero-waste over-supply that
+  was sold raw is gone).
+- Greedy 4-run multi-Replant sim: plywood short 0 % of the second half of each run.
+- The early game is identical to v2.38 (2 h scripted run, same coins and levels). Costs, order sizes and rewards still scale
+  with forest value (audit at ×1 / ×50 / ×675), and the v2.25 order rewards are unchanged.
+
+### Known limits
+- At the start of the premium phase (≈1e8) veneer from the Peeler is the limit, not the mill. Parquet runs at 85 % there
+  (43 % in v2.38).
+- At tiers II–III a normal factory sells more spare plywood raw, because the workshops are held back by paper and chairs
+  (maintenance item (a)1), not plywood.
+
+### Saves
+- No new save fields. Every older save loads; the new rules apply from the first tick.
+
+### Tests
+- New `test/v239.py`: yield and recipe rules, parity maths, Zero-waste / Throughput scope, Panel Press pace, early game vs
+  v2.38, the made/need table, relieved and normal steady state, the greedy sim, the forest-value audit for plywood, flooring,
+  cabinets, toys, boats, houses and decor orders, a v2.38 save and a damaged save, the sheet lines on desktop (mouse) and
+  iPhone 13 / Pixel 7 (touch, full-height sheet, no sideways scroll), and no console errors or 404s.
+- `test/v2291.py`: the Plywood Mill early-start check now accepts the v2.39 curve (Lv 10 ≥ ×1).
+
+### Next ideas
+- Insurance claims & safety drills (maintenance proposal 7).
+- Photo mode / share card (maintenance proposal 12).
+- Paper and chairs for the premium workshops: at tiers II–III they hold back Parquet, Toys and Cabinets more than plywood now does.
+- Veneer at the start of the premium phase (Peeler pacing around 1e8).
+- Remaining maintenance items 4, 8 and 10 from `docs/maintenance-v2.28.1.md`.
+
 ## [2.38] — 2026-10-31
 
 **Onboarding for new players** (maintenance notes item 7 from `docs/maintenance-v2.28.1.md`, and a next idea from v2.37). A

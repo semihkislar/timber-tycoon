@@ -994,3 +994,8 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 .ob-hl{animation:obHl 1.4s ease-in-out infinite!important}
 @keyframes obHl{0%,100%{box-shadow:0 0 0 2px rgba(245,200,76,.95),0 0 0 0 rgba(245,200,76,.6)}50%{box-shadow:0 0 0 3px rgba(245,200,76,1),0 0 0 9px rgba(245,200,76,0)}}
 @media (prefers-reduced-motion:reduce){#obHand .ob-ring,#obHand .ob-fg,.ob-hl,#obCard{animation:none!important}}
+/* ---------- v2.39 plywood balance: Plywood Mill sheet lines ---------- */
+.bp-yield.ply-bal span{opacity:.8}
+.bp-yield.ply-bal.ok b{color:#3d7a28}
+.bp-yield.ply-bal.tight b{color:#a8741a}
+.bp-yield.ply-bal.short b{color:#b3402a}

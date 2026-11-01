@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.38-6b8e23" alt="version 2.38">
+  <img src="https://img.shields.io/badge/version-2.39-6b8e23" alt="version 2.39">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.38: the factory in the late game" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.39: the factory in the late game" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,25 +30,25 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.38: First steps for new players
-A brand-new game now opens with a short **First steps** guide: a small card and a 👆 pointer on the scene that walk you
-through the first minutes:
-1. 🪓 tap the forest to chop logs,
-2. 🧔 hire your first Lumberjack (free),
-3. 🪚 build the Sawmill with 40 logs,
-4. 🪙 earn your first coins,
-5. ⬆️ upgrade the Sawmill,
-6. 📋 take your first client order.
+### New in v2.39: Late-game plywood balance
+Parquet, the Toy Workshop and Timber-frame Houses no longer wait on the Plywood Mill late in the game:
+- 🟧 **Better press yield.** Every sheet of veneer now gives ×1.4 more plywood, from Lv 1. The recipe, the cost and the glue
+  use stay the same, so the mill takes no extra veneer or glue.
+- 🤝 **Supply parity.** The mill's research speed keeps pace with the workshops it feeds, so a workshop boost such as Toy
+  Line or CNC Workshop no longer leaves it behind. Zero-waste and Throughput now boost the primary mills only, so the
+  late game no longer floods the market with plywood.
+- 🪞 The Veneer Panel Press keeps pace with the Peeler and still takes spare veneer only, so late veneer stops piling up.
+- 🏭 The Plywood Mill sheet shows its press yield, how much it can make next to what its workshops can use, and a red
+  "upgrade the mill" hint when it falls short.
 
-The button to press gets a gold ring, and the card keeps clear of the bottom sheets, the order card and the side buttons on
-desktop and phones. **Skip ✕** hides it, and **Settings → 📘 Replay** brings it back. It gives nothing for free, so the early
-game plays exactly as before. Existing saves never see it unless you ask.
+The early game plays exactly as in v2.38, and older saves keep loading.
 
-<p align="center"><img src="screenshots/highlights/onboarding.png" alt="The First steps guide pointing at the Sawmill lot" width="720"></p>
+<p align="center"><img src="screenshots/highlights/desktop-plywood.png" alt="The Plywood Mill sheet with press yield and supply balance" width="720"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.38** | 📘 **First steps for new players** | A brand-new game opens with a short guide (tap the forest, hire a free Lumberjack, build and upgrade the Sawmill, take a first order) with a pointer on the scene. **Skip ✕** hides it, **Settings → 📘 Replay** brings it back, and it gives nothing for free. |
 | **v2.37** | 📦 **Seasonal export contracts** | Every season brings one themed export contract (spring houses and glulam, summer boats and toys, autumn furniture, winter pellets and charcoal). It is sized on your output, pays 1.5–2.5× plus a 20 % seasonal premium, and has a trophy for each season. |
 | **v2.36** | 🧰 **Workstation sets** | Level all three workstations of a building together: Lv 5 gives 🧰 Tuned Line (×1.10 speed), Lv 10 gives 🏅 Master Set (×1.25 speed and the manager's skill doubled, within its caps). |
 | **v2.35** | 📐 **Replant Blueprints** | Save your factory as a plan: target levels, priorities, crew, upgrades, logistics and settings. After a Replant, a planning office rebuilds it with real coins at normal prices. You choose its budget (25 / 50 / 100 %) and can pause it any time. It is unlocked by research and has up to three plan slots (A/B/C). |
