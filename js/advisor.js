@@ -98,10 +98,12 @@ function advHintHtml(id){
 }
 /* ---- Supply Flow: top bottlenecks ---- */
 function advRowsData(){const L=advList(),n=advPhone()?2:3;return {L,n,top:L.slice(0,n)};}
+function advOvfRowHtml(){const ar=typeof ovfAdvRow==='function'?ovfAdvRow():null;if(!ar) return '';   // v2.40: a full Log Yard with idle collectors
+  return `<button class="adv-row ovf${ar.st==='idle'?' bad':''}" data-ovf="1"><span class="adv-n">🪵</span><span class="adv-t">${ar.txt}</span><span class="adv-f">${advPhone()?ar.f.btn:ar.f.label} →</span></button>`;}
 function advSummaryHtml(){
-  const {L,n,top}=advRowsData();if(!L.length) return `<div class="adv-sum ok">✔ No bottlenecks: every running building is fed</div>`;
+  const {L,n,top}=advRowsData(),ov=advOvfRowHtml();if(!L.length) return ov?`<div class="adv-sum"><div class="adv-h">⏳ Top bottlenecks</div>${ov}</div>`:`<div class="adv-sum ok">✔ No bottlenecks: every running building is fed</div>`;
   const rows=top.map((e,i)=>`<button class="adv-row" data-adv="${e.k}"><span class="adv-n">${i+1}</span><span class="adv-t"></span><span class="adv-f"></span></button>`).join('');
-  return `<div class="adv-sum"><div class="adv-h">⏳ Top bottlenecks <small></small></div>${rows}</div>`;
+  return `<div class="adv-sum"><div class="adv-h">⏳ Top bottlenecks <small></small></div>${rows}${ov}</div>`;
 }
 function advRowText(e){const R=RMAP[e.k],u=e.users,who=u.length>2||advPhone()&&u.length>1?`${u.length} buildings wait`:u.map(x=>BMAP[x.id].name).join(', ')+(u.length>1?' wait':' waits');
   const vv=advPhone()?'':(e.via||[]).filter(k=>k!==e.k&&RMAP[k]).slice(0,4).map(k=>RMAP[k].icon).join('');
@@ -109,11 +111,12 @@ function advRowText(e){const R=RMAP[e.k],u=e.users,who=u.length>2||advPhone()&&u
   return `${R.icon} <b>${R.name}</b>${vv?` <small>(also ${vv} short)</small>`:''} · ${who} <small>${Math.round(e.worst*100)}% fed${e.lost>0?` · −🪙${fmt(e.lost)}/s`:''}</small>`;}
 /* keyed update: the row buttons are only rebuilt when the set of bottlenecks changes, so a tap never lands on a replaced node */
 function advSummaryUpdate(box){
-  if(!box) return;const {L,n,top}=advRowsData(),key=L.length?top.map(e=>e.k).join(','):'ok';
+  if(!box) return;const {L,n,top}=advRowsData(),ar=typeof ovfAdvRow==='function'?ovfAdvRow():null,key=(L.length?top.map(e=>e.k).join(','):'ok')+(ar?'|'+ar.st+ar.f.label:'');   // v2.40: the yard row is part of the key
   if(box._k!==key){box.innerHTML=advSummaryHtml();box._k=key;}
   if(!L.length) return;
   const sm=box.querySelector('.adv-h small'),more=L.length>n?`+${L.length-n} more · tap one to jump`:'tap one to jump';if(sm&&sm._t!==more){sm.textContent=more;sm._t=more;}
-  box.querySelectorAll('.adv-row').forEach((r,i)=>{const e=top[i];if(!e) return;r.classList.toggle('bad',e.worst<ADV_BAD&&!e.spare);
+  {const r=box.querySelector('.adv-row.ovf .adv-t');if(r&&ar&&r._h!==ar.txt){r.innerHTML=ar.txt;r._h=ar.txt;}}
+  box.querySelectorAll('.adv-row:not(.ovf)').forEach((r,i)=>{const e=top[i];if(!e) return;r.classList.toggle('bad',e.worst<ADV_BAD&&!e.spare);
     const t=advRowText(e),f=(e.fix?(advPhone()?e.fix.btn||e.fix.label:e.fix.label):'Open')+' →',a=r.querySelector('.adv-t'),b=r.querySelector('.adv-f');
     if(a._h!==t){a.innerHTML=t;a._h=t;}if(b._h!==f){b.textContent=f;b._h=f;}});
 }

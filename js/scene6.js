@@ -95,7 +95,7 @@ function forestChop(sx,sy){
   if(best&&!best.stump&&!best.fall){best.shake=1;const p=P(best.i,best.j);fx=p[0];fy=p[1]-10;if(!best.dyn) best.shake=0;}
   scene.axes.push({x:fx+7,y:fy-4,t:0});
   for(let k=0;k<10;k++) emitP(fx,fy,'chip');
-  scene.floats.push({x:fx,y:fy-30,text:n>0?'+'+fmt(n,n<10?1:0):'Log Yard full',log:n>0,t:0,dur:1});
+  scene.floats.push({x:fx,y:fy-30,text:n>0?'+'+fmt(n,n<10?1:0)+(typeof chopOvf!=='undefined'&&chopOvf?' ↪':''):'Log Yard full',log:n>0,t:0,dur:1,col:n>0&&typeof chopOvf!=='undefined'&&chopOvf?'#bff3e6':undefined});   // v2.40: a tap on a full yard goes on as overflow
   render();
   return n;
 }
@@ -278,12 +278,12 @@ function drawOverlays(ctx){
   // yard + dock labels
   if(showTags){
     for(const [L,txt,id] of [[YARD,'Log Yard','yard'],[DOCK,'Shipping','dock']]){if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const hov=scene.hover===id;
-      pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
+      pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt+(id==='yard'&&typeof ovfState==='function'?({ovf:' ↪ overflow',part:' ↪ overflow',idle:' · full'}[ovfState()]||''):''),{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
   }
   premOverlays(ctx,showTags); shipOverlay(ctx,showTags); flowOverlay(ctx); advOverlay(ctx);   // v2.16 supply flow view · v2.29 advisor jump ping
   // floating numbers
   for(const f of scene.floats){const k=f.t/f.dur;const [sx,sy]=w2s(f.x,f.y);const y=sy-k*(f.big?60:44);ctx.globalAlpha=k<.7?1:1-(k-.7)/.3;
-    const fs=f.big?20:f.timber?17:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;
+    const fs=f.big?20:f.timber?17:f.sm?12:15;ctx.font=`900 ${fs}px system-ui`;ctx.textAlign='left';ctx.textBaseline='middle';const tw=ctx.measureText(f.text).width;const ix=f.coin||f.log?fs*.75:0;const x0=sx-(tw+ix)/2;
     if(f.coin) coinAt(ctx,x0+fs*.35,y,fs*.42,'coin'); if(f.log) coinAt(ctx,x0+fs*.35,y,fs*.38,'log');
     ctx.lineWidth=4;ctx.strokeStyle='rgba(40,20,5,.85)';ctx.strokeText(f.text,x0+ix,y);ctx.fillStyle=f.col||(f.coin?'#ffe066':'#fff');ctx.fillText(f.text,x0+ix,y);ctx.globalAlpha=1;}
   // first-time hint

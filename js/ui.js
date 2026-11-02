@@ -142,7 +142,7 @@ function updateBuildingSheet(){
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],chipper:['🍂 Chip yield','chips per log',25,chipYieldAt]}[b.id];   // v2.29.1: chipper too   // v2.24: Peeler + Plywood Mill too
-  const yl=b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'';   // v2.39: the Plywood Mill has its own lines
+  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'');   // v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
@@ -208,8 +208,9 @@ function updateMarket(){
     e.pr.textContent='+'+fr(R.p);
     const used=R.c;
     e.us.innerHTML=used>0.005?`<span>${fr(used)}</span>`+(R.d>R.p*1.02+0.01&&R.d>0?` <span class="neg" title="Buildings want more than is produced">(need ${fr(R.d)})</span>`:''):'<span class="muted">—</span>';
-    if(e.raw){const cap=logCap(),f=Math.min(1,S.res[id]/cap);e.raw.querySelector('i').style.width=(f*100).toFixed(1)+'%';e.raw.classList.toggle('full',yardFull());
-      const t=yardFull()?`Log Yard full (${fmt(cap)}) · collectors idle`:`Log Yard ${Math.round(f*100)}% of ${fmt(cap)}`;const tx=e.raw.querySelector('.yardtx');if(tx.textContent!==t) tx.textContent=t;continue;}
+    if(e.raw){const cap=logCap(),f=Math.min(1,S.res[id]/cap);e.raw.querySelector('i').style.width=(f*100).toFixed(1)+'%';
+      const ov=typeof ovfYardTxt==='function'?ovfYardTxt(cap):null,cl=ov?ov[1]:'';if(e.raw._c!==cl){e.raw._c=cl;e.raw.classList.remove('full','ovf','part');if(cl) e.raw.classList.add(...cl.split(' '));}   // v2.40 overflow
+      const t=ov?ov[0]:`Log Yard ${Math.round(f*100)}% of ${fmt(cap)}`;const tx=e.raw.querySelector('.yardtx');if(tx.textContent!==t) tx.textContent=t;continue;}
     const p=price(id); e.price.textContent='🪙'+fmt(p,p<10?2:0);
     e.price.classList.toggle('boost',M.price[id]*M.priceAll>TREES[S.tree].mult*baseUpgPrice(id)+1e-9);
     e.cb.checked=!!S.autosell[id]; e.btn.disabled=S.res[id]<1;

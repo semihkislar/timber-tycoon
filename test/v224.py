@@ -88,10 +88,10 @@ with sync_playwright() as p:
     # surplus: full yard, pellet press + kiln off → logs keep the plant running, Phase I fully fed, reserve kept
     r=E(pg,"""(()=>{for(const c of COLLECTORS) S.collectors[c.id]=Math.max(S.collectors[c.id],300);S.buildings.pellet.on=false;S.buildings.kiln.on=false;S.res.pellets=0;S.res.charcoal=0;
       S.power.logs='surplus';S.power.res=30;M=computeMods();S.res.logs=logCap();let bad=0,burned=0,minLeft=1e99,starve=0,sold=0;
-      for(let k=0;k<120;k++){S.forest.m=1e9;const c0=S.coins;tick(1,false);burned+=pwLastLogs;
+      for(let k=0;k<120;k++){S.forest.m=1e9;const c0=S.coins;tick(1,false);burned+=pwLastLogs+(typeof pwOvfLogs==='number'?pwOvfLogs:0);   /* v2.40: a full yard's overflow logs burn first */
         for(const id of ['sawmill','peeler','chipper']) if(S.buildings[id].lvl&&bstat[id].lim==='logs'&&bstat[id].f<1-1e-9) starve++;
         if(pwLastLogs>0) minLeft=Math.min(minLeft,S.res.logs/Math.max(1e-9,pwLogReserve()));}
-      return {burned,starve,minLeft,eff:pwEff(),st:pwStatus().k,bl:S.power.burn.logs,ls:rates.logs.s};})()""")
+      return {burned,starve,minLeft,eff:pwEff(),st:pwStatus().k,bl:S.power.burn.logs+(S.power.burn.ovf||0),ls:rates.logs.s};})()""")
     ok(r['burned']>0 and r['eff']>.9 and r['st']=='ok',f"pellet press + kiln off, full yard: surplus logs run the plant (eff {r['eff']:.2f}, {r['bl']:.3g} logs/s)")
     ok(r['starve']==0,'… and the Sawmill, Peeler and Chipper never ran short of logs')
     ok(r['minLeft']>=.999,f"… and the yard never dropped below the reserve after a burn (min {r['minLeft']:.3f}× reserve)")
@@ -106,10 +106,10 @@ with sync_playwright() as p:
     ok(r['burned']==0 and r['st']=='nofuel',f'log fuel Off: no logs burned, plant reports no fuel ({r})')
     # priority: plenty of pellets/charcoal → 'Backup' burns no logs, 'Logs first' burns logs and saves pellets/charcoal
     r=E(pg,"""(()=>{S.buildings.pellet.on=true;S.buildings.kiln.on=true;M=computeMods();const run=m=>{S.power.logs=m;let lg=0,pc=0;
-      for(let k=0;k<30;k++){S.forest.m=1e9;S.res.logs=logCap();S.res.pellets=1e9;S.res.charcoal=1e9;tick(1,false);lg+=pwLastLogs;}return [lg,S.power.burn.pellets+S.power.burn.charcoal,pwEff()];};
+      let ov=0;for(let k=0;k<30;k++){S.forest.m=1e9;S.res.logs=logCap();S.res.pellets=1e9;S.res.charcoal=1e9;tick(1,false);lg+=pwLastLogs;ov+=typeof pwOvfLogs==='number'?pwOvfLogs:0;}return [lg,S.power.burn.pellets+S.power.burn.charcoal,pwEff(),ov];};   /* v2.40: lg = logs from the yard stock, ov = overflow logs (burn first in every mode but Off) */
       return {gap:run('surplus'),first:run('first')};})()""")
-    ok(r['gap'][0]==0 and r['gap'][2]>.9,f"'Backup' with plenty of pellets/charcoal burns no logs ({r['gap']})")
-    ok(r['first'][0]>0 and r['first'][1]<r['gap'][1]*.8 and r['first'][2]>.9,f"'Logs first' burns logs and less pellets/charcoal ({r['first']})")
+    ok(r['gap'][0]==0 and r['gap'][2]>.9,f"'Backup' with plenty of pellets/charcoal burns no logs from the yard stock ({r['gap']})")
+    ok(r['first'][0]+r['first'][3]>0 and (r['first'][1]<r['gap'][1]*.8 or r['gap'][1]<1e-9) and r['first'][2]>.9,f"'Logs first' burns logs and less pellets/charcoal ({r['first']}; v2.40: overflow logs already replace them in both modes when the yard overflows)")
     ok(E(pg,"[setPowerLogs('bogus'),setPowerReserve(7),setPowerLogs('off'),setPowerReserve(120),S.power.logs,S.power.res]")==[False,False,True,True,'off',120],'setters validate input')
     # Replant keeps the plant settings
     r=E(pg,"(()=>{S.power.logs='first';S.power.res=300;S.totalEarned=1e15;S.seeds=0;doPrestige();return [S.power.lvl,S.power.logs,S.power.res];})()")

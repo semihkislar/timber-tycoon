@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.39';
+const VERSION='2.40';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -507,6 +507,29 @@ function saleValue(k){return canSell(k)?price(k):0;}
 function logCap(){return Math.max(600,logRatePot()*180);}
 function yardRun(){return S&&isFinite(S.yardRun)?S.yardRun:1;}
 function yardFull(){return yardRun()<.95;}
+/* v2.40 Log Yard overflow: when the yard is full, the logs the collectors (and taps) bring in on top of it are no longer wasted.
+   They go straight on, past the yard, to two sinks (never into the yard stock, never sold):
+   1. the Wood Chipper's overflow chute: up to OVF_CHIP × the Chipper's own log intake, at its normal recipe and yield (6 logs → 6 chips
+      × its chip yield), and only while the chip store has room;
+   2. the Biomass Power Plant: overflow logs are burned before pellets / charcoal (PW_LOG_FUEL per log, any log-fuel mode but Off),
+      up to the plant's normal fuel need, so it never runs bigger than before; the pellets and charcoal it saves are sold or used.
+   Only what neither sink takes is lost, and only then do collectors idle (S.yardRun counts the logs that found a use). */
+const OVF_CHIP=.5;
+const YOVF={chip:0,pow:0,chips:0,w:0,in:0};   // smoothed rates per second (UI only; not saved)
+let ovfTap=0, ovfLast={chip:0,pow:0,chips:0,w:0};   // taps on a full yard wait here for the next tick · last tick's split (tests)
+function ovfChipOk(){const st=S.buildings.chipper;return !!(st&&st.lvl&&st.on&&!onFire('chipper')&&!(typeof mishPaused==='function'&&mishPaused('chipper')));}
+/* overflow logs per second the Chipper's chute can take (0 when it is not built, off, on fire or broken down) */
+function ovfChipCap(){return ovfChipOk()?OVF_CHIP*BMAP.chipper.inp.logs*bSpeed('chipper')*bInMult('chipper'):0;}
+/* chips per overflow log: the Chipper's normal recipe and yield */
+function ovfChipYield(){return BMAP.chipper.out.chips/(BMAP.chipper.inp.logs*bInMult('chipper'))*bOutK('chipper','chips');}
+/* overflow logs per second the power plant can burn (its whole fuel need, in logs) */
+function ovfPowCap(){if(typeof pwLvl!=='function'||!pwLvl()||S.power.on===false||pwLogMode()==='off') return 0;return pwNeed().total/PW_LOG_FUEL;}
+function ovfSinks(){return {chip:ovfChipCap()>0,pow:ovfPowCap()>0};}
+function ovfActive(){return YOVF.chip+YOVF.pow>1e-9&&(yardFull()||YOVF.in>1e-9);}
+/* the chute step, called from tick() after production (so chip storage room is known) */
+function ovfToChipper(n,dt,caps){if(!(n>0)) return [0,0];const cap=ovfChipCap()*dt;if(!(cap>0)) return [0,0];const y=ovfChipYield();if(!(y>0)) return [0,0];
+  const room=Math.max(0,(caps&&isFinite(caps.chips)?caps.chips:Infinity)-S.res.chips),a=Math.min(n,cap,room/y);if(!(a>0)) return [0,0];
+  S.res.chips+=a*y;return [a,a*y];}
 /* the first Sawmill of every run is built with LOGS, not coins (logs can't be sold, so a run would otherwise start with no income),
    and the first Lumberjack of a run is hired for free, so a run with 0 coins can never soft-lock: free lumberjack → logs → Sawmill → planks → coins */
 const SAW_LOGS=40;   // ~40 s of one lumberjack (or ~40 taps); flat, so it is never a wall after a Replant either
@@ -598,8 +621,8 @@ function tick(dt,offline){
   S.time+=dt; S.playTime+=dt; wxTick(dt,offline); fireTick(dt,offline); if(typeof mishTick==='function') mishTick(dt,offline); if(typeof staffTick==='function') staffTick(dt,offline);
   const fl={}; RES.forEach(r=>fl[r.id]={p:0,c:0,s:0});
   forestTick(dt,offline);
-  {const lr=logRate()*dt,room=Math.max(0,logCap()-S.res.logs),acc=Math.min(lr,room);S.res.logs+=acc;fl.logs.p+=acc;fl.logs.w=lr-acc;   // v2.20.1 Log Yard capacity: old stock above the cap is kept
-    const f=lr>1e-12?acc/lr:(S.res.logs>=logCap()-1e-9?0:1);S.yardRun=yardRun()+(f-yardRun())*Math.min(1,dt/2);if(S.yardRun>.999&&f>=1) S.yardRun=1;}
+  const lr=logRate()*dt,acc=Math.min(lr,Math.max(0,logCap()-S.res.logs));S.res.logs+=acc;fl.logs.p+=acc;fl.logs.w=lr-acc;   // v2.20.1 Log Yard capacity: old stock above the cap is kept
+  const ovCol=lr-acc,tap=ovfTap;ovfTap=0;let ovf=ovCol+tap;   // v2.40: logs that don't fit go on as overflow (yardRun is set after the sinks)
   const demand={}, dLo={}; RES.forEach(r=>{demand[r.id]=0;dLo[r.id]=0;});
   const active=[];
   for(const b of BUILDINGS){
@@ -634,7 +657,15 @@ function tick(dt,offline){
   }
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
   if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'pri');   // v2.37: a signed seasonal contract loads its share before the boiler
-  if(typeof powerTick==='function') powerTick(demand,dt,fl,frac);   // v2.10: the power plant takes its fuel before auto-sell
+  let ovC=[0,0];if(ovf>1e-12){ovC=ovfToChipper(ovf,dt,caps);ovf-=ovC[0];if(ovC[1]>0) fl.chips.p+=ovC[1];}   // v2.40 overflow → the Wood Chipper's chute
+  if(typeof powerTick==='function') powerTick(demand,dt,fl,frac,ovf);   // v2.10: the power plant takes its fuel before auto-sell (v2.40: overflow logs first)
+  {const ovP=typeof pwOvfLogs==='number'?pwOvfLogs:0;ovf=Math.max(0,ovf-ovP);fl.logs.w=ovf;   // v2.40: only what neither sink took is lost
+    const used=ovC[0]+ovP,f=lr>1e-12?Math.min(1,(acc+Math.min(ovCol,used))/lr):(S.res.logs>=logCap()-1e-9&&!(used>0)?0:1);   // collectors' logs count first, taps after
+    S.yardRun=yardRun()+(f-yardRun())*Math.min(1,dt/2);if(S.yardRun>.999&&f>=1) S.yardRun=1;
+    ovfLast={chip:ovC[0],pow:ovP,chips:ovC[1],w:ovf};
+    if(!offline){const a=Math.min(1,dt/1.5);YOVF.chip+=(ovC[0]/dt-YOVF.chip)*a;YOVF.pow+=(ovP/dt-YOVF.pow)*a;YOVF.chips+=(ovC[1]/dt-YOVF.chips)*a;YOVF.w+=(ovf/dt-YOVF.w)*a;YOVF.in+=((ovCol+tap)/dt-YOVF.in)*a;
+      for(const k in YOVF) if(YOVF[k]<1e-9) YOVF[k]=0;}
+    else if(offlineAcc){offlineAcc.ovf=(offlineAcc.ovf||0)+used;}}
   orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'sur'); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
@@ -732,9 +763,13 @@ function buyTree(){
   const nx=TREES[S.tree+1]; if(!nx||S.coins<treeCost(nx)) return false;
   S.coins-=treeCost(nx); S.tree++; M=computeMods(); toast(`${nx.icon} Now harvesting <b>${nx.name}</b>! All prices ×${nx.mult}`); confettiBurst(); sfx('unlock'); return true;
 }
+let chopOvf=false;   // v2.40: the last tap went on as overflow
 function chop(){
   const room=Math.max(0,logCap()-S.res.logs);   // v2.20.1: a full Log Yard takes no more logs (and the tree is left standing)
-  const n=room>0?Math.min(chopPower()*chopForest(),room):0; S.res.logs+=n; S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
+  let n=0;chopOvf=false;
+  if(room>0){n=Math.min(chopPower()*chopForest(),room);S.res.logs+=n;}
+  else{const sk=ovfSinks();if(sk.chip||sk.pow){n=chopPower()*chopForest();ovfTap=Math.min(ovfTap+n,Math.max(n,60*chopPower()));chopOvf=true;}}   // v2.40: a full yard sends taps on as overflow
+  S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
 }
 function sellAll(id){
   const n=S.res[id]; if(n<=0||!canSell(id)) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;

@@ -36,16 +36,18 @@ function pwCapacity(){const W=pwState(),F=PW_FUELS[W.fuel]||PW_FUELS.mix,out={},
   return out;}
 function pwNeed(){const c=pwCapacity(),s=pwShare(),o={};let t=0;for(const k in c){o[k]=c[k]*s;t+=o[k];}o.total=t;return o;}
 /* called from tick() after production, before auto-sell. Takes fuel from stock, falls back on the other fuel in Mix mode. */
-const PW_BURN_KEYS=['pellets','charcoal','logs'];
-let pwLastLogs=0;   // logs burned in the last tick (tests / sims)
+const PW_BURN_KEYS=['pellets','charcoal','logs','ovf'];   // v2.40 'ovf': overflow logs from a full Log Yard
+let pwLastLogs=0, pwOvfLogs=0;   // logs burned from the yard stock / v2.40 overflow logs burned, in the last tick (tests / sims)
 /* v2.24: surplus logs available to the plant this tick (in logs). Zero unless every log user was fully fed this tick. */
 function pwLogsFree(fed,perSec){if(pwLogMode()==='off'||!fed) return 0;return Math.max(0,S.res.logs-pwLogReserve(perSec));}
-function powerTick(demand,dt,fl,frac){
+function powerTick(demand,dt,fl,frac,ovf){
   const W=pwState(); if(!W.burn||typeof W.burn!=='object') W.burn={};
-  let raw=0;pwLastLogs=0;
+  let raw=0;pwLastLogs=0;pwOvfLogs=0;
   if(W.lvl&&W.on!==false){
     const need=pwNeed(),tot=need.total*dt;
-    if(tot>0){let got=0;const took={logs:0};
+    if(tot>0){let got=0;const took={logs:0,ovf:0};
+      // v2.40: overflow logs (a full Log Yard can't take them) burn first in every log-fuel mode but Off: they would be lost otherwise
+      if(ovf>0&&pwLogMode()!=='off'){const a=Math.min(ovf,tot/PW_LOG_FUEL);if(a>0){took.ovf=a;got+=a*PW_LOG_FUEL;pwOvfLogs=a;}}
       // Phase I fed in full this tick? (frac from tick(); demand.logs is this tick's log use)
       // and the collectors bring in at least what Phase I uses (a log deficit is never made worse by the plant)
       const inc=fl&&fl.logs?fl.logs.p+(fl.logs.w||0):Infinity;
@@ -56,7 +58,7 @@ function powerTick(demand,dt,fl,frac){
       for(const k of pc){const a=Math.min(S.res[k],need[k]*dt*sc);S.res[k]-=a;took[k]=a;got+=a;}
       if(got<tot-1e-12) for(const k of pc){const a=Math.min(S.res[k],tot-got);if(a>0){S.res[k]-=a;took[k]+=a;got+=a;}}
       if(got<tot-1e-12&&pwLogMode()==='surplus') burnLogs();
-      for(const k in took){if(fl&&fl[k]) fl[k].c+=took[k];if(demand) demand[k]=(demand[k]||0)+(k==='logs'?took[k]:need[k]*dt*sc);}   // logs: raw use, never a sale
+      for(const k in took){if(k==='ovf') continue;if(fl&&fl[k]) fl[k].c+=took[k];if(demand) demand[k]=(demand[k]||0)+(k==='logs'?took[k]:need[k]*dt*sc);}   // logs: raw use, never a sale (overflow logs never enter the yard)
       raw=Math.min(1,got/tot);
       const a=Math.min(1,dt/1.5);for(const k of PW_BURN_KEYS){const r=(took[k]||0)/dt;W.burn[k]=(W.burn[k]||0)+(r-(W.burn[k]||0))*a;}
     } else for(const k of PW_BURN_KEYS) W.burn[k]=(W.burn[k]||0)*(1-Math.min(1,dt/1.5));
@@ -125,9 +127,9 @@ function updatePower(){
     const se=$('pwSt'),sh=sm[st.k]||st.t; if(se._t!==sh){se.textContent=sh;se._t=sh;se.className='pw-status '+st.k;}
     const need=pwNeed(),bn=W.burn||{};
     const lm=pwLogMode(),use=pwLogUse(),rsv=pwLogReserve(use);
-    const ln=lm==='off'?'Logs are never burned. Turn this on to let spare logs from a full Log Yard keep the plant running.':
-      `${PW_LOGMODES[lm].d}. Logs are raw material: the plant only takes logs <b>left over</b> after the Sawmill, Peeler, Chipper and Kiln are fully fed, and always leaves <b>${fr(rsv)}</b> logs (${pwReserveSec()<60?pwReserveSec()+' s':pwReserveSec()/60+' min'} of their use) in the yard.`;
+    const ln=lm==='off'?'Logs are never burned, not even the overflow of a full Log Yard. Turn this on to let it keep the plant running and save pellets.':
+      `${PW_LOGMODES[lm].d}. Logs are raw material: the plant only takes logs <b>left over</b> after the Sawmill, Peeler, Chipper and Kiln are fully fed, and always leaves <b>${fr(rsv)}</b> logs (${pwReserveSec()<60?pwReserveSec()+' s':pwReserveSec()/60+' min'} of their use) in the yard. ↪ When the Log Yard is full, its <b>overflow</b> logs burn first, before pellets and charcoal.`;
     const le=$('pwLogNote'); if(le&&le._t!==ln){le.innerHTML=ln;le._t=ln;}
-    const kv=[['🟤 Pellets burned',`${fr(bn.pellets||0)}/s`],['⚫ Charcoal burned',`${fr(bn.charcoal||0)}/s`],['🪵 Logs burned',lm==='off'?'off':`${fr(bn.logs||0)}/s`],...(lm==='off'?[]:[['Log reserve',`${fr(Math.min(S.res.logs,rsv))} / ${fr(rsv)}`]]),['Fuel share',`${Math.round(pwShare()*100)}% of ${PW_FUELS[W.fuel].src.map(k=>k==='pellets'?'Pellet Press':'Kiln').join(' + ')} output`],['Max boost',`+${Math.round(pwMaxBoost()*100)}% all buildings`]];
+    const kv=[['🟤 Pellets burned',`${fr(bn.pellets||0)}/s`],['⚫ Charcoal burned',`${fr(bn.charcoal||0)}/s`],['🪵 Logs burned',lm==='off'?'off':`${fr(bn.logs||0)}/s`],...(lm!=='off'&&(bn.ovf||0)>1e-6?[['↪ Overflow logs',`${fr(bn.ovf)}/s`]]:[]),...(lm==='off'?[]:[['Log reserve',`${fr(Math.min(S.res.logs,rsv))} / ${fr(rsv)}`]]),['Fuel share',`${Math.round(pwShare()*100)}% of ${PW_FUELS[W.fuel].src.map(k=>k==='pellets'?'Pellet Press':'Kiln').join(' + ')} output`],['Max boost',`+${Math.round(pwMaxBoost()*100)}% all buildings`]];
     const kh=kv.map(([a,v])=>`<div><span>${a}</span><b>${v}</b></div>`).join(''); const ke=$('pwKv'); if(ke._t!==kh){ke.innerHTML=kh;ke._t=kh;}}
 }

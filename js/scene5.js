@@ -209,6 +209,7 @@ function updateEntities(dt){
   // v2.8: in-place compaction + object pools (no new arrays / objects per frame)
   {const A=scene.particles;let n=0;for(let k=0;k<A.length;k++){const p=A[k];p.life-=dt;if(p.life<=0){if(P_POOL.length<400) P_POOL.push(p);continue;}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;A[n++]=p;}A.length=n;}
   {const A=scene.smoke;let n=0;for(let k=0;k<A.length;k++){const s=A[k];if(!smokeStep(s,dt)){if(S_POOL.length<200) S_POOL.push(s);continue;}A[n++]=s;}A.length=n;}   // v2.10.1: drift with wind, slowing rise
+  if(typeof ovfFrame==='function') ovfFrame(dt);   // v2.40 overflow floats
   {const A=scene.floats;let n=0;for(let k=0;k<A.length;k++){const f=A[k];if((f.t+=dt)<f.dur) A[n++]=f;}A.length=n;if(n>60) A.splice(0,n-60);}
   scene.axes=scene.axes.filter(a=>(a.t+=dt)<.35);
 }

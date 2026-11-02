@@ -5,6 +5,70 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.40] — 2026-11-02
+
+**Log Yard overflow: a fix for "Yard full"** (player request). When the Log Yard was full, the collectors stopped and
+every collector upgrade above what the mills used was wasted. Now the logs that don't fit go on to the Wood Chipper and
+the Biomass Power Plant.
+
+### Root cause
+- The Log Yard holds about 3 minutes of collection (`logCap()` = max(600, collector rate × 180)). Once it was full, the
+  collectors' extra logs were thrown away every tick, and `S.yardRun` dropped, so the collectors idled and the forest was
+  left standing. Logs can't be sold (v2.20.1), so a collector upgrade that outpaced the Phase-1 mills bought nothing.
+
+### Added
+- **Overflow to the Wood Chipper.** The logs a full yard can't take go straight to the Chipper's overflow chute. The chute takes
+  up to **½ of the Chipper's own log intake** (`OVF_CHIP`), at its normal recipe and chip yield, and only while the chip
+  store has room. It never takes logs from the yard stock, so Phase-1 mills are never short.
+- **Overflow to the power plant.** Whatever the chute can't take, the Biomass Power Plant burns **before** pellets and charcoal,
+  in every log-fuel mode except Off (0.3 fuel per log, as before). It burns no more than its normal fuel need, so the plant
+  doesn't get bigger or stronger. The pellets and charcoal it saves are sold or go to contracts.
+- Only the logs neither sink takes are lost, and only then do collectors idle. Taps on the forest with a full yard go on as
+  overflow too. Without a Chipper or a power plant, the yard works as before.
+- **HUD:** the log chip shows "↪ rate" with a teal ring while overflow is used (amber if some collectors still idle). "Yard full"
+  now appears only when no sink can take the logs, and its tooltip names the fix.
+- **Market → Logs:** the Log Yard bar reads "Full · overflow ↪ 🌀 Chipper X/s · ⚡ Power Y/s", plus the idle rate when there is one.
+- **Supply Flow:** a new "↪ Overflow" line, and teal arcs from the Log Yard to the Chipper and the power plant.
+- **Bottleneck Advisor:** a full yard with idle collectors is listed under Top bottlenecks with a one-tap fix: build or switch on
+  the Wood Chipper, build the Power Plant, allow log fuel, or upgrade the Chipper. The phone attention line uses the same fix.
+- **Wood Chipper sheet:** "↪ Overflow chute: up to X logs/s · now Y/s → Z chips/s". **Power Plant sheet:** an "↪ Overflow logs"
+  row, and the log-fuel note explains that overflow burns first.
+- **Scene:** the Log Yard label reads "↪ overflow", and a calm "↪ 🪵→🍂" / "↪ 🪵→⚡" float rises over the Chipper or the plant
+  every few seconds.
+
+### Unchanged
+- No Log Yard capacity upgrade, and logs are still never sold, auto-sold, shipped or ordered.
+- Chipper recipe and cost, Log Yard cap, plant fuel need and boost, order rewards (v2.25) and costs × forest value.
+
+### Balance (from `test/v240.py`, compared with v2.39)
+- The early game is identical: in the 2 h scripted run the yard never overflows, and coins, levels and collectors match exactly.
+- Collectors matched to the mills: no change at any stage.
+- Collectors bringing 1.5× what the mills use: income **+13.5 %** (start, 1e6), **+9.4 %** (1e7), **+6.4 %** (1e8), **+7.9 %**
+  (tier III, 1e10), **+1.8 %** (late, 1e13). Collectors stay busy **83–100 %** of the time instead of **67–79 %**.
+- The gain is capped by the two sinks: 3× and 10× surplus give the same gain as 1.5×, at most +13.5 %.
+- At tier III, the extra chips lift paper and pellets by **+47 %** (paper 11.6K → 17.1K/s), which eases the chip pinch. More pellets
+  are sold (+20 to +85 %; at tier III from almost none to 3K/s) because the plant burns overflow logs instead.
+- Power is unchanged everywhere (100 %). Phase-1 mills are never short of logs, no logs are sold, and the stock stays within the cap.
+- At forest value ×1 / ×50 / ×675 the gain is the same (+7.9 / +8.4 / +8.4 %), so there are no tiny numbers after a Replant.
+- In the greedy 3-run Replant sim the yard never overflows. Runs, Replant times (15 min) and earnings match v2.39.
+
+### Saves
+- No new save fields. v2.39 saves and damaged saves load, and overflow starts on the first tick. Offline time uses overflow too.
+
+### Tests
+- New `test/v240.py` covers:
+  - rules, the split and caps, chute-first priority, log fuel Off, a full chip store, no sinks behaving as before, and manual taps;
+  - the early game vs v2.39 and the balance table (5 stages × 4 collector surpluses);
+  - forest value, the greedy sim, saves and offline time;
+  - HUD, Supply Flow, Market, Chipper and Power sheets and the Advisor fix, on desktop (mouse) and iPhone 13 / Pixel 7 (touch);
+  - frame cost, and no console errors or 404s.
+- `test/v224.py`: log-fuel checks count overflow logs too. "Backup" still burns no logs from the yard stock.
+
+### Next ideas
+- Insurance claims & safety drills (maintenance proposal 7). Photo mode was dropped.
+- Paper and chairs for the premium workshops.
+- Remaining maintenance items 4, 8 and 10 from `docs/maintenance-v2.28.1.md`.
+
 ## [2.39] — 2026-11-01
 
 **Late-game plywood balance** (a next idea from v2.37 / v2.38). Parquet, the Toy Workshop and Timber-frame Houses kept

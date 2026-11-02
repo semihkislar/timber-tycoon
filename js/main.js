@@ -11,8 +11,8 @@ function render(){
     if(target>lastDispCoins+0.5){coinEl.classList.remove('tick');void coinEl.offsetWidth;coinEl.classList.add('tick');}
     lastDispCoins=target;}
   $('hIncome').textContent='+'+fr(coinRate)+'/s';
-  {const yf=typeof yardFull==='function'&&yardFull(),t=yf?'Yard full':fr(logRate()+chopRateDisplay*chopPower())+'/s',e=$('hLogs');if(e.textContent!==t) e.textContent=t;   // v2.20.1
-    const hc=e.parentNode;if(hc._yf!==yf){hc._yf=yf;hc.classList.toggle('yardfull',yf);hc.title=yf?'Log Yard full: collectors are idle until your mills use more logs (logs can\'t be sold)':'Logs per second';}}
+  {const ov=typeof ovfHud==='function'?ovfHud():(yardFull()?['Yard full','yardfull','Log Yard full']:null),t=ov?ov[0]:fr(logRate()+chopRateDisplay*chopPower())+'/s',e=$('hLogs');if(e.textContent!==t) e.textContent=t;   // v2.20.1 · v2.40 overflow
+    const hc=e.parentNode,cl=ov?ov[1]:'',ti=ov?ov[2]:'Logs per second';if(hc._yf!==cl){hc._yf=cl;hc.classList.remove('yardfull','yardovf','part');if(cl) hc.classList.add(...cl.split(' '));}if(hc.title!==ti) hc.title=ti;}
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
