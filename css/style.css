@@ -1012,3 +1012,7 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 #flowLegend .ovf-go{margin-left:auto;min-height:32px;padding:4px 10px;font-size:11.5px;border:0;border-radius:9px;background:#4ac0b0;color:#10302a;font-weight:800;cursor:pointer}
 #flowLegend .adv-row.ovf{background:rgba(74,192,176,.22)}#flowLegend .adv-row.ovf.bad{background:rgba(232,71,60,.26)}
 @media (max-width:520px){#flowLegend .ovf-flow{font-size:11px}#flowLegend .ovf-go{min-height:36px}}
+/* v2.41 claims & drills */
+.cl-row{flex-wrap:wrap;gap:6px}
+.cl-btns{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.cl-btns .btn{min-height:36px}

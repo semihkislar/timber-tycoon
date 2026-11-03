@@ -1,5 +1,5 @@
 # README highlight screenshots of the current build (late game with every line, logistics tiers, decor line and
-# workstation sets, seasonal export contracts, v2.39 Plywood Mill sheet, v2.40 Log Yard overflow (Supply Flow + Market); v2.38 copies the First steps shots that test/v238.py writes). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
+# workstation sets, seasonal export contracts, v2.39 Plywood Mill sheet, v2.40 Log Yard overflow (Supply Flow + Market), v2.41 claims & drills (Safety sheet); v2.38 copies the First steps shots that test/v238.py writes). Writes screenshots/highlights/*.png and copies the overview shots to screenshots/history/v<VERSION>/.
 #   python3 test/shot_highlights.py            (set TT_URL to shoot another server, e.g. the live Pages site)
 from playwright.sync_api import sync_playwright
 import os,sys,shutil
@@ -62,6 +62,10 @@ with sync_playwright() as p:
         pg.evaluate("openSheet('market')"); pg.wait_for_timeout(800)
         pg.evaluate("(()=>{document.querySelectorAll('.toast').forEach(t=>t.remove());if(innerWidth<=720&&TT.setSheetState) TT.setSheetState('full');const e=document.querySelector('#mktBody tr.raw');if(e) e.scrollIntoView({block:'center'});})()"); pg.wait_for_timeout(500)
         pg.screenshot(path=highlight_path(f'{tag}-overflow-market.png')); pg.evaluate(CLEAN)
+        # v2.41 insurance claims & safety drills: Safety sheet with open claims, a banked discount and the drill card
+        pg.evaluate("(()=>{TT.closeSheet&&TT.closeSheet();S.mish.ins=Math.max(2,S.mish.ins);const c=TT.clState();c.list=[];c.disc=0;c.dr={until:0,cool:0};TT.mishRoll('audit');TT.clAdd('breakdown',0);TT.clAdd('theft',0);TT.clBank(c.list[c.list.length-1].n);S.mish.broke={};S.mish.next=S.time+460;TT.render();openSheet('risk');})()"); pg.wait_for_timeout(800)
+        pg.evaluate("(()=>{document.querySelectorAll('.toast').forEach(t=>t.remove());for(const k in achFresh) delete achFresh[k];if(innerWidth<=720&&TT.setSheetState) TT.setSheetState('full');const e=document.getElementById('riskClaims');if(e) e.scrollIntoView({block:'start'});})()"); pg.wait_for_timeout(500)
+        pg.screenshot(path=highlight_path(f'{tag}-claims.png')); pg.evaluate(CLEAN)
         ctx.close()
     b.close()
 for n in ['desktop','mobile','mobile-seasonal']:
@@ -70,6 +74,7 @@ shutil.copy(highlight_path('desktop-seasonal.png'),H+'seasonal.png')
 shutil.copy(highlight_path('desktop-plywood.png'),H+'plywood.png'); shutil.copy(highlight_path('mobile-plywood.png'),H+'mobile-plywood.png')
 for n in ['overflow','overflow-market']:   # v2.40 Log Yard overflow
     shutil.copy(highlight_path('desktop-'+n+'.png'),H+n+'.png'); shutil.copy(highlight_path('mobile-'+n+'.png'),H+'mobile-'+n+'.png')
+shutil.copy(highlight_path('desktop-claims.png'),H+'desktop-claims.png'); shutil.copy(highlight_path('mobile-claims.png'),H+'mobile-claims.png')   # v2.41
 for n in ['onboarding','mobile-onboarding']:   # v2.38: the First steps guide shots come from test/v238.py (a fresh save)
     for src in [H+n+'.png',shot_dir('2.38')+n+'.png']:   # newest release that has them (v2.38 wrote them to its own folder)
         if os.path.exists(src): shutil.copy(src,highlight_path(n+'.png')); break

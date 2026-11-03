@@ -5,6 +5,25 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.41] — 2026-11-03
+
+**Insurance claims & safety drills** (maintenance proposal 7). Bad luck becomes a decision, not only a loss.
+
+### Added
+- **Claims** (`js/claims.js`). With Insurance Lv 1+, every setback that hits you (not the ones stopped) leaves a claim, at most
+  3 open, each for 10 min. Claim value = the coins lost, at least a few seconds of this run's income (`CL_SEC`: 10–30 s) and
+  ≥ 20 × forest value. **File** pays 40 % + 10 % per insurance level now; **Bank** adds a −20 % no-claims discount (up to −60 %)
+  to the next safety drill or Insurance upgrade, used up by that purchase.
+- **Safety drills.** Once setbacks can happen, pay max(200 × forest value, 90 s of income) for an 8-min drill: 40 % of setbacks
+  are stopped ("🦺 Your drilled crews", logged as stopped) and breakdown / storm repair times are ×0.75. 4-min cooldown.
+- Safety sheet: Safety drill card and Claims list (File / Bank buttons, expiry timers); the Safety button dot also lights for open claims.
+- 2 trophies: 📝 Paperwork Pro (settle 5 claims), 🦺 Safety First (run 5 drills).
+- `test/v241.py` (rules, scaling, Replant, saves, desktop mouse + iPhone/Pixel touch).
+
+### Unchanged
+- Setback odds, loss caps, Insurance levels and Repair now are as in v2.26. No claims without insurance, so the early game is unchanged.
+- Replant keeps the banked discount and stats; open claims and a running drill end. Old saves load with an empty claims state.
+
 ## [2.40] — 2026-11-02
 
 **Log Yard overflow: a fix for "Yard full"** (player request). When the Log Yard was full, the collectors stopped and
