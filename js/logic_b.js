@@ -71,11 +71,7 @@ function confettiBurst(){
 }
 /* ===================== UI HELPERS ===================== */
 const $=id=>document.getElementById(id);
-function toast(html,ms,cls){
-  const t=document.createElement('div');t.className='toast'+(cls?' '+cls:'');t.innerHTML=html;$('toasts').appendChild(t);
-  setTimeout(()=>{t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(()=>t.remove(),400);},ms||4200);
-  const all=$('toasts').children; while(all.length>5) all[0].remove();
-}
+function toast(html,ms,cls){return ntPush(html,ms,cls);}   // v2.43: queue, priorities, merging and the log live in js/notify.js
 function modal(title,body,buttons){
   const root=$('modalRoot');
   const bg=document.createElement('div');bg.className='modal-bg';

@@ -16,7 +16,7 @@ function render(){
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip(); if(typeof obTick==='function') obTick();   // v2.38 first-steps guide
+  renderOrderCard(); if(typeof ntOrderCard==='function') ntOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip(); if(typeof obTick==='function') obTick();   // v2.38 first-steps guide
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.42-6b8e23" alt="version 2.42">
+  <img src="https://img.shields.io/badge/version-2.43-6b8e23" alt="version 2.43">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,20 +30,25 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.42: insurance that keeps up with your factory
-Insurance prices were fixed since v2.26 (150K / 1.5M / 15M), so late in a run or after a few Replants they cost next to nothing.
-Now they follow the game:
-- 🛡️ The old ladder is the floor, **× your forest value** after a Replant, so prices never shrink to tiny numbers.
-- Late in a run each level costs **at least 20 s / 1 min / 3 min of income** (Lv 1 / 2 / 3), so the choice still matters.
-- The early game pays exactly the old prices, the no-claims discount still applies, insurance is still kept through Replant,
-  and older saves keep loading.
-- Fixed a flaky test: "Repair now ... runs again" sometimes picked a building that had nothing to work with.
+### New in v2.43: calmer notifications on phones
+Late in the game, toasts stacked over the top of the screen, and routine ones (weather, level-ups) could push a storm or a
+fire off the list before you saw it. Now:
+- 📱 **One notification at a time on phones** (three on desktop). The rest wait in a short queue, **most important first**:
+  setbacks and fires, then milestones, trophies and anything you just tapped, then routine news.
+- 🔁 **Repeats merge** into one toast with a ×N badge ("Kiln → Lv 43 ×3"). Phone toasts are shorter and compact, sit below
+  the HUD row, and **a tap dismisses them**.
+- 🔔 **Notification log.** The 🔔 +N pill opens the last 40 notifications, so nothing is lost. In ⚙️ Settings →
+  Notifications, **Important** keeps only setbacks, milestones and trophies on screen.
+- 📋 On phones, a new **premium order offer shrinks to one row** after 7 seconds (name, reward, ✕ / ✔ Accept), so the
+  factory stays in view.
 
-<p align="center"><img src="screenshots/history/v2.42/insurance.png" alt="Insurance priced with forest value in the Safety sheet" width="500"></p>
+<p align="center"><img src="screenshots/history/v2.43/mobile-before.png" alt="v2.42: routine toasts on top, the storm notice lost" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.43/mobile-after.png" alt="v2.43: one notification, compact order card" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.43/mobile-log.png" alt="v2.43: notification log" width="260"></p>
+<p align="center"><sub>Before (v2.42) · After (v2.43) · the 🔔 notification log</sub></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.42** | 🛡️ **Insurance that scales** | Insurance prices follow your forest value and income (at least 20 s / 1 min / 3 min of income), so they still matter late in a run; the early game pays the old prices. |
 | **v2.41** | 📝 **Insurance claims & safety drills** | Setbacks leave claims you can file for a payout or bank as a discount; safety drills stop 40 % of setbacks for 8 minutes. |
 | **v2.40** | ↪ **Log Yard overflow** | When the Log Yard is full, collectors keep working: extra logs go to the Wood Chipper's overflow chute and the power plant instead of being thrown away. |
 | **v2.39** | 🟧 **Late-game plywood balance** | Every sheet of veneer gives ×1.4 more plywood, and the Plywood Mill keeps pace with the workshops it feeds, so Parquet, Toys and Houses stop waiting on plywood late in the game. |
@@ -80,7 +85,7 @@ Now they follow the game:
 - 🔀 **Supply Flow view.** Isometric producer → consumer arcs with rates and colour-coded health.
 - 🏆 **Trophies** for milestones and every factory system.
 - 📱 **Mobile-first.** Touch camera with momentum, pinch and double-tap. Draggable sheets, a needs-attention list, hold-to-buy,
-  landscape mode and haptics. Installable as an app.
+  landscape mode, haptics and a calm notification queue with a 🔔 log. Installable as an app.
 
 ## 🖼️ Gallery
 

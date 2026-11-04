@@ -5,7 +5,7 @@
 # "Repair now ... runs again" root cause (a repaired building idle for want of inputs) is covered for every building.
 # No console errors / 404s.
 from playwright.sync_api import sync_playwright
-import sys,os,json
+import sys,os,json,re
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
 from shots import shot_path
@@ -30,7 +30,7 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(1300); return pg
     pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,42),f"VERSION >= 2.42 ({E(pg,'TT.VERSION')})")
-    ok('timber-tycoon-v2.42' in open(ROOT+'/sw.js').read(),'sw cache bumped')
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,42),'sw cache bumped (>= v2.42)')
     # early game: exact v2.26 ladder
     r=E(pg,'''(()=>{const o=[];for(const inc of [0,50,800,7000]){coinRate=inc;o.push([0,1,2].map(l=>TT.insCost(l)));}return [o,cs()];})()''')
     ok(r[1]==1 and all(x==[150000,1500000,15000000] for x in r[0]),f'early game (income ≤ 7K/s): same prices as v2.26 {r[0][-1]}')

@@ -5,6 +5,43 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.43] — 2026-11-04
+
+**Calm notifications (maintenance item 8, part 1: late-game clutter on phones).** In v2.42 every `toast()` was appended to one
+stack: phones showed the first two of up to five, so in a late-game burst routine toasts (weather, level-ups) stayed on screen
+and the 6th toast silently removed the oldest, often the setback the player most needed to see.
+
+### Added
+- `js/notify.js`: every `toast()` (now a one-line wrapper in `js/logic_b.js`) goes through `ntPush`.
+  - Priorities (`ntPri`): 3 setbacks and fires (`bad-toast`), 2 milestones / trophies / golden / forest toasts and feedback for
+    something the player just tapped (`window.event`), 1 everything else.
+  - At most `NT_CAP_PHONE` = 1 toast on a phone (portrait ≤ 720 px or a landscape phone), `NT_CAP_DESK` = 3 on desktop. The rest
+    wait in a queue (≤ `NT_QMAX` = 8), highest priority first; a more important toast takes the slot of a less important one at
+    once. While something waits, the toast on screen hurries (≥ 1.2 s on screen). Waiting toasts older than `NT_WAIT`
+    (8 / 30 / 45 s by priority) go to the log only.
+  - Repeats (`ntKey`: same text with the numbers masked, e.g. "Kiln → Lv 41/42/43") collapse into one toast with a ×N badge,
+    on screen, in the queue and in the log.
+  - Phone durations `ntDur`: routine 2.2–3.6 s (×0.72), setbacks ≤ 5 s; desktop unchanged. Tap / click dismisses a toast.
+  - 🔔 +N pill under the toast (waiting + unseen) opens the notification log (`ntOpenLog`, modal, last `NT_LOG` = 40 of this
+    session, newest first, colour by priority, unseen marked).
+  - Settings → Notifications: **All / Important** (`S.prefs.ntQuiet`; Important keeps priority ≥ 2 on screen, the rest only go
+    to the log) and a 🔔 Log button.
+- Compact premium-order offer on phones (`ntOrderCard`, called from `render()`): after `NT_OC_MINI` = 7 s the offer card shrinks
+  to one row (client, 🪙 reward, ✕ / ✔ Accept; 180 → 56 px). A new offer pops in full size; desktop is unchanged.
+- `test/v243.py`: rules (keys, priorities, caps, durations), desktop burst / click dismiss / expiry / setback never lost,
+  iPhone 13 + Pixel 7 touch (one toast, the setback first, fits, clear of the HUD row, forest chip, side buttons, bottom bar
+  and order card, ×3 merge, tap dismiss, hurry, pill → log → close, Settings Important by tap + reload), compact order card
+  (shrinks, fits, accept and decline by tap, new offer full size, desktop never), landscape phone, v2.42 + damaged saves,
+  and a before shot of the same burst on the v2.42 snapshot.
+
+### Changed
+- Phone toast style: 13 px, tighter padding, at most ~3 lines (68 px), smaller trophy medal. The old `nth-child` CSS caps are
+  gone (the queue decides what shows).
+- Toasts take taps (to dismiss); the toast container still lets taps through around them.
+
+### Saves
+- No new save data. `S.prefs.ntQuiet` is only written when chosen; a missing or damaged value means **All**.
+
 ## [2.42] — 2026-11-04
 
 **Insurance prices scale with the game.** The Insurance ladder was fixed since v2.26 and became trivially cheap late in a run and after Replants.

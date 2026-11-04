@@ -353,7 +353,7 @@ function renderOrderCard(){
   if(sig!==ordCardSig){ordCardSig=sig;const pop=!c.dataset.on||c.dataset.oid!==String(o.id);c.dataset.on='1';c.dataset.oid=o.id;c.className=(mode==='offer'?'offer'+(pop?' pop':''):'active'+(o.ch!==undefined?' chain':''));
     const mb=more>0?`<span class="oc-more" title="More orders on the board">+${more}</span>`:'';
     c.innerHTML=mode==='offer'
-      ?`<div class="oc-h"><span class="oc-e">${o.e}</span><div class="oc-t"><small>${o.premium?'💎 PREMIUM ORDER':'📋 NEW ORDER'}</small><b>${o.client}</b></div>${mb}</div>
+      ?`<div class="oc-h"><span class="oc-e">${o.e}</span><div class="oc-t"><small>${o.premium?'💎 PREMIUM ORDER':'📋 NEW ORDER'}</small><b>${o.client}</b><em class="oc-mr">🪙 ${fmt(o.reward)}${o.bonus?(o.bonus.type==='seeds'?' + 🌱':' + 🎩'):''}</em></div>${mb}</div>
         <div class="oc-b"><span class="oc-ic">${svgIcon(RMAP[o.item].svg,26)}</span><div>wants ${orderLine(o)}<br>within <b>${fmtTime(o.dur)}</b></div></div>
         <div class="oc-r">Reward <b>🪙 ${fmt(o.reward)}</b>${bonusTxt(o)}</div>
         <div class="oc-btns"><button class="btn small red" id="ocNo">Decline</button><button class="btn small gold" id="ocYes" ${full?'disabled':''}>${full?'Slots full':'✔ Accept'}</button></div><div class="oc-exp"><i id="ocExp"></i></div>`

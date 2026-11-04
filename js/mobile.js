@@ -234,12 +234,13 @@ function setupMobile(){
   $('bpNext').onclick=()=>{cycleBuilding(1);if(sheetBld) focusLot(sheetBld,true);haptic(5);};
   // light haptic tick on bottom bar / buttons
   document.addEventListener('click',e=>{if(e.isTrusted&&e.target.closest&&e.target.closest('.bb,.btn:not(:disabled),.fab,.jchip')) haptic(5);},true);
-  setupSheetGestures(); setupHold(); buildJumpBar();
+  setupSheetGestures(); setupHold(); buildJumpBar(); if(typeof ntSetupSettings==='function') ntSetupSettings();   // v2.43
   registerSW();
 }
 function mobileRender(){
   updateAttn(); updateBuyMax(); renderMore(false);
   if(document.body.classList.contains('jump-on')) buildJumpBar();
+  if(curSheet==='set'&&typeof ntSyncSettings==='function') ntSyncSettings();
   if(curSheet==='set'){$('afToggle').checked=!!prefs().autoFocus;$('hapToggle').checked=!!prefs().haptics;if($('fatToggle')) $('fatToggle').checked=!!prefs().fatigue;}
 }
 /* ---------- PWA ---------- */
