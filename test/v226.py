@@ -76,19 +76,22 @@ with sync_playwright() as p:
     # ---------------- breakdown / storm effects, one at a time, repair ----------------
     r=E(pg,"""(()=>{S.coins=1e9;mishApply('breakdown');const bid=Object.keys(S.mish.broke)[0];tick(1,false);const o={bid,f:bstat[bid].f,broke:bstat[bid].broke};
       const w=mishWeights();o.w=[w.breakdown,w.gale];o.st=statusOf(BMAP[bid]).txt;
-      const c=mishRepairCost(bid);S.coins=c*.5;o.poor=mishRepair(bid);S.coins=Math.max(1e9,c*10);const c0=S.coins;o.fix=mishRepair(bid);o.paid=c0-S.coins;o.cost=c;tick(1,false);o.f2=bstat[bid].f;
+      const c=mishRepairCost(bid);S.coins=c*.5;o.poor=mishRepair(bid);S.coins=Math.max(1e9,c*10);const c0=S.coins;o.fix=mishRepair(bid);o.paid=c0-S.coins;o.cost=c;
+      /* v2.42: the earlier loss-cap checks leave random stocks, so the repaired building could be idle for want of inputs (furniture waiting on veneer) or with a full output store - feed its inputs and empty its outputs so f2 measures the repair only */
+      for(const k in BMAP[bid].inp) S.res[k]=Math.max(S.res[k],1e5);for(const k in BMAP[bid].out) S.res[k]=0;tick(1,false);o.f2=bstat[bid].f;o.br2=!!S.mish.broke[bid];
       mishApply('gale');const g=Object.keys(S.mish.broke)[0];const s0=bSpeed(g);delete S.mish.broke[g];o.half=s0/bSpeed(g);return o;})()""")
     ok(r['f']==0 and r['broke'],f"a broken-down {r['bid']} makes nothing")
     ok(r['w']==[0,0],'only one damaged building at a time')
     ok('Broken down' in r['st'],f"building status says so ({r['st']})")
-    ok(r['poor'] is False and r['fix'] and abs(r['paid']-r['cost'])<1e-6*r['cost'] and r['f2']>0,f"Repair now: refused without coins, then paid 🪙{r['cost']:.3g} and it runs again")
+    ok(r['poor'] is False and r['fix'] and not r['br2'] and abs(r['paid']-r['cost'])<1e-6*r['cost'] and r['f2']>0,f"Repair now: refused without coins, then paid 🪙{r['cost']:.3g} and it runs again")
     ok(abs(r['half']-.5)<1e-9,'storm damage halves the building\'s speed')
     # ---------------- counter-play ----------------
-    r=E(pg,"""(()=>{const o={};S.coins=1e12;o.c=[insCost(0),insCost(1),insCost(2)];o.b=[buyInsurance(),buyInsurance()];o.lvl=insLvl();o.cut=insCut();
+    r=E(pg,"""(()=>{const o={};S.coins=1e12;o.c=[insCost(0),insCost(1),insCost(2)];o.b=[buyInsurance(),buyInsurance()];o.lvl=insLvl();o.cut=insCut();o.cs=cs();
       const inc=mishInc();S.coins=1e9;const c0=S.coins;mishApply('audit');o.audit=(c0-S.coins)/Math.min(c0*.02,90*inc);o.crash=mishCrashMult();
       S.wx.clock=Math.floor(S.wx.clock/DAY_LEN)*DAY_LEN+DAY_LEN*.05;let d=0;for(let i=0;i<200;i++){const r=mishRoll('theft');} 
       o.dodgeTheft=null;return o;})()""")
-    ok(r['b']==[True,True] and r['lvl']==2 and abs(r['cut']-.5)<1e-9 and r['c'][1]==r['c'][0]*10,f"insurance: Lv 2 pays back 50 % (cost {r['c'][0]:.3g} → {r['c'][1]:.3g})")
+    cs_=r['cs']
+    ok(r['b']==[True,True] and r['lvl']==2 and abs(r['cut']-.5)<1e-9 and r['c'][1]>r['c'][0]>=150000*cs_ and r['c'][2]>r['c'][1],f"insurance: Lv 2 pays back 50 % (cost {r['c'][0]:.3g} → {r['c'][1]:.3g})")
     ok(abs(r['audit']-.5)<1e-6 and abs(r['crash']-.85)<1e-9,f"insured: a tax fine is halved, a crash is −15 % instead of −30 % ({r['audit']:.2f})")
     r=E(pg,"""(()=>{const o={};S.mish.log=[];S.mish.stats.dodged=0;let n=0;for(let i=0;i<300;i++){for(const k in S.mish.broke) delete S.mish.broke[k];const x=mishDodge('theft');if(x[0]>0&&Math.random()<x[0]) n++;}o.theft=n/300;
       S.station.lvl=5;o.st=mishDodge('flood')[0];o.light=mishDodge('lightning')[0];S.station.lvl=0;o.st0=mishDodge('gale')[0];

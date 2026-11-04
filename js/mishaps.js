@@ -8,6 +8,10 @@
    - counter-play: Insurance (kept through Replant), the Fire Station, workstations + engineers (breakdowns), Repair now. */
 const MISH_GAP=[480,900], MISH_GRACE_GAME=900, MISH_GRACE_RUN=300, MISH_LOG_MAX=20;
 const INS_MAX=3, INS_COST=1.5e5, INS_SCALE=10, INS_CUT=.25;
+/* v2.42: insurance prices follow the game. The v2.26 ladder (150K / 1.5M / 15M) is the floor, × the run's forest value cs()
+   (never tiny after a Replant), and at least INS_SEC[l] seconds of this run's income (never trivial late in a run).
+   Early game (income below ~7.5K/s, forest value 1) pays exactly the old prices. */
+const INS_SEC=[20,60,180];
 const MISH_DEF={
   gale:{n:'Storm damage',e:'⛈️',w:1,cap:'one building runs at half speed for 1–1.5 min and loses up to 8 % of its stored goods (at most 1 min of income)',vs:'Repair now; insurance; the Fire Station cuts the odds'},
   flood:{n:'Log Yard flood',e:'🌊',w:.8,cap:'up to 10 % of the yard\'s logs (always leaves 30 s of mill use) + muddy roads for 40 s',vs:'Insurance; the Fire Station cuts the odds'},
@@ -22,7 +26,8 @@ function mishState(){if(!S.mish||typeof S.mish!=='object') S.mish=mishFresh();co
   if(!m.broke||typeof m.broke!=='object') m.broke={}; if(!Array.isArray(m.log)) m.log=[]; if(!m.stats||typeof m.stats!=='object') m.stats={n:0,dodged:0,lost:0,repairs:0};
   if(!(m.ins>=0)) m.ins=0; m.ins=Math.min(INS_MAX,Math.floor(m.ins)); if(!isFinite(m.next)) m.next=0; return m;}
 function insLvl(){return (S.mish&&S.mish.ins)||0;}
-function insCost(l){l=l===undefined?insLvl():l;return INS_COST*Math.pow(INS_SCALE,l);}
+function insBase(l){return INS_COST*Math.pow(INS_SCALE,l);}                // v2.26 fixed ladder
+function insCost(l){l=l===undefined?insLvl():l;if(l>=INS_MAX) l=INS_MAX-1;return Math.max(insBase(l)*cs(),(INS_SEC[l]||INS_SEC[INS_SEC.length-1])*mishInc());}
 function insCut(){return INS_CUT*insLvl();}                         // share of every loss the insurer pays back
 function mishInc(){const r=typeof staffIncRef==='function'?staffIncRef():0;return Math.max(coinRate||0,r*.5,2*cs());}   // income reference (coins/s)
 function mishGrace(){return Math.max(0,MISH_GRACE_GAME-(S.playTime||0),MISH_GRACE_RUN-(S.time||0));}

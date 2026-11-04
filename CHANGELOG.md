@@ -5,6 +5,27 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.42] — 2026-11-04
+
+**Insurance prices scale with the game.** The Insurance ladder was fixed since v2.26 and became trivially cheap late in a run and after Replants.
+
+### Changed
+- `insCost(l)` = max(v2.26 price × forest value `cs()`, `INS_SEC[l]` × this run's income), `INS_SEC` = 20 / 60 / 180 s for Lv 1 / 2 / 3
+  (`js/mishaps.js`, old price kept as `insBase`). Early game (forest value 1, income below ~7.5K/s) pays exactly 150K / 1.5M / 15M.
+  The v2.41 no-claims discount still applies on top. No save changes: old saves load as before.
+
+### Fixed
+- Flaky `test/v226.py` check "Repair now … runs again". Root cause: the test repaired a randomly picked building and then
+  required it to produce in the next tick, but earlier checks in the same page leave random stocks, so the pick was sometimes
+  idle for reasons unrelated to repair (Furniture waiting on veneer, or a full output store). The game was right; the check now
+  feeds that building's inputs, empties its outputs and also asserts the breakdown is cleared.
+- `test/v241.py` version check accepts later versions; `test/v232.py` Lv 5 drone bound widened to ×1.65 (it read ×1.58 since the
+  v2.39 plywood balance, also on the v2.41 tag).
+
+### Added
+- `test/v242.py`: early ladder unchanged, income floor, forest value ×50/×675/×1e6/×1e12, odd states, discount, buy + Replant keep,
+  v2.41 + damaged saves, repair-runs-again for every building, Safety sheet price + buy by mouse (desktop) and tap (iPhone 13 / Pixel 7).
+
 ## [2.41] — 2026-11-03
 
 **Insurance claims & safety drills** (maintenance proposal 7). Bad luck becomes a decision, not only a loss.

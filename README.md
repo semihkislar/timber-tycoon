@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.41-6b8e23" alt="version 2.41">
+  <img src="https://img.shields.io/badge/version-2.42-6b8e23" alt="version 2.42">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,22 +30,21 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.41: insurance claims & safety drills
-Bad luck is now a decision, not only a loss. Open 🛡️ **Safety**:
-- 📝 **Claims.** With insurance, every setback that hits you leaves a claim for 10 minutes. **File** it for a payout now
-  (50–70 % of the claim, more with higher insurance), or **bank** it as a −20 % discount (up to −60 %) on your next safety drill
-  or Insurance upgrade.
-- 🦺 **Safety drills.** Pay about 90 seconds of income to drill your crews for 8 minutes: they stop 40 % of all setbacks and
-  repair breakdowns and storm damage 25 % faster. Then the crews rest for 4 minutes.
-- Claims and drill prices follow your income and forest value, so they stay meaningful after every Replant. Two new trophies.
+### New in v2.42: insurance that keeps up with your factory
+Insurance prices were fixed since v2.26 (150K / 1.5M / 15M), so late in a run or after a few Replants they cost next to nothing.
+Now they follow the game:
+- 🛡️ The old ladder is the floor, **× your forest value** after a Replant, so prices never shrink to tiny numbers.
+- Late in a run each level costs **at least 20 s / 1 min / 3 min of income** (Lv 1 / 2 / 3), so the choice still matters.
+- The early game pays exactly the old prices, the no-claims discount still applies, insurance is still kept through Replant,
+  and older saves keep loading.
+- Fixed a flaky test: "Repair now ... runs again" sometimes picked a building that had nothing to work with.
 
-The early game plays as before, and older saves keep loading.
-
-<p align="center"><img src="screenshots/highlights/mobile-claims.png" alt="Safety drill and insurance claims on a phone" width="300"></p>
+<p align="center"><img src="screenshots/history/v2.42/insurance.png" alt="Insurance priced with forest value in the Safety sheet" width="500"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.41** | 📝 **Insurance claims & safety drills** | Setbacks leave claims you can file for a payout or bank as a discount; safety drills stop 40 % of setbacks for 8 minutes. |
 | **v2.40** | ↪ **Log Yard overflow** | When the Log Yard is full, collectors keep working: extra logs go to the Wood Chipper's overflow chute and the power plant instead of being thrown away. |
 | **v2.39** | 🟧 **Late-game plywood balance** | Every sheet of veneer gives ×1.4 more plywood, and the Plywood Mill keeps pace with the workshops it feeds, so Parquet, Toys and Houses stop waiting on plywood late in the game. |
 | **v2.38** | 📘 **First steps for new players** | A brand-new game opens with a short guide (tap the forest, hire a free Lumberjack, build and upgrade the Sawmill, take a first order) with a pointer on the scene. **Skip ✕** hides it, **Settings → 📘 Replay** brings it back, and it gives nothing for free. |

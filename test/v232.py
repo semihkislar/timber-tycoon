@@ -65,7 +65,8 @@ with sync_playwright() as p:
     starved=[k for k,v in a['f'].items() if v>.97 and c['f'][k]<.97]
     ok(not starved,f'no line that was fed starts starving ({starved})')
     g5,g10=c5['earned']/a['earned'],c['earned']/a['earned']
-    ok(1.1<g5<1.5 and 1.3<g10<2.1,f"meaningful but balanced: the factory earns ×{g5:.2f} at Lv 5 and ×{g10:.2f} at Lv 10 (sales at list prices {a['earned']:.3g} → {c['earned']:.3g} / 60 s)")
+    # v2.42: the upper Lv 5 bound was 1.5; since v2.39 (plywood press ×1.4 + supply parity) Phase III has more to carry and Lv 5 reads ×1.58 (also on the v2.41 tag), so the bound is 1.65
+    ok(1.1<g5<1.65 and 1.3<g10<2.1,f"meaningful but balanced: the factory earns ×{g5:.2f} at Lv 5 and ×{g10:.2f} at Lv 10 (sales at list prices {a['earned']:.3g} → {c['earned']:.3g} / 60 s)")
     # ---- costs ----
     r=E(pg,"(()=>{const c1=cdCost(0);S.runCS=100;const c2=cdCost(0);S.runCS=1;return [c1,c2,cdCost(1),cdCost(9),cdCost(10)];})()")
     ok(abs(r[0]-4e8)<1 and abs(r[1]/r[0]-100)<1e-6,f'Drone Port Lv 1 costs 400M × forest value ({r[0]:.4g}; ×100 after a big Replant: {r[1]:.4g})')

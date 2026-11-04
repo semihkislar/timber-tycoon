@@ -27,7 +27,7 @@ with sync_playwright() as p:
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 else None)
         pg.goto(URL); pg.wait_for_function('typeof TT!=="undefined"&&typeof S!=="undefined"'); pg.wait_for_timeout(400); return pg
     pg=page()
-    ok(E(pg,'VERSION')=='2.41','version 2.41')
+    ok(ver(E(pg,'VERSION'))>=(2,41),'version >= 2.41')
     E(pg,MID)
     r=E(pg,'''(()=>{const c=TT.clState();S.mish.ins=0;const a=TT.mishRoll('audit');const n0=c.list.length;S.mish.ins=1;TT.mishRoll('breakdown');const n1=c.list.length;return [n0,n1,c.list[0]&&c.list[0].v,TT.mishInc()];})()''')
     ok(r[0]==0,'no claim without insurance'); ok(r[1]==1,'claim with insurance')
