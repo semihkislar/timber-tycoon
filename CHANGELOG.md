@@ -5,6 +5,30 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.44] — 2026-11-05
+
+**Calm scene on phones (maintenance item 8, part 2: late-game scene clutter).** In v2.43 the phone fit view of a late-game
+factory still drew every scene pill: Lv tags on each building, lock/price tags on lots, helper tags (Tree Nursery, Research
+Lab, workshop lots), the 📅 daily-contract chip, Builders' "crews out" and job chips, yard/dock labels and power status.
+
+### Added
+- `js/declutter.js`: `dcOn()` = phone (≤ 720 px wide, or a landscape phone ≤ 520 px tall) × camera zoom ≤ `DC_ZOOM` (1.35) ×
+  fit × late game (≥ `DC_LATE` = 12 buildings built) × not `S.prefs.dcAll`. `dcCalm()` caches it per frame; `scene.dcHid`
+  counts what was skipped.
+- `pill()` (js/scene6.js) skips pills marked `{lo:1}` in the calm scene and returns an empty rect. Marked: built-building Lv
+  tags (unless hovered/selected), unaffordable or locked factory lots, 📐 plan tags, the Log Yard / Shipping labels, campus
+  lots (Research Lab, workshops) and the Tree Nursery, harbour board / unaffordable harbour, power plant status, Builders'
+  status, Premium Area lock and Phase 3 tag. The daily-contract office chip and Builders' job chips skip in the calm scene
+  (the HUD 📅 chip carries contracts; scaffolding still shows).
+- Settings → **Scene labels: Auto / Always** (`S.prefs.dcAll`, saved; damaged values dropped; old saves = Auto).
+- `test/v244.py`: v2.43 before shot, desktop unchanged (mouse wheel), iPhone 13 + Pixel 7: early game keeps tags, late fit
+  hides info tags, alerts still draw, double-tap touch zoom brings tags back, back to fit, Settings tap + reload, landscape
+  phone, read-only check, v2.43 + damaged saves.
+
+### Unchanged
+- Desktop, the early game, alerts (fires, FULL, setbacks, retooling, order offers, deliveries, advisor badges), affordable
+  factory lots, floating numbers. No game state is written.
+
 ## [2.43] — 2026-11-04
 
 **Calm notifications (maintenance item 8, part 1: late-game clutter on phones).** In v2.42 every `toast()` was appended to one

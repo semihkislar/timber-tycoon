@@ -196,6 +196,7 @@ function officeOverlay(ctx){
   if(sx<-80||sx>scene.w+80||sy<-40||sy>scene.h+40) return;
   const n=dailyAwaiting()?S.daily.offers.length:0, act=dailyActiveN();
   const bob=n?Math.sin(scene.t*3.5)*2.5:0;
+  if((n||act)&&typeof dcCalm==='function'&&dcCalm()){scene.dcHid++;return;}   // v2.44: the HUD 📅 chip carries them
   if(n){const r=pill(ctx,sx,sy-8+bob,`📅 ${n} daily contract${n>1?'s':''}`,{bg:'#3e86c8',fg:'#fff',fs:11,stroke:'#cfe6ff',padX:11,padY:7});
     const k=(scene.t*1.3)%1;ctx.strokeStyle=`rgba(62,134,200,${1-k})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(sx,sy-8+bob,r[2]/2+k*16,0,TAU);ctx.stroke();}
   else if(act) pill(ctx,sx,sy-6,`📅 ${act} active`,{bg:'#fff6e0',fg:'#4a2e06',fs:10,stroke:'#e8b13a'});

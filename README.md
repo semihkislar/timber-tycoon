@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.43-6b8e23" alt="version 2.43">
+  <img src="https://img.shields.io/badge/version-2.44-6b8e23" alt="version 2.44">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,24 +30,22 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.43: calmer notifications on phones
-Late in the game, toasts stacked over the top of the screen, and routine ones (weather, level-ups) could push a storm or a
-fire off the list before you saw it. Now:
-- 📱 **One notification at a time on phones** (three on desktop). The rest wait in a short queue, **most important first**:
-  setbacks and fires, then milestones, trophies and anything you just tapped, then routine news.
-- 🔁 **Repeats merge** into one toast with a ×N badge ("Kiln → Lv 43 ×3"). Phone toasts are shorter and compact, sit below
-  the HUD row, and **a tap dismisses them**.
-- 🔔 **Notification log.** The 🔔 +N pill opens the last 40 notifications, so nothing is lost. In ⚙️ Settings →
-  Notifications, **Important** keeps only setbacks, milestones and trophies on screen.
-- 📋 On phones, a new **premium order offer shrinks to one row** after 7 seconds (name, reward, ✕ / ✔ Accept), so the
-  factory stays in view.
+### New in v2.44: a calm scene on phones
+Late in the game the phone's fit view was covered in tags: "Lv 40 ★★" on every building, prices for lots you can't afford
+yet, and floating chips like 🏡 Tree Nursery, 🔬 Research Lab, 📅 3 daily contracts and 🏗️ crews out. Now:
+- 📱 **At the fit zoom on a phone, late in the game, info-only tags step aside**: level tags, locked and not-yet-affordable
+  lot prices, helper-lot tags, the yard and dock labels, power and Builders' status chips and crew job chips.
+- 🔍 **Zoom in (pinch or double-tap) and they come back.** Desktop, the early game and anything you can act on now are
+  unchanged: fires, ⛔ FULL, setbacks, order offers, "waiting on" badges and a factory lot you can afford still show.
+- 📅 Daily contracts stay on the HUD 📅 chip. ⚙️ Settings → **Scene labels: Auto / Always** brings every tag back.
 
-<p align="center"><img src="screenshots/history/v2.43/mobile-before.png" alt="v2.42: routine toasts on top, the storm notice lost" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.43/mobile-after.png" alt="v2.43: one notification, compact order card" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.43/mobile-log.png" alt="v2.43: notification log" width="260"></p>
-<p align="center"><sub>Before (v2.42) · After (v2.43) · the 🔔 notification log</sub></p>
+<p align="center"><img src="screenshots/history/v2.44/mobile-before.png" alt="v2.43: tags all over the phone fit view" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.44/mobile-after.png" alt="v2.44: calm fit view" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.44/mobile-zoomed.png" alt="v2.44: zoomed in, tags back" width="260"></p>
+<p align="center"><sub>Before (v2.43) · After (v2.44) · zoomed in, tags back</sub></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.43** | 🔔 **Calm notifications** | Phones show one notification at a time, most important first; repeats merge (×N), a tap dismisses, the 🔔 log keeps the last 40, and new premium-order offers shrink to one row. |
 | **v2.42** | 🛡️ **Insurance that scales** | Insurance prices follow your forest value and income (at least 20 s / 1 min / 3 min of income), so they still matter late in a run; the early game pays the old prices. |
 | **v2.41** | 📝 **Insurance claims & safety drills** | Setbacks leave claims you can file for a payout or bank as a discount; safety drills stop 40 % of setbacks for 8 minutes. |
 | **v2.40** | ↪ **Log Yard overflow** | When the Log Yard is full, collectors keep working: extra logs go to the Wood Chipper's overflow chute and the power plant instead of being thrown away. |

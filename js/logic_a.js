@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.43';
+const VERSION='2.44';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -420,7 +420,8 @@ function migrateSave(o){
   // v2.13 -> v2.14: staff system (roles, wages, candidates, training); migrate managers → founding foremen
   if(typeof o.prefs.fatigue!=='boolean') o.prefs.fatigue=true;
   if(o.prefs.plankMode!=='fair'&&o.prefs.plankMode!=='value') o.prefs.plankMode='fair';   // v2.15.1
-  if('ntQuiet' in o.prefs&&typeof o.prefs.ntQuiet!=='boolean') delete o.prefs.ntQuiet;   // v2.43 notifications: All / Important (missing = All)
+  if('ntQuiet' in o.prefs&&typeof o.prefs.ntQuiet!=='boolean') delete o.prefs.ntQuiet;
+  if('dcAll' in o.prefs&&typeof o.prefs.dcAll!=='boolean') delete o.prefs.dcAll;   // v2.44 scene labels: Auto / Always (missing = Auto)   // v2.43 notifications: All / Important (missing = All)
   if(!o.staff||typeof o.staff!=='object') o.staff={team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false};
   if(!Array.isArray(o.staff.team)) o.staff.team=[]; if(!Array.isArray(o.staff.candidates)) o.staff.candidates=[];
   if(typeof o.staff.seq!=='number') o.staff.seq=0; if(typeof o.staff.unpaid!=='boolean') o.staff.unpaid=false;

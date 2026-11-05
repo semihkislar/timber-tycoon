@@ -75,7 +75,7 @@ In priority order, with the reason each was left:
 7. *(Done in v2.38: the First steps guide, `js/onboard.js`.)* **Onboarding.**
    - A fresh game opens on 16 locked lots with "Earn 2.00K" style tags. The only call to action is "Build: 0/40 logs" on the
      Sawmill. There is no pointer to "tap the forest to chop".
-8. *(Part 1 done in v2.43: one toast at a time on phones with priorities, merging and a 🔔 log; compact premium-order offer. Open: lot tags and scene chips.)* **Mobile clutter at late game.**
+8. *(Done: part 1 in v2.43, one toast at a time on phones with priorities, merging and a 🔔 log, compact premium-order offer; part 2 in v2.44, calm scene: info-only lot tags and scene chips hide at the phone fit zoom in the late game, `js/declutter.js`.)* **Mobile clutter at late game.**
    - The premium order card, two or three toasts, the event bar, the jump, upgrade and alert buttons and the lot tags all compete
      for space.
    - Needs a priority/stacking rule rather than a CSS tweak.

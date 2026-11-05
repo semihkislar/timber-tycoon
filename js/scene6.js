@@ -222,7 +222,7 @@ function drawScene(dt){
   drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx); byOverlays(ctx); if(typeof mishOverlays==='function') mishOverlays(ctx); if(typeof swOverlays==='function') swOverlays(ctx);
   drawGolden(ctx,dt);
 }
-function pill(ctx,x,y,txt,o){return pillCached(ctx,x,y,txt,o);}
+function pill(ctx,x,y,txt,o){if(o&&o.lo&&typeof dcCalm==='function'&&dcCalm()){scene.dcHid++;return [x,y,0,0];}return pillCached(ctx,x,y,txt,o);}   // v2.44: {lo:1} = info-only, hidden at fit zoom on late-game phones
 function pillRaw(ctx,x,y,txt,o){
   o=o||{}; const fs=o.fs||11; ctx.font=`800 ${fs}px system-ui,sans-serif`;
   const tw=ctx.measureText(txt).width, ic=o.icon?fs+4:0, w=tw+ic+(o.padX||14), h=fs+(o.padY||9);
@@ -248,14 +248,14 @@ function drawOverlays(ctx){
     if(!st.lvl){
       const vis=bVisible(b),cost=bulkCost(b.cost,b.scale,0,1),byLogs=b.id==='sawmill'&&sawByLogs(),can=canFirstBuild(b.id); const bob=can?Math.sin(t*4)*3:0;
       if(vis){
-        pill(ctx,sx,sy-14+bob,`${b.name}`,{bg:can?'#4fa633':'rgba(43,27,14,.82)',fs:11,stroke:can?'#c9f59e':null});
+        pill(ctx,sx,sy-14+bob,`${b.name}`,{lo:!can,bg:can?'#4fa633':'rgba(43,27,14,.82)',fs:11,stroke:can?'#c9f59e':null});
         if(byLogs){const have=Math.min(S.res.logs,SAW_LOGS),tx=`Build: 🪵 ${Math.floor(have)} / ${SAW_LOGS} logs`;   // v2.20.1: built with logs, with a progress bar
           pill(ctx,sx,sy+6+bob,tx,{bg:can?'#fff6e0':'rgba(255,246,224,.9)',fg:can?'#3b7f27':'#6a4a28',fs:11,stroke:can?'#4fa633':'#d9b98a'});
           ctx.font='800 11px system-ui,sans-serif';const w=Math.max(70,ctx.measureText(tx).width+10),bx=sx-w/2,by=sy+17+bob;ctx.fillStyle='rgba(43,27,14,.55)';ctx.fillRect(bx,by,w,4);ctx.fillStyle=can?'#4fa633':'#e0a040';ctx.fillRect(bx,by,w*have/SAW_LOGS,4);}
-        else pill(ctx,sx,sy+6+bob,fmt(cost),{icon:'coin',bg:can?'#fff6e0':'rgba(255,246,224,.85)',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});
+        else pill(ctx,sx,sy+6+bob,fmt(cost),{lo:!can,icon:'coin',bg:can?'#fff6e0':'rgba(255,246,224,.85)',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});
         if(can){ctx.fillStyle='#4fa633';ctx.beginPath();const ay=sy-34+Math.sin(t*5)*4;ctx.moveTo(sx-7,ay-8);ctx.lineTo(sx+7,ay-8);ctx.lineTo(sx,ay);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();}
-      } else pill(ctx,sx,sy-4,'🔒 Earn '+fmt(b.cost*cs()*.25),{fs:10,bg:'rgba(43,27,14,.6)'});
-      {const bt=typeof bpLotPlanned==='function'?bpLotPlanned(b.id):0;if(bt&&showTags) pill(ctx,sx,sy+(vis?(byLogs?32:25):14)+bob,(scene.w<720?`📐 Lv ${fmt(bt)}`:`📐 Plan · Lv ${fmt(bt)}`),{fs:10,bg:'rgba(37,92,156,.92)',fg:'#eaf5ff',stroke:'#9fd0ff',padX:12,padY:7});}   // v2.35
+      } else pill(ctx,sx,sy-4,'🔒 Earn '+fmt(b.cost*cs()*.25),{lo:1,fs:10,bg:'rgba(43,27,14,.6)'});
+      {const bt=typeof bpLotPlanned==='function'?bpLotPlanned(b.id):0;if(bt&&showTags) pill(ctx,sx,sy+(vis?(byLogs?32:25):14)+bob,(scene.w<720?`📐 Lv ${fmt(bt)}`:`📐 Plan · Lv ${fmt(bt)}`),{lo:1,fs:10,bg:'rgba(37,92,156,.92)',fg:'#eaf5ff',stroke:'#9fd0ff',padX:12,padY:7});}   // v2.35
       continue;
     }
     const bs=bstat[b.id], bfs=isFinite(bs.fs)?bs.fs:bs.f, starved=st.on&&!!bs.lim&&bfs<0.95, ms=msCount(st.lvl);   // v2.15.1: smoothed, small dips stay quiet
@@ -263,7 +263,7 @@ function drawOverlays(ctx){
       const hov=scene.hover===b.id||sheetBld===b.id;
       const bo=typeof beltTagShift==='function'?beltTagShift(L.id):0, fp=L.prem?P(L.ci-.2,L.cj-.2,L.id==='showroom'?62:44):P(L.ci+(L.face==='I'?1.95:.2+bo),L.cj+(L.face==='I'?.2+bo:1.95),0); let [px,py]=w2s(fp[0],fp[1]); if(L.prem) px-=30*Math.max(.8,Math.min(1.4,scene.cam.z)); // v2.2: premium tags float above the roof so they never cover a name board · v2.31: bo = the tag steps aside for a conveyor belt
       const txt='Lv '+st.lvl+(ms?' '+'★'.repeat(Math.min(ms,6)):'')+(typeof specTag==='function'?specTag(b.id):'')+(typeof wsBlocked==='function'&&wsBlocked(b.id)?' 🔒':'')+(typeof wsSetTag==='function'?wsSetTag(b.id):'');   // v2.36 set badge   // v2.22: capped at a workstation gate   // v2.17: line icon
-      pill(ctx,px,py+2,txt,{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
+      pill(ctx,px,py+2,txt,{lo:!hov,fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.78)',fg:hov?'#7a4a10':(ms?'#ffe27a':'#fff6e0'),stroke:hov?'#e8a020':null,padX:12,padY:7});
     }
     {const rt=typeof specRetool==='function'?specRetool(b.id):0;if(rt>0&&!S.fires[b.id]) pill(ctx,sx,sy-30,'🔧 Retooling '+Math.ceil(rt)+'s',{fs:10.5,bg:'#5b6067',fg:'#fff',stroke:'#c9d0d8',padX:12,padY:7});}   // v2.17
     if(S.fires[b.id]){} // v2.4: the fire pill replaces status badges
@@ -278,7 +278,7 @@ function drawOverlays(ctx){
   // yard + dock labels
   if(showTags){
     for(const [L,txt,id] of [[YARD,'Log Yard','yard'],[DOCK,'Shipping','dock']]){if(!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const hov=scene.hover===id;
-      pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt+(id==='yard'&&typeof ovfState==='function'?({ovf:' ↪ overflow',part:' ↪ overflow',idle:' · full'}[ovfState()]||''):''),{fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
+      pill(ctx,sx,sy,(id==='yard'?'🪵 ':'🚚 ')+txt+(id==='yard'&&typeof ovfState==='function'?({ovf:' ↪ overflow',part:' ↪ overflow',idle:' · full'}[ovfState()]||''):''),{lo:!hov,fs:hov?12:10.5,bg:hov?'#fff6e0':'rgba(43,27,14,.7)',fg:hov?'#7a4a10':'#fff6e0',padX:12,padY:7});}
   }
   premOverlays(ctx,showTags); shipOverlay(ctx,showTags); flowOverlay(ctx); advOverlay(ctx);   // v2.16 supply flow view · v2.29 advisor jump ping
   // floating numbers

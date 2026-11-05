@@ -232,19 +232,19 @@ function techOverlays(ctx){
     let [sx,sy]=w2s(L.top[0],L.top[1]);if(sx<-60||sx>scene.w+60||sy<-40||sy>scene.h+40) continue;
     if(!st.lvl){const unl=bldUnlocked(b.id),c=bulkCost(b.cost,b.scale,0,1);
       const txt=unl?`${b.icon} ${b.name} · ${fmt(c)}`:`🔒 ${b.icon} ${b.id==='lab'?'Needs Paper Mill':'Research '+RNMAP[TECH_UNLOCK[b.id]].name}`;
-      ctx.font='800 10px system-ui,sans-serif';tags.push({x:sx,y:sy-4,w:ctx.measureText(txt).width+18,txt,bg:unl?(S.coins>=c?'rgba(40,120,70,.88)':'rgba(30,70,90,.78)'):'rgba(43,27,14,.55)'});}
-    else if(showTags){const ms=msCount(st.lvl);pill(ctx,sx,sy-2,`${b.icon} Lv ${st.lvl}${ms?' '+'★'.repeat(Math.min(ms,6)):''}${typeof specTag==='function'?specTag(b.id):''}`,{fs:10,bg:'rgba(30,60,80,.8)',fg:ms?'#ffe27a':'#fff6e0'});
+      ctx.font='800 10px system-ui,sans-serif';tags.push({x:sx,y:sy-4,w:ctx.measureText(txt).width+18,txt,lo:1,bg:unl?(S.coins>=c?'rgba(40,120,70,.88)':'rgba(30,70,90,.78)'):'rgba(43,27,14,.55)'});}
+    else if(showTags){const ms=msCount(st.lvl);pill(ctx,sx,sy-2,`${b.icon} Lv ${st.lvl}${ms?' '+'★'.repeat(Math.min(ms,6)):''}${typeof specTag==='function'?specTag(b.id):''}`,{lo:1,fs:10,bg:'rgba(30,60,80,.8)',fg:ms?'#ffe27a':'#fff6e0'});
       advBadge(ctx,b.id,sx+30,sy-14,scene.t,{compact:true});/* v2.29 advisor badge (was a red "needs X" pill) */}}
   tags.sort((a,b)=>a.y-b.y);
   for(let k=1;k<tags.length;k++) for(let m=0;m<k;m++){const a=tags[m],t=tags[k];if(Math.abs(a.x-t.x)<(a.w+t.w)/2+4&&Math.abs(a.y-t.y)<21) t.y=a.y+21;}
-  for(const t of tags) pill(ctx,t.x,t.y,t.txt,{fs:10,bg:t.bg});
+  const dcq=typeof dcCalm==='function'&&dcCalm();for(const t of tags) if(!(dcq&&t.lo)) pill(ctx,t.x,t.y,t.txt,{fs:10,bg:t.bg}); else scene.dcHid++;
   if(harborAvail()&&!harborLvl()){const p=P(35,14.4,30);const [sx,sy]=w2s(p[0],p[1]);
-    pill(ctx,sx,sy,'⚓ Build Harbour · '+fmt(harborCost()),{fs:11,bg:S.coins>=harborCost()?'rgba(40,120,70,.88)':'rgba(20,50,90,.8)'});}
+    pill(ctx,sx,sy,'⚓ Build Harbour · '+fmt(harborCost()),{lo:S.coins<harborCost(),fs:11,bg:S.coins>=harborCost()?'rgba(40,120,70,.88)':'rgba(20,50,90,.8)'});}
   if(harborLvl()&&showTags){const p=P(33.5,PLATFORM_J,34);const [sx,sy]=w2s(p[0],p[1]);
     // departures board
     const rows=S.trade.fleet.slice(0,3).map(v=>`${v.mode==='ship'?'🚢':'🚂'} ${CMAP[v.city].name} ${v.state==='load'?Math.round(v.got/v.cap*100)+'%':v.state==='out'?'→ '+fmtTime(v.trip/2-v.t):'← '+fmtTime(v.trip-v.t)}`);
     const txt=rows.length?rows.join('  ·  '):'⚓ Harbour · Lv '+harborLvl()+' — tap to trade';
-    pill(ctx,sx,sy,txt,{fs:10,bg:'rgba(20,30,50,.85)',fg:'#ffe27a'});}
+    pill(ctx,sx,sy,txt,{lo:1,fs:10,bg:'rgba(20,30,50,.85)',fg:'#ffe27a'});}
 }
 function techLights(out){
   if(labBuilt()){const L=LOTS.lab,[x,y]=P(L.ci,L.cj,18);out.push({x,y,rx:40,ry:22,c:'cool',a:.55});}

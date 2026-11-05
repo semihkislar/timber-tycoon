@@ -342,16 +342,17 @@ function byOverlays(ctx){
     if(sx>-90&&sx<scene.w+90&&sy>-50&&sy<scene.h+50){
       if(!l){const c=byCost(),can=byUnlocked()&&S.coins+1e-9>=c,bob=can?Math.sin(t*4)*2.5:0;
         if(byUnlocked()){pill(ctx,sx,sy-12+bob,'🏗️ Builders\' Yard',{bg:can?'#d88a10':'rgba(43,27,14,.75)',fg:'#fff',fs:11,stroke:can?'#ffe0a0':null});pill(ctx,sx,sy+8+bob,fmt(c),{icon:'coin',bg:'#fff6e0',fg:can?'#3b7f27':'#8a6a40',fs:10.5,stroke:can?'#4fa633':'#d9b98a'});}
-        else pill(ctx,sx,sy,'🔒 Builders\' Yard · build 3 buildings',{fs:10,bg:'rgba(43,27,14,.6)'});}
+        else pill(ctx,sx,sy,'🔒 Builders\' Yard · build 3 buildings',{lo:1,fs:10,bg:'rgba(43,27,14,.6)'});}
       else if(scene.cam.z>=scene.cam.fitZ*.75){const st=byStatus(),B=S.builders;
-        if(st.k==='off') pill(ctx,sx,sy,'⏸ Builders off',{fs:10.5,bg:'rgba(43,27,14,.7)'});
-        else if(st.k==='ok') pill(ctx,sx,sy,`🏗️ ${B.jobs.length}/${byCrews()} crews out`,{fs:10.5,bg:'rgba(120,80,6,.82)',fg:'#ffe58a'});
-        else pill(ctx,sx,sy,`🏗️ Lv ${l} · ${st.k==='idle'?'no buildings allowed':'waiting for coins'}`,{fs:10,bg:'rgba(43,27,14,.7)',fg:'#ffe9c0'});}}}
+        if(st.k==='off') pill(ctx,sx,sy,'⏸ Builders off',{lo:1,fs:10.5,bg:'rgba(43,27,14,.7)'});
+        else if(st.k==='ok') pill(ctx,sx,sy,`🏗️ ${B.jobs.length}/${byCrews()} crews out`,{lo:1,fs:10.5,bg:'rgba(120,80,6,.82)',fg:'#ffe58a'});
+        else pill(ctx,sx,sy,`🏗️ Lv ${l} · ${st.k==='idle'?'no buildings allowed':'waiting for coins'}`,{lo:1,fs:10,bg:'rgba(43,27,14,.7)',fg:'#ffe9c0'});}}}
   if(!l||!S.builders) return;
   // progress over every building with a crew on it
   for(const j of S.builders.jobs){const L=LOTS[j.bid];if(!L||!L.top||onFire(j.bid)) continue;if(L.prem&&!S.premium.lvl) continue;
     const [sx,sy]=w2s(L.top[0],L.top[1]);if(sx<-60||sx>scene.w+60||sy<-50||sy>scene.h+60) continue;
     const wait=j.st==='wait',p=Math.min(1,j.t/j.dur),y=sy-38;
+    if(typeof dcCalm==='function'&&dcCalm()){scene.dcHid++;continue;}   // v2.44: crew job chips wait for a zoom-in on late-game phones (scaffolding still shows)
     const r=pill(ctx,sx,y,wait?`⏳ +${j.n} Lv · coins`:`🏗️ +${j.n} Lv`,{fs:10.5,bg:wait?'rgba(120,70,10,.85)':'rgba(242,184,26,.95)',fg:wait?'#ffe0a0':'#2a1a04',stroke:wait?null:'#fff2c0',padX:10,padY:6});
     const w=48,by=y+r[3]/2+2;ctx.fillStyle='rgba(30,20,5,.72)';rr(ctx,sx-w/2,by,w,5,2.5);ctx.fill();ctx.fillStyle=wait?'#e8a43a':'#8fd14f';rr(ctx,sx-w/2+1,by+1,(w-2)*Math.max(.04,p),3,1.5);ctx.fill();}
   for(const f of scene.by.fx){const L=LOTS[f.bid];if(!L||!L.top) continue;const [sx,sy]=w2s(L.top[0],L.top[1]);const k=f.t/2.2;ctx.globalAlpha=Math.max(0,1-k*k);

@@ -49,7 +49,7 @@ with sync_playwright() as p:
         ok(not any('Storm damage' in t for t in old),f'v2.42 (before): the storm setback was pushed out by routine toasts ({old})'); pg.close()
     pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,43),f"VERSION >= 2.43 ({E(pg,'TT.VERSION')})")
-    ok('timber-tycoon-v2.43' in open(ROOT+'/sw.js').read(),'sw cache bumped')
+    import re as _re; _m=_re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(_m and ver(_m.group(1))>=(2,43),'sw cache bumped')
     ok('js/notify.js' in open(ROOT+'/index.html').read(),'index.html loads js/notify.js')
     # ---------- rules (desktop) ----------
     E(pg,LATE)

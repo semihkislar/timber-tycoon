@@ -199,13 +199,13 @@ function powerOverlays(ctx){
   const l=pwLvl(),t=scene.t;
   if(!l){const c=pwCost(),can=pwUnlocked()&&S.coins+1e-9>=c,bob=can?Math.sin(t*4)*2.5:0;
     if(pwUnlocked()){pill(ctx,sx,sy-12+bob,'⚡ Power Plant',{bg:can?'#2a7a3a':'rgba(43,27,14,.75)',fg:'#fff',fs:11,stroke:can?'#c8f0b0':null});pill(ctx,sx,sy+8+bob,fmt(c),{icon:'coin',bg:'#fff6e0',fg:can?'#3b7f27':'#8a6a40',fs:10.5,stroke:can?'#4fa633':'#d9b98a'});}
-    else pill(ctx,sx,sy,'🔒 Power Plant · needs a Pellet Press',{fs:10,bg:'rgba(43,27,14,.6)'});
+    else pill(ctx,sx,sy,'🔒 Power Plant · needs a Pellet Press',{lo:1,fs:10,bg:'rgba(43,27,14,.6)'});
     return;}
   const s=pwStatus();
   if(scene.cam.z>=scene.cam.fitZ*.75){
     if(s.k==='nofuel'||s.k==='low'){const k=.5+.5*Math.sin(t*4);pill(ctx,sx,sy,s.k==='nofuel'?'⛔ No fuel':'⚠ Low fuel',{fs:11,bg:`rgba(196,70,61,${.8+.15*k})`,fg:'#fff'});}
-    else if(s.k==='off') pill(ctx,sx,sy,'⏸ Power off',{fs:10.5,bg:'rgba(43,27,14,.7)'});
-    else pill(ctx,sx,sy,`⚡ +${Math.round(pwBoost()*100)}% · Lv ${l}`,{fs:10.5,bg:'rgba(30,60,30,.78)',fg:'#ffe58a'});}
+    else if(s.k==='off') pill(ctx,sx,sy,'⏸ Power off',{lo:1,fs:10.5,bg:'rgba(43,27,14,.7)'});
+    else pill(ctx,sx,sy,`⚡ +${Math.round(pwBoost()*100)}% · Lv ${l}`,{lo:1,fs:10.5,bg:'rgba(30,60,30,.78)',fg:'#ffe58a'});}
 }
 function powerLights(out){
   if(!pwLvl()) return; const r=scene.pw.run;
