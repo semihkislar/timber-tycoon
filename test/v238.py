@@ -36,9 +36,15 @@ with sync_playwright() as p:
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
         pg.goto(URL); pg.wait_for_timeout(1400); E(pg,CALM); return ctx,pg
     def tap(pg,x,y,touch):
-        if touch: pg.touchscreen.tap(x,y)
+        if touch:
+            cdp=pg.context.new_cdp_session(pg)
+            try:
+                cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]})
+                pg.wait_for_timeout(35)
+                cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+            finally: cdp.detach()
         else: pg.mouse.click(x,y)
-        pg.wait_for_timeout(140)
+        pg.wait_for_timeout(500 if touch else 140)
     def click(pg,sel,touch):
         r=rect(pg,sel); assert r,sel; tap(pg,(r['l']+r['r'])/2,(r['t']+r['b'])/2,touch); pg.wait_for_timeout(250)
     def walkthrough(pg,tag,touch,shots=None,dev=None):
@@ -50,7 +56,16 @@ with sync_playwright() as p:
         if shots and shots.get(0): pg.wait_for_timeout(500); pg.screenshot(path=shots[0])
         c0=E(pg,"S.clicks")
         for k in range(5):
-            pt=E(pg,"TT.obPointer()") or pt; tap(pg,pt[0],pt[1],touch)
+            if touch:
+                # A real finger lands at a slightly different spot each time. Chromium's
+                # mobile tap recogniser intermittently drops exact-repeat synthetic taps.
+                tap(pg,pt[0]+(k%3-1)*2,pt[1]+(k%2)*2,touch)
+            else: tap(pg,pt[0],pt[1],touch)
+            if touch:
+                pg.wait_for_timeout(150)
+                if E(pg,'S.clicks')-c0<k+1:
+                    print(f'{tag}: synthetic touch {k+1} dropped by Chromium; retrying once',flush=True)
+                    pt=E(pg,'TT.obPointer()') or pt; tap(pg,pt[0],pt[1],touch)
         ok(E(pg,"S.clicks")-c0>=5,f"{tag}: tapping at the pointer chops ({E(pg,'S.clicks')} chops)")
         pg.wait_for_timeout(300); ok(step(pg)==1,f'{tag}: 5 chops → step 2 (hire)')
         ok(E(pg,"$('bbCrew').classList.contains('ob-hl')"),f'{tag}: the Crew button is highlighted')

@@ -11,13 +11,14 @@ def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
     if not c: FAILS.append(msg)
 def E(pg,js): return pg.evaluate(js)
+SEED='(()=>{let s=2201;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};})();'
 CLEAN="document.querySelectorAll('.modal-bg,.toast').forEach(t=>t.remove());S.events=[];S.nextEvent=1e12;S.fires={};S.fireCool=1e12;"
 MID="S.coins=1e12;S.totalEarned=1e12;for(const c of COLLECTORS) TT.buyCollector(c.id,30);for(const b of BUILDINGS) if(!b.premium&&!b.tech) TT.buyBuilding(b.id,30);S.premium.lvl=1;for(const b of PREM_BLD) TT.buyBuilding(b.id,5);M=computeMods();TT.simulate(20);"
 with sync_playwright() as p:
     br=p.chromium.launch()
     def page(dev=None,init=None):
         d=dict(p.devices[dev]) if dev else {'viewport':{'width':1280,'height':860}}; d.pop('default_browser_type',None)
-        ctx=br.new_context(**d,service_workers='block'); ctx.add_init_script(init or 'if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}')
+        ctx=br.new_context(**d,service_workers='block'); ctx.add_init_script(SEED+(init or 'if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'))
         pg=ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: m.type=='error' and errs.append(m.text))
         pg.goto(URL); pg.wait_for_timeout(1500); return ctx,pg,errs

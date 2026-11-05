@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.44-6b8e23" alt="version 2.44">
+  <img src="https://img.shields.io/badge/version-2.45-6b8e23" alt="version 2.45">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,21 +30,22 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.44: a calm scene on phones
-Late in the game the phone's fit view was covered in tags: "Lv 40 ★★" on every building, prices for lots you can't afford
-yet, and floating chips like 🏡 Tree Nursery, 🔬 Research Lab, 📅 3 daily contracts and 🏗️ crews out. Now:
-- 📱 **At the fit zoom on a phone, late in the game, info-only tags step aside**: level tags, locked and not-yet-affordable
-  lot prices, helper-lot tags, the yard and dock labels, power and Builders' status chips and crew job chips.
-- 🔍 **Zoom in (pinch or double-tap) and they come back.** Desktop, the early game and anything you can act on now are
-  unchanged: fires, ⛔ FULL, setbacks, order offers, "waiting on" badges and a factory lot you can afford still show.
-- 📅 Daily contracts stay on the HUD 📅 chip. ⚙️ Settings → **Scene labels: Auto / Always** brings every tag back.
+### New in v2.45: Fire Station prices that keep up
+The Fire Station used to cost the same 60K ×6 ladder forever, so a max-level brigade was pocket change late in a run.
+Now it works like Insurance:
+- 🚒 **Every level follows your forest value**, so prices never become tiny after a Replant.
+- 🪙 **Each level also costs at least 15 / 45 / 120 / 300 / 600 seconds of income.** The old ladder is the floor, not a discount.
+- 🌱 **The early game is unchanged:** low-income, first-run saves still pay exactly 60K / 360K / 2.16M / 12.96M / 77.76M.
 
-<p align="center"><img src="screenshots/history/v2.44/mobile-before.png" alt="v2.43: tags all over the phone fit view" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.44/mobile-after.png" alt="v2.44: calm fit view" width="260">&nbsp;&nbsp;<img src="screenshots/history/v2.44/mobile-zoomed.png" alt="v2.44: zoomed in, tags back" width="260"></p>
-<p align="center"><sub>Before (v2.43) · After (v2.44) · zoomed in, tags back</sub></p>
+The Staff sheet explains the rule and charges the scaled price. Test runs are easier too: `python3 tools/test_all.py` runs the
+independent suites in parallel and the load-sensitive browser/performance suites one at a time, with full logs in `test/results/`.
+
+<p align="center"><img src="screenshots/history/v2.45/fire-station-pricing.png" alt="v2.45: Fire Station upgrade price follows forest value and income" width="720"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.44** | 📱 **Calm scene on phones** | Late-game phones hide info-only tags at fit zoom; alerts and affordable lots stay, and zooming in brings everything back. |
 | **v2.43** | 🔔 **Calm notifications** | Phones show one notification at a time, most important first; repeats merge (×N), a tap dismisses, the 🔔 log keeps the last 40, and new premium-order offers shrink to one row. |
 | **v2.42** | 🛡️ **Insurance that scales** | Insurance prices follow your forest value and income (at least 20 s / 1 min / 3 min of income), so they still matter late in a run; the early game pays the old prices. |
 | **v2.41** | 📝 **Insurance claims & safety drills** | Setbacks leave claims you can file for a payout or bank as a discount; safety drills stop 40 % of setbacks for 8 minutes. |

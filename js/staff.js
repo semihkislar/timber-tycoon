@@ -75,8 +75,13 @@ function levelMgr(id){const m=MGR_MAP[id];const l=m?mgrLvl(m.bid):0;if(!l||l>=MG
 const FIRE_BASE=1/4500, FIRE_HP=12, FIRE_BURN=60, FIRE_COOL=120, FIRE_GRACE=300;
 const FIRE_RISK={kiln:3,pellet:2,peeler:1,sawmill:1.2,chipper:1,carpentry:.8,paper:.8,furniture:.8,beamsaw:1.2,glulam:.9,panelpress:.9};   // v2.28 · v2.33
 const STATION_COST=6e4, STATION_MAX=5;
+/* v2.45: keep the v2.4 ladder as the early-game floor, but do not let late-run income or
+   Replant forest value make a whole safety system cost less than loose change. */
+const STATION_SEC=[15,45,120,300,600];
 function stationLvl(){return (S.station&&S.station.lvl)||0;}
-function stationCost(){return STATION_COST*Math.pow(6,stationLvl());}
+function stationBase(l){return STATION_COST*Math.pow(6,l);}
+function stationInc(){return typeof mishInc==='function'?mishInc():Math.max(coinRate||0,2*cs());}
+function stationCost(l){l=l===undefined?stationLvl():Math.max(0,Math.min(STATION_MAX-1,Math.floor(l)||0));return Math.max(stationBase(l)*cs(),STATION_SEC[l]*stationInc());}
 function stationVisible(){return stationLvl()>0||S.buildings.kiln.lvl>0||S.fireStats.n>0;}
 function stationDelay(){const l=stationLvl();const cut=typeof staffFireDelayCut==='function'?staffFireDelayCut():0;return Math.max(4,20-3*l-cut);}
 function stationSpray(){return 1.5+.5*stationLvl();}
@@ -296,13 +301,13 @@ function updateStaff(){
   const st=staffState();
   const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||st.candidates.some(c=>S.coins>=staffHireCostOf(c)&&staffCapRoom(c.role)>0)||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
   if(curSheet!=='staff') return;
-  const sig=stationLvl()+'|'+stationVisible()+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'');
+  const sig=stationLvl()+'|'+stationVisible()+'|'+Math.round(stationCost())+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'');
   if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=st.team.length;
     const fl=Object.keys(S.fires);
     let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
     h+=`<h4>🚒 Fire Safety</h4><div class="stn-hero"><div class="ph-ic">${UI_ICONS.fire}</div><div style="flex:1"><div class="ph-t">${l?`Fire Station · Lv ${l}`:'Fire Station'}</div>
       <div class="legend" style="margin:2px 0 0" id="stnTx"></div><div class="stn-stats">🧯 ${S.fireStats.n} fires put out (${S.fireStats.tap} by hand) · Kiln risk <span id="stnRisk"></span></div></div></div>
-      <button class="btn red big" id="stnBuy" style="min-height:44px"></button><div class="legend stn-need hidden" id="stnNeed"></div>`;
+      <button class="btn red big" id="stnBuy" style="min-height:44px"></button><div class="legend stn-need hidden" id="stnNeed"></div><div class="legend" id="stnEco" style="margin:4px 0 0">Price follows forest value and income; the early-game price is unchanged.</div>`;
 
     h+=`<div class="staff-tabs">${staffTabBtn('team',`Team (${n})`)}${staffTabBtn('cand',`Candidates (${st.candidates.length})`)}${staffTabBtn('train','Training')}</div>`;
     h+=`<div id="staffTabBody"></div>`;

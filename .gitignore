@@ -5,3 +5,4 @@ test/*.png
 test/__pycache__/
 *.pyc
 .DS_Store
+/test/results/

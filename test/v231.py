@@ -91,7 +91,7 @@ with sync_playwright() as p:
     ok(len(a)>=3 and len(a)==len(c) and any(abs(x[0]-y[0])+abs(x[1]-y[1])>.5 for x,y in zip(a,c)),f'goods move along the belt ({len(a)} items, e.g. {a[0][:2]} → {c[0][:2]})')
     g=E(pg,"(()=>{const g=beltGeom(BELT_LINKS[0]);return [g.ci,g.cj];})()")
     ok(all((abs(x[0]-g[0])<1e-6 or abs(x[1]-g[1])<1e-6) and x[2]>=E(pg,'BELT_Z0')-1e-6 for x in c),'goods sit on the belt line (no floating items)')
-    sp=E(pg,"(()=>{const a=beltItemPos('sawmill');stepScene(1/30);const b=beltItemPos('sawmill');return Math.max(...a.map((p,k)=>Math.hypot(b[k][0]-p[0],b[k][1]-p[1])))*30;})()")
+    sp=E(pg,"(()=>{const st=scene.belts.sawmill,G=beltGeom(BELT_BY_SRC.sawmill),dt=1/30;const old=st.off;st.off=(old+dt*BELT_V/G.tot)%1;const b=beltItemPos('sawmill');st.off=old;const a=beltItemPos('sawmill');return Math.max(...a.map((p,k)=>Math.hypot(b[k][0]-p[0],b[k][1]-p[1])))/dt;})()")
     ok(sp<1.0,f'calm belt speed ({sp:.2f} tiles/s)')
     ok(E(pg,"BELT_LINKS.every(l=>beltItems(l)<=BELT_ITEMS)&&BELT_ITEMS<=8"),'at most 8 goods per belt (bounded)')
     ok(E(pg,"(()=>{const L=tierLinks();return !L.some(l=>l.src==='sawmill'&&l.dst==='carpentry')&&!L.some(l=>l.src==='chipper'&&l.dst==='pellet')&&L.some(l=>l.src==='sawmill'&&l.dst==='furniture');})()"),'belted links drop their cross-lane forklifts; other links keep theirs')

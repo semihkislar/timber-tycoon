@@ -5,6 +5,31 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.45] — 2026-11-05
+
+**Fire Station prices scale with the game, and test runs get a load-aware schedule.** The fixed v2.4 price ladder became
+negligible late in a run, just like Insurance before v2.42.
+
+### Changed
+- `stationCost(l)` = max(the original 60K × 6^l price × forest value `cs()`, `STATION_SEC[l]` × the shared safety income
+  reference), with `STATION_SEC` = 15 / 45 / 120 / 300 / 600 seconds for build / Lv 2 / 3 / 4 / 5 (`js/staff.js`). The early
+  game pays exactly the old prices. Fire protection, station levels, Replant retention and save data are unchanged.
+- Staff → Fire Safety explains that the price follows forest value and income. Its scene lot, attention item and buy button all
+  use the same scaled cost.
+- `tools/test_all.py`: one command runs all `test/v*.py`, `functional.py` and `balance.py`; independent suites use four workers
+  by default, while `v20`, `v28`, `v224`, `v226`, `v231`, `v25`, `v2151`, `v2201`, `v232`, `v238`, `v239`, `v240` and `v245` run alone to avoid CPU-load
+  flakes. `--workers N` tunes the pool and `--quick` shortens only the v28 soak to 60 seconds. Logs and `summary.json` go to the
+  ignored `test/results/` directory. `test/balance.py` no longer hard-codes its checkout path.
+- `test/v24.py`: the legacy ×6 assertion now accepts a higher income-floor price.
+- Two test-only flake fixes: `v2201` seeds the bot simulation (random offer/event choices previously moved its 5-minute earnings
+  threshold), and `v231` measures belt travel from one explicit simulation step instead of subtracting two asynchronous live-scene
+  samples, which could pair different goods after the moving belt offset wrapped. Game motion is unchanged. `v238` dispatches touch start/end explicitly instead of `touchscreen.tap()`: Chromium occasionally drops that convenience call under mobile emulation, which left the guide waiting for its fifth chop. Real touch handling is unchanged.
+
+### Added
+- `test/v245.py`: exact early-game ladder, income floors, ordered levels, forest value ×50/×675/×1e6/×1e12, odd states, purchase
+  affordability and charge, v2.44 and damaged saves, desktop mouse + iPhone 13 / Pixel 7 touch, UI copy, touch targets, release
+  screenshots, and no console errors or 404s.
+
 ## [2.44] — 2026-11-05
 
 **Calm scene on phones (maintenance item 8, part 2: late-game scene clutter).** In v2.43 the phone fit view of a late-game

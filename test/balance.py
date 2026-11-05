@@ -8,7 +8,7 @@ dur=int(sys.argv[1]) if len(sys.argv)>1 else 2400
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page()
     errs=[]; pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None); pg.on('pageerror',lambda e: errs.append(str(e)))
-    pg.goto(URL); pg.add_script_tag(path='/workspace/lumber-idle/test/bot.js')
+    pg.goto(URL); pg.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'bot.js'))
     r=pg.evaluate(f'runBot({dur},3,300)')
     for l in r['log']: print(l)
     for s in r['snaps']: print(json.dumps(s))

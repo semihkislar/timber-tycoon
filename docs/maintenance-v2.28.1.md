@@ -81,9 +81,9 @@ In priority order, with the reason each was left:
    - Needs a priority/stacking rule rather than a CSS tweak.
 9. *(Done in v2.29.)* **The fit view on phones leaves out the Shipping dock** (helper strip, v2.27). The Dock chip reaches it, but a new player
    may not find it.
-10. **Test speed.** The suite takes about 10 minutes on 4 workers.
+10. *(Done in v2.45: `tools/test_all.py` runs independent suites in parallel and the load-sensitive suites serially, with per-suite logs and a JSON summary; the v28 soak can be shortened with `--quick`.)* **Test speed.** The suite takes about 10 minutes on 4 workers.
     - `v28` (perf) and `v225` (timing) are still sensitive to machine load and pass when rerun alone.
-    - A deterministic clock (`TT.simulate`) instead of `wait_for_timeout` in those checks would make them stable.
+    - A deterministic clock (`TT.simulate`) instead of `wait_for_timeout` in those checks would make them stable. The v2.45 scheduler keeps those checks away from parallel CPU load; further in-test clock conversion remains optional.
 
 ## (b) New feature ideas
 Effort: S ≈ a day, M ≈ 2–3 days, L ≈ a week or more.
