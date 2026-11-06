@@ -63,7 +63,7 @@ In priority order, with the reason each was left:
 3. *(Done in v2.39: press yield ×1.4 from Lv 1, supply parity with its workshops' research, Zero-waste/Throughput for the primary mills only; see CHANGELOG 2.39.)* **Plywood becomes the late bottleneck after this release.**
    - Parquet, Toy Workshop and Timber-frame Houses all wait on the Plywood Mill, which needs research to unlock.
    - Watch it; a Plywood Mill station or a manager perk would fix it. This is why the Paper Mill and Boat Yard tweaks were dropped. Any paper or chair relief has to come with more plywood.
-4. **Chopping upgrades are dead late.**
+4. *(Done in v2.46: Sharper Axes / Golden Axe add a 1 % / 4 % of logs/s floor per tap.)* **Chopping upgrades are dead late.**
    - *Golden Axe* (×5 chop) and *Sharper Axes* barely matter once collectors run, because clicks are tiny next to the income.
    - Making them scale with logs/s would change their role. That is a design call.
 5. **Name clash ahead.** *(Done in v2.29: Global Expansion / Trade Routes / Trade branch, ids kept.)*

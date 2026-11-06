@@ -217,7 +217,7 @@ function updateMarket(){
   }
 }
 function baseUpgPrice(id){
-  const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
+  const m={chop:1,chopPct:0,chopAxe:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
   RES.forEach(r=>m.price[r.id]=1); COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1);
   for(const u of UPGRADES){const L=upLvl(u.id);if(L) upApply(u,m,L);}
   return m.price[id]*m.priceAll;

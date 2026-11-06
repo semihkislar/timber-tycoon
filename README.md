@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.45-6b8e23" alt="version 2.45">
+  <img src="https://img.shields.io/badge/version-2.46-6b8e23" alt="version 2.46">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,21 +30,18 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.45: Fire Station prices that keep up
-The Fire Station used to cost the same 60K ×6 ladder forever, so a max-level brigade was pocket change late in a run.
-Now it works like Insurance:
-- 🚒 **Every level follows your forest value**, so prices never become tiny after a Replant.
-- 🪙 **Each level also costs at least 15 / 45 / 120 / 300 / 600 seconds of income.** The old ladder is the floor, not a discount.
-- 🌱 **The early game is unchanged:** low-income, first-run saves still pay exactly 60K / 360K / 2.16M / 12.96M / 77.76M.
+### New in v2.46: Axes that keep up
+Sharper Axes and Golden Axe used to be pocket change late in a run: a tap gave 10 logs while crews brought in thousands per second.
+- 🪓 **Sharper Axes:** each tap is worth at least **1 % of your logs/s**.
+- ✨ **Golden Axe:** at least **4 % of your logs/s** more. Higher upgrade levels raise both.
+- 🌱 **The early game is unchanged:** while your crews are small, the old ×2 / ×5 is bigger and is what you get.
 
-The Staff sheet explains the rule and charges the scaled price. Test runs are easier too: `python3 tools/test_all.py` runs the
-independent suites in parallel and the load-sensitive browser/performance suites one at a time, with full logs in `test/results/`.
-
-<p align="center"><img src="screenshots/history/v2.45/fire-station-pricing.png" alt="v2.45: Fire Station upgrade price follows forest value and income" width="720"></p>
+<p align="center"><img src="screenshots/history/v2.46/axe-upgrades.png" alt="v2.46: Golden Axe upgrade with the logs/s floor" width="720"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.45** | 🚒 **Fire Station prices that keep up** | Fire Station levels follow your forest value and cost at least 15 s – 10 min of income; the early game pays the old 60K ×6 ladder. |
 | **v2.44** | 📱 **Calm scene on phones** | Late-game phones hide info-only tags at fit zoom; alerts and affordable lots stay, and zooming in brings everything back. |
 | **v2.43** | 🔔 **Calm notifications** | Phones show one notification at a time, most important first; repeats merge (×N), a tap dismisses, the 🔔 log keeps the last 40, and new premium-order offers shrink to one row. |
 | **v2.42** | 🛡️ **Insurance that scales** | Insurance prices follow your forest value and income (at least 20 s / 1 min / 3 min of income), so they still matter late in a run; the early game pays the old prices. |

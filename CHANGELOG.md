@@ -5,6 +5,22 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.46] — 2026-11-06
+
+**Chopping upgrades scale late (maintenance #4).** Sharper Axes (×2) and Golden Axe (×5) were flat multipliers on a tap
+worth 1 log, so once collectors ran at thousands of logs/s they were dead purchases.
+
+### Changed
+- Sharper Axes also sets a floor of 1 % of your logs/s per tap, Golden Axe 4 % (`M.chopAxe`, scaled by the v2.22 level rule:
+  Lv 5 = 1.4 % / 5.6 %). `chopPower()` = (max(flat chop, `chopAxeVal()`) + Ambidextrous %) × Replant bonus. The flat value
+  stays larger until logs/s is in the hundreds, so the early game is exactly unchanged; after a Replant the tap is the larger
+  of the two, never tiny. Odd log rates (NaN/∞/0) fall back to the flat value.
+- Leveled upgrade texts now scale every number in the description (`upDesc` regex is global).
+
+### Added
+- `test/v246.py`: exact early 1/2/10 taps, late 5 % floor + combo, level scaling + text, after-Replant values, odd rates,
+  v2.45 and damaged saves, desktop click buy, iPhone 13 / Pixel 7 touch buy, release shots, no console errors or 404s.
+
 ## [2.45] — 2026-11-05
 
 **Fire Station prices scale with the game, and test runs get a load-aware schedule.** The fixed v2.4 price ladder became

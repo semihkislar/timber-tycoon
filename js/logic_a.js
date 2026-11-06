@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.45';
+const VERSION='2.46';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -136,7 +136,7 @@ const TREES=[
 ];
 const bl=id=>S.buildings[id].lvl, cn=id=>S.collectors[id], pn=id=>(S.planters&&S.planters[id])||0;
 const UPGRADES=[
-  {id:'sharp',icon:'🪓',name:'Sharper Axes',desc:'Chopping ×2',cost:40,req:()=>true,apply:m=>m.chop*=2},
+  {id:'sharp',icon:'🪓',name:'Sharper Axes',desc:'Chopping ×2 · a tap is worth at least 1% of your logs/s',cost:40,req:()=>true,apply:m=>{m.chop*=2;m.chopAxe+=0.01}},   // v2.46: the % floor keeps it useful late,
   {id:'steel',icon:'⚒️',name:'Steel Axes',desc:'Lumberjacks ×2',cost:400,req:()=>cn('lumberjack')>=5,apply:m=>m.col.lumberjack*=2},
   {id:'steamsaw',icon:'♨️',name:'Steam Saw',desc:'Sawmill speed ×2',cost:1500,req:()=>bl('sawmill')>=2,apply:m=>m.bld.sawmill*=2},
   {id:'oil',icon:'🛢️',name:'Chainsaw Oil',desc:'Chainsaw Crews ×2',cost:3000,req:()=>cn('chainsaw')>=5,apply:m=>m.col.chainsaw*=2},
@@ -147,7 +147,7 @@ const UPGRADES=[
   {id:'conveyor',icon:'🛤️',name:'Conveyor Belts',desc:'All buildings speed ×1.5',cost:150000,req:()=>BUILDINGS.filter(b=>bl(b.id)>0).length>=3,apply:m=>m.bldAll*=1.5},
   {id:'jigs',icon:'📐',name:'Ergonomic Jigs',desc:'Carpentry speed ×2',cost:200000,req:()=>bl('carpentry')>=3,apply:m=>m.bld.carpentry*=2},
   {id:'dryer',icon:'💨',name:'Pellet Dryer',desc:'Pellets sell ×2',cost:400000,req:()=>bl('pellet')>=2,apply:m=>m.price.pellets*=2},
-  {id:'goldaxe',icon:'✨',name:'Golden Axe',desc:'Chopping ×5',cost:250000,req:()=>S.clicks>=400,apply:m=>m.chop*=5},
+  {id:'goldaxe',icon:'✨',name:'Golden Axe',desc:'Chopping ×5 · a tap is worth at least 4% of your logs/s',cost:250000,req:()=>S.clicks>=400,apply:m=>{m.chop*=5;m.chopAxe+=0.04}},
   {id:'gps',icon:'🛰️',name:'GPS Harvesters',desc:'Harvesters ×2',cost:500000,req:()=>cn('harvester')>=5,apply:m=>m.col.harvester*=2},
   {id:'export',icon:'🚢',name:'Export Licence',desc:'All products sell ×1.5',cost:1500000,req:()=>bl('carpentry')>=1,apply:m=>m.priceAll*=1.5},   // v2.28.1: was "Export Contracts" (clashed with the Shipping Yard's export contracts)
   {id:'bleach',icon:'🧪',name:'Paper Bleaching',desc:'Paper sells ×2',cost:2500000,req:()=>bl('paper')>=2,apply:m=>m.price.paper*=2},
@@ -185,8 +185,8 @@ function upReqTxt(u,L){const r=UPG_REF[u.id]||['n'],n=upNeed(u,L);
   if(r[0]==='p'){const p=(typeof PLANTERS!=='undefined'?PLANTERS:[]).find(x=>x.id===r[1]);return `${p?p.name:r[1]} ×${n}`;}
   if(r[0]==='b') return `${BMAP[r[1]].name} Lv ${n}`;if(r[0]==='k') return `${fmt(n)} taps this run`;return `${n} buildings built`;}
 function upDesc(u,L){if(L<=1||upMax(u)===1) return u.desc;const g=upG(L),r2=x=>{const v=Math.round(x*100)/100;return (v%1?v.toFixed(v*10%1?2:1):String(v));};
-  return u.desc.replace(/×(\d+(?:\.\d+)?)|−(\d+)%|(\d+)%/,(m0,a,b,c)=>a?'×'+r2(1+(+a-1)*g):b?'−'+r2(Math.min(80,+b*g))+'%':r2(+c*g)+'%');}
-const NEUTRAL_M=()=>{const m={chop:1,chopPct:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
+  return u.desc.replace(/×(\d+(?:\.\d+)?)|−(\d+)%|(\d+)%/g,(m0,a,b,c)=>a?'×'+r2(1+(+a-1)*g):b?'−'+r2(Math.min(80,+b*g))+'%':r2(+c*g)+'%');}
+const NEUTRAL_M=()=>{const m={chop:1,chopPct:0,chopAxe:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
   COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1); return m;};
 const _upD={};
 function upDiff(u){if(_upD[u.id]) return _upD[u.id];const m0=NEUTRAL_M(),m1=NEUTRAL_M();u.apply(m1);const d=[];
@@ -588,7 +588,10 @@ function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipp
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
 function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
-function chopPower(){return (1*M.chop+M.chopPct*logRate())*M.rep;}
+/* v2.46 (maintenance #4): Sharper Axes / Golden Axe also give a floor of M.chopAxe × logs/s per tap. max() keeps the early game
+   exact (the flat ×10 is larger until logs/s is in the hundreds) and makes the axes matter late, after a Replant included. */
+function chopAxeVal(){const r=logRate();return (M.chopAxe>0&&isFinite(r)&&r>0)?M.chopAxe*r:0;}
+function chopPower(){const r=logRate(),pct=isFinite(r)&&r>0?M.chopPct*r:0;return (Math.max(1*M.chop,chopAxeVal())+pct)*M.rep;}
 function addRes(id,n){S.res[id]+=n;}
 function earn(n){S.coins+=n;S.totalEarned+=n;S.lifetimeEarned+=n;}
 
