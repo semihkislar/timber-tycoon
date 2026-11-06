@@ -69,7 +69,7 @@ In priority order, with the reason each was left:
 5. **Name clash ahead.** *(Done in v2.29: Global Expansion / Trade Routes / Trade branch, ids kept.)*
    - The *Global Logistics* upgrade and the *Trade Logistics* research both say "logistics", and item 8 will add "logistics tiers".
    - Rename them when item 8 lands, so the new system owns the word.
-6. **No upgrades for the newer lines.**
+6. *(Done in v2.47: Peeler Knives, Log Carriage, Daylight Press and RF Curing. Each is a leveled ×2 speed line, priced at 15× the building and scaled by forest value, so the early game is unchanged and a Replant does not make them pocket change. Workstations were already complete. Research already covers the Peeler, Beam Saw and Glulam Plant through the shared mill nodes, and the Plywood Mill through its own unlock, Laser Grading and Cold Press. The ×2 sits on top of the Plywood Mill's supply parity, and it does not speed the Veneer Panel Press. The Plywood Mill still has no named manager, the same as the Toy Workshop and the Boat Yard.)* **No upgrades for the newer lines.**
    - The Veneer Peeler, Plywood Mill, Beam Saw and Glulam Plant have workstations and research, but no ×2 upgrade like the older
      lines. That is new content and changes balance.
 7. *(Done in v2.38: the First steps guide, `js/onboard.js`.)* **Onboarding.**

@@ -31,7 +31,7 @@ with sync_playwright() as p:
     ctx.close()
     # --- fresh game: early game is not frustrating (no FULL with default auto-sell) ---
     ctx=b.new_context(viewport={'width':1280,'height':800}); pg=ctx.new_page(); watch(pg); pg.goto(URL); pg.wait_for_timeout(400)
-    pg.add_script_tag(path='/workspace/lumber-idle/test/bot.js'); pg.evaluate('runBot(240,3,240)')
+    pg.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'bot.js')); pg.evaluate('runBot(240,3,240)')
     full=pg.evaluate('Object.entries(TT.bstat).filter(([k,v])=>v.full).map(([k])=>k)')
     ok(full==[],f'early game with auto-sell: no building is ever FULL ({full})')
     ok(pg.locator('#bottombar .bb').count()>=7 and pg.locator('#bbOrd').count()==1,'Orders button in the bottom bar (7+ buttons)')

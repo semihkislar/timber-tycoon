@@ -107,6 +107,16 @@ function statusOf(b){
   if(bs.lim&&bs.f<0.985) return {cls:'',txt:`Slightly short on ${nm}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};
 }
+/* v2.47: the newer lines name their ×2 upgrade on the building sheet. Buying stays on the Upgrades list, same as Steam Saw. */
+function lineUpHtml(id){
+  const uid=typeof LINE_UP==='object'?LINE_UP[id]:null; if(!uid) return '';
+  const u=UPGRADES.find(x=>x.id===uid); if(!u) return '';
+  const L=upLvl(uid),N=upMax(u);
+  if(L>=N) return `<div class="bp-yield">✔ ${u.icon} <b>${u.name}</b> Lv ${L}/${N} · ${upDesc(u,L)}</div>`;
+  const nxt=L+1,ok=upReqOk(u,nxt);
+  const tail=ok?` · next 🪙${fmt(upCost(u,nxt))} in Upgrades`:` · ${L?upReqTxt(u,nxt):BMAP[id].name+' Lv 2'} to unlock`;
+  return `<div class="bp-yield">${u.icon} <b>${u.name}</b>${L?` Lv ${L}/${N}`:''}: ${upDesc(u,Math.max(1,L))}${tail}</div>`;
+}
 let bpSig='';
 function updateBuildingSheet(){
   if(curSheet!=='bld'||!sheetBld) return;
@@ -142,7 +152,7 @@ function updateBuildingSheet(){
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],chipper:['🍂 Chip yield','chips per log',25,chipYieldAt]}[b.id];   // v2.29.1: chipper too   // v2.24: Peeler + Plywood Mill too
-  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'');   // v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
+  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'')+lineUpHtml(b.id);   // v2.47: the line's ×2 upgrade · v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer

@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.46';
+const VERSION='2.47';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -165,14 +165,23 @@ const UPGRADES=[
   {id:'elite',icon:'🌲',name:'Elite Saplings',desc:'Every grown tree yields 50% more logs',cost:6e5,req:()=>pn('team')>=3,apply:m=>m.yield*=1.5},
   {id:'irrig',icon:'💧',name:'Drip Irrigation',desc:'Saplings grow 50% faster',cost:3e6,req:()=>pn('nursery')>=1,apply:m=>m.grow*=1.5},
   {id:'sprinkler',icon:'🚿',name:'Sprinkler System',desc:'Fire risk −35%',cost:5000000,req:()=>bl('kiln')>=10,apply:m=>m.fire*=.65},
+  // v2.47 (maintenance #6): the newer Phase 1–2 lines get the same leveled ×2 as Steam Saw / Retort Kilns.
+  // Base price is 15× the building (Steam Saw is 15× the Sawmill). upCost multiplies by forest value, so a Replant does not make them pocket change.
+  {id:'peelknife',icon:'🔪',name:'Peeler Knives',desc:'Veneer Peeler speed ×2',cost:9e5,req:()=>bl('peeler')>=2,apply:m=>m.bld.peeler*=2},
+  {id:'carriage',icon:'🪜',name:'Log Carriage',desc:'Beam Saw speed ×2',cost:3e7,req:()=>bl('beamsaw')>=2,apply:m=>m.bld.beamsaw*=2},
+  {id:'daylight',icon:'🟧',name:'Daylight Press',desc:'Plywood Mill speed ×2',cost:2.25e8,req:()=>bl('plymill')>=2,apply:m=>m.bld.plymill*=2},
+  {id:'rfcure',icon:'📡',name:'RF Curing',desc:'Glulam Plant speed ×2',cost:3.75e8,req:()=>bl('glulam')>=2,apply:m=>m.bld.glulam*=2},
 ];
+/* building → its v2.47 line upgrade (the sheet names it; the buy still lives on the Upgrades list, like Steam Saw) */
+const LINE_UP={peeler:'peelknife',beamsaw:'carriage',plymill:'daylight',glulam:'rfcure'};
 /* v2.22 leveled upgrades (docs/stations-v2.22.md §1): every upgrade is a line Lv 0 → N. Lv 1 = the old one-time upgrade;
    each further level scales the Lv-1 bonus by g(L)=1+0.1·(L−1). Cost ×12 per level. Lv 2+ need the thing the upgrade is about. */
 const UPG_MAX={sawdust:1,alarm:3,sprinkler:3}, UPG_GROW=12, UPG_STEP=.1;
 const UPG_REF={sharp:['k'],steel:['c','lumberjack'],steamsaw:['b','sawmill'],oil:['c','chainsaw'],combo:['c','lumberjack'],kilndry:['b','sawmill'],sawdust:['b','chipper'],
   diesel:['c','truck'],conveyor:['n'],jigs:['b','carpentry'],dryer:['b','pellet'],goldaxe:['k'],gps:['c','harvester'],export:['n'],bleach:['b','paper'],heattreat:['b','kiln'],
   ai:['c','drone'],automation:['b','furniture'],brand:['b','furniture'],logistics:['n'],rotors:['c','heli'],alarm:['b','kiln'],spades:['p','planter'],fert:['p','planter'],
-  elite:['p','team',[0,0,5,10,20,40]],irrig:['p','nursery',[0,0,2,4,7,10]],sprinkler:['b','kiln']};
+  elite:['p','team',[0,0,5,10,20,40]],irrig:['p','nursery',[0,0,2,4,7,10]],sprinkler:['b','kiln'],
+  peelknife:['b','peeler'],carriage:['b','beamsaw'],daylight:['b','plymill'],rfcure:['b','glulam']};
 const UPG_TH={c:[0,0,15,30,60,100],p:[0,0,10,25,50,100],b:[0,0,25,50,100,200],n:[0,0,5,7,9,11],k:[0,0,200,600,1500,4000]};
 function upLvl(id){const v=S.upgrades&&S.upgrades[id];return v===true?1:(+v||0);}
 function upMax(u){return UPG_MAX[u.id]||5;}
@@ -487,6 +496,7 @@ function sanitizeState(s){
 function computeMods(){
   const m=NEUTRAL_M();
   for(const u of UPGRADES){const L=upLvl(u.id);if(L) upApply(u,m,L);}   // v2.22 leveled upgrades
+  m.upBld=Object.assign({},m.bld);   // v2.47: line-upgrade multipliers, before research and weather fold into m.bld
   if(typeof wsApplyPrice==='function') wsApplyPrice(m);   // v2.22 quality workstations
   m.priceAll*=TREES[S.tree].mult;
   for(const e of S.events){const d=EMAP[e.id]; if(d&&d.apply) d.apply(m);}
@@ -574,10 +584,15 @@ let PLY_USERS=null;   // workshops that need plywood (the Decor Studio only take
 function plyUsers(){return PLY_USERS||(PLY_USERS=BUILDINGS.filter(b=>b.inp.plywood&&!(SURPLUS_IN[b.id]&&SURPLUS_IN[b.id].plywood)));}
 function plyParity(){let w=0,a=0;for(const b of plyUsers()){const st=S.buildings[b.id];if(!st||!st.lvl||(typeof bldUnlocked==='function'&&!bldUnlocked(b.id))) continue;
   const d=b.inp.plywood*st.lvl*Math.pow(MS_MULT,msCount(st.lvl))*(b.spd||1),k=M.bld[b.id];if(!(d>0)||!isFinite(k)) continue;w+=d;a+=d*k;}return w>0?a/w:1;}
-function plyRes(){const own=M.bld.plymill;const p=plyParity();return p>own?p:own;}
+/* v2.47: a line upgrade (Daylight Press, Peeler Knives) multiplies speed on top of supply parity.
+   Parity compares research only, so buying the ×2 always doubles the mill even when the workshops' research was already ahead,
+   and the Panel Press does not inherit the Peeler's upgrade (it still keeps pace with the Peeler's research). */
+function upBldOf(id){const u=M&&M.upBld&&M.upBld[id];return (typeof u==='number'&&u>0&&isFinite(u))?u:1;}
+function resBld(id){const v=(M.bld[id]||1)/upBldOf(id);return (v>0&&isFinite(v))?v:1;}
+function plyRes(){const own=resBld('plymill'),p=plyParity();return (p>own?p:own)*upBldOf('plymill');}
 /* the Veneer Panel Press (spare stock only) keeps pace with the Peeler's research: late Robotic Mill / Zero-waste made ~3× the
    veneer while the press got craft boosts only, so veneer piled up; it still only takes what every other line leaves over */
-function pressRes(){const own=M.bld.panelpress,pe=M.bld.peeler;return pe>own?pe:own;}
+function pressRes(){const own=resBld('panelpress'),pe=resBld('peeler');return (pe>own?pe:own)*upBldOf('panelpress');}
 function bRes(id){return id==='plymill'?plyRes():id==='panelpress'?pressRes():M.bld[id];}
 /* potential plywood made vs what its workshops can use (both at full speed); the Plywood Mill sheet and test/v239.py read it */
 function plyBal(){const st=S.buildings.plymill,on=st&&st.lvl>0&&(typeof bldUnlocked!=='function'||bldUnlocked('plymill'));
