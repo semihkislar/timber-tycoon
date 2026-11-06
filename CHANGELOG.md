@@ -5,6 +5,29 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.47] — 2026-11-06
+
+**Line upgrades for the newer mills (maintenance #6).** The Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant had
+workstations and research, but no leveled ×2 like Steam Saw, Retort Kilns or Automated Assembly.
+
+### Added
+- Four upgrade lines, Lv 0–5, same rules as the older ones (`g(L) = 1 + 0.1·(L−1)`, cost ×12 per level, Lv 2+ needs the
+  building at Lv 25 / 50 / 100 / 200): **Peeler Knives** (Veneer Peeler), **Log Carriage** (Beam Saw), **Daylight Press**
+  (Plywood Mill), **RF Curing** (Glulam Plant). Lv 1 is exactly ×2 speed; Lv 5 is ×2.4.
+- Each base price is 15× that building (the same ratio as Steam Saw to the Sawmill). `upCost` still multiplies by forest
+  value, so after a Replant the price stays in proportion to the building and is never a leftover early-game coin.
+- The building sheet names the line and its next cost. Buying stays on the Upgrades list.
+- Daylight Press multiplies on top of the Plywood Mill's supply parity (`upBld` / `resBld`), so the ×2 still shows when the
+  workshops' research was already ahead. The Veneer Panel Press keeps pace with the Peeler's research only, not with Peeler Knives.
+- `test/v247.py`: exact ×2 / ×2.4, level gates and texts, forest value ×1/×50/×675/×1e6/×1e12, parity and press pace, early
+  game identical to v2.46, Replant reset, v2.46 and damaged saves, logs still unsellable, desktop click and iPhone 13 / Pixel 7
+  touch, release shots, no console errors or 404s.
+- `test/v22.py`, `test/functional.py` and `test/shot.py` load `bot.js` from the repo instead of a fixed checkout path.
+
+### Unchanged
+- Recipes, building costs, workstations, research nodes and managers. Logs stay raw material and are never sold. A fresh run
+  cannot buy these lines until the building reaches Lv 2, so the first minutes match v2.46.
+
 ## [2.46] — 2026-11-06
 
 **Chopping upgrades scale late (maintenance #4).** Sharper Axes (×2) and Golden Axe (×5) were flat multipliers on a tap

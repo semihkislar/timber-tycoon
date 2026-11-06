@@ -94,7 +94,7 @@ with sync_playwright() as p:
     print('MODAL:',txt.replace('\n',' | '))
     ok('Welcome back' in txt and '2h' in txt,'welcome back modal')
     ok(pg2.evaluate('TT.S.totalEarned')-before>0,'offline earnings applied')
-    pg2.screenshot(path='/workspace/lumber-idle/test/welcome.png')
+    pg2.screenshot(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'welcome.png'))
     pg2.locator('.modal button').click()
     pg2.close(run_before_unload=False)
     pg3=ctx.new_page(); pg3.on('pageerror',lambda e: errs.append(str(e)))

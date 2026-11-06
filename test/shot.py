@@ -114,7 +114,7 @@ with sync_playwright() as p:
         if ONLY and not any(o in name for o in ONLY): continue
         ctx=b.new_context(viewport=vp, device_scale_factor=1); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
-        pg.goto(URL); pg.wait_for_timeout(300); pg.add_script_tag(path='/workspace/lumber-idle/test/bot.js')
+        pg.goto(URL); pg.wait_for_timeout(300); pg.add_script_tag(path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'bot.js'))
         pg.evaluate(f'runBot({sec},3,{min(300,sec)})')
         pg.evaluate('TT.S.events=[]; TT.S.nextEvent=TT.S.time+999; TT.checkAch(true); TT.fitCamera(true)'); world(pg,sheet)
         pg.wait_for_timeout(2600)
