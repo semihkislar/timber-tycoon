@@ -5,6 +5,20 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.48] — 2026-11-07
+
+**Calm advisor badges on phones (maintenance item 8, part 3).** v2.44 cleared the info pills from a late-game phone at the fit zoom, and the Bottleneck Advisor was still pinning a round "waiting on X" badge on every starved building.
+
+### Added
+- `advBadge` uses the same `dcOn()` / `dcCalm()` gate as the scene pills. On that calm view, spare-stock badges (Panel Press, Decor Studio) and mild orange waits (feed at least 60%) hide until you zoom in.
+- Real starvation stays actionable: among the bad waits, only buildings in the top bottleneck from `advList()` (the highest lost-income group that is not spare stock) keep a badge, and at most 3 of them, worst-fed first. The building under the pointer, or open in the sheet, always keeps its badge.
+- The kept set is ranked once per frame. Skipped badges bump `scene.dcHid` and `scene.dcAdv`.
+- Settings → Scene labels: Auto also says that extra waiting badges hide until you zoom in. Alerts still show.
+- `test/v248.py`: desktop late game still shows every forced badge; iPhone 13 and Pixel 7 early game unchanged; late fit hides spare and mild badges and keeps a bad top-bottleneck badge; double-tap zoom and Settings → Always bring them back; landscape phone; read-only; v2.47 and damaged saves; release shots.
+
+### Unchanged
+- Desktop, the early game, a zoomed-in phone, and Scene labels → Always. Supply Flow "Top bottlenecks", the building-sheet waiting chip, and the advisor hint are the same. No economy, recipe, cost, or save-schema change, and the badges still write no game state.
+
 ## [2.47] — 2026-11-06
 
 **Line upgrades for the newer mills (maintenance #6).** The Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant had

@@ -7,6 +7,8 @@
    - advList(): waiting buildings grouped by input, ranked by the income they lose (coins/s at full speed minus now).
    Shown in three places: a "waiting on X" badge over each building (icon only on phones, a short pill on desktop), the
    building sheet ("⏳ Waiting on Chips" + a jump button), and a "Top bottlenecks" list under the Supply Flow legend.
+   v2.48: on a calm late-game phone (dcOn), spare-stock and mild badges step aside, and only the worst badges of the
+   single biggest real bottleneck stay (at most ADV_CALM). The building under the pointer always keeps its badge.
    Read-only: nothing here changes the economy or the save. */
 const ADV_TH=.95, ADV_BAD=.6;
 function advFs(bs){return bs?(isFinite(bs.fs)?bs.fs:bs.f):1;}
@@ -63,10 +65,22 @@ function advList(force){
   advC={t:now,L};return L;
 }
 function advPhone(){return scene.w<700;}
+/* v2.48: which starvation badges survive a calm late-game phone. One advList() per frame (it already caches on advC);
+   the kept set is the top non-spare group, worst feed first, capped. scene.dcAdv counts the badges this frame skipped. */
+const ADV_CALM=3;
+function advCalmAllow(){
+  if(scene._acT===scene.t) return scene._acSet;
+  scene._acT=scene.t; scene.dcAdv=0;
+  const set={},L=advList(),g=L.find(e=>e&&!e.spare);
+  if(g){const bad=[]; for(const u of g.users){const w=advWait(u.id);if(w&&w.bad&&!w.spare) bad.push({id:u.id,fs:w.fs});}
+    bad.sort((a,b)=>a.fs-b.fs||(a.id<b.id?-1:1)); for(let i=0;i<bad.length&&i<ADV_CALM;i++) set[bad[i].id]=1;}
+  return scene._acSet=set;
+}
 /* ---- in-scene: "waiting on X" badge (replaces the old "!" bubble) ---- */
 function advBadge(ctx,id,sx,sy,t,o){o=o||{};
   const w=advWait(id);if(!w) return false;const R=RMAP[w.k],ic=R?R.icon:'⏳',bad=w.bad;
   const z=scene.cam.z/Math.max(1e-6,scene.cam.fitZ), sel=scene.hover===id||sheetBld===id;
+  if(!sel&&typeof dcCalm==='function'&&dcCalm()){const allow=advCalmAllow();if(!(w.bad&&!w.spare&&allow[id])){scene.dcHid++;scene.dcAdv++;return false;}}   // v2.48: spare, mild, and every bottleneck but the worst one wait until you zoom in
   const by=sy-8+(bad?Math.sin(t*4)*2.5:0);
   if(!o.compact&&!advPhone()&&z>=.95||sel){   // desktop (or the selected building): a short readable pill
     pill(ctx,sx,by,w.spare?`♻ ${ic} spare ${R?R.name.toLowerCase():'input'} · ${Math.round(w.fs*100)}%`:`⏳ ${ic} ${R?R.name:'input'}${bad?' · '+Math.round(w.fs*100)+'%':''}`,{fs:sel?11.5:10.5,bg:w.spare?'#7a6a4a':bad?'#c4463d':'#c98a1e',fg:'#fff',stroke:bad?'#ffd2cc':'#ffe6b0',padX:12,padY:7});

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.47-6b8e23" alt="version 2.47">
+  <img src="https://img.shields.io/badge/version-2.48-6b8e23" alt="version 2.48">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,19 +30,15 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.47: Upgrades for the newer lines
-The Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant now have the same kind of leveled speed upgrade as the Sawmill and the Charcoal Kiln.
-- 🔪 **Peeler Knives** — Veneer Peeler speed ×2.
-- 🪜 **Log Carriage** — Beam Saw speed ×2.
-- 🟧 **Daylight Press** — Plywood Mill speed ×2, on top of the mill's supply pace.
-- 📡 **RF Curing** — Glulam Plant speed ×2.
-- Each line goes to **Lv 5 (×2.4)**. The price is 15× the building and follows your forest value, so it still matters after a Replant. The first minutes of a run are unchanged, and logs are still not for sale.
+### New in v2.48: Calm waiting badges on phones
+A late-game phone at the fit zoom no longer pins a waiting badge on every hungry building. Spare-stock lines and mild shortages stay quiet. The worst real bottleneck still shows (up to three badges), and the building you are pointing at always keeps its badge. Zoom in, or set Scene labels to Always, and every badge comes back. Alerts stay.
 
-<p align="center"><img src="screenshots/history/v2.47/line-upgrades.png" alt="v2.47: Peeler Knives, Log Carriage, Daylight Press and RF Curing" width="720"></p>
+<p align="center"><img src="screenshots/history/v2.48/mobile-badges.png" alt="v2.48: late-game phone at fit zoom, with only the worst waiting badges" width="360"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.47** | 🔪 **Upgrades for the newer lines** | Peeler Knives, Log Carriage, Daylight Press and RF Curing give the Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant a leveled ×2 (Lv 5 is ×2.4). Prices follow forest value. The early game is unchanged. |
 | **v2.46** | 🪓 **Axes that keep up** | Sharper Axes and Golden Axe are worth at least 1 % and 4 % of your logs/s per tap, so chopping still matters once the crews are fast. The early game keeps the old ×2 / ×5. |
 | **v2.45** | 🚒 **Fire Station prices that keep up** | Fire Station levels follow your forest value and cost at least 15 s – 10 min of income; the early game pays the old 60K ×6 ladder. |
 | **v2.44** | 📱 **Calm scene on phones** | Late-game phones hide info-only tags at fit zoom; alerts and affordable lots stay, and zooming in brings everything back. |
