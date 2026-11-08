@@ -333,7 +333,11 @@ button{font:inherit;color:inherit}
 #orderCard.active{display:flex;align-items:center;gap:7px;width:236px;padding:6px 8px;border-width:2px}
 #orderCard.active .oc-e{width:30px;height:30px;font-size:18px}
 #orderCard.active .oc-ic{width:26px;height:26px}
-.oc-pr{flex:1;min-width:0}.oc-l{display:flex;justify-content:space-between;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums}
+/* v2.49: the active-order progress row is one 16px line. The amount gives up space; the timer does not. */
+.oc-pr{flex:1;min-width:0;overflow:hidden}.oc-l{display:flex;justify-content:space-between;align-items:baseline;gap:6px;min-width:0;font-weight:800;font-size:12px;line-height:16px;font-variant-numeric:tabular-nums}
+#orderCard.active .oc-l{white-space:nowrap}
+#orderCard.active .oc-l #ocGot{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#orderCard.active .oc-l #ocTm{flex:none}
 .oc-bar{height:7px;border-radius:4px;background:#ead6b2;overflow:hidden;margin-top:3px}.oc-bar i{display:block;height:100%;background:linear-gradient(90deg,#4fa633,#8fdc63);transition:width .3s}
 #orderCard.late{border-color:#e8473c;animation:ocLate 1s ease-in-out infinite}
 @keyframes ocLate{50%{box-shadow:0 0 0 5px rgba(232,71,60,.35),0 10px 26px rgba(0,0,0,.35)}}
@@ -362,7 +366,7 @@ button{font:inherit;color:inherit}
 .ch-rw{font-weight:900;font-size:12.5px;color:#b06a00;white-space:nowrap;font-variant-numeric:tabular-nums;flex:none}
 .ch-step.bonus{background:linear-gradient(160deg,#fff6d8,#ffe9a8);border-color:#e8b13a}.ch-step.bonus .ch-n{background:none;font-size:18px}
 .oc-ch{background:#3f7a1c;color:#fff;align-self:center}
-@media (min-width:721px){#orderCard.active.chain{width:272px}}#orderCard.active .oc-l{white-space:nowrap;gap:6px}
+@media (min-width:721px){#orderCard.active.chain{width:300px}}
 .hrow{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:6px;padding:6px 8px;border-radius:10px;background:#fffaf0;border:1.5px solid var(--line);font-size:12.5px}
 .hrow small{display:block;color:var(--ink2);font-size:10.5px}.hrow.ok b{color:#2f7020}.hrow.no b{color:#b8352c}.hrow.no{opacity:.75}
 .prem-hero{display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;background:linear-gradient(135deg,#2a1d14,#4a2c1c);color:#fff3d6;border:2px solid #d8a930;margin-bottom:8px}
@@ -372,7 +376,9 @@ button{font:inherit;color:inherit}
 .stor{margin-top:12px;padding:9px;border-radius:12px;background:#fffaf0;border:1.5px solid var(--line)}
 .stor-h{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}.stor-h .lv{color:#c47f12;font-weight:800}.stor-h .sw{margin-left:auto}
 @media (max-width:720px){#orderCard{left:50%;transform:translateX(-50%);width:min(320px,92vw);top:auto;bottom:calc(var(--bb) + 12px + env(safe-area-inset-bottom))}body.sheet-on #orderCard{display:none}#orderCard.pop{animation:ocInM .55s cubic-bezier(.2,1.4,.4,1),ocGlow 1.6s ease-in-out .55s 3}#orderCard.active{width:min(250px,80vw)}
-  @keyframes ocInM{0%{opacity:0;transform:translate(-50%,40px) scale(.85)}100%{opacity:1;transform:translateX(-50%)}}}
+  @keyframes ocInM{0%{opacity:0;transform:translate(-50%,40px) scale(.85)}100%{opacity:1;transform:translateX(-50%)}}
+  /* chain badge sits in the row, so the card uses the same FAB clearance as the base card (the 250px active cap let the timer slide under 🔗) */
+  #orderCard.active.chain{width:calc(100vw - 92px);max-width:330px}}
 
 /* ---------- v2.6: daily contracts ---------- */
 .daily-hero{display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;background:linear-gradient(135deg,#1f3a5a,#2a5a7a);color:#e8f2ff;border:2px solid #6ab0e0;margin-bottom:8px}

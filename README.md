@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.48-6b8e23" alt="version 2.48">
+  <img src="https://img.shields.io/badge/version-2.49-6b8e23" alt="version 2.49">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,14 +30,15 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.48: Calm waiting badges on phones
-A late-game phone at the fit zoom no longer pins a waiting badge on every hungry building. Spare-stock lines and mild shortages stay quiet. The worst real bottleneck still shows (up to three badges), and the building you are pointing at always keeps its badge. Zoom in, or set Scene labels to Always, and every badge comes back. Alerts stay.
+### New in v2.49: The order timer stays readable
+A project on a phone was letting its countdown slide under the 🔗 step badge. The progress line now stays on one line: the timer and the badge stay clear of each other, and a very long amount ellipsizes instead of covering them. Nothing else about orders changed. The tests that watch a full Log Yard, and this line, no longer wait on the live clock, so they finish faster and fail the same way every time.
 
-<p align="center"><img src="screenshots/history/v2.48/mobile-badges.png" alt="v2.48: late-game phone at fit zoom, with only the worst waiting badges" width="360"></p>
+<p align="center"><img src="screenshots/history/v2.49/mobile-order.png" alt="v2.49: phone order card, timer clear of the project step" width="360"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.48** | 📱 **Calm waiting badges** | A late-game phone at the fit zoom hides spare-stock and mild "waiting" badges. The worst real bottleneck still shows (up to three), and the building you point at keeps its badge. Zoom in, or set Scene labels to Always, and every badge comes back. |
 | **v2.47** | 🔪 **Upgrades for the newer lines** | Peeler Knives, Log Carriage, Daylight Press and RF Curing give the Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant a leveled ×2 (Lv 5 is ×2.4). Prices follow forest value. The early game is unchanged. |
 | **v2.46** | 🪓 **Axes that keep up** | Sharper Axes and Golden Axe are worth at least 1 % and 4 % of your logs/s per tap, so chopping still matters once the crews are fast. The early game keeps the old ×2 / ×5. |
 | **v2.45** | 🚒 **Fire Station prices that keep up** | Fire Station levels follow your forest value and cost at least 15 s – 10 min of income; the early game pays the old 60K ×6 ladder. |

@@ -8,10 +8,13 @@
 # early game identical to v2.39, steady-state balance vs v2.39 across tiers / collector surplus / forest values, greedy multi-Replant
 # sim, saves (v2.39 + damaged), offline, UI on desktop (mouse) + iPhone 13 / Pixel 7 (touch), flat frame cost, no console errors / 404s.
 # Writes scratch shots to test/v240_*.png.
+# The live loop is frozen (test/_pace.py): a 100 ms tick between two evaluates drains a full yard, and the
+# following chop() then fills the yard instead of overflowing. Game time moves only through tick() / TT.simulate.
 from playwright.sync_api import sync_playwright
-import sys,os,re,json,time
+import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
+from _pace import HOLD,ready,paint,FOREST
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
@@ -57,10 +60,10 @@ with sync_playwright() as p:
     def page(dev=None,tag='',init=CLEAR,url=URL,seed=True):
         if dev: d=dict(p.devices[dev]); d.pop('default_browser_type',None); ctx=b.new_context(**d,service_workers='block')
         else: ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
-        ctx.add_init_script((SEED if seed else '')+init+CAPJS); pg=ctx.new_page()
+        ctx.add_init_script((SEED if seed else '')+HOLD+init+CAPJS); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(f'{tag}{e}')); pg.on('console',lambda m: errs.append(f'{tag}console: {m.text}') if m.type=='error' else None)
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
-        pg.goto(url); pg.wait_for_timeout(1200); E(pg,QUIET); return ctx,pg
+        pg.goto(url,wait_until='domcontentloaded'); ready(pg); E(pg,QUIET); return ctx,pg
     # ---------------- version + rules ----------------
     ctx,pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,40),f"VERSION >= 2.40 ({E(pg,'TT.VERSION')})")
@@ -95,11 +98,20 @@ with sync_playwright() as p:
     ok(r['hud'][0]=='Yard full' and 'Build the Wood Chipper' in r['fix'],f"…the HUD says Yard full and the fix is to build the Wood Chipper ({r['hud'][0]}, {r['fix']})")
     r=E(pg,"(()=>{S.buildings.chipper.lvl=30;S.buildings.chipper.on=false;M=computeMods();const a=ovfFix().label;S.buildings.chipper.on=true;S.power.lvl=0;M=computeMods();return [a,ovfFix().label];})()")
     ok('Check the Wood Chipper' in r[0],f'a switched-off Chipper is pointed out ({r[0]})')
-    # manual taps on a full yard
-    r=E(pg,f"""(()=>{{S.power.lvl=3;M=computeMods();({STEP})(10);S.res.logs=logCap();const n=chop(),f=chopOvf,t=ovfTap;tick(.5,false);const used=ovfLast.chip+ovfLast.pow;
-      S.buildings.chipper.lvl=0;S.power.lvl=0;M=computeMods();S.res.logs=logCap();const n2=chop();S.buildings.chipper.lvl=30;S.power.lvl=3;M=computeMods();return [n,f,t,used,n2,ovfTap];}})()""")
-    ok(r[0]>0 and r[1] and r[2]>=r[0]-1e-9 and r[3]>0,f'a tap on a full yard goes on as overflow ({r[0]:.1f} logs, next tick uses {r[3]:.1f})')
-    ok(r[4]==0,'…and with no sink a tap still finds the yard full (nothing chopped)')
+    # manual taps on a full yard. One evaluate, with the yard, the forest and both sinks set here:
+    # earlier checks zero the Chipper and the plant, and a live tick (frozen above) would drain the yard between calls.
+    r=E(pg,"""(()=>{S.buildings.chipper.lvl=30;S.buildings.chipper.on=true;S.power.lvl=3;S.power.on=true;S.power.logs='surplus';M=computeMods();
+      S.forest.m=1e9;S.forest.eff=1;S.res.chips=0;S.res.logs=logCap();ovfTap=0;
+      const room=logCap()-S.res.logs,sink=ovfSinks(),fm=S.forest.m;
+      const n=chop(),f=!!chopOvf,t=ovfTap;tick(.5,false);const used=ovfLast.chip+ovfLast.pow,w=ovfLast.w,queued=ovfTap;
+      S.buildings.chipper.lvl=0;S.power.lvl=0;M=computeMods();S.forest.m=1e9;S.res.logs=logCap();const logs=S.res.logs;ovfTap=0;
+      const n2=chop(),f2=!!chopOvf,room2=logCap()-S.res.logs,sink2=ovfSinks();
+      return {n,f,t,used,w,queued,room,sink,fm,n2,f2,room2,sink2,logsAfter:S.res.logs,logs};})()""")
+    ok(abs(r['room'])<1e-6 and r['sink']['chip'] and r['sink']['pow'] and r['fm']>1,f"tap setup: yard full, both sinks, forest standing (room {r['room']}, {r['sink']})")
+    ok(r['n']>0 and r['f'] and r['t']>=r['n']-1e-9 and r['queued']==0 and r['used']>0 and r['used']+r['w']+1e-6>=r['n'],
+       f"a tap on a full yard goes on as overflow ({r['n']:.1f} logs, next tick uses {r['used']:.1f})")
+    ok(r['n2']==0 and r['f2'] is False and abs(r['room2'])<1e-6 and not r['sink2']['chip'] and not r['sink2']['pow'] and r['logsAfter']==r['logs'],
+       '…and with no sink a tap still finds the yard full (nothing chopped)')
     ctx.close()
     # ---------------- early game identical to v2.39 ----------------
     ctx,pg=page(seed=False); e_new=E(pg,EARLY); ctx.close()
@@ -160,16 +172,21 @@ with sync_playwright() as p:
     ctx.close()
     # ---------------- UI ----------------
     def aim(pg,i,j,z):
-        E(pg,f"(()=>{{const c=scene.cam;c.fly=null;c.x=c.tx={i};c.y=c.ty={j};c.z=c.tz=c.fitZ*{z};}})()"); pg.wait_for_timeout(900)
+        E(pg,f"(()=>{{const c=scene.cam;c.fly=null;c.x=c.tx={i};c.y=c.ty={j};c.z=c.tz=c.fitZ*{z};}})()"); paint(pg,1)
+    def pointer(pg,x,y,touch):
+        if not touch: pg.mouse.click(x,y); return
+        cdp=pg.context.new_cdp_session(pg)
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':float(x),'y':float(y)}]})
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
     for dev in [None,'iPhone 13','Pixel 7']:
         tag=dev or 'desktop'; touch=bool(dev); short=tag.split()[0].lower()
-        ctx,pg=page(dev,tag+': '); E(pg,MID); pg.wait_for_timeout(1500)
+        ctx,pg=page(dev,tag+': '); E(pg,MID); paint(pg)
         h=E(pg,"(()=>{const e=document.getElementById('hLogs');return [e.textContent,e.parentNode.className,e.parentNode.title]})()")
         ok(h[0].startswith('↪') and 'yardovf' in h[1] and 'Chipper' in h[2] and 'Power' in h[2],f'{tag}: HUD log chip shows the overflow rate and where it goes ({h[0]} · {h[2][:80]})')
         r=E(pg,"(()=>{const e=document.getElementById('hLogs').parentNode.getBoundingClientRect();return [e.left,e.right,innerWidth]})()")
         ok(r[0]>=0 and r[1]<=r[2]+.5,f'{tag}: HUD chip fits the screen ({r})')
         # Supply Flow by tap / click
-        (pg.tap if touch else pg.click)('#flowBtn'); pg.wait_for_timeout(1200)
+        (pg.tap if touch else pg.click)('#flowBtn'); paint(pg)
         t=E(pg,"document.getElementById('flowLegend').innerText")
         ok('Overflow' in t and 'Chipper' in t and 'Power' in t,f'{tag}: Supply Flow line shows the overflow routing ({t.splitlines()[1:4]})')
         ed=E(pg,"flowEdges().filter(e=>e.state==='ovf').map(e=>e.to)")
@@ -177,38 +194,43 @@ with sync_playwright() as p:
         bx=E(pg,"(()=>{const e=document.querySelector('#flowLegend .ovf-flow');if(!e) return null;const r=e.getBoundingClientRect();return [r.left,r.right,innerWidth]})()")
         ok(bx and bx[0]>=0 and bx[1]<=bx[2]+.5,f'{tag}: overflow line fits ({bx})')
         pg.screenshot(path=os.path.join(HERE,f'v240_{short}_flow.png'))
-        (pg.tap if touch else pg.click)('#flowBtn'); pg.wait_for_timeout(500)
+        (pg.tap if touch else pg.click)('#flowBtn'); paint(pg,1)
         # Market: Log Yard bar
-        E(pg,"openSheet('market')"); pg.wait_for_timeout(700)
+        E(pg,"openSheet('market')"); paint(pg,1)
         t=E(pg,"(()=>{const e=document.querySelector('#mktBody tr.raw .rawcell');return e?[e.innerText,e.className]:null})()")
         ok(t and 'overflow' in t[0] and 'ovf' in t[1],f'{tag}: Market → Log Yard bar shows the overflow ({t[0].splitlines()[-1] if t else t})')
         ok(E(pg,'(()=>{const e=document.getElementById("shBody");return e.scrollWidth<=e.clientWidth+1})()'),f'{tag}: no sideways scroll in the Market')
-        E(pg,"closeSheet()"); pg.wait_for_timeout(300)
-        # Wood Chipper sheet by tap / click on the lot
-        E(pg,"(()=>{const L=LOTS.chipper;const c=scene.cam;const p=P(L.ci,L.cj,0);c.fly=null;c.x=c.tx=p[0];c.y=c.ty=p[1];c.z=c.tz=c.fitZ*1.6;})()"); pg.wait_for_timeout(1000)
-        xy=E(pg,"TT.lotScreen('chipper')"); (pg.touchscreen.tap if touch else pg.mouse.click)(xy[0],xy[1]-20); pg.wait_for_timeout(800)
+        E(pg,"closeSheet()")
+        # Wood Chipper sheet by tap / click on the lot. Coordinates come from the camera, not from a painted frame.
+        E(pg,"(()=>{const L=LOTS.chipper;const c=scene.cam;const p=P(L.ci,L.cj,0);c.fly=null;c.x=c.tx=p[0];c.y=c.ty=p[1];c.z=c.tz=c.fitZ*1.6;})()")
+        xy=E(pg,"TT.lotScreen('chipper')"); pointer(pg,xy[0],xy[1]-20,touch)
         ok(E(pg,"TT.sheetBld")=='chipper',f'{tag}: {"tap" if touch else "click"} opens the Wood Chipper')
         t=E(pg,"(()=>{const e=document.getElementById('ovfChute');return e?e.innerText:''})()")
         ok('Overflow chute' in t and 'now' in t,f'{tag}: Chipper sheet shows its overflow chute ({t})')
-        E(pg,"closeSheet()"); pg.wait_for_timeout(300)
+        E(pg,"closeSheet()")
         # power sheet
-        E(pg,"openSheet('power')"); pg.wait_for_timeout(700)
+        E(pg,"openSheet('power')"); paint(pg,1)
         t=E(pg,"document.getElementById('powerBody').innerText")
         ok('Overflow logs' in t and 'overflow' in t,f'{tag}: Power Plant sheet lists the overflow logs it burns')
-        E(pg,"closeSheet()"); pg.wait_for_timeout(300)
+        E(pg,"closeSheet()")
         # no sink: Yard full + advisor row with a fix that opens the Chipper
-        E(pg,"(()=>{S.buildings.chipper.lvl=0;S.power.lvl=0;M=computeMods();for(let k=0;k<40;k++){S.forest.m=1e9;tick(.5,false);}TT.rebuildAll&&TT.rebuildAll();TT.render();})()"); pg.wait_for_timeout(900)
+        E(pg,"(()=>{S.buildings.chipper.lvl=0;S.power.lvl=0;M=computeMods();for(let k=0;k<40;k++){S.forest.m=1e9;tick(.5,false);}TT.rebuildAll&&TT.rebuildAll();TT.render();})()")
         ok(E(pg,"document.getElementById('hLogs').textContent")=='Yard full' and E(pg,"document.getElementById('hLogs').parentNode.classList.contains('yardfull')"),f'{tag}: with no sink the HUD still says Yard full')
-        (pg.tap if touch else pg.click)('#flowBtn'); pg.wait_for_timeout(1000)
+        (pg.tap if touch else pg.click)('#flowBtn'); paint(pg)
         ok(E(pg,"!!document.querySelector('#flowLegend .adv-row.ovf')"),f'{tag}: Top bottlenecks lists the full Log Yard')
         pg.screenshot(path=os.path.join(HERE,f'v240_{short}_idle.png'))
-        (pg.tap if touch else pg.click)('#flowLegend .adv-row.ovf'); pg.wait_for_timeout(900)
+        (pg.tap if touch else pg.click)('#flowLegend .adv-row.ovf')
         ok(E(pg,"[TT.curSheet,TT.sheetBld]")==['bld','chipper'],f'{tag}: its fix button opens the Wood Chipper ({E(pg,"[TT.curSheet,TT.sheetBld]")})')
         E(pg,"closeSheet()"); E(pg,"toggleFlow(false)")
-        # tap the forest on a full yard with a sink: "+n ↪" float
-        E(pg,"(()=>{S.buildings.chipper.lvl=30;S.power.lvl=3;M=computeMods();S.res.logs=logCap();scene.floats.length=0;})()")
-        r=E(pg,"(()=>{const n=chop();return [n,chopOvf];})()")
-        ok(r[0]>0 and r[1],f'{tag}: a tap on the forest with a full yard still chops, and goes on as overflow')
+        # one pointer tap on the forest. The clock is frozen, so the yard stays full until the tap lands.
+        E(pg,"(()=>{S.buildings.chipper.lvl=30;S.buildings.chipper.on=true;S.power.lvl=3;S.power.on=true;S.power.logs='surplus';M=computeMods();S.forest.m=1e9;S.forest.eff=1;S.res.logs=logCap();ovfTap=0;chopOvf=false;scene.floats.length=0;})()")
+        xy=E(pg,FOREST)
+        ok(bool(xy),f'{tag}: a forest cell is on screen')
+        # handleTap, the same function a pointerup calls. A later synthesized touch on the iPhone 13
+        # profile is dropped after the lot tap above; the yard is already full and the clock is held.
+        if xy: E(pg,"(xy)=>TT.sceneTapAt(xy[0],xy[1])",xy)
+        r=E(pg,"(()=>{const fl=scene.floats.filter(x=>x.text&&String(x.text).indexOf('\u21aa')>=0);return {ovf:!!chopOvf,text:fl.length?String(fl[fl.length-1].text):'',room:Math.max(0,logCap()-S.res.logs)};})()")
+        ok(r['ovf'] and '\u21aa' in r['text'] and r['room']<1,f'{tag}: a tap on the forest with a full yard still chops, and goes on as overflow ({r})')
         # perf: overflow adds no per-frame cost worth measuring
         r=E(pg,"(()=>{for(let k=0;k<20;k++){S.forest.m=1e9;tick(.5,false);}const t0=performance.now();for(let k=0;k<2000;k++){ovfState();ovfHud();ovfFlowLine();ovfFrame(.016);}return (performance.now()-t0)/2000;})()")
         ok(r<.05,f'{tag}: overflow UI costs {r*1000:.1f} µs per frame')

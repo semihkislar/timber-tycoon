@@ -3,10 +3,12 @@
 # client order (ordPlan sizing with a growing difficulty factor, ordPay reward × premium × managers × research) times a small
 # loyalty step (×1 / ×1.1 / ×1.2). Generation + unlock flow, failure, reward math, forest-value scaling after Replant
 # (multi-Replant sims, no tiny numbers), the board card with progress, old saves, flat frame cost, desktop + iPhone/Pixel touch.
+# The live loop is frozen (test/_pace.py) so the HUD order line is measured on a settled card, not between frames.
 from playwright.sync_api import sync_playwright
 import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
+from _pace import HOLD,ready,paint,HUD_LINE
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
@@ -14,7 +16,7 @@ def ok(c,msg):
 def E(pg,js): return pg.evaluate(js)
 HERE=os.path.dirname(os.path.abspath(__file__))
 CLEAR='if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'
-QUIET="(()=>{window.toast=()=>{};window.save=()=>{};window.sfx=()=>{};document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e6;S.orders.next=S.time+1e6;S.orders.chNext=S.time+1e6;if(S.mish) S.mish.next=S.time+1e9;S.prefs.autoFocus=false;S.wx.clock=200;S.wx.w='clear';S.wx.ends=0;S.wx.next=1e15;})()"
+QUIET="(()=>{window.toast=()=>{};window.save=()=>{};window.sfx=()=>{};document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e6;S.orders.next=S.time+1e6;S.orders.chNext=S.time+1e6;if(S.mish) S.mish.next=S.time+1e9;S.prefs.autoFocus=false;S.wx.clock=200;S.wx.w='clear';S.wx.ends=0;S.wx.next=1e15;if(window.TT&&TT.obSkip)TT.obSkip();})()"
 SETUP='''(()=>{S.coins=1e13;S.totalEarned=1e13;TT.buyCollector("lumberjack",60);TT.buyCollector("chainsaw",40);TT.buyCollector("truck",30);TT.buyCollector("harvester",15);
   TT.buyPlanter("team",6);for(const [b,n] of [["sawmill",60],["chipper",30],["kiln",20],["peeler",20],["carpentry",25],["pellet",20],["paper",15],["furniture",10]]) TT.buyBuilding(b,n);
   S.premium.lvl=1;S.coins=1e13;TT.buyBuilding("atelier",5);TT.buyBuilding("parquet",5);S.coins=1e13;M=computeMods();for(let k=0;k<60;k++){S.forest.m=1e9;tick(1,false);}S.orders.next=S.time+1e6;S.orders.chNext=S.time+1e6;S.orders.done=Math.max(S.orders.done,3);})()'''
@@ -35,8 +37,8 @@ SIMHOOK='''{gain:()=>pendingSeeds(),cur:()=>S.legacy||0,prestige:()=>doPrestige(
  want:(g,c,T)=>{rpTick();return rpAdvice().k==='now'||(T>=600&&g>=Math.max(3,c*.5));}}'''
 SIMX='''(()=>{const R=window._R[window._R.length-1];return {done:(S.orders.chDone||0)-R.cd0,failed:(S.orders.chFailed||0)-R.cf0,started:R.started,cs:cs()};})()'''
 def sim(p,strong,runs=5):
-    b=p.chromium.launch(); ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block'); ctx.add_init_script(CLEAR)
-    pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e))); pg.goto(URL); pg.wait_for_timeout(1300)
+    b=p.chromium.launch(); ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block'); ctx.add_init_script(HOLD+CLEAR)
+    pg=ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e))); pg.goto(URL,wait_until='domcontentloaded'); ready(pg)
     pg.evaluate("(()=>{S.events=[];S.nextEvent=S.time+1e12;S.fires={};S.fireCool=1e12;window._strong=%d;"%strong+
       # every step as it unlocks, recorded right when it is sized (prices can move later, e.g. a VIP Rush ending)
       "const f=chStepOrder;window.chStepOrder=function(ch,i){const o=f(ch,i);const R=window._R&&window._R[window._R.length-1];if(R) R.s.push({j:i,live:1,it:o.item,amt:o.amt,rw:o.reward,val:o.amt*price(o.item),inc:ordInc(),cs:cs(),m:(RMAP[o.item].premium?1.25:1)*mgrOrders()*(M.orderPay||1)*CH_STEP[i]});return o;};})()")
@@ -48,10 +50,10 @@ with sync_playwright() as p:
     def page(dev=None,tag='',init=CLEAR):
         if dev: d=dict(p.devices[dev]); d.pop('default_browser_type',None); ctx=b.new_context(**d,service_workers='block')
         else: ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
-        ctx.add_init_script(init); pg=ctx.new_page()
+        ctx.add_init_script(HOLD+init); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(f'{tag}{e}')); pg.on('console',lambda m: errs.append(f'{tag}console: {m.text}') if m.type=='error' else None)
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
-        pg.goto(URL); pg.wait_for_timeout(1300); E(pg,QUIET); return ctx,pg
+        pg.goto(URL,wait_until='domcontentloaded'); ready(pg); E(pg,QUIET); return ctx,pg
     ctx,pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,34),f"VERSION >= 2.34 ({E(pg,'TT.VERSION')})")
     m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,34),'sw cache bumped to >= v2.34')
@@ -134,29 +136,29 @@ with sync_playwright() as p:
         ok(sum(r_['done'] for r_ in rows)>=3,f"{label}: projects get completed across the runs ({[r_['done'] for r_ in rows]} done, {[r_['failed'] for r_ in rows]} missed)")
         ok(not er,f'{label}: no page errors ({er[:2]})')
     # ---------------- board UI (desktop) ----------------
-    ctx,pg=page(); E(pg,SETUP)
-    E(pg,"(()=>{S.orders.chNext=0;offerChain('library')||offerChain();offerOrder('chairs');TT.ordTab='clients';window._tk=tick;window.tick=()=>{};})()"); pg.click('#bbOrd'); pg.wait_for_timeout(600)
+    ctx,pg=page(); E(pg,SETUP); paint(pg)
+    E(pg,"(()=>{S.orders.chNext=0;offerChain('library')||offerChain();offerOrder('chairs');TT.ordTab='clients';})()"); pg.click('#bbOrd')
     r=E(pg,"(()=>{const c=document.getElementById('chCard');return c&&{steps:c.querySelectorAll('.ch-step:not(.bonus)').length,bonus:!!c.querySelector('.ch-step.bonus'),yes:!!c.querySelector('#chYes'),txt:c.innerText,pips:c.querySelectorAll('.ch-pips i').length,first:document.querySelector('#ordBody .ord-card')===c};})()")
     ok(r and r['steps']==3 and r['bonus'] and r['yes'] and r['pips']==4 and r['first'],f'Clients tab: the project card leads the board with 3 steps, the chain bonus, progress pips and Start ({r and r["steps"]})')
     ok(r and '≈' in r['txt'] and 'Chain bonus' in r['txt'] and 'New project' in r['txt'],'… later steps are shown as estimates (≈) until they unlock')
-    pg.click('#chYes'); pg.wait_for_timeout(500)
+    pg.click('#chYes')
     r=E(pg,"(()=>{const c=document.getElementById('chCard');return {run:S.orders.chain&&S.orders.chain.state,chip:document.getElementById('chChip').innerText,acts:document.querySelectorAll('#ordBody .ord-card.act').length,now:c.querySelectorAll('.ch-step.now').length,del:!!document.getElementById('chDel')};})()")
     ok(r['run']=='run' and 'Step 1/3' in r['chip'] and r['acts']==0 and r['now']==1 and r['del'],f"clicking Start runs the project: progress chip, current step highlighted, Deliver button, no duplicate order card ({r['chip']})")
-    E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);S.autosell[o.item]=false;S.res[o.item]=o.amt*1.3;})()"); pg.wait_for_timeout(400)
-    pg.click('#chDel'); pg.wait_for_timeout(600)
+    E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);S.autosell[o.item]=false;S.res[o.item]=o.amt*1.3;})()")
+    pg.click('#chDel')
     r=E(pg,"(()=>{const c=document.getElementById('chCard');return {step:S.orders.chain.step,chip:document.getElementById('chChip').innerText,done:c.querySelectorAll('.ch-step.done').length,pips:c.querySelectorAll('.ch-pips i.done').length,bar:parseFloat(document.getElementById('chBar').style.width)};})()")
     ok(r['step']==1 and 'Step 2/3' in r['chip'] and r['done']==1 and r['pips']==1 and 30<=r['bar']<=40,f"Deliver from storage completes step 1; the card moves to step 2 ({r})")
-    E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);o.got=o.amt*.45;S.res[o.item]=0;})()"); pg.wait_for_timeout(600)
-    E(pg,"closeSheet();S.orders.offers=[];"); pg.wait_for_timeout(400); E(pg,"renderOrderCard()")
-    ok('🔗2/3' in E(pg,"document.getElementById('orderCard').innerText"),'the HUD order card shows the project step (🔗2/3)')
-    hb=E(pg,"(()=>{const c=document.getElementById('orderCard').getBoundingClientRect(),l=document.querySelector('#orderCard .oc-l').getBoundingClientRect();return [c.width,l.height];})()")
-    ok(hb[1]<=20,f'… on one line ({hb})')
-    E(pg,"TT.ordTab='clients'"); pg.click('#bbOrd'); pg.wait_for_timeout(700)
+    E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);o.got=o.amt*.45;S.res[o.item]=0;S.orders.offers=[];closeSheet();ordCardSig='';})()")
+    hb=E(pg,HUD_LINE)
+    ok(hb and '🔗2/3' in hb['txt'],f"the HUD order card shows the project step (🔗2/3) ({hb and hb['txt'][:80]})")
+    ok(hb and hb['one'] and hb['h']<=20 and hb['ws']=='nowrap' and hb['gap']>=-0.5 and not hb['gotClip'] and not hb['tmClip'] and (hb['badge'] is None or hb['badge']>=-0.5),
+       f"… on one line, timer clear of the step badge ({hb})")
+    E(pg,"TT.ordTab='clients'"); pg.click('#bbOrd')
     ov=E(pg,"""(()=>{const c=document.getElementById('chCard');const els=[...c.querySelectorAll('.ch-tx b,.ch-rw,.ch-n,.oc-ic')];let bad=[];
       for(const r of c.querySelectorAll('.ch-step')){const tx=r.querySelector('.ch-tx').getBoundingClientRect(),rw=r.querySelector('.ch-rw').getBoundingClientRect();if(tx.right>rw.left+1) bad.push('overlap');}
       const W=document.getElementById('ordBody');return {bad,sx:W.scrollWidth<=W.clientWidth+1};})()""")
     ok(not ov['bad'] and ov['sx'],f'no overlapping text in the step rows, no sideways scroll ({ov})')
-    E(pg,"document.getElementById('chCard').scrollIntoView({block:'start'})"); pg.wait_for_timeout(300)
+    E(pg,"document.getElementById('chCard').scrollIntoView({block:'start'})"); paint(pg,1)
     pg.screenshot(path=os.path.join(HERE,'v234_desktop.png'))
     # flat frame cost with the project running (scene + live board updates)
     r=E(pg,'''(()=>{const t=on=>{const O=S.orders;const keep=O.chain,acts=O.acts.slice();if(!on){O.chain=null;O.acts=O.acts.filter(x=>x.ch===undefined);}ordSig='';updateOrders();
@@ -177,7 +179,7 @@ with sync_playwright() as p:
         ctx,pg=page(tag=name+': ',init='if(!sessionStorage.getItem("_m")){sessionStorage.setItem("_m","1");sessionStorage.setItem("_c","1");const o=JSON.parse(%s);%s;localStorage.setItem("timberTycoon_save_v1",JSON.stringify(o))}'%(json.dumps(base),mut))
         r=E(pg,"(()=>{const O=ordNorm();const ch=O.chain;return {st:ch&&ch.state,act:!!(ch&&O.acts.find(x=>x.ch===ch.id)),cd:O.chDone,plain:O.acts.filter(x=>x.ch===undefined).length,done:O.done,ver:TT.VERSION};})()")
         ok(exp(r),f'{name}: loads ({r})')
-        E(pg,QUIET); E(pg,"(()=>{for(let k=0;k<20;k++){S.forest.m=1e9;tick(1,false);stepScene(1/30);}TT.ordTab='clients';openSheet('ord');updateOrders();})()"); pg.wait_for_timeout(300)
+        E(pg,QUIET); E(pg,"(()=>{for(let k=0;k<20;k++){S.forest.m=1e9;tick(1,false);stepScene(1/30);}TT.ordTab='clients';openSheet('ord');updateOrders();})()")
         ok(E(pg,"isFinite(S.coins)&&!!document.querySelector('#ordBody .ord-board')"),f'{name}: game runs on and the board renders')
         ctx.close()
     # offline progress keeps chains going
@@ -187,31 +189,33 @@ with sync_playwright() as p:
     ctx.close()
     # ---------------- phones (touch) ----------------
     for dev in ['iPhone 13','Pixel 7']:
-        ctx,pg=page(dev,dev+': '); E(pg,SETUP)
-        E(pg,"(()=>{S.orders.chNext=0;offerChain('library')||offerChain();TT.ordTab='clients';window._tk=tick;window.tick=()=>{};TT.openSheet('ord');})()"); pg.wait_for_timeout(800)
+        ctx,pg=page(dev,dev+': '); E(pg,SETUP); paint(pg)
+        E(pg,"(()=>{S.orders.chNext=0;offerChain('library')||offerChain();TT.ordTab='clients';TT.openSheet('ord');})()")
         vw=E(pg,'innerWidth')
         bb=pg.locator('#chYes').bounding_box()
         ok(bb and bb['height']>=44 and bb['x']>=0 and bb['x']+bb['width']<=vw+.5,f'{dev}: Start project is a full touch target ({bb and round(bb["height"])} px)')
         rows=E(pg,"[...document.querySelectorAll('#chCard .ch-step')].map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.height]})")
         ok(len(rows)==4 and all(x[0]>=0 and x[1]<=vw+.5 and x[2]>=44 for x in rows),f'{dev}: step rows fit the screen and are ≥ 44 px ({[round(x[2]) for x in rows]})')
         ok(E(pg,'(()=>{const e=document.getElementById("ordBody");return e.scrollWidth<=e.clientWidth+1})()'),f'{dev}: no sideways scroll')
-        E(pg,"document.getElementById('chYes').scrollIntoView({block:'center'})"); pg.wait_for_timeout(200)
-        pg.tap('#chYes'); pg.wait_for_timeout(500)
+        E(pg,"document.getElementById('chYes').scrollIntoView({block:'center'})")
+        pg.tap('#chYes')
         ok(E(pg,"S.orders.chain&&S.orders.chain.state")=='run',f'{dev}: tap Start project')
-        E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);S.autosell[o.item]=false;S.res[o.item]=o.amt*1.2;})()"); pg.wait_for_timeout(500)
-        E(pg,"document.getElementById('chDel').scrollIntoView({block:'center'})"); pg.wait_for_timeout(200)
+        E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);S.autosell[o.item]=false;S.res[o.item]=o.amt*1.2;})()")
+        E(pg,"document.getElementById('chDel').scrollIntoView({block:'center'})")
         db=pg.locator('#chDel').bounding_box(); ok(db and db['height']>=44,f'{dev}: Deliver button ≥ 44 px')
-        pg.tap('#chDel'); pg.wait_for_timeout(600)
+        pg.tap('#chDel')
         ok(E(pg,"S.orders.chain&&S.orders.chain.step")==1,f'{dev}: tap Deliver completes step 1 and unlocks step 2')
-        E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);o.got=o.amt*.4;S.res[o.item]=0;})()"); pg.wait_for_timeout(600)
-        pg.tap('#shSize'); pg.wait_for_timeout(700)   # full-height sheet: the whole project card + progress at once
-        E(pg,"document.getElementById('chCard').scrollIntoView({block:'start'})"); pg.wait_for_timeout(300)
+        E(pg,"(()=>{const ch=S.orders.chain;const o=S.orders.acts.find(x=>x.ch===ch.id);o.got=o.amt*.4;S.res[o.item]=0;})()")
+        pg.tap('#shSize')   # full-height sheet. Deliver was already on screen at half height, so wait for the snap itself.
+        pg.wait_for_function("""() => {const sh=document.getElementById('sheet');return !!(sh&&sh.dataset.snap==='full'&&!sh.classList.contains('snapping'));}""")
+        E(pg,"document.getElementById('chCard').scrollIntoView({block:'start'})")
         r=E(pg,"(()=>{const c=document.getElementById('chCard').getBoundingClientRect(),b=document.getElementById('chDel').getBoundingClientRect(),bb=document.getElementById('bottombar');const bt=bb?bb.getBoundingClientRect().top:innerHeight;return [Math.round(c.top),Math.round(b.bottom),Math.round(bt),Math.round(innerHeight)];})()")
         ok(r[1]<=r[2] and r[1]<=r[3],f'{dev}: in the full-height sheet the whole project card (steps, bonus, progress, Deliver) is on screen ({r})')
-        pg.screenshot(path=os.path.join(HERE,f'v234_{dev.split()[0].lower()}.png'))
-        E(pg,"closeSheet()"); pg.wait_for_timeout(500); E(pg,"renderOrderCard()")
-        cb=E(pg,"(()=>{const c=document.getElementById('orderCard');const r=c.getBoundingClientRect();return [r.left,r.right,c.innerText.includes('🔗2/3')];})()")
-        ok(cb[0]>=0 and cb[1]<=vw+.5 and cb[2],f'{dev}: the HUD order card shows 🔗2/3 and fits the screen ({cb})')
+        paint(pg,1); pg.screenshot(path=os.path.join(HERE,f'v234_{dev.split()[0].lower()}.png'))
+        E(pg,"(()=>{closeSheet();S.orders.offers=[];ordCardSig='';})()")
+        hb=E(pg,HUD_LINE)
+        ok(hb and hb['fit'] and '🔗2/3' in hb['txt'] and hb['one'] and hb['h']<=20 and not hb['tmClip'] and hb['badge']>=-0.5 and (hb['fab'] is None or hb['fab']>=-0.5),
+           f'{dev}: the HUD order card shows 🔗2/3, fits, and the timer stays clear of the badge ({hb})')
         ctx.close()
     b.close()
     real=[e for e in errs if 'favicon' not in e]
