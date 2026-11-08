@@ -5,6 +5,25 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.49] — 2026-11-08
+
+**Faster, deterministic tests, and a phone order line that keeps its timer.** The Log Yard tap checks and the HUD order-line check were racing the live 100 ms loop, or measuring a font's line box. Gameplay, recipes, prices and overflow rules are unchanged.
+
+### Fixed
+- On a phone, the project step's countdown was painting underneath the 🔗 badge (the active card was capped at 250 px, and the badge took the end of the row). The chain card now uses the same width as the other phone cards, the one that already stops short of the action buttons. The progress row is a single 16 px line: a very long amount ellipsizes, and the timer stays whole and clear of the badge.
+
+### Changed
+- `test/_pace.py` freezes `Date.now()` for the suites that were racing the game loop. `loop()` then sees dt 0, so a gap between two checks cannot drain a full Log Yard before `chop()`. Game time still moves only when a test calls `tick` or `TT.simulate`. `paint()` draws one settled frame in place of the old fixed sleeps.
+- `test/v240.py`: the full-yard tap and the no-sink tap set the yard, the forest and the sinks in the same turn, and the on-screen tap is one real click or touch while the clock is held. The Wood Chipper lot tap uses the same explicit touch events as the other phone suites. The balance sims and the frame-cost check are unchanged, so the suite stays on the serial schedule.
+- `test/v234.py`: the HUD check is "one line, timer clear of the badge", not "the line box is at most 20 px", which failed on a system font whose 12 px line is 21 px tall. The fixed sleeps around the board are gone. The multi-Replant sims are unchanged.
+- `tools/test_all.py`: `v240` stays serial. `v234` and `v249` are not load-sensitive.
+
+### Added
+- `test/v249.py`: the same tap and HUD checks on desktop, iPhone 13 and Pixel 7, a long amount that must not cover the timer, landscape, and v2.39 / v2.33 / v2.24 / damaged saves.
+
+### Unchanged
+- Overflow routing, order-chain rewards, recipes and costs. Logs stay raw material and are never sold. A save from v2.39, v2.33 or v2.24 still loads.
+
 ## [2.48] — 2026-11-07
 
 **Calm advisor badges on phones (maintenance item 8, part 3).** v2.44 cleared the info pills from a late-game phone at the fit zoom, and the Bottleneck Advisor was still pinning a round "waiting on X" badge on every starved building.

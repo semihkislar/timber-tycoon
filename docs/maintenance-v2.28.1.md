@@ -83,7 +83,7 @@ In priority order, with the reason each was left:
    may not find it.
 10. *(Done in v2.45: `tools/test_all.py` runs independent suites in parallel and the load-sensitive suites serially, with per-suite logs and a JSON summary; the v28 soak can be shortened with `--quick`.)* **Test speed.** The suite takes about 10 minutes on 4 workers.
     - `v28` (perf) and `v225` (timing) are still sensitive to machine load and pass when rerun alone.
-    - A deterministic clock (`TT.simulate`) instead of `wait_for_timeout` in those checks would make them stable. The v2.45 scheduler keeps those checks away from parallel CPU load; further in-test clock conversion remains optional.
+    - *(Done in v2.49 for the two suites that were still flaking: `test/_pace.py` freezes `Date.now()` so `v240`'s full-yard tap and `v234`'s HUD order line no longer race the live loop, and the fixed sleeps in those suites are gone. `v28` and `v225` stay on the serial schedule. `v240` stays there too, for its frame-cost check and the balance sims.)* A deterministic clock (`TT.simulate`) instead of `wait_for_timeout` in the remaining timing checks would make them stable. The v2.45 scheduler keeps those checks away from parallel CPU load.
 
 ## (b) New feature ideas
 Effort: S ≈ a day, M ≈ 2–3 days, L ≈ a week or more.
