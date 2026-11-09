@@ -114,7 +114,8 @@ function lineUpHtml(id){
   const L=upLvl(uid),N=upMax(u);
   if(L>=N) return `<div class="bp-yield">✔ ${u.icon} <b>${u.name}</b> Lv ${L}/${N} · ${upDesc(u,L)}</div>`;
   const nxt=L+1,ok=upReqOk(u,nxt);
-  const tail=ok?` · next 🪙${fmt(upCost(u,nxt))} in Upgrades`:` · ${L?upReqTxt(u,nxt):BMAP[id].name+' Lv 2'} to unlock`;
+  const why=L?upReqTxt(u,nxt):(u.lock?u.lock():BMAP[id].name+' Lv 2');
+  const tail=ok?` · next 🪙${fmt(upCost(u,nxt))} in Upgrades`:` · ${why} to unlock`;
   return `<div class="bp-yield">${u.icon} <b>${u.name}</b>${L?` Lv ${L}/${N}`:''}: ${upDesc(u,Math.max(1,L))}${tail}</div>`;
 }
 let bpSig='';
@@ -151,8 +152,8 @@ function updateBuildingSheet(){
   const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f*bInMult(b.id))+' / '+fr(v*sp*bInMult(b.id)):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],chipper:['🍂 Chip yield','chips per log',25,chipYieldAt]}[b.id];   // v2.29.1: chipper too   // v2.24: Peeler + Plywood Mill too
-  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:'')+lineUpHtml(b.id);   // v2.47: the line's ×2 upgrade · v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
+  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],chipper:['🍂 Chip yield','chips per log',25,(l)=>chipYieldAt(l)*reliefMul('chipper',l)],carpentry:['🪑 Chair yield','from the same planks',56,(l)=>reliefMul('carpentry',l)]}[b.id];   // v2.50: chair yield once Chair Line is owned   // v2.29.1: chipper too   // v2.24: Peeler + Plywood Mill too
+  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:(YL&&st.lvl>=YL[2]-10&&(b.id!=='carpentry'||reliefMul('carpentry')>1.001)?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:''))+lineUpHtml(b.id);   // v2.47: the line's ×2 upgrade · v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
@@ -227,7 +228,7 @@ function updateMarket(){
   }
 }
 function baseUpgPrice(id){
-  const m={chop:1,chopPct:0,chopAxe:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
+  const m={chop:1,chopPct:0,chopAxe:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1},chipLine:0,chairLine:0};
   RES.forEach(r=>m.price[r.id]=1); COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1);
   for(const u of UPGRADES){const L=upLvl(u.id);if(L) upApply(u,m,L);}
   return m.price[id]*m.priceAll;

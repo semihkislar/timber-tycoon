@@ -73,7 +73,7 @@ with sync_playwright() as p:
     ok(abs(r[2]/r[0]-3)<1e-9 and abs(r[3]/r[0]-3**9)<1e-3*3**9 and (r[4] is None or r[4]>1e300),'×3 per level, MAX at Lv 10')
     r=E(pg,"(()=>{S.coins=1e15;const c=cdCost(),c0=S.coins;const a=cdBuy();return [a,cdLvl(),c0-S.coins,c,!!S.ach.drone1];})()")
     ok(r[0] and r[1]==1 and abs(r[2]-r[3])/r[3]<1e-9 and r[4],f'building the Drone Port spends its cost and earns Air Freight ({r})')
-    r=E(pg,"(()=>{S.coins=1e30;for(let k=0;k<4;k++) cdBuy();const a=!!S.ach.drone5&&!S.ach.drone10;for(let k=0;k<20;k++) cdBuy();return [cdLvl(),a,!!S.ach.drone10];})()")
+    r=E(pg,"(()=>{delete S.ach.drone5;delete S.ach.drone10;S.coins=1e30;for(let k=0;k<4;k++) cdBuy();const a=!!S.ach.drone5&&!S.ach.drone10;for(let k=0;k<20;k++) cdBuy();return [cdLvl(),a,!!S.ach.drone10];})()")
     ok(r==[10,True,True],f'Long Range at Lv 5, Sky Highway at Lv 10, caps at Lv 10 ({r})')
     ok(E(pg,"(()=>{const a=ACH.filter(x=>/^drone(1|5|10)$/.test(x.id));return a.length===3&&a.every(x=>x.g==='sys');})()"),'3 drone trophies among the system trophies')
     # ---- the scene: fleet, pad, calm flights, shadows, cached sprites ----

@@ -51,7 +51,7 @@ Other checks:
 ## (a) Improvement areas found but not fixed
 In priority order, with the reason each was left:
 
-1. **Structural chip and chair shortage.**
+1. *(Done in v2.50: Drum Chipper and Chair Line, leveled yield from the same logs and the same planks. They unlock after a Replant, Legacy 25, and only grow once the Wood Chipper is past Lv 28 and Carpentry past Lv 56, so the opening minutes and the early bot stay as they were. At equal levels the Pellet Press and Paper Mill stop waiting on chips from Lv 50, and Cabinets, the Showroom and the Boat Yard stop waiting on chairs from Lv 59. The v2.24 plywood check stays near 0 %.)* **Structural chip and chair shortage.**
    - The greedy sim shows Pellet Press and Paper Mill chips-bound, and Cabinets, Showroom and Boat Yard chairs-bound, whenever
      every building is levelled evenly.
    - Fixing it properly means changing early recipes (Chipper, Carpentry), which changes the first minutes of every run.

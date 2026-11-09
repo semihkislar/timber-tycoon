@@ -100,8 +100,8 @@ with sync_playwright() as p:
         snap(pg,'mobile-before.png'); pg.close()
     # ---------- desktop: unchanged, including Supply Flow ----------
     pg=page()
-    ok(ver(E(pg,'TT.VERSION'))==(2,48),f"VERSION is 2.48 ({E(pg,'TT.VERSION')})")
-    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and m.group(1)=='2.48','sw cache is v2.48')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,48),f"VERSION >= 2.48 ({E(pg,'TT.VERSION')})")
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,48),'sw cache bumped to >= v2.48')
     html=open(ROOT+'/index.html').read(); ok('js/advisor.js' in html and 'js/declutter.js' in html,'index.html loads advisor and declutter')
     ok('advCalmAllow' in open(ROOT+'/js/advisor.js').read(),'the gate lives next to advBadge')
     note=E(pg,"document.querySelector('#dcSet small').textContent")
