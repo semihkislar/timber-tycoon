@@ -51,7 +51,7 @@ with sync_playwright() as p:
     r=E(pg,"""(()=>{const o=[];for(const [id,bid] of %s){const u=UPGRADES.find(x=>x.id===id);o.push({id,bid,name:u&&u.name,cost:u&&u.cost,base:BMAP[bid].cost,max:u&&upMax(u),ref:(UPG_REF[id]||[]).join(','),
       ws:WS_DEF[bid]&&WS_DEF[bid].length===3&&WS_DEF[bid][1][3]==='spd',line:LINE_UP[bid]});}return {o,mil:['peeler','beamsaw','glulam'].every(id=>MIL.indexOf(id)>=0),
       ply:RNMAP.plywood&&RNMAP.plywood.unlock==='plymill'&&!!RNMAP.coldpress&&!!RNMAP.grading,n:UPGRADES.length,logs:canSell('logs')};})()"""%json.dumps(LINES))
-    ok(r['n']==31 and r['logs'] is False and r['mil'] and r['ply'],f"31 upgrades, logs unsellable, mill research + plywood nodes ({r['n']})")
+    ok(r['n']==33 and r['logs'] is False and r['mil'] and r['ply'],f"33 upgrades, logs unsellable, mill research + plywood nodes ({r['n']})")
     ok(all(x['line']==x['id'] and x['ws'] and x['max']==5 and x['ref']=='b,'+x['bid'] and x['cost']==x['base']*15 for x in r['o']),f"each line is 15× its building, max 5, gated on that building ({r['o']})")
     # Locked until the building is Lv 2. Lv 1 is exactly ×2. Lv 2 needs Lv 25 and costs ×12. Lv 5 is ×2.4.
     r=E(pg,"""(()=>{const out=[];S.coins=1e18;S.upgrades={};S.runCS=1;for(const [id,bid] of %s){const u=UPGRADES.find(x=>x.id===id);

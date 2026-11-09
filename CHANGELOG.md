@@ -5,6 +5,44 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.50] — 2026-11-09
+
+**Chips and chairs catch up in the mid game (maintenance (a) 1).** With every building at the same level, the Wood Chipper's recipe (6 chips) cannot feed a Pellet Press (20) and a Paper Mill (40), and Carpentry (1 chair) cannot feed Cabinets, the Luxury Showroom and the Boat Yard (2 chairs each, and a higher base speed). The v2.29.1 chip-yield curve closes the chip gap only around Lv 100. Changing the early recipes was rejected before: a Chipper at ×2 speed made the first five minutes about 10× faster, and a cheaper Paper Mill or Boat Yard brought the plywood shortage back.
+
+### Added
+- **Drum Chipper** and **Chair Line**, two leveled upgrades. They raise yield, not speed: the same logs go in, more chips come out; the same planks go in, more chairs come out.
+  - Drum Chipper: ×1 through Lv 28, then up to ×4 at Lv 50 when the line is Lv 1. A Lv 50 Chipper can buy the line to Lv 3, which is ×4.6. Lv 5 is ×5.2, and it needs the Chipper at Lv 200, like the other lines.
+  - Chair Line: ×1 through Lv 56, then up to ×26 at Lv 60 when the line is Lv 1. At the Lv 3 a Lv 60 workshop can buy, that is ×31. Lv 5 is ×36. The curve starts only once the Plywood Mill can feed Cabinets and the Boat Yard, so the extra chairs do not bring the plywood pinch back.
+- Both need Forest Legacy 25 (the Tier II gate, one Replant). A fresh run cannot buy them.
+- The building sheet names the line and shows the live yield. The recipe line is the base (6 logs → 6 chips, 4 planks → 1 chair), before yield. Chip yield is `base 1 × level curve × Drum Chipper`. Each line shows its own multiplier now and at Lv 5, so "×4" is not read as the ×13.80 total and "×26" is not read as a cap the line has not reached. Buying stays on the Upgrades list.
+
+### Changed
+- **What the lines cost.** The catalog sticker is still 15× the building's first level (the same ratio as Peeler Knives). That sticker is pocket change once the building is at the level that unlocks the line: a Lv 60 Chipper upgrade was 34.1M beside "Drum Chipper next 180K", and a Lv 60 workshop was 451M beside "Chair Line next 1.44M". `upCost` now charges the larger of
+  - 15× one more level of that building, at the higher of its unlock level (28 / 56) and its current level, and
+  - 30 seconds of income (`RELIEF_SEC`, the same income reference as insurance),
+  then ×12 per level, the way every other line grows and the way Sharper Axes keeps a late floor so the number cannot go tiny.
+  Forest value scales the building cost and the income floor, so after a Replant the price is still a real purchase. A quiet income at the unlock level pays exactly 15× the building's current upgrade. A 1B/s income pays 30 seconds of it instead.
+- `test/v250.py`: yield is output only (logs and planks in do not change, speed does not change), gates, the price at unlock is 15× that building's current upgrade and at least 30 seconds of income (forest value ×1/×50/×675/×1e6/×1e12, and again at Lv 60), the opening script matches v2.49, equal-level bound time vs v2.49, Replant clears the lines, v2.49 / v2.39 / v2.33 / v2.24 and damaged saves, desktop click and iPhone 13 / Pixel 7 touch, release shots, no console errors or 404s.
+- `test/v232.py` clears the Drone Port trophies before the Lv 5 / Lv 10 check. The steady-state sim sets the port to Lv 10, and a live-loop tick in that gap was awarding Sky Highway before the climb.
+
+### Balance (equal levels, every non-repeatable research node, workstations at the level gates, each new line bought as far as that level allows)
+
+Chips-bound time is the share of the steady run where the Pellet Press or the Paper Mill is waiting on chips (fed under 95 %). Chairs-bound time is the same for chairs. Fed is the share of full speed the building actually runs at.
+
+| Level | Chips-bound, v2.49 | Chips-bound, v2.50 | Chairs-bound, Cabinets & Boat Yard | Chairs-bound, Showroom | Plywood-bound |
+|---|---|---|---|---|---|
+| 40 | 100 % (fed 25 %) | 100 % (fed 53 %) | 100 % → 100 % (Chair Line not open) | 100 % → 100 % | 0 % → 0 % |
+| 50 | 100 % (fed 31 %) | **0 %** (fed 100 %) | 100 % → 100 % | 100 % → 100 % | 0 % → 0 % |
+| 60 | 100 % (fed about 50 %) | **0 %** | 100 % → **0 %** (fed 100 %) | 100 % → **0 %** (now waits on furniture) | 0 % → 0 % |
+| 80 | 100 % (fed 71 %) | **0 %** | 100 % → **0 %** | 100 % → **0 %** | 0 % → 0 % |
+| 100 | 0 % (the v2.29.1 curve) | 0 % | 100 % → **0 %** | 100 % → **0 %** | 0 % → 0 % |
+| 150 | 0 % | 0 % | 100 % → **0 %** | 100 % → **0 %** | 0 % → 0 % |
+
+The Showroom's next limit is furniture, which Chair Line does not make. Cabinets and the Boat Yard run at full speed from Lv 59 without waiting on plywood.
+
+### Unchanged
+- Recipes, including the Wood Chipper, Carpentry, the Paper Mill and the Boat Yard. Overflow routing and order rewards. Logs stay raw material and are never sold. The first minutes of a run match v2.49 (the early script and `test/balance.py`). A save from v2.49, v2.39, v2.33 or v2.24 still loads.
+
 ## [2.49] — 2026-11-08
 
 **Faster, deterministic tests, and a phone order line that keeps its timer.** The Log Yard tap checks and the HUD order-line check were racing the live 100 ms loop, or measuring a font's line box. Gameplay, recipes, prices and overflow rules are unchanged.

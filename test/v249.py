@@ -53,8 +53,8 @@ with sync_playwright() as p:
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
         pg.goto(URL,wait_until='domcontentloaded'); ready(pg); return pg
     pg=page(); E(pg,QUIET)
-    ok(ver(E(pg,'TT.VERSION'))==(2,49),f"VERSION is 2.49 ({E(pg,'TT.VERSION')})")
-    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and m.group(1)=='2.49','sw cache is v2.49')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,49),f"VERSION >= 2.49 ({E(pg,'TT.VERSION')})")
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,49),'sw cache bumped to >= v2.49')
     css=open(ROOT+'/css/style.css').read()
     ok('line-height:16px' in css and '#orderCard.active.chain{width:calc(100vw - 92px)' in css,'the order line is locked to one row, and the phone chain card keeps the FAB clearance')
     # ---------- rules, in one turn, then a real tap with the yard still full ----------

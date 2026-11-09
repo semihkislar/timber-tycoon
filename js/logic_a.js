@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.49';
+const VERSION='2.50';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -171,9 +171,16 @@ const UPGRADES=[
   {id:'carriage',icon:'🪜',name:'Log Carriage',desc:'Beam Saw speed ×2',cost:3e7,req:()=>bl('beamsaw')>=2,apply:m=>m.bld.beamsaw*=2},
   {id:'daylight',icon:'🟧',name:'Daylight Press',desc:'Plywood Mill speed ×2',cost:2.25e8,req:()=>bl('plymill')>=2,apply:m=>m.bld.plymill*=2},
   {id:'rfcure',icon:'📡',name:'RF Curing',desc:'Glulam Plant speed ×2',cost:3.75e8,req:()=>bl('glulam')>=2,apply:m=>m.bld.glulam*=2},
+  // v2.50 (maintenance a.1): chip and chair YIELD, not speed. Speed ×2 on the Chipper made the first minutes ~10× faster,
+  // and a cheaper Paper Mill / Boat Yard recipe brought the plywood pinch back. These lines add output from the same logs
+  // and the same planks, and only after a Replant (Legacy 25) and a mid-game building level, so a fresh run is unchanged.
+  // The catalog sticker stays 15× the building's first level (the v2.47 ratio). upCost does not charge that sticker:
+  // at Lv 28 / Lv 56 it would be pocket change next to the building's own upgrade. See reliefAsk.
+  {id:'drum',icon:'🌀',name:'Drum Chipper',desc:'Multiplies the chip curve (same logs) by up to ×4',cost:15000,req:()=>bl('chipper')>=28&&(S.legacy||0)>=25,lock:()=>((S.legacy||0)>=25?'':'Forest Legacy 25 · ')+'Wood Chipper Lv 28',apply:m=>m.chipLine=1},
+  {id:'chairline',icon:'🪑',name:'Chair Line',desc:'Multiplies the chair recipe (same planks) by up to ×26',cost:120000,req:()=>bl('carpentry')>=56&&(S.legacy||0)>=25,lock:()=>((S.legacy||0)>=25?'':'Forest Legacy 25 · ')+'Carpentry Workshop Lv 56',apply:m=>m.chairLine=1},
 ];
-/* building → its v2.47 line upgrade (the sheet names it; the buy still lives on the Upgrades list, like Steam Saw) */
-const LINE_UP={peeler:'peelknife',beamsaw:'carriage',plymill:'daylight',glulam:'rfcure'};
+/* building → the line upgrade named on its sheet (the buy still lives on the Upgrades list, like Steam Saw) */
+const LINE_UP={peeler:'peelknife',beamsaw:'carriage',plymill:'daylight',glulam:'rfcure',chipper:'drum',carpentry:'chairline'};
 /* v2.22 leveled upgrades (docs/stations-v2.22.md §1): every upgrade is a line Lv 0 → N. Lv 1 = the old one-time upgrade;
    each further level scales the Lv-1 bonus by g(L)=1+0.1·(L−1). Cost ×12 per level. Lv 2+ need the thing the upgrade is about. */
 const UPG_MAX={sawdust:1,alarm:3,sprinkler:3}, UPG_GROW=12, UPG_STEP=.1;
@@ -181,7 +188,8 @@ const UPG_REF={sharp:['k'],steel:['c','lumberjack'],steamsaw:['b','sawmill'],oil
   diesel:['c','truck'],conveyor:['n'],jigs:['b','carpentry'],dryer:['b','pellet'],goldaxe:['k'],gps:['c','harvester'],export:['n'],bleach:['b','paper'],heattreat:['b','kiln'],
   ai:['c','drone'],automation:['b','furniture'],brand:['b','furniture'],logistics:['n'],rotors:['c','heli'],alarm:['b','kiln'],spades:['p','planter'],fert:['p','planter'],
   elite:['p','team',[0,0,5,10,20,40]],irrig:['p','nursery',[0,0,2,4,7,10]],sprinkler:['b','kiln'],
-  peelknife:['b','peeler'],carriage:['b','beamsaw'],daylight:['b','plymill'],rfcure:['b','glulam']};
+  peelknife:['b','peeler'],carriage:['b','beamsaw'],daylight:['b','plymill'],rfcure:['b','glulam'],
+  drum:['b','chipper'],chairline:['b','carpentry']};
 const UPG_TH={c:[0,0,15,30,60,100],p:[0,0,10,25,50,100],b:[0,0,25,50,100,200],n:[0,0,5,7,9,11],k:[0,0,200,600,1500,4000]};
 function upLvl(id){const v=S.upgrades&&S.upgrades[id];return v===true?1:(+v||0);}
 function upMax(u){return UPG_MAX[u.id]||5;}
@@ -195,7 +203,7 @@ function upReqTxt(u,L){const r=UPG_REF[u.id]||['n'],n=upNeed(u,L);
   if(r[0]==='b') return `${BMAP[r[1]].name} Lv ${n}`;if(r[0]==='k') return `${fmt(n)} taps this run`;return `${n} buildings built`;}
 function upDesc(u,L){if(L<=1||upMax(u)===1) return u.desc;const g=upG(L),r2=x=>{const v=Math.round(x*100)/100;return (v%1?v.toFixed(v*10%1?2:1):String(v));};
   return u.desc.replace(/×(\d+(?:\.\d+)?)|−(\d+)%|(\d+)%/g,(m0,a,b,c)=>a?'×'+r2(1+(+a-1)*g):b?'−'+r2(Math.min(80,+b*g))+'%':r2(+c*g)+'%');}
-const NEUTRAL_M=()=>{const m={chop:1,chopPct:0,chopAxe:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1}};
+const NEUTRAL_M=()=>{const m={chop:1,chopPct:0,chopAxe:0,col:{},colAll:1,bld:{},bldAll:1,price:{},priceAll:1,sawdust:false,fire:1,grow:1,yield:1,plantT:{planter:1,team:1,nursery:1,sdrone:1},chipLine:0,chairLine:0};
   COLLECTORS.forEach(c=>m.col[c.id]=1); BUILDINGS.forEach(b=>m.bld[b.id]=1); RES.forEach(r=>m.price[r.id]=1); return m;};
 const _upD={};
 function upDiff(u){if(_upD[u.id]) return _upD[u.id];const m0=NEUTRAL_M(),m1=NEUTRAL_M();u.apply(m1);const d=[];
@@ -568,6 +576,17 @@ const YIELD_BLD={sawmill:1,peeler:1,plymill:1};
    same logs, and from Lv 100 every milestone adds ×1.6 (like the Sawmill curve, one milestone later). Lv ≤ 25 is unchanged, so the
    first minutes of a run play exactly as before. */
 function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,msCount(l)-3));}
+/* v2.50 yield relief (Drum Chipper / Chair Line). M.chipLine / M.chairLine is the upgrade's level scale g(L)
+   (1 at Lv 1, 1.2 at Lv 3, 1.4 at Lv 5). The curve stays ×1 until the building is past the opening of a run,
+   then rises to `cap` at from+span. Same inputs: it multiplies chainYield, not bSpeed. */
+const RELIEF={drum:{from:28,span:22,cap:4},chairline:{from:56,span:4,cap:26}};
+/* Seconds of income for Lv 1. Each further level still costs ×12, same as every other line.
+   30 s is the short end of the insurance / fire-station ladders: long enough that the
+   number is not a leftover coin, short enough that a running factory can buy Lv 1. */
+const RELIEF_SEC=30;
+function reliefMul(id,lvl){const key=id==='chipper'?'drum':id==='carpentry'?'chairline':'';const spec=RELIEF[key];if(!spec||!M) return 1;
+  const s=key==='drum'?M.chipLine:M.chairLine;if(!(s>0)) return 1;const L=lvl==null?((S.buildings[id]&&S.buildings[id].lvl)||0):lvl;
+  if(!(L>spec.from)) return 1;const t=Math.min(1,(L-spec.from)/spec.span);const cap=1+(spec.cap-1)*s;return 1+(cap-1)*t;}
 /* The Plywood Mill gets an early start too (+5 % per level from Lv 10): otherwise the extra paper just moves the wait to plywood
    (Parquet and the Toy Workshop need both). The old Sawmill-style curve still applies wherever it is higher. */
 /* v2.39 late-game plywood balance. Five workshops (Parquet, Cabinets, Toys, Boats, Houses) wait on one Plywood Mill, and it fell
@@ -599,7 +618,7 @@ function plyBal(){const st=S.buildings.plymill,on=st&&st.lvl>0&&(typeof bldUnloc
   const made=on?BMAP.plymill.out.plywood*bSpeed('plymill')*bOutMult('plymill'):0;let need=0;
   for(const b of plyUsers()){const s2=S.buildings[b.id];if(!s2||!s2.lvl||!s2.on||(typeof bldUnlocked==='function'&&!bldUnlocked(b.id))) continue;need+=b.inp.plywood*bSpeed(b.id)*bInMult(b.id);}
   return {made,need,r:need>0?made/need:Infinity,own:M.bld.plymill,par:plyParity(),res:plyRes()};}
-function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
+function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl)*reliefMul('chipper',st.lvl);if(id==='carpentry') return reliefMul('carpentry',st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
 function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
@@ -740,7 +759,26 @@ function simulateOffline(sec){
 /* ===================== COSTS & PURCHASES ===================== */
 /* v2.18 run cost scale: everything you rebuy each run is priced in this run's 'forest value' (set at Replant from your
    Legacy + Fertile Soil, see js/replant.js). Kept infrastructure (fire station, power plant, yards, harbour, managers) is not scaled. */
-function upCost(u,L){L=L||Math.min(upMax(u),upLvl(u.id)+1);return u.cost*cs()*Math.pow(UPG_GROW,L-1);}
+/* v2.50: Drum Chipper and Chair Line open at Wood Chipper Lv 28 and Carpentry Lv 56.
+   Peeler Knives is 15× the Peeler's first level, and that is ~10× one upgrade because you buy it at Lv 2.
+   The same sticker at Lv 28 / Lv 56 is pocket change next to the building button (the v2.46 axe floor is the
+   other pattern that keeps a late number from going tiny). Charge the larger of:
+   - 15× one more level of that building, measured at the higher of its unlock level and its current level, and
+   - RELIEF_SEC seconds of income (mishInc: live income, this run's best income, and forest value).
+   Forest value sits inside the building cost and inside mishInc, so a Replant cannot bring the sticker back.
+   Further levels stay ×12. Every other upgrade is unchanged. */
+function reliefAsk(u,grow){
+  const spec=RELIEF[u.id]; if(!spec) return 0;
+  const id=u.id==='drum'?'chipper':'carpentry', b=BMAP[id];
+  const lv=Math.max(spec.from, +bl(id)||0);
+  const one=b.cost*cs()*Math.pow(b.scale, lv);
+  let inc=typeof mishInc==='function'?mishInc():2*cs();
+  if(!(inc>0)||!isFinite(inc)) inc=2*cs();
+  const byBld=(isFinite(one)&&one>0)?15*one*grow:0;
+  return Math.max(byBld, RELIEF_SEC*inc*grow);
+}
+function upCost(u,L){L=L||Math.min(upMax(u),upLvl(u.id)+1);const grow=Math.pow(UPG_GROW,L-1),base=u.cost*cs()*grow;
+  return (typeof RELIEF==='object'&&RELIEF[u.id])?Math.max(base,reliefAsk(u,grow)):base;}
 function treeCost(t){return t.cost*cs();}
 function cs(){return (S&&S.runCS>0)?S.runCS:1;}
 function bulkCost(base,scale,owned,n){base*=cs();return base*Math.pow(scale,owned)*(Math.pow(scale,n)-1)/(scale-1);}

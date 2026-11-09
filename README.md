@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.49-6b8e23" alt="version 2.49">
+  <img src="https://img.shields.io/badge/version-2.50-6b8e23" alt="version 2.50">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,14 +30,15 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.49: The order timer stays readable
-A project on a phone was letting its countdown slide under the 🔗 step badge. The progress line now stays on one line: the timer and the badge stay clear of each other, and a very long amount ellipsizes instead of covering them. Nothing else about orders changed. The tests that watch a full Log Yard, and this line, no longer wait on the live clock, so they finish faster and fail the same way every time.
+### New in v2.50: Chips and chairs catch up
+Pellet Press and the Paper Mill were waiting on chips, and Cabinets, the Luxury Showroom and the Boat Yard on chairs, whenever every building sat at the same level. **Drum Chipper** gets more chips out of the same logs from Wood Chipper Lv 28, and **Chair Line** gets more chairs out of the same planks from Carpentry Lv 56. Both are bought from the Upgrades list after your first Replants (Forest Legacy 25). The price is 15× that building's current upgrade, and at least 30 seconds of income, so it still matters late in a run and after a Replant. The first minutes of a run are unchanged, and logs are still not for sale.
 
-<p align="center"><img src="screenshots/history/v2.49/mobile-order.png" alt="v2.49: phone order card, timer clear of the project step" width="360"></p>
+<p align="center"><img src="screenshots/history/v2.50/mobile-yield.png" alt="v2.50: phone Wood Chipper card, Drum Chipper yield" width="360"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.49** | ⏱️ **Order timer stays readable** | On a phone, a project's countdown stays clear of the 🔗 step badge. A very long amount ellipsizes instead of covering the timer. |
 | **v2.48** | 📱 **Calm waiting badges** | A late-game phone at the fit zoom hides spare-stock and mild "waiting" badges. The worst real bottleneck still shows (up to three), and the building you point at keeps its badge. Zoom in, or set Scene labels to Always, and every badge comes back. |
 | **v2.47** | 🔪 **Upgrades for the newer lines** | Peeler Knives, Log Carriage, Daylight Press and RF Curing give the Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant a leveled ×2 (Lv 5 is ×2.4). Prices follow forest value. The early game is unchanged. |
 | **v2.46** | 🪓 **Axes that keep up** | Sharper Axes and Golden Axe are worth at least 1 % and 4 % of your logs/s per tap, so chopping still matters once the crews are fast. The early game keeps the old ×2 / ×5. |
