@@ -73,7 +73,7 @@ with sync_playwright() as p:
       rec:[BMAP.chipper.inp.logs,BMAP.chipper.out.chips,BMAP.carpentry.inp.planks,BMAP.carpentry.out.chairs,BMAP.pellet.inp.chips,BMAP.paper.inp.chips,BMAP.cabinetry.inp.chairs,BMAP.showroom.inp.chairs,BMAP.boatyard.inp.chairs],
       cost:[UPGRADES.find(u=>u.id==='drum').cost,UPGRADES.find(u=>u.id==='chairline').cost]})""")
     ok(r['n']==33 and r['logs'] is False,f"33 upgrades, logs unsellable ({r['n']})")
-    ok(r['rec']==[6,6,4,1,20,40,2,2,2] and r['cost']==[15000,120000],f"recipes unchanged, lines priced at 15× the building ({r})")
+    ok(r['rec']==[6,6,4,1,20,40,2,2,2] and r['cost']==[15000,120000],f"recipes unchanged, catalog stickers stay 15× the first building level ({r})")
     # Owned or not, the curve is ×1 through the opening levels. Legacy 0 cannot buy either line.
     r=E(pg,"""()=>{S.legacy=0;S.upgrades={drum:5,chairline:5};S.buildings.chipper.lvl=25;S.buildings.carpentry.lvl=20;S.buildings.chipper.on=S.buildings.carpentry.on=true;M=computeMods();
       const early=[reliefMul('chipper'),reliefMul('carpentry'),chainYield('chipper'),bSpeed('chipper')];
@@ -93,15 +93,39 @@ with sync_playwright() as p:
       return {a,c,h0,h1,cap:1+(4-1)*1.2,hcap:1+(26-1)*1.2};}""")
     ok(abs(r['c']['logs']-r['a']['logs'])<1e-6*r['a']['logs'] and abs(r['c']['sp']-r['a']['sp'])<1e-9 and abs(r['c']['chips']/r['a']['chips']-r['cap'])<1e-6,f"Lv 50 Drum Chipper: same logs, same speed, ×4.6 chips ({r['a']['chips']:.4g} → {r['c']['chips']:.4g})")
     ok(abs(r['h1']['planks']-r['h0']['planks'])<1e-6*max(1,r['h0']['planks']) and abs(r['h1']['sp']-r['h0']['sp'])<1e-9 and abs(r['h1']['y']-r['hcap'])<1e-9 and abs(r['h1']['chairs']/r['h0']['chairs']-r['hcap'])<1e-6,f"Lv 60 Chair Line: same planks, same speed, ×31 chairs ({r['h0']['chairs']:.4g} → {r['h1']['chairs']:.4g})")
-    # Forest value keeps both prices at 15× the building. A huge Replant does not make them pocket change.
-    r=E(pg,"""()=>{const o=[];S.upgrades={};S.buildings.chipper.lvl=40;S.buildings.carpentry.lvl=60;S.legacy=5000;
-      for(const [id,bid,k] of [['drum','chipper',15],['chairline','carpentry',15]]){const u=UPGRADES.find(x=>x.id===id);
-        for(const cs of [1,50,675,1e6,1e12]){S.runCS=cs;S.upgrades[id]=0;S.coins=upCost(u)*3;const c0=S.coins,cost=upCost(u),bld=bulkCost(BMAP[bid].cost,BMAP[bid].scale,0,1);
-          TT.buyUpgrade(id);o.push([id,cs,cost,u.cost*cs,cost/bld,c0-S.coins]);}}
-      S.runCS=1;return o;}""")
-    ok(all(abs(cost-base)<1e-6*base and abs(ratio-15)<1e-9 and abs(paid-cost)<1e-6*max(1,cost) for _id,_cs,cost,base,ratio,paid in r),f'both lines stay 15× the building × forest value ({[(x[0],x[1],x[4]) for x in r]})')
+    # At the unlock level the price is 15× that building's current upgrade (not the Lv 1 sticker) and at least
+    # RELIEF_SEC seconds of income. Forest value scales the building side, so a Replant is not pocket change.
+    r=E(pg,r"""()=>{
+      const quiet=()=>{coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}};
+      const one=(bid,lv)=>{const b=BMAP[bid];return b.cost*cs()*Math.pow(b.scale,lv);};
+      const rows=[];
+      S.legacy=5000;S.upgrades={};quiet();
+      for(const [id,bid,lv] of [['drum','chipper',28],['chairline','carpentry',56]]){
+        const u=UPGRADES.find(x=>x.id===id);
+        S.buildings[bid].lvl=lv;S.upgrades[id]=0;
+        for(const cs of [1,50,675,1e6,1e12]){
+          S.runCS=cs;quiet();S.upgrades[id]=0;const cost=upCost(u,1),bld=one(bid,lv);S.coins=cost*3;const c0=S.coins;
+          const bought=TT.buyUpgrade(id)===true;rows.push({k:'bld',id,cs,ratio:cost/bld,paid:(c0-S.coins)/cost,cost,sticker:u.cost*cs});
+          S.upgrades[id]=0;}
+        S.runCS=1;quiet();S.buildings[bid].lvl=lv;S.upgrades[id]=0;coinRate=1e9;if(S.run){S.run.inc=1e9;S.run.incE=1e9;}
+        const ci=upCost(u,1),bld=one(bid,lv);
+        rows.push({k:'inc',id,cs:1,ratio:ci/(RELIEF_SEC*1e9),paid:ci/bld,cost:ci,sticker:u.cost});
+        const hi=60;S.buildings[bid].lvl=hi;S.upgrades[id]=1;quiet();
+        const cn=upCost(u,2),bh=one(bid,hi);
+        coinRate=752e6;if(S.run){S.run.inc=1504e6;S.run.incE=1504e6;}
+        const ce=upCost(u,2);
+        rows.push({k:'late',id,cs:1,ratio:cn/bh,paid:ce/(RELIEF_SEC*752e6*12),cost:ce,sticker:bh});
+      }
+      S.runCS=1;quiet();S.upgrades={};return {sec:RELIEF_SEC,rows};}""")
+    for row in r['rows']:
+        if row['k']=='bld':
+            ok(abs(row['ratio']-15)<1e-6 and abs(row['paid']-1)<1e-6 and row['cost']>row['sticker']*50,f"{row['id']} at unlock, forest ×{row['cs']:g}: 15× the current upgrade, not the {row['sticker']:.3g} sticker ({row['cost']:.3g})")
+        elif row['k']=='inc':
+            ok(abs(row['ratio']-1)<1e-6 and row['paid']>15,f"{row['id']} at unlock with 1B/s income: 30s of income, above the building ({row['cost']:.3g})")
+        else:
+            ok(row['ratio']>=15*12*0.999 and abs(row['paid']-1)<1e-6 and row['cost']>row['sticker']*100,f"{row['id']} at Lv 60: next level is 15×12 the current upgrade and 30s×12 of income ({row['cost']:.3g} vs upgrade {row['sticker']:.3g})")
     # Lv 2 costs ×12 and needs the normal building gate; the description scales with the level rule.
-    r=E(pg,"""()=>{S.legacy=5000;S.runCS=1;S.coins=1e15;S.upgrades={};S.buildings.chipper.lvl=28;const u=UPGRADES.find(x=>x.id==='drum');
+    r=E(pg,"""()=>{S.legacy=5000;S.runCS=1;coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}S.coins=1e15;S.upgrades={};S.buildings.chipper.lvl=28;const u=UPGRADES.find(x=>x.id==='drum');
       const c1=upCost(u,1);TT.buyUpgrade('drum');S.buildings.chipper.lvl=24;const no=TT.buyUpgrade('drum')===false;S.buildings.chipper.lvl=28;const c2=upCost(u,2);const yes=TT.buyUpgrade('drum')===true;
       S.legacy=0;const lock=u.lock();return {r:c2/c1,no,yes,d:upDesc(u,3),lock};}""")
     ok(abs(r['r']-12)<1e-9 and r['no'] and r['yes'] and '×4.6' in r['d'] and 'Legacy' in r['lock'],f"Lv 2 costs ×12, the Lv 3 text is ×4.6, and the lock names Legacy ({r})")
@@ -160,26 +184,46 @@ with sync_playwright() as p:
     r=E(pg,"()=>{let s=0;for(let k=0;k<5;k++){S.forest.m=1e6;tick(1,false);s+=bSpeed('carpentry');}return {coin:S.coins,drum:upLvl('drum'),chair:upLvl('chairline'),lv:S.buildings.chipper.lvl,logs:S.res.logs,s,ok:isFinite(S.coins)&&isFinite(reliefMul('chipper'))&&isFinite(reliefMul('carpentry'))};}")
     ok(r['ok'] and r['coin']>=0 and r['drum']==0 and r['chair']==1 and r['lv']==0 and r['logs']==0 and r['s']>=0,f'damaged save runs ({r})')
     pg.close()
-    # Desktop: the two cards, a real click, and the Chipper sheet naming the yield.
-    SHOW='''()=>{'''+CALM+'''S.coins=1e16;S.totalEarned=1e16;S.legacy=5000;S.runCS=1;S.upgrades={};
+    # Desktop: the two cards and a real click. Income is quiet here so the charge is the building floor, not a moving income number.
+    SHOW='''()=>{'''+CALM+'''for(const a of ACH)S.ach[a.id]=1;if(S.run&&S.run.goals)for(const g of GOALS)S.run.goals[g.id]=1;
+      S.coins=1e16;S.totalEarned=1e16;S.legacy=5000;S.runCS=1;S.upgrades={};coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}
+      for(const k in S.autosell)S.autosell[k]=false;
       S.buildings.chipper.lvl=60;S.buildings.chipper.on=true;S.buildings.carpentry.lvl=60;S.buildings.carpentry.on=true;
-      M=computeMods();if(typeof ntClear==='function')ntClear();openSheet('upg');TT.render();}'''
+      M=computeMods();if(typeof ntClear==='function')ntClear();document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());
+      openSheet('upg');TT.render();}'''
+    # Late running factory: line already bought, income held by the run's income floor so the sheet price cannot decay into pocket change.
+    SHOT='''(which)=>{'''+CALM+'''for(const a of ACH)S.ach[a.id]=1;if(S.run&&S.run.goals)for(const g of GOALS)S.run.goals[g.id]=1;
+      S.coins=9.68e15;S.totalEarned=9.68e15;if(typeof dispCoins!=='undefined')dispCoins=S.coins;
+      S.legacy=80;S.runCS=1;S.upgrades={drum:1,chairline:1};
+      const lv={sawmill:60,chipper:60,kiln:45,carpentry:60,peeler:40,pellet:40,paper:36,furniture:30,beamsaw:24,glulam:16};
+      for(const id in lv){S.buildings[id].lvl=lv[id];S.buildings[id].on=true;}
+      S.collectors.lumberjack=30;S.collectors.chainsaw=12;S.collectors.truck=6;
+      for(const k in S.autosell)S.autosell[k]=false;
+      coinRate=752e6;if(S.run){S.run.inc=1504e6;S.run.incE=1504e6;}
+      M=computeMods();if(typeof ntClear==='function')ntClear();document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());
+      openSheet('bld',which);if(typeof bpSig!=='undefined')bpSig='';TT.render();
+      const el=[...document.querySelectorAll('.bp-yield')].pop();if(el)el.scrollIntoView({block:'center'});
+      return {io:document.getElementById('bpIo').innerText,desc:(document.getElementById('bpDesc')||{}).innerText||'',price:fmt(upCost(UPGRADES.find(u=>u.id===LINE_UP[which]),2))};}'''
     pg=page();E(pg,'('+SHOW+')()');pg.wait_for_timeout(400)
     ids=E(pg,"[...document.querySelectorAll('.upg-card[data-id]')].map(e=>e.dataset.id)")
     ok('drum' in ids and 'chairline' in ids and ids.index('drum')<ids.index('chairline'),f'desktop: both new lines are on offer, Drum Chipper first ({ids})')
     card=pg.locator('.upg-card[data-id="drum"]')
     ok('Drum Chipper' in card.inner_text() and '×4' in card.inner_text(),'desktop: Drum Chipper explains the chip yield')
-    E(pg,"document.querySelectorAll('#fxLayer,.toast').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
-    c0=E(pg,'S.coins');card.locator('button').click();pg.wait_for_timeout(250)
-    ok(E(pg,'upLvl("drum")')==1 and abs(E(pg,'S.coins')-(c0-15000))<1,'desktop: click buys Drum Chipper for 15K')
-    E(pg,"document.querySelectorAll('#fxLayer,.toast').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
+    E(pg,"document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
+    c0=E(pg,'''(()=>{const u=UPGRADES.find(x=>x.id==="drum");const bld=bulkCost(BMAP.chipper.cost,BMAP.chipper.scale,S.buildings.chipper.lvl,1);return [S.coins,upCost(u),bld];})()''')
+    card.locator('button').click();pg.wait_for_timeout(250)
+    ok(E(pg,'upLvl("drum")')==1 and abs(E(pg,'S.coins')-(c0[0]-c0[1]))<1 and c0[1]>=c0[2]*15*0.999 and c0[1]>1e8,f"desktop: click buys Drum Chipper for {c0[1]:.3g}, at least 15× the {c0[2]:.3g} upgrade")
+    E(pg,"document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
     bt=pg.locator('.upg-card[data-id="chairline"] button');bt.scroll_into_view_if_needed();bt.click();pg.wait_for_timeout(200)
     ok(E(pg,'upLvl("chairline")')==1,'desktop: click buys Chair Line')
-    E(pg,"document.querySelectorAll('#fxLayer,.toast').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear();openSheet('bld','chipper');TT.render()");pg.wait_for_timeout(300)
-    sheet=E(pg,"document.getElementById('bpIo').innerText")
-    ok('Drum Chipper' in sheet and 'Chip yield' in sheet and '×' in sheet,f'Chipper sheet names the line and the yield ({sheet[-200:]!r})')
+    shot=E(pg,'('+SHOT+')("chipper")')
+    ok('base recipe' in shot['desc'] and 'Chip yield' in shot['io'] and 'level curve' in shot['io'] and '×3.45' in shot['io'] and '×4.00' in shot['io'] and '×13.80' in shot['io'],f"Chipper sheet separates the curve from Drum Chipper ({shot['io'][-240:]!r})")
+    ok('×4.00 now' in shot['io'] and '×5.20 at Lv 5' in shot['io'] and 'up to ×4' not in shot['io'] and shot['price'] in shot['io'],f"Drum Chipper shows ×4 now, ×5.20 at max, and the late price {shot['price']}")
+    E(pg,"document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
     pg.locator('#sheet').screenshot(path=shot_path('desktop-yield.png'))
-    E(pg,"closeSheet();fitCamera(true)");pg.wait_for_timeout(250)
+    E(pg,"closeSheet();fitCamera(true);if(typeof ntClear==='function')ntClear();document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove())")
+    pg.wait_for_timeout(200)
+    E(pg,"document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
     pg.screenshot(path=shot_path('desktop.png'))
     pg.close()
     phones={'iPhone 13':'drum','Pixel 7':'chairline'}
@@ -190,13 +234,13 @@ with sync_playwright() as p:
         if E(pg,f'upLvl("{uid}")')!=1:
             bt.tap();pg.wait_for_timeout(300)
         ok(E(pg,f'upLvl("{uid}")')==1,f'{dev}: tap buys {uid}')
-        E(pg,"openSheet('bld','carpentry');TT.render()" if uid=='chairline' else "openSheet('bld','chipper');TT.render()")
-        pg.wait_for_timeout(300)
-        txt=E(pg,"document.getElementById('bpIo').innerText")
-        ok(('Chair Line' if uid=='chairline' else 'Drum Chipper') in txt,f'{dev}: building sheet names the upgrade')
-        E(pg,"""()=>{for(const c of COLLECTORS)S.collectors[c.id]=0;for(let k=0;k<12;k++){S.res.logs=1e8;S.res.planks=1e8;tick(.4,false);}if(typeof ntClear==='function')ntClear();TT.render();
-          const el=[...document.querySelectorAll('.bp-yield')].pop();if(el)el.scrollIntoView({block:'center'});}""")
-        pg.wait_for_timeout(200)
+        which='carpentry' if uid=='chairline' else 'chipper'
+        shot=E(pg,'('+SHOT+')('+json.dumps(which)+')')
+        if uid=='chairline':
+            ok('base recipe' in shot['desc'] and '×26.00 now' in shot['io'] and '×36.00 at Lv 5' in shot['io'] and 'base recipe stays 1 chair' in shot['io'] and 'up to ×26' not in shot['io'] and shot['price'] in shot['io'],f"{dev}: Chair Line is the multiplier, the recipe stays 1 chair, price {shot['price']} ({shot['io'][-220:]!r})")
+        else:
+            ok('Drum Chipper' in shot['io'] and '×4.00 now' in shot['io'] and '×5.20 at Lv 5' in shot['io'] and shot['price'] in shot['io'],f"{dev}: building sheet names Drum Chipper and its price {shot['price']}")
+        E(pg,"document.querySelectorAll('.toast,#fxLayer .confetti').forEach(e=>e.remove());if(typeof ntClear==='function')ntClear()")
         if dev=='iPhone 13':
             pg.locator('#sheet').screenshot(path=shot_path('mobile-yield.png'))
         else:

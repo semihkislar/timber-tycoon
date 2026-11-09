@@ -31,7 +31,7 @@ No download or account needed. It runs in any modern browser, plays well on phon
 ## ✨ Highlights
 
 ### New in v2.50: Chips and chairs catch up
-Pellet Press and the Paper Mill were waiting on chips, and Cabinets, the Luxury Showroom and the Boat Yard on chairs, whenever every building sat at the same level. **Drum Chipper** gets more chips out of the same logs from Wood Chipper Lv 28, and **Chair Line** gets more chairs out of the same planks from Carpentry Lv 56. Both are bought from the Upgrades list after your first Replants (Forest Legacy 25), and the price follows forest value. The first minutes of a run are unchanged, and logs are still not for sale.
+Pellet Press and the Paper Mill were waiting on chips, and Cabinets, the Luxury Showroom and the Boat Yard on chairs, whenever every building sat at the same level. **Drum Chipper** gets more chips out of the same logs from Wood Chipper Lv 28, and **Chair Line** gets more chairs out of the same planks from Carpentry Lv 56. Both are bought from the Upgrades list after your first Replants (Forest Legacy 25). The price is 15× that building's current upgrade, and at least 30 seconds of income, so it still matters late in a run and after a Replant. The first minutes of a run are unchanged, and logs are still not for sale.
 
 <p align="center"><img src="screenshots/history/v2.50/mobile-yield.png" alt="v2.50: phone Wood Chipper card, Drum Chipper yield" width="360"></p>
 

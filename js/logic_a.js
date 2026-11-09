@@ -174,8 +174,10 @@ const UPGRADES=[
   // v2.50 (maintenance a.1): chip and chair YIELD, not speed. Speed ×2 on the Chipper made the first minutes ~10× faster,
   // and a cheaper Paper Mill / Boat Yard recipe brought the plywood pinch back. These lines add output from the same logs
   // and the same planks, and only after a Replant (Legacy 25) and a mid-game building level, so a fresh run is unchanged.
-  {id:'drum',icon:'🌀',name:'Drum Chipper',desc:'Wood Chipper chip yield up to ×4 from the same logs',cost:15000,req:()=>bl('chipper')>=28&&(S.legacy||0)>=25,lock:()=>((S.legacy||0)>=25?'':'Forest Legacy 25 · ')+'Wood Chipper Lv 28',apply:m=>m.chipLine=1},
-  {id:'chairline',icon:'🪑',name:'Chair Line',desc:'Carpentry chair yield up to ×26 from the same planks',cost:120000,req:()=>bl('carpentry')>=56&&(S.legacy||0)>=25,lock:()=>((S.legacy||0)>=25?'':'Forest Legacy 25 · ')+'Carpentry Workshop Lv 56',apply:m=>m.chairLine=1},
+  // The catalog sticker stays 15× the building's first level (the v2.47 ratio). upCost does not charge that sticker:
+  // at Lv 28 / Lv 56 it would be pocket change next to the building's own upgrade. See reliefAsk.
+  {id:'drum',icon:'🌀',name:'Drum Chipper',desc:'Multiplies the chip curve (same logs) by up to ×4',cost:15000,req:()=>bl('chipper')>=28&&(S.legacy||0)>=25,lock:()=>((S.legacy||0)>=25?'':'Forest Legacy 25 · ')+'Wood Chipper Lv 28',apply:m=>m.chipLine=1},
+  {id:'chairline',icon:'🪑',name:'Chair Line',desc:'Multiplies the chair recipe (same planks) by up to ×26',cost:120000,req:()=>bl('carpentry')>=56&&(S.legacy||0)>=25,lock:()=>((S.legacy||0)>=25?'':'Forest Legacy 25 · ')+'Carpentry Workshop Lv 56',apply:m=>m.chairLine=1},
 ];
 /* building → the line upgrade named on its sheet (the buy still lives on the Upgrades list, like Steam Saw) */
 const LINE_UP={peeler:'peelknife',beamsaw:'carriage',plymill:'daylight',glulam:'rfcure',chipper:'drum',carpentry:'chairline'};
@@ -578,6 +580,10 @@ function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,
    (1 at Lv 1, 1.2 at Lv 3, 1.4 at Lv 5). The curve stays ×1 until the building is past the opening of a run,
    then rises to `cap` at from+span. Same inputs: it multiplies chainYield, not bSpeed. */
 const RELIEF={drum:{from:28,span:22,cap:4},chairline:{from:56,span:4,cap:26}};
+/* Seconds of income for Lv 1. Each further level still costs ×12, same as every other line.
+   30 s is the short end of the insurance / fire-station ladders: long enough that the
+   number is not a leftover coin, short enough that a running factory can buy Lv 1. */
+const RELIEF_SEC=30;
 function reliefMul(id,lvl){const key=id==='chipper'?'drum':id==='carpentry'?'chairline':'';const spec=RELIEF[key];if(!spec||!M) return 1;
   const s=key==='drum'?M.chipLine:M.chairLine;if(!(s>0)) return 1;const L=lvl==null?((S.buildings[id]&&S.buildings[id].lvl)||0):lvl;
   if(!(L>spec.from)) return 1;const t=Math.min(1,(L-spec.from)/spec.span);const cap=1+(spec.cap-1)*s;return 1+(cap-1)*t;}
@@ -753,7 +759,26 @@ function simulateOffline(sec){
 /* ===================== COSTS & PURCHASES ===================== */
 /* v2.18 run cost scale: everything you rebuy each run is priced in this run's 'forest value' (set at Replant from your
    Legacy + Fertile Soil, see js/replant.js). Kept infrastructure (fire station, power plant, yards, harbour, managers) is not scaled. */
-function upCost(u,L){L=L||Math.min(upMax(u),upLvl(u.id)+1);return u.cost*cs()*Math.pow(UPG_GROW,L-1);}
+/* v2.50: Drum Chipper and Chair Line open at Wood Chipper Lv 28 and Carpentry Lv 56.
+   Peeler Knives is 15× the Peeler's first level, and that is ~10× one upgrade because you buy it at Lv 2.
+   The same sticker at Lv 28 / Lv 56 is pocket change next to the building button (the v2.46 axe floor is the
+   other pattern that keeps a late number from going tiny). Charge the larger of:
+   - 15× one more level of that building, measured at the higher of its unlock level and its current level, and
+   - RELIEF_SEC seconds of income (mishInc: live income, this run's best income, and forest value).
+   Forest value sits inside the building cost and inside mishInc, so a Replant cannot bring the sticker back.
+   Further levels stay ×12. Every other upgrade is unchanged. */
+function reliefAsk(u,grow){
+  const spec=RELIEF[u.id]; if(!spec) return 0;
+  const id=u.id==='drum'?'chipper':'carpentry', b=BMAP[id];
+  const lv=Math.max(spec.from, +bl(id)||0);
+  const one=b.cost*cs()*Math.pow(b.scale, lv);
+  let inc=typeof mishInc==='function'?mishInc():2*cs();
+  if(!(inc>0)||!isFinite(inc)) inc=2*cs();
+  const byBld=(isFinite(one)&&one>0)?15*one*grow:0;
+  return Math.max(byBld, RELIEF_SEC*inc*grow);
+}
+function upCost(u,L){L=L||Math.min(upMax(u),upLvl(u.id)+1);const grow=Math.pow(UPG_GROW,L-1),base=u.cost*cs()*grow;
+  return (typeof RELIEF==='object'&&RELIEF[u.id])?Math.max(base,reliefAsk(u,grow)):base;}
 function treeCost(t){return t.cost*cs();}
 function cs(){return (S&&S.runCS>0)?S.runCS:1;}
 function bulkCost(base,scale,owned,n){base*=cs();return base*Math.pow(scale,owned)*(Math.pow(scale,n)-1)/(scale-1);}

@@ -107,16 +107,43 @@ function statusOf(b){
   if(bs.lim&&bs.f<0.985) return {cls:'',txt:`Slightly short on ${nm}`,f:bs.f};
   return {cls:'',txt:'✔ Running',f:bs.f};
 }
-/* v2.47: the newer lines name their ×2 upgrade on the building sheet. Buying stays on the Upgrades list, same as Steam Saw. */
+/* v2.47: the newer lines name their ×2 upgrade on the building sheet. Buying stays on the Upgrades list, same as Steam Saw.
+   v2.50: Drum Chipper and Chair Line show their own multiplier now and at max level. That number is not the chip curve
+   and not the chairs-per-log total, so it cannot be read as a second, conflicting yield. */
 function lineUpHtml(id){
   const uid=typeof LINE_UP==='object'?LINE_UP[id]:null; if(!uid) return '';
   const u=UPGRADES.find(x=>x.id===uid); if(!u) return '';
   const L=upLvl(uid),N=upMax(u);
-  if(L>=N) return `<div class="bp-yield">✔ ${u.icon} <b>${u.name}</b> Lv ${L}/${N} · ${upDesc(u,L)}</div>`;
-  const nxt=L+1,ok=upReqOk(u,nxt);
+  const nxt=L+1, ok=L<N&&upReqOk(u,nxt);
   const why=L?upReqTxt(u,nxt):(u.lock?u.lock():BMAP[id].name+' Lv 2');
-  const tail=ok?` · next 🪙${fmt(upCost(u,nxt))} in Upgrades`:` · ${why} to unlock`;
+  const tail=L>=N?'':(ok?` · next 🪙${fmt(upCost(u,nxt))} in Upgrades`:` · ${why} to unlock`);
+  if(typeof RELIEF==='object'&&RELIEF[uid]){
+    const spec=RELIEF[uid];
+    const capL=1+(spec.cap-1)*upG(Math.max(1,L||1));
+    const capMax=1+(spec.cap-1)*upG(N);
+    const live=L?reliefMul(id):0;
+    let body;
+    if(!L) body=`×${capL.toFixed(2)} at Lv 1 · ×${capMax.toFixed(2)} at Lv ${N}`;
+    else if(L>=N) body=`×${(live>1?live:capMax).toFixed(2)}`;
+    else if(live>1&&live<capL*0.999) body=`×${live.toFixed(2)} now · up to ×${capL.toFixed(2)} at this level · ×${capMax.toFixed(2)} at Lv ${N}`;
+    else body=`×${(live>1?live:capL).toFixed(2)} now · ×${capMax.toFixed(2)} at Lv ${N}`;
+    const base=id==='carpentry'?' · base recipe stays 1 chair':'';
+    const mark=L>=N?'✔ ':'';
+    return `<div class="bp-yield">${mark}${u.icon} <b>${u.name}</b>${L?` Lv ${L}/${N}`:''}: ${body}${base}${tail}</div>`;
+  }
+  if(L>=N) return `<div class="bp-yield">✔ ${u.icon} <b>${u.name}</b> Lv ${L}/${N} · ${upDesc(u,L)}</div>`;
   return `<div class="bp-yield">${u.icon} <b>${u.name}</b>${L?` Lv ${L}/${N}`:''}: ${upDesc(u,Math.max(1,L))}${tail}</div>`;
+}
+/* The level curve and Drum Chipper are different multipliers. The total is their product on the base 1 chip per log
+   (the recipe is 6 logs → 6 chips). Showing only the product looked like it disagreed with both. */
+function chipYieldHtml(st){
+  if(!st||st.lvl<15) return '';
+  const curve=chipYieldAt(st.lvl), line=reliefMul('chipper',st.lvl);
+  const nxt=chipYieldAt(st.lvl+1)*reliefMul('chipper',st.lvl+1);
+  const grow=st.lvl<25?' · grows from Lv 25':` · Lv ${st.lvl+1}: ×${nxt.toFixed(2)}`;
+  if(!(line>1.001)) return `<div class="bp-yield">🍂 Chip yield <b>×${curve.toFixed(2)}</b> chips per log from the level curve${grow}</div>`;
+  const tot=curve*line;
+  return `<div class="bp-yield">🍂 Chip yield <b>×${tot.toFixed(2)}</b> chips per log = base 1 × level curve <b>×${curve.toFixed(2)}</b> × Drum Chipper <b>×${line.toFixed(2)}</b>${grow}</div>`;
 }
 let bpSig='';
 function updateBuildingSheet(){
@@ -126,7 +153,8 @@ function updateBuildingSheet(){
   if(sig!==bpSig){bpSig=sig;
     $('bpIc').innerHTML=svgIcon(b.svg,40); $('bpName').textContent=vis?b.name:'Unknown building';
     {const tb=$('bpTier'),T=vis&&typeof tierBadge==='function'&&BTIER[b.id];tb.innerHTML=T?` ${tierBadge(b.id)}`:'';tb.title=T?TIER_N[BTIER[b.id]]:'';}
-    $('bpDesc').innerHTML=vis?`${b.desc} <b>${recipeStr(b)}</b>`:'';
+    const baseNote=(b.id==='chipper'||b.id==='carpentry')?' · base recipe, before yield':'';
+    $('bpDesc').innerHTML=vis?`${b.desc} <b>${recipeStr(b)}</b>${baseNote}`:'';
     $('bpLocked').classList.toggle('hidden',vis); $('bpMain').classList.toggle('hidden',!vis);
     $('shTitle').textContent=vis?b.name:'Empty lot';
   }
@@ -152,8 +180,8 @@ function updateBuildingSheet(){
   const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f*bInMult(b.id))+' / '+fr(v*sp*bInMult(b.id)):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],chipper:['🍂 Chip yield','chips per log',25,(l)=>chipYieldAt(l)*reliefMul('chipper',l)],carpentry:['🪑 Chair yield','from the same planks',56,(l)=>reliefMul('carpentry',l)]}[b.id];   // v2.50: chair yield once Chair Line is owned   // v2.29.1: chipper too   // v2.24: Peeler + Plywood Mill too
-  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:(YL&&st.lvl>=YL[2]-10&&(b.id!=='carpentry'||reliefMul('carpentry')>1.001)?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:''))+lineUpHtml(b.id);   // v2.47: the line's ×2 upgrade · v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
+  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt]}[b.id];   // v2.24: Peeler + Plywood Mill. Chipper and Carpentry have their own lines (v2.50).
+  const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:(YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:''))+(b.id==='chipper'?chipYieldHtml(st):'')+lineUpHtml(b.id);   // v2.47: the line's ×2 upgrade · v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
   { // v2.15.1: actionable shortage hint: who makes the input, how much is wanted, jump to the producer
