@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2.50';
+const VERSION='2.51';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -758,7 +758,8 @@ function simulateOffline(sec){
 
 /* ===================== COSTS & PURCHASES ===================== */
 /* v2.18 run cost scale: everything you rebuy each run is priced in this run's 'forest value' (set at Replant from your
-   Legacy + Fertile Soil, see js/replant.js). Kept infrastructure (fire station, power plant, yards, harbour, managers) is not scaled. */
+   Legacy + Fertile Soil, see js/replant.js). v2.42–v2.51: infrastructure kept through Replant (fire station, insurance,
+   power plant, yards, harbour, trade routes, managers) uses keptCoin(), so a Replant cannot turn it into pocket change. */
 /* v2.50: Drum Chipper and Chair Line open at Wood Chipper Lv 28 and Carpentry Lv 56.
    Peeler Knives is 15× the Peeler's first level, and that is ~10× one upgrade because you buy it at Lv 2.
    The same sticker at Lv 28 / Lv 56 is pocket change next to the building button (the v2.46 axe floor is the
@@ -781,6 +782,19 @@ function upCost(u,L){L=L||Math.min(upMax(u),upLvl(u.id)+1);const grow=Math.pow(U
   return (typeof RELIEF==='object'&&RELIEF[u.id])?Math.max(base,reliefAsk(u,grow)):base;}
 function treeCost(t){return t.cost*cs();}
 function cs(){return (S&&S.runCS>0)?S.runCS:1;}
+/* v2.51: a fixed coin sticker × this run's forest value, and — once that value leaves ×1 — at least `sec` seconds of
+   income (mishInc: live income, this run's best smoothed income, and 2× forest value). At ×1 the sticker is exact, so
+   the opening ladder and the suites that buy these systems on a running first-run factory stay on the v2.50 prices. */
+function keptCoin(base,sec){
+  const c=cs();
+  let b=+base*c;
+  if(!(b>0)||!isFinite(b)) b=(c>0&&isFinite(c)?c:1);
+  if(!(c>1)) return b;
+  let inc=typeof mishInc==='function'?mishInc():Math.max(0,+coinRate||0,2*c);
+  if(!(inc>0)||!isFinite(inc)) inc=2*c;
+  const ask=(+sec>0)?+sec*inc:0;
+  return (isFinite(ask)&&ask>b)?ask:b;
+}
 function bulkCost(base,scale,owned,n){base*=cs();return base*Math.pow(scale,owned)*(Math.pow(scale,n)-1)/(scale-1);}
 function maxAfford(base,scale,owned){base*=cs();const c=S.coins;const n=Math.floor(Math.log(c*(scale-1)/(base*Math.pow(scale,owned))+1)/Math.log(scale));return Math.max(0,n);}
 let buyMult=1;

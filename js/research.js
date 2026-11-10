@@ -132,6 +132,10 @@ function resMigrate(o){
 
 /* ---------- trade ---------- */
 const HARBOR_COST=2.5e7, HARBOR_MAX=5, SPIKE_MULT=2;
+/* v2.51: 25M ×4 per harbour level, and each city's opening fee, stay the first-run stickers.
+   After a Replant they follow forest value and these seconds of income (longer for a dearer city, so the ladder never flips). */
+const HB_SEC=[40,70,120,200,320];
+const ROUTE_SEC={ist:20,ham:35,rot:55,dxb:90,nyc:140,tyo:200};
 const CITIES=[
   {id:'ist',name:'Istanbul', flag:'🇹🇷',mode:'train',trip:70, cost:2e7, base:1.11,x:.6,y:.39,likes:{furniture:1.38,toys:1.34,chairs:1.26,flooring:1.22,giftbox:1.22}},
   {id:'ham',name:'Hamburg',  flag:'🇩🇪',mode:'train',trip:150,cost:8e7,base:1.15, x:.52,y:.17,likes:{plywood:1.45,flooring:1.38,pellets:1.34,cabinets:1.30,boats:1.22,glulam:1.36,panels:1.32}},
@@ -143,7 +147,8 @@ const CITIES=[
 const HOME={name:'Bartın',x:.67,y:.355};   // our mill: Black Sea timber coast
 const CMAP={}; CITIES.forEach(c=>CMAP[c.id]=c);
 function harborLvl(){return (S.trade&&S.trade.lvl)||0;}
-function harborCost(){return HARBOR_COST*Math.pow(4,harborLvl());}
+function harborCost(){let l=+harborLvl();if(!(l>=0)||!isFinite(l)) l=0;return keptCoin(HARBOR_COST*Math.pow(4,l),HB_SEC[Math.min(HB_SEC.length-1,l|0)]);}
+function routeCost(c){if(!c||!(c.cost>0)) return Infinity;return keptCoin(c.cost,ROUTE_SEC[c.id]||30);}
 function harborAvail(){return S.buildings.furniture.lvl>0||harborLvl()>0;}
 function slots(mode){const l=harborLvl();if(!l) return 0;return mode==='ship'?Math.ceil(l/2):1+(l>=3?1:0);}
 function busy(mode){return S.trade.fleet.filter(v=>v.mode===mode).length;}
@@ -160,7 +165,7 @@ function buyHarbor(){const l=harborLvl();if(l>=HARBOR_MAX||!harborAvail()) retur
   S.coins-=c;S.trade.lvl=l+1;sfx('unlock');if(typeof harborPoof==='function') harborPoof();
   toast(l?`⚓ Harbour → Lv ${l+1}: ${slots('ship')} ship${slots('ship')>1?'s':''} · ${slots('train')} train${slots('train')>1?'s':''}, bigger cargo holds`:`⚓ <b>Harbour & Rail Station built!</b> Open trade routes on the world map.`,4200,'ms-toast');
   tradeSig='';checkAch&&checkAch();return true;}
-function openRoute(cid){const c=CMAP[cid];if(!c||routeOpen(cid)||!harborLvl()||S.coins+1e-9<c.cost) return false;S.coins-=c.cost;S.trade.routes[cid]=1;sfx('unlock');
+function openRoute(cid){const c=CMAP[cid];const cost=c?routeCost(c):Infinity;if(!c||routeOpen(cid)||!harborLvl()||S.coins+1e-9<cost) return false;S.coins-=cost;S.trade.routes[cid]=1;sfx('unlock');
   toast(`${c.flag} <b>Route to ${c.name} opened!</b> ${c.mode==='ship'?'🚢 by sea':'🚂 by rail'} · ${fmtTime(tripTime(cid))} round trip`,4000,'ms-toast');tradeSig='';checkAch&&checkAch();return true;}
 function dispatch(cid,k,quiet){const c=CMAP[cid];if(!c||!routeOpen(cid)||!freeSlot(c.mode)||!RMAP[k]||!canSell(k)) return false;
   const v={id:(S.trade.seq=(S.trade.seq||0)+1),mode:c.mode,city:cid,good:k,cap:vesselCap(k,c.mode),got:0,state:'load',t:0,trip:tripTime(cid)};
@@ -257,10 +262,10 @@ function updateTradeUI(){
     for(const c of CITIES){const open=routeOpen(c.id),sp=T.spike&&T.spike.city===c.id&&T.spike.ends>S.time?T.spike:null;
       const top=goods.map(r=>[r,tradeMult(c.id,r.id)]).sort((a,b)=>b[1]-a[1]).slice(0,open?5:3);
       h+=`<div class="city${open?' open':''}${sp?' spike':''}"><div class="cy-h"><span class="cy-f">${c.flag}</span><b>${c.name}</b><span class="chip">${c.mode==='ship'?'🚢 Sea':'🚂 Rail'} · ${fmtTime(tripTime(c.id))}</span>${sp?`<span class="chip spk">📈 ${RMAP[sp.good].icon} ×${SPIKE_MULT}</span>`:''}
-        ${open?'':`<button class="btn small cy-open" data-c="${c.id}" ${l?'':'disabled'}>🔓 ${fmt(c.cost)}</button>`}</div>
+        ${open?'':`<button class="btn small cy-open" data-c="${c.id}" ${l?'':'disabled'}>🔓 ${fmt(routeCost(c))}</button>`}</div>
         <div class="cy-g">${top.map(([r,m])=>`<button class="gch${m>=2?' hot':m>=1.5?' good':''}" data-c="${c.id}" data-g="${r.id}" ${open?'':'disabled'}>${r.icon}<span>×${m.toFixed(2)}</span></button>`).join('')||'<span class="legend">Produce goods to trade</span>'}</div></div>`;}
     h+=`</div><label class="rep-row"><span>🔁 Returning vessels reload the same cargo</span><label class="sw"><input type="checkbox" id="tradeRep" ${T.repeat!==false?'checked':''}><span class="tr"></span></label></label>`;
-    h+=`<div class="legend">Tap a good to load the next free ${'ship or train'}: it collects goods from production until full, sails, and the city pays the shown multiplier on today's price. Demand drifts every 45 s; spikes pay ×${SPIKE_MULT}. Routes and the harbour are kept through Replant.</div>`;
+    h+=`<div class="legend">Tap a good to load the next free ${'ship or train'}: it collects goods from production until full, sails, and the city pays the shown multiplier on today's price. Demand drifts every 45 s; spikes pay ×${SPIKE_MULT}. Routes and the harbour are kept through Replant. Their prices follow forest value, and after a Replant at least a stretch of your income; a first run pays the original price.</div>`;
     $('tradeBody').innerHTML=h;
     $('tradeRep').onchange=e=>{T.repeat=e.target.checked;};
     $('hbBuy').onclick=()=>{if(buyHarbor()){tradeSig='';render();}};
@@ -272,7 +277,7 @@ function updateTradeUI(){
   document.querySelectorAll('#tradeBody .vsl').forEach(el=>{const v=T.fleet.find(x=>x.id==+el.dataset.id);if(!v) return;
     const f=v.state==='load'?v.got/v.cap:v.t/v.trip; el.querySelector('.vb').style.width=(Math.min(1,f)*100).toFixed(1)+'%';
     el.querySelector('.vt').textContent=v.state==='load'?`Loading ${fmt(v.got)} / ${fmt(v.cap)}`:v.state==='out'?`Sailing · arrives in ${fmtTime(v.trip/2-v.t)} · +🪙${fmt(v.pay)}`:`Returning · back in ${fmtTime(v.trip-v.t)}`;});
-  document.querySelectorAll('#tradeBody .cy-open').forEach(b=>{b.disabled=!harborLvl()||S.coins+1e-9<CMAP[b.dataset.c].cost;});
+  document.querySelectorAll('#tradeBody .cy-open').forEach(b=>{const c=CMAP[b.dataset.c],cost=routeCost(c),t='🔓 '+fmt(cost);b.disabled=!harborLvl()||S.coins+1e-9<cost;if(b._t!==t){b.textContent=t;b._t=t;}});
   document.querySelectorAll('#tradeBody .gch').forEach(b=>{const c=CMAP[b.dataset.c];b.classList.toggle('nofree',routeOpen(c.id)&&!freeSlot(c.mode));});
   const cv=$('tradeMap'); if(cv&&typeof drawTradeMap==='function') drawTradeMap(cv);
 }

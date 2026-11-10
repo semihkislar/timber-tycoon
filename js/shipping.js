@@ -29,7 +29,16 @@ function shLoadF(s){s=s||S.ship;const base=(s.fork/2)*(1+.3*s.fspd)*(1+.6*s.cran
 function shForkSpeed(){const s=S.ship||shFresh();return 3.4*(1+.25*s.fspd)*(1+.15*s.crane);}   // v2.12 was a fixed 1.7
 function shCapSec(){return 18+4*(S.ship.dock-1);}            // a truck holds ~this many seconds of your sales
 function shTimer(){return Math.max(20,45-2*S.ship.dock);}     // ...and leaves after this long even if it is not full
-function shCost(k){const s=S.ship,u=SH_UP[k];if(k==='dock') return s.dock>=u.max?Infinity:u.cost(s.dock);if(k==='fork') return s.fork>=u.max?Infinity:u.cost(s.fork);return s[k]>=u.max?Infinity:u.cost(s[k]);}
+/* v2.51: dock / forklift / loads / crane stickers stay exact on a first run. After a Replant, keptCoin.
+   Seconds grow with the level, slower than the sticker, so a dearer step never costs less. */
+function shSec(k,lv){
+  lv=Math.max(0,+lv||0);
+  if(k==='dock') return 15*Math.pow(1.45,Math.max(0,lv-1));
+  if(k==='fork') return 15*Math.pow(1.8,Math.max(0,lv-SH_FORK_MIN));
+  if(k==='fspd') return 20*Math.pow(1.7,lv);
+  return 45*Math.pow(2,lv);
+}
+function shCost(k){const s=shState(),u=SH_UP[k];if(!u) return Infinity;const lv=k==='dock'?s.dock:k==='fork'?s.fork:s[k];if(lv>=u.max) return Infinity;return keptCoin(u.cost(lv),shSec(k,lv));}
 function shBuy(k){const s=shState(),u=SH_UP[k];if(!u) return false;const c=shCost(k);if(!isFinite(c)||S.coins+1e-9<c) return false;
   S.coins-=c;s[k]++;if(k==='dock'){M=computeMods();while(s.bays.length<shBays()) s.bays.push({v:0,t:0});}
   sfx('unlock');scene._fsig='';toast(`${u.e} <b>${u.n}</b> → ${k==='fork'?s.fork+' forklifts':'Lv '+s[k]}: ${shUpText(k)}`);checkAch&&checkAch();return true;}
@@ -94,7 +103,7 @@ function updateShip(){
     h+=`<h4>📜 Export contract</h4><div id="shCon"></div>`;
     if(typeof logiHtml==='function') h+=`<h4>🚜 Logistics</h4>${logiHtml()}`;   // v2.30
     h+=`<h4>⬆ Yard upgrades</h4><div class="list sh-ups">${Object.keys(SH_UP).map(k=>`<div class="card sh-up" data-k="${k}"><div class="ic">${SH_UP[k].e}</div><div><div class="nm">${SH_UP[k].n} <span class="cnt" id="shL_${k}"></span></div><div class="ds" id="shD_${k}"></div></div><button class="btn buy" id="shU_${k}"></button></div>`).join('')}</div>`;
-    h+=`<div class="legend">Your sales leave through the dock. Better docks pay an export premium on every sale; more forklifts, bigger loads and a gantry crane load trucks quicker and complete export contracts faster. Kept through Replant.</div>
+    h+=`<div class="legend">Your sales leave through the dock. Better docks pay an export premium on every sale; more forklifts, bigger loads and a gantry crane load trucks quicker and complete export contracts faster. Kept through Replant. Yard upgrades follow forest value, and after a Replant at least a stretch of your income; a first run pays the original price.</div>
       <button class="btn small" id="shMarket">🪙 Open the Market</button>`;
     $('shipBody').innerHTML=h;
     for(const k of Object.keys(SH_UP)) $('shU_'+k).onclick=()=>{if(shBuy(k)){shSig='';haptic&&haptic(8);render();}};

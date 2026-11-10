@@ -5,6 +5,9 @@
    auto-sell, so it only runs short when the fuel buildings are off, on fire or starved. Its level is kept through Replant
    (like the fire station and the harbour); the boost needs the fuel buildings, which Replant resets as usual. */
 const PW_MAX=10, PW_COST=2.5e5, PW_SCALE=5, PW_BOOST=.05;
+/* v2.51: the v2.10 ladder (250K ×5) stays the first-run sticker. After a Replant, keptCoin raises it with forest value
+   and with these many seconds of income (build, then each upgrade), so the levels stay in order. */
+const PW_SEC=[20,30,45,70,100,150,220,320,460,640];
 const PW_FUELS={mix:{n:'Mix',e:'⚡',src:['pellets','charcoal']},pellets:{n:'Pellets',e:'🟤',src:['pellets']},charcoal:{n:'Charcoal',e:'⚫',src:['charcoal']}};
 const PW_SRC={pellets:'pellet',charcoal:'kiln'};   // fuel -> the building that makes it
 /* v2.24 log fuel: logs are raw material, so the plant only ever takes SURPLUS logs: what is left after every log user
@@ -21,8 +24,8 @@ function pwLogReserve(perSec){const d=perSec!==undefined?perSec:pwLogUse();retur
 function pwLogUse(){let t=0;for(const b of BUILDINGS){if(!b.inp.logs) continue;const st=S.buildings[b.id];if(!st.lvl||!st.on||onFire(b.id)) continue;t+=b.inp.logs*bSpeed(b.id)*bInMult(b.id);}return t;}
 const PW_PERKS=[[1,'Boiler house, turbine hall, chimney and substation'],[3,'Cooling tower'],[5,'Twin fuel silos with a feed conveyor'],[7,'Second chimney'],[10,'Gold trim and the ★ flag']];
 function pwState(){if(!S.power||typeof S.power!=='object') S.power={lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}};return S.power;}
-function pwLvl(){return (S.power&&S.power.lvl)||0;}
-function pwCost(l){l=l===undefined?pwLvl():l;return PW_COST*Math.pow(PW_SCALE,l);}
+function pwLvl(){const n=+(S.power&&S.power.lvl);return (n>0&&isFinite(n))?Math.min(PW_MAX,Math.floor(n)):0;}
+function pwCost(l){if(l===undefined) l=pwLvl();l=+l;if(!(l>=0)||!isFinite(l)) l=0;return keptCoin(PW_COST*Math.pow(PW_SCALE,l),PW_SEC[Math.min(PW_SEC.length-1,l|0)]);}
 function pwUnlocked(){return pwLvl()>0||S.buildings.pellet.lvl>0;}
 function pwVisible(){return pwLvl()>0||S.buildings.kiln.lvl>0||S.buildings.pellet.lvl>0;}
 function pwShare(l){l=l===undefined?pwLvl():l;return l?.15+.015*l:0;}
@@ -108,7 +111,7 @@ function updatePower(){
         <div class="pw-kv" id="pwKv"></div>`;}
     h+=`<button class="btn gold big" id="pwBuy"></button>`;
     h+=`<h4>Plant upgrades</h4><div class="pw-perks">${PW_PERKS.map(([lv,t])=>`<div class="pw-perk${l>=lv?' on':''}"><b>Lv ${lv}</b><span>${t}</span></div>`).join('')}</div>
-      <div class="legend">The plant burns <b>${Math.round(pwShare(Math.max(1,l))*100)}%</b> of what your Pellet Press and Charcoal Kiln can make (rising to ${Math.round(pwShare(PW_MAX)*100)}% at Lv ${PW_MAX}) and takes it before auto-sell. Surplus logs can stand in (${Math.round(1/PW_LOG_FUEL*10)/10} logs per unit of fuel); logs are never sold, only used. With full fuel each level adds <b>+${Math.round(PW_BOOST*100)}%</b> speed to every building, premium and R&amp;D ones included. It stays built when you Replant.</div>`;
+      <div class="legend">The plant burns <b>${Math.round(pwShare(Math.max(1,l))*100)}%</b> of what your Pellet Press and Charcoal Kiln can make (rising to ${Math.round(pwShare(PW_MAX)*100)}% at Lv ${PW_MAX}) and takes it before auto-sell. Surplus logs can stand in (${Math.round(1/PW_LOG_FUEL*10)/10} logs per unit of fuel); logs are never sold, only used. With full fuel each level adds <b>+${Math.round(PW_BOOST*100)}%</b> speed to every building, premium and R&amp;D ones included. It stays built when you Replant. The price follows forest value, and after a Replant at least a stretch of your income; a first run pays the original price.</div>`;
     $('powerBody').innerHTML=h;
     $('pwBuy').onclick=()=>{if(buyPower()){pwSig='';render();}};
     const fb=$('pwFuel'); if(fb) fb.querySelectorAll('button').forEach(b=>b.onclick=()=>{setPowerFuel(b.dataset.f);pwSig='';haptic&&haptic(5);render();});

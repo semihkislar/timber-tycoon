@@ -369,7 +369,7 @@ function premOverlays(ctx,showTags){
     if(!premOpen()){if(premVisible()){const cost=premCost(),can=S.coins+1e-9>=cost,bob=can?Math.sin(t*4)*3:0;
         pill(ctx,sx,sy-14+bob,'🏛️ Premium Area',{bg:can?'#d8a930':'#2a1d14',fg:can?'#2a1d14':'#f5d36a',fs:12,stroke:'#f5d36a'});
         pill(ctx,sx,sy+8+bob,fmt(cost),{icon:'coin',bg:'#fff6e0',fg:can?'#3b7f27':'#8a6a40',fs:11,stroke:can?'#4fa633':'#d9b98a'});}
-      else pill(ctx,sx,sy,'🔒 Premium Area · earn '+fmt(PREM_UNLOCK*.25),{lo:1,fs:10,bg:'rgba(43,27,14,.6)'});}
+      else pill(ctx,sx,sy,'🔒 Premium Area · earn '+fmt(premReveal()),{lo:1,fs:10,bg:'rgba(43,27,14,.6)'});}
     else if(showTags){const p=PUV(PROW.u0-.5,PROW.vl,22);const [px,py]=w2s(p[0],p[1]);pill(ctx,px,py,'🏛️ Phase 3 · Premium · Lv '+S.premium.lvl,{lo:1,bg:'#2a1d14',fg:'#f5d36a',fs:10.5,stroke:GOLD,padX:12,padY:7});}
   }
   // client bubble: who is at the gate and what they want
