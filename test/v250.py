@@ -67,8 +67,8 @@ with sync_playwright() as p:
         cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]});cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
         pg.wait_for_timeout(400)
     pg=page()
-    ok(ver(E(pg,'TT.VERSION'))==(2,50),f"VERSION is 2.50 ({E(pg,'TT.VERSION')})")
-    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read());ok(m and m.group(1)=='2.50','service-worker cache is v2.50')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,50),f"VERSION >= 2.50 ({E(pg,'TT.VERSION')})")
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read());ok(m and ver(m.group(1))>=(2,50),f'service-worker cache >= v2.50 ({m and m.group(1)})')
     r=E(pg,"""()=>({n:UPGRADES.length,logs:canSell('logs'),
       rec:[BMAP.chipper.inp.logs,BMAP.chipper.out.chips,BMAP.carpentry.inp.planks,BMAP.carpentry.out.chairs,BMAP.pellet.inp.chips,BMAP.paper.inp.chips,BMAP.cabinetry.inp.chairs,BMAP.showroom.inp.chairs,BMAP.boatyard.inp.chairs],
       cost:[UPGRADES.find(u=>u.id==='drum').cost,UPGRADES.find(u=>u.id==='chairline').cost]})""")

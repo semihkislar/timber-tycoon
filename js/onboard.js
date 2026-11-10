@@ -7,7 +7,9 @@
    It never gives anything: no coins, logs or boosts, so the early-run balance is unchanged.
    State S.ob: st 'on' | 'done' | 'skip' | 'old' (a save from before v2.38: never shown) | 'off'; step (index in OB_STEPS);
    rep (1 = replayed from Settings: steps that are already done wait for "Next" instead of skipping by themselves). */
-const OB_ORD_OPEN=250;   // = ordersOpen() (js/premium.js)
+const OB_ORD_OPEN=250;   // = ORD_OPEN (js/premium.js). Shown × forest value, so at ×1 the card still says 250.
+function obOrdAt(){return OB_ORD_OPEN*(typeof cs==='function'?cs():1);}
+function obChipAt(){const b=typeof BMAP!=='undefined'&&BMAP.chipper;return (b?b.cost*0.25:250)*(typeof cs==='function'?cs():1);}
 const OB_FAR=1e6;        // a run this far along (earned or in hand, or after a Replant) no longer needs the guide: it ends quietly
 const OB_BLD=4;         // … or with this many buildings standing
 const OB_END_SEC=40;     // the "you're set" card closes by itself after this long
@@ -36,11 +38,11 @@ const OB_STEPS=[
     done:()=>S.buildings.sawmill.lvl>=2,
     ptr:()=>curSheet==='bld'&&sheetBld==='sawmill'?null:{lot:'sawmill'},hl:()=>curSheet==='bld'&&sheetBld==='sawmill'?$('bpBuy'):null},
   {id:'order',e:'📋',t:'Take your first client order',
-    d:()=>{const O=ordNorm();if(!ordersOpen()) return `Clients phone in once you have earned 🪙 ${OB_ORD_OPEN}. Keep upgrading; the Wood Chipper lot opens at 🪙 250 too.`;
+    d:()=>{const O=ordNorm();if(!ordersOpen()) return `Clients phone in once you have earned 🪙 ${fmt(obOrdAt())}. Keep upgrading; the Wood Chipper lot opens at 🪙 ${fmt(obChipAt())} too.`;
       if(O&&O.offers.length) return curSheet==='ord'?`Tap <b>✔ Accept</b> on a client's order. Deliveries pay 1.5–2.5× the goods.`:`A client is calling! Tap <b>✔ Accept</b> on the order card.`;
       return `A client will call any moment. Orders pay well, and the 📋 Orders button lists them.`;},
     done:()=>{const O=S.orders||{};return (O.acts&&O.acts.length>0)||(O.done||0)>0||(S.daily&&((S.daily.active&&S.daily.active.length)||(S.daily.total||0)>0));},
-    prog:()=>ordersOpen()?null:[Math.floor(Math.min(S.totalEarned,OB_ORD_OPEN)),OB_ORD_OPEN],coin:1,
+    prog:()=>ordersOpen()?null:[Math.floor(Math.min(S.totalEarned,obOrdAt())),obOrdAt()],coin:1,
     hl:()=>{const O=ordNorm();if(!O||!O.offers.length) return null;const y=$('ocYes');if(y&&y.offsetParent) return y;return curSheet==='ord'?null:$('bbOrd');}},
   {id:'end',e:'🎉',t:'You\'re set, Tycoon!',
     d:()=>`Open more lots as you earn. When a building waits on an input, ⚠️ shows why and 🔀 Supply Flow shows what goes where. Replay this guide any time in ⚙️ Settings.`,

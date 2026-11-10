@@ -26,7 +26,8 @@ function buyStorage(id){
 /* ---------- premium area ---------- */
 const PREM_UNLOCK=2e6, PREM_LVL_BONUS=0.25, PREM_MAX=5;
 function premCost(){const l=S.premium.lvl;return (l?PREM_UNLOCK*Math.pow(12,l):PREM_UNLOCK)*cs();}
-function premVisible(){return S.premium.lvl>0||S.totalEarned>=PREM_UNLOCK*0.25;}
+function premReveal(){return PREM_UNLOCK*0.25*cs();}   // v2.51: the "earn 500K" line follows forest value. At ×1 it is still 500K.
+function premVisible(){return S.premium.lvl>0||S.totalEarned>=premReveal();}
 function buyPremium(){
   const l=S.premium.lvl; if(l>=PREM_MAX) return false; const c=premCost(); if(S.coins+1e-9<c) return false;
   S.coins-=c; S.premium.lvl=l+1; M=computeMods();
@@ -56,7 +57,8 @@ function prodRate(k){
   return p;
 }
 function niceNum(x){if(!(x>0)) return 0;if(x<10) return Math.max(1,Math.round(x));const e=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/e)*e;}
-function ordersOpen(){return S.totalEarned>=250&&S.buildings.sawmill.lvl>0;}
+const ORD_OPEN=250;   // v2.51: × forest value, so the "earn 250" line is not pocket change after a Replant. At ×1 it is still 250.
+function ordersOpen(){return S.totalEarned>=ORD_OPEN*cs()&&S.buildings.sawmill.lvl>0;}
 
 /* ---------- v2.25: order sizing (client orders, daily contracts, export contracts) ----------
    Before v2.25 an order was sized on the *smoothed actual* output of one good (min(potential, EMA)) × 25–40 % of the timer,
@@ -176,7 +178,8 @@ let ordTab='daily';   // 'clients' | 'daily'
 let dailySig='', dailyChipSig='';
 function dayKey(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function freshDaily(){return {day:dayKey(),offers:[],active:[],doneToday:0,streak:0,bestStreak:0,total:0,hist:[],failedToday:0};}
-function dailyOpen(){return S.totalEarned>=500&&S.buildings.sawmill.lvl>0;}
+const DAILY_OPEN=500;   // v2.51: × forest value. At ×1 daily contracts still open at 500 earned.
+function dailyOpen(){return S.totalEarned>=DAILY_OPEN*cs()&&S.buildings.sawmill.lvl>0;}
 function streakMult(){const s=(S.daily&&S.daily.streak)||0;return 1+(s>=14?.25:s>=7?.15:s>=3?.08:0);}
 function streakLabel(){const s=(S.daily&&S.daily.streak)||0;if(s>=14) return '+25% contract rewards';if(s>=7) return '+15% contract rewards';if(s>=3) return '+8% contract rewards';return 'Complete ≥1 daily each day to keep the streak';}
 function ensureDailyDay(){
@@ -193,7 +196,7 @@ function ensureDailyDay(){
 // 1+ after the run's first 5 minutes), never from goods you don't make yet. Until accepted, an offer's amount and reward
 // follow your output (dailyResize), so contracts drawn early in a run or before a big upgrade don't stay tiny all day.
 function dailyGoods(){const g=[];for(const r of RES){if(!canSell(r.id)||!(prodRate(r.id)>0.015)) continue;if(ordPlan(r.id,210,.28,DAILY_DIFFS[1].amt).ok) g.push(r.id);}return g;}
-function dailyReady(){const n=dailyGoods().length;const age=(S.playTime||0)-((S.run&&S.run.start)||0);return n>=3||(n>=1&&age>=300)||(n>=1&&!(S.prestiges>0)&&S.totalEarned>=500);}
+function dailyReady(){const n=dailyGoods().length;const age=(S.playTime||0)-((S.run&&S.run.start)||0);return n>=3||(n>=1&&age>=300)||(n>=1&&!(S.prestiges>0)&&S.totalEarned>=DAILY_OPEN*cs());}
 function makeDailyOffers(force){
   ensureDailyDay();
   if(!dailyOpen()) return false;
@@ -377,9 +380,9 @@ function updateOrders(){
     else if(ordTab==='daily'){
       const sm=streakMult(); const awaitN=(D.offers||[]).length;
       h+=`<div class="daily-hero"><div class="dh-ic">📅</div><div style="flex:1"><div class="dh-t">Daily Contracts${D.streak?` · 🔥 ${D.streak}-day streak`:''}</div>
-        <div class="legend" style="margin:2px 0 0">${dailyOpen()?`Three contracts each local day, sized on what your lines make (until you accept, they follow your output). Accept up to <b>${DAILY_MAX_ACTIVE}</b> at once. Declining frees the slot (no replacement). ${streakLabel()}${sm>1?` · current bonus <b>×${sm.toFixed(2)}</b>`:''}`:'🔓 Unlocks once your <b>Sawmill</b> is running and you have earned ~🪙500.'}</div></div>
+        <div class="legend" style="margin:2px 0 0">${dailyOpen()?`Three contracts each local day, sized on what your lines make (until you accept, they follow your output). Accept up to <b>${DAILY_MAX_ACTIVE}</b> at once. Declining frees the slot (no replacement). ${streakLabel()}${sm>1?` · current bonus <b>×${sm.toFixed(2)}</b>`:''}`:`🔓 Unlocks once your <b>Sawmill</b> is running and you have earned ~🪙${fmt(DAILY_OPEN*cs())}.`}</div></div>
         <div class="dh-st"><b>${D.streak||0}</b><small>streak</small></div></div>`;
-      if(!dailyOpen()) h+=`<div class="hint">Keep the sawmill humming — daily contracts open around 🪙500 earned.</div>`;
+      if(!dailyOpen()) h+=`<div class="hint">Keep the sawmill humming — daily contracts open around 🪙${fmt(DAILY_OPEN*cs())} earned.</div>`;
       else {
         for(const c of (D.active||[])){
           const r=RMAP[c.item];

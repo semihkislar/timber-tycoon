@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.50-6b8e23" alt="version 2.50">
+  <img src="https://img.shields.io/badge/version-2.51-6b8e23" alt="version 2.51">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,14 +30,15 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.50: Chips and chairs catch up
-Pellet Press and the Paper Mill were waiting on chips, and Cabinets, the Luxury Showroom and the Boat Yard on chairs, whenever every building sat at the same level. **Drum Chipper** gets more chips out of the same logs from Wood Chipper Lv 28, and **Chair Line** gets more chairs out of the same planks from Carpentry Lv 56. Both are bought from the Upgrades list after your first Replants (Forest Legacy 25). The price is 15× that building's current upgrade, and at least 30 seconds of income, so it still matters late in a run and after a Replant. The first minutes of a run are unchanged, and logs are still not for sale.
+### New in v2.51: Prices that keep up after a Replant
+The power plant, Builders' Yard, shipping yard, harbour, trade routes and managers used to keep their original coin prices, so after a Replant they cost pocket change. They now follow your forest value, and once the forest is worth more than a first run they also cost at least a short stretch of your income. The first run still pays the old prices. The Premium Area, the planting crew, client orders and daily contracts no longer ask you to "earn 500" when the forest is worth millions. Logs are still not for sale.
 
-<p align="center"><img src="screenshots/history/v2.50/mobile-yield.png" alt="v2.50: phone Wood Chipper card, Drum Chipper yield" width="360"></p>
+<p align="center"><img src="screenshots/history/v2.51/mobile-pricing.png" alt="v2.51: phone power-plant price after a Replant" width="360"></p>
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.50** | 🪵 **Chips and chairs catch up** | Drum Chipper and Chair Line get more chips and chairs from the same logs and planks from the mid game. The price is 15× that building's current upgrade, and at least 30 seconds of income. |
 | **v2.49** | ⏱️ **Order timer stays readable** | On a phone, a project's countdown stays clear of the 🔗 step badge. A very long amount ellipsizes instead of covering the timer. |
 | **v2.48** | 📱 **Calm waiting badges** | A late-game phone at the fit zoom hides spare-stock and mild "waiting" badges. The worst real bottleneck still shows (up to three), and the building you point at keeps its badge. Zoom in, or set Scene labels to Always, and every badge comes back. |
 | **v2.47** | 🔪 **Upgrades for the newer lines** | Peeler Knives, Log Carriage, Daylight Press and RF Curing give the Veneer Peeler, Beam Saw, Plywood Mill and Glulam Plant a leveled ×2 (Lv 5 is ×2.4). Prices follow forest value. The early game is unchanged. |

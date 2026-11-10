@@ -67,12 +67,13 @@ function forestState(){const F=S.forest,e=forestEff(),D=F.D||fellDemand(),cap=pl
 
 /* ---------- Crew sheet: forest card + planting crew list ---------- */
 const plEls={}; let plSig='';
-function plVisible(p,i){return (S.planters[p.id]||0)>0||S.totalEarned>=p.cost*0.3||i===0;}
+function plReveal(p){return p.cost*0.3*cs();}   // v2.51: same 30 % reveal as before, × forest value. At ×1 the teaser coins are unchanged.
+function plVisible(p,i){return (S.planters[p.id]||0)>0||S.totalEarned>=plReveal(p)||i===0;}
 function buildPlanters(){
   const L=$('plList'); if(!L) return; L.innerHTML=''; let teaser=false;
   PLANTERS.forEach((p,i)=>{
     if(!plVisible(p,i)){ if(teaser) return; teaser=true;const d=document.createElement('div');d.className='card locked';
-      d.innerHTML=`<div class="ic">❔</div><div><div class="nm">???</div><div class="ds">Earn 🪙 ${fmt(p.cost*0.3)} total to reveal</div></div><div></div>`;L.appendChild(d);return;}
+      d.innerHTML=`<div class="ic">❔</div><div><div class="nm">???</div><div class="ds">Earn 🪙 ${fmt(plReveal(p))} total to reveal</div></div><div></div>`;L.appendChild(d);return;}
     const d=document.createElement('div');d.className='card pl';d.dataset.id=p.id;
     d.innerHTML=`<div class="ic">${svgIcon(p.svg,32)}</div><div><div class="nm">${p.name}<span class="cnt"></span></div><div class="ds"></div><div class="pbar"><i></i></div></div><button class="btn buy"></button>`;
     const btn=d.querySelector('button'); btn.onclick=()=>{buyPlanter(p.id);render();};

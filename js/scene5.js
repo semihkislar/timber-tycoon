@@ -252,7 +252,7 @@ function goldenReward(kind){
   const r=Math.random(); kind=kind||(r<0.5?'coins':r<0.8?'frenzy':'goldrush');
   let txt;
   if(kind==='coins'){
-    const v=Math.max(50+chopPower()*25,coinRate*75); earn(v);
+    const v=Math.max(50*cs()+chopPower()*25,coinRate*75); earn(v);   // v2.51: the 50-coin floor follows forest value; 75 s of income was already the other term
     txt=`+${fmt(v)}`;
     toast(`✨ <b>Lucky Haul!</b> The golden log was worth <b style="color:#b06a00">🪙 ${fmt(v)}</b>.`,4200,'golden-toast');
   } else {

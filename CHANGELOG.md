@@ -5,6 +5,34 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.51] — 2026-11-10
+
+**Forest-value pricing audit.** After a Replant, forest value `cs()` is ×50, ×675, ×1e6, ×1e12, and a handful of coin stickers were still the early-game number. A player could be shown, or could pay, a silly tiny price. The rule used since insurance (v2.42) and the Fire Station (v2.45) is: price = max(original × forest value, N seconds of this run's income). This release applies it to everything that was still left out, and leaves the systems that already followed it alone.
+
+### Audited, already in proportion (unchanged)
+Buildings, collectors, trees, leveled upgrades (Sharper Axes, Golden Axe, the newer-line upgrades, Drum Chipper, Chair Line), workstations, storage, the Premium Area's purchase, the Forklift Depot, conveyor belts, the Drone Port, staff hire / training / wages, insurance, the Fire Station, repair costs, safety drills, claim values, blueprint steps (they pay those same purchase prices), and client, daily, chain, seasonal and export amounts and rewards (v2.25, still proportional to the goods). Research points stay a permanent currency (Research 2.0). The Seed Shop stays priced in Seeds. The first Sawmill is still 40 logs. Log Yard overflow is unchanged. Logs are still raw material and are never sold. Photo mode is not part of this release.
+
+### Changed
+- **Power plant** (`PW_SEC`): 250K ×5, then at least 20 / 30 / 45 / 70 / 100 / 150 / 220 / 320 / 460 / 640 seconds of income.
+- **Builders' Yard** (`BY_SEC`): 25K ×12, then at least 15 / 30 / 60 / 120 / 240 / 480 seconds.
+- **Shipping yard** (`shSec`): loading dock, forklift fleet, forklift loads and the gantry crane. The sticker is unchanged; the income term grows with the level (dock 15 s ×1.45 per step, forklifts 15 s ×1.8, loads 20 s ×1.7, crane 45 s ×2) so a later step never costs less.
+- **Harbour** (`HB_SEC`): 25M ×4, then at least 40 / 70 / 120 / 200 / 320 seconds.
+- **Trade routes** (`routeCost`): Istanbul 20 s, Hamburg 35 s, Rotterdam 55 s, Dubai 90 s, New York 140 s, Tokyo 200 s. The dearer city stays dearer.
+- **Managers:** hire is still 1,000× the building × rarity, then at least 25 seconds of income (`MGR_SEC`). Each level is still ×2.2 on that hire price. Seeds from Lv 7 are unchanged.
+- **Reveal lines** that printed a fixed coin amount now multiply by forest value. At ×1 the words are the same: Premium Area "earn 500K" (`premReveal`), planting crew (`plReveal`, 30 % of the crew's price), client orders at 250 earned (`ORD_OPEN`), daily contracts at 500 earned (`DAILY_OPEN`).
+- **Fire payout floor** and the **golden-log coin floor** (150 / 50, and 50) multiply by forest value. The "or N seconds of income" part of those two rewards was already there.
+- On a **first run** (forest value ×1) every one of these is the original sticker, even if income is already high. That keeps the opening ladder, and the older suites that buy a running factory for the published price. The income term starts once a Replant has set forest value above ×1, which is when the sticker would otherwise be pocket change.
+
+### Added
+- `test/v251.py`: the ×1 ladder matches v2.50 (prices, and an opening script), including at a high income; ×50 / ×675 / ×1e6 / ×1e12 checks that no audited price is below max(sticker × forest value, N seconds of income) and that levels stay in order; systems that already scaled stay in proportion; order rewards match v2.50; Replant keeps the plant and raises the next price; v2.50 / v2.49 / v2.39 / v2.33 / v2.24 and damaged saves; desktop click and iPhone 13 / Pixel 7 touch; release shots; no console errors or 404s.
+- `test/v250.py` accepts VERSION and the service-worker cache at 2.50 or newer, the same way the older suites do. Its yield checks are unchanged.
+
+### Unchanged
+Recipes, overflow routing, order rewards, Research 2.0, Replant 2.0, tiers, leveled upgrades and workstations. Logs stay raw material and are never sold. A save from v2.50, v2.49, v2.39, v2.33 or v2.24 still loads. The first run's prices match v2.50.
+
+### Noted
+`test/v24.py` already fails on v2.50. After its mid-game setup the Fire Station income floor from v2.45 prices both the build and the next level, and those floors are 15 s then 45 s, so the ratio is ×3. The suite still requires ×6. This release does not change that assertion.
+
 ## [2.50] — 2026-11-09
 
 **Chips and chairs catch up in the mid game (maintenance (a) 1).** With every building at the same level, the Wood Chipper's recipe (6 chips) cannot feed a Pellet Press (20) and a Paper Mill (40), and Carpentry (1 chair) cannot feed Cabinets, the Luxury Showroom and the Boat Yard (2 chairs each, and a higher base speed). The v2.29.1 chip-yield curve closes the chip gap only around Lv 100. Changing the early recipes was rejected before: a Chipper at ×2 speed made the first five minutes about 10× faster, and a cheaper Paper Mill or Boat Yard brought the plywood shortage back.

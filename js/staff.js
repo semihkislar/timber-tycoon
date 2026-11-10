@@ -43,7 +43,7 @@ const MANAGERS=[
 ];
 const MGR_OF={}; MANAGERS.forEach(m=>MGR_OF[m.bid]=m);
 const MGR_MAP={}; MANAGERS.forEach(m=>MGR_MAP[m.id]=m);
-function mgrLvl(bid){const m=MGR_OF[bid];return (m&&S.mgr&&S.mgr[m.id])||0;}
+function mgrLvl(bid){const m=MGR_OF[bid];const n=+(m&&S.mgr&&S.mgr[m.id]);return (n>0&&isFinite(n))?Math.min(MGR_MAX,Math.floor(n)):0;}
 function mgrRm(bid){return RARITY[MGR_OF[bid].r].rm;}
 const MGR_SKCAP={double:.6,thrift:.5,safety:.9};
 function mgrSkill(bid,k){const l=mgrLvl(bid);if(!l) return 0;const m=MGR_OF[bid];if(m.skill!==k) return 0;const v=mgrSkillV(k,l,RARITY[m.r].rm),x=typeof wsSetMgr==='function'?wsSetMgr(bid):1;return x>1?Math.min(MGR_SKCAP[k]||Infinity,v*x):v;}   // v2.36: 🏅 Master Set doubles the skill
@@ -55,7 +55,10 @@ function mgrOrders(){let b=0;for(const m of MANAGERS) if(m.skill==='orders') b+=
 /* v2.13 rebalance: level-ups ×2.2 (was ×3.2: Lv 10 cost 35,000× the hire, now ~1,200×), rarity cost = rarity power
    (was ×1.6/×2.5/×4 cost for ×1.3/×1.6/×2 effect, so rarer managers were worse value per coin), Seeds only from Lv 7. */
 const MGR_UP=2.2;
-function mgrHireCost(m){return BMAP[m.bid].cost*1000*RARITY[m.r].rm;}
+/* v2.51: hire stays 1000× the building × rarity on a first run. After a Replant, keptCoin (25 s of income),
+   and each level is still ×2.2 on that hire price. Seeds from Lv 7 are unchanged. */
+const MGR_SEC=25;
+function mgrHireCost(m){return keptCoin(BMAP[m.bid].cost*1000*RARITY[m.r].rm,MGR_SEC);}
 function mgrUpCost(m,l){return {coins:mgrHireCost(m)*Math.pow(MGR_UP,l),seeds:l>=6?l-5:0};}
 /* value of a building's output per second at the current speed (for the cost-vs-benefit line) */
 function bldValueRate(bid){const b=BMAP[bid],st=bstat[bid];if(!b||!st||!S.buildings[bid].lvl) return 0;let v=0;for(const k in b.out) v+=b.out[k]*(st.speed||0)*(st.f||0)*price(k);return v;}
@@ -115,7 +118,7 @@ function fireTick(dt,offline){
 function tapFire(bid){const f=S.fires[bid];if(!f) return false;f.hp-=1;f.taps++;scene.fireTap={bid,t:0};if(f.hp<=0) extinguish(bid,'tap');return true;}
 function extinguish(bid,by,offline){
   const f=S.fires[bid];if(!f) return; delete S.fires[bid]; S.fireCool=S.time+FIRE_COOL; S.fireStats.n++; if(by==='tap') S.fireStats.tap++;
-  const r=by==='tap'?Math.max(150,coinRate*30):Math.max(50,coinRate*10); earn(r);
+  const r=by==='tap'?Math.max(150*cs(),coinRate*30):Math.max(50*cs(),coinRate*10); earn(r);   // v2.51: the coin floor follows forest value; the income term was already there
   scene.smoulder=scene.smoulder||{}; scene.smoulder[bid]=6; scene.fireOut={bid,t:0,r,by};
   if(!offline){toast(by==='tap'?`🧑‍🚒 <b>Fire out!</b> You saved the ${BMAP[bid].name}: +${fmt(r)} coins hero bonus`:`🚒 <b>The fire brigade put out the fire</b> at the ${BMAP[bid].name}. Insurance paid +${fmt(r)}`,3800,'ms-toast');sfx('unlock');}
   checkAch&&checkAch();
@@ -343,7 +346,7 @@ function renderStaffTab(){
     // Also show hired managers that somehow lack a staff entry
     const hired=MANAGERS.filter(m=>mgrLvl(m.bid)&&!st.team.some(w=>w.mgrId===m.id));
     if(hired.length){h+=`<h4>👔 Managers <span class="mg-count">${hired.length}</span></h4><div class="list">`+hired.map(m=>mgrCardHtml(m)).join('')+`</div>`;}
-    h+=`<div class="legend">Founding foremen (from your old managers) keep their bonuses and pay no wage. New hires take a wage and add role bonuses. Mill workers & engineers need a building assignment.</div>`;
+    h+=`<div class="legend">Founding foremen (from your old managers) keep their bonuses and pay no wage. New hires take a wage and add role bonuses. Mill workers & engineers need a building assignment. Hiring a foreman follows forest value, and after a Replant at least 25 seconds of income; a first run pays the original price.</div>`;
     body.innerHTML=h;
     wireMgrCards(body);
     body.querySelectorAll('.mgr-card[data-id]').forEach(mgrCardUpdate);

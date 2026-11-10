@@ -7,6 +7,8 @@
    The yard and its settings are kept through Replant (like the fire station and the power plant). Replant still resets every
    building level and so every upgrade and hire cost, exactly as before; running jobs are dropped. Crews also work while offline. */
 const BY_MAX=6, BY_COST=2.5e4, BY_SCALE=12, BY_WAIT=30;
+/* v2.51: 25K ×12 is the first-run sticker. After a Replant the yard follows forest value and these seconds of income. */
+const BY_SEC=[15,30,60,120,240,480];
 const BY_LV=[null,{crews:1,batch:3,dur:18},{crews:2,batch:5,dur:16},{crews:2,batch:10,dur:14},{crews:3,batch:25,dur:13},{crews:3,batch:50,dur:12},{crews:4,batch:100,dur:11}];
 const BY_PLANS={ms:{n:'Milestones',e:'⭐',d:'Rush the building that is cheapest to bring to its next ×2 milestone'},
   cheap:{n:'Cheapest',e:'🪙',d:'Always buy the cheapest next level in the factory'},
@@ -20,7 +22,7 @@ function byState(){let B=S.builders;if(!B||typeof B!=='object') B=S.builders=byF
   if(!BY_PLANS[B.plan]) B.plan='ms'; if(!BY_BUDGETS.includes(B.budget)) B.budget=.25; B.lvl=Math.max(0,Math.min(BY_MAX,B.lvl|0));
   return B;}
 function byLvl(){return (S.builders&&S.builders.lvl)||0;}
-function byCost(l){l=l===undefined?byLvl():l;return BY_COST*Math.pow(BY_SCALE,l);}
+function byCost(l){if(l===undefined) l=byLvl();l=+l;if(!(l>=0)||!isFinite(l)) l=0;return keptCoin(BY_COST*Math.pow(BY_SCALE,l),BY_SEC[Math.min(BY_SEC.length-1,l|0)]);}
 function byBuiltCount(){let n=0;for(const b of BUILDINGS) if(!b.premium&&!b.tech&&S.buildings[b.id]&&S.buildings[b.id].lvl>0) n++;return n;}
 function byUnlocked(){return byLvl()>0||byBuiltCount()>=3;}
 function byVisible(){return byLvl()>0||byBuiltCount()>=2;}
@@ -125,7 +127,7 @@ function updateBuilders(){
         <div class="pw-kv" id="byKv"></div>`;}
     h+=`<button class="btn gold big" id="byBuy"></button>`;
     h+=`<h4>Yard upgrades</h4><div class="pw-perks">${BY_PERKS.map(([lv,t])=>`<div class="pw-perk${l>=lv?' on':''}"><b>Lv ${lv}</b><span>${t}</span></div>`).join('')}</div>
-      <div class="legend">Crews pay the normal price for the levels when a job is done and never spend more than the budget share of your coins, so you can still buy by hand at any time. Milestones they reach double the speed and hire yard workers as usual. The yard stays built when you Replant; building levels and their costs reset as before.</div>`;
+      <div class="legend">Crews pay the normal price for the levels when a job is done and never spend more than the budget share of your coins, so you can still buy by hand at any time. Milestones they reach double the speed and hire yard workers as usual. The yard stays built when you Replant; building levels and their costs reset as before. The yard's own price follows forest value, and after a Replant at least a stretch of your income; a first run pays the original price.</div>`;
     $('buildBody').innerHTML=h;
     $('byBuy').onclick=()=>{if(buyBuilders()){bySig='';render();}};
     const pb=$('byPlan'); if(pb) pb.querySelectorAll('button').forEach(b=>b.onclick=()=>{setBuildersPlan(b.dataset.p);bySig='';haptic&&haptic(5);render();});

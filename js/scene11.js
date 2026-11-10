@@ -127,7 +127,7 @@ function forestOverlays(ctx){
   const F=S.forest;if(!F) return; const e=forestEff();
   const [nx,ny]=P(NURSERY.ci,NURSERY.cj,26),ns=w2s(nx,ny);
   if(!((S.planters&&S.planters.nursery)>0)&&scene.cam.z>=scene.cam.fitZ*.8&&ns[0]>-60&&ns[0]<scene.w+60&&ns[1]>-30&&ns[1]<scene.h+30){
-    const p=PMAP.nursery,c=plCost('nursery',1),vis=(S.totalEarned>=p.cost*.3);
+    const p=PMAP.nursery,c=plCost('nursery',1),vis=(S.totalEarned>=plReveal(p));
     pill(ctx,ns[0],ns[1],vis?`🏡 Tree Nursery · ${fmt(c)}`:'🔒 Tree Nursery',{lo:1,fs:10,bg:vis?(S.coins>=c?'rgba(40,120,70,.88)':'rgba(30,70,90,.78)'):'rgba(43,27,14,.55)'});}
   if(e<.5&&(F.D||0)>0){const p=P(-.6,2.6,58),s=w2s(p[0],p[1]);if(s[0]>-80&&s[0]<scene.w+80&&s[1]>-200&&s[1]<scene.h){const top=($('topbar').offsetHeight||50)+62;if(s[1]<top) s[1]=top;s[0]=Math.max(130,Math.min(scene.w-130,s[0]));
     const k=.5+.5*Math.sin(scene.t*4);pill(ctx,s[0],s[1],'⚠ Forest depleted, hire planters!',{fs:11,bg:`rgba(196,70,61,${.82+.15*k})`});
