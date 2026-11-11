@@ -12,10 +12,17 @@ D=420
 MID='''(()=>{TT.S.coins=1e15;TT.buyCollector("lumberjack",40);TT.buyCollector("chainsaw",30);TT.buyCollector("truck",20);TT.buyCollector("harvester",10);
 for(const [b,n] of [["sawmill",70],["chipper",40],["kiln",40],["carpentry",30],["pellet",30],["paper",20],["furniture",12]]) TT.buyBuilding(b,n);TT.S.coins=1e9;TT.simulate(3);})()'''
 import io
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    sys.stderr.write('test/v23.py needs Pillow to compare day and night brightness.\n'
+                     'Install it with: python3 -m pip install pillow\n'
+                     '(or: python3 -m pip install -r requirements-dev.txt)\n')
+    sys.exit(1)
 def lum(pg):
     im=Image.open(io.BytesIO(pg.screenshot())).convert('L'); w,h=im.size; im=im.crop((0,int(h*.2),w,int(h*.75))).resize((160,90))
-    px=list(im.getdata()); return sum(px)/len(px)
+    data=im.get_flattened_data() if hasattr(im,'get_flattened_data') else im.getdata()
+    px=list(data); return sum(px)/len(px)
 def setw(pg,clock,w,instant=True):
     pg.evaluate(f"(()=>{{TT.setClock({clock});TT.setWeather('{w}',400);TT.S.wx.next=1e9;const v=TT.scene.wxv;for(const k in v) v[k]=0;if('{w}'!=='clear') v['{w}']={1 if instant else 0};document.querySelectorAll('.toast').forEach(t=>t.remove());}})()")
 with sync_playwright() as p:

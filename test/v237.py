@@ -1,4 +1,7 @@
 # v2.37 Seasonal export contracts (maintenance proposal 9): each season of the v2.3 world clock brings one themed export
+# The live loop is stopped (test/_pace.py). The HUD badge and the Season tab are drawn by render(), which the
+# loop used to call a moment later; a fixed sleep sometimes looked before that draw, or after a tick had
+# already changed the offer. Phone taps go through touch start/end and retry until the state changes.
 # contract (spring: houses/glulam/beams/planks, summer: boats/toys/flooring/gift boxes/chairs, autumn: luxury furniture/
 # cabinets/furniture/chairs/paper, winter: pellets/charcoal/toys/gift boxes/chips) with a trophy per season. Sizing on the v2.25 rules (real output,
 # ≥ 20 units, value floor in seconds of income / forest value), rewards 1.5–2.5 × the goods × seasonal premium, unlock with a
@@ -8,11 +11,26 @@ from playwright.sync_api import sync_playwright
 import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
+from _pace import STOP,ready,paint,touch_at
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
     if not c: FAILS.append(msg)
 def E(pg,js): return pg.evaluate(js)
+def tap_until(pg,sel,expr,n=4):
+    loc=pg.locator(sel).first
+    for _ in range(n):
+        try: loc.scroll_into_view_if_needed()
+        except Exception: paint(pg); continue
+        box=loc.bounding_box()
+        if not box: paint(pg); continue
+        touch_at(pg, box['x']+box['width']/2, box['y']+min(box['height']/2, 22))
+        paint(pg)
+        try:
+            if E(pg,expr): return True
+        except Exception: pass
+    try: return bool(E(pg,expr))
+    except Exception: return False
 HERE=os.path.dirname(os.path.abspath(__file__))
 CLEAR='if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'
 QUIET="(()=>{window.save=()=>{};window.sfx=()=>{};document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e6;S.orders.next=S.time+1e6;S.orders.chNext=S.time+1e6;if(S.mish) S.mish.next=S.time+1e9;S.prefs.autoFocus=false;S.wx.w='clear';S.wx.ends=0;S.wx.next=1e15;})()"
@@ -31,10 +49,10 @@ with sync_playwright() as p:
     def page(dev=None,tag='',init=CLEAR):
         if dev: d=dict(p.devices[dev]); d.pop('default_browser_type',None); ctx=b.new_context(**d,service_workers='block')
         else: ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
-        ctx.add_init_script(init); pg=ctx.new_page()
+        ctx.add_init_script(STOP+init); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(f'{tag}{e}')); pg.on('console',lambda m: errs.append(f'{tag}console: {m.text}') if m.type=='error' else None)
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
-        pg.goto(URL); pg.wait_for_timeout(1300); E(pg,QUIET); return ctx,pg
+        pg.goto(URL,wait_until='domcontentloaded'); ready(pg); E(pg,QUIET); return ctx,pg
     ctx,pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,37),f"VERSION >= 2.37 ({E(pg,'TT.VERSION')})")
     m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,37),'sw cache bumped to >= v2.37')
@@ -141,22 +159,22 @@ with sync_playwright() as p:
             ok(r[1]>r[0],f'offline: a signed contract keeps filling ({r})')
         ctx.close()
     # ---------------- UI (desktop) ----------------
-    ctx,pg=page(); E(pg,SETUP); E(pg,f"(()=>{{window.toast=()=>{{}};({GO})(3,1);}})()"); pg.wait_for_timeout(400)
+    ctx,pg=page(); E(pg,SETUP); E(pg,f"(()=>{{window.toast=()=>{{}};({GO})(3,1);TT.render();}})()"); paint(pg)
     ok(E(pg,"!document.getElementById('wxSc').classList.contains('hidden')&&document.getElementById('wxSc').textContent.includes('New')"),'HUD: "📦 New" badge on the season chip')
     ok(E(pg,"!document.getElementById('ordDot').classList.contains('hidden')"),'Orders button dot for a new seasonal offer')
-    pg.click('#wxSc'); pg.wait_for_timeout(500)
+    pg.click('#wxSc'); paint(pg)
     ok(E(pg,"TT.curSheet")=='ord' and E(pg,"TT.ordTab")=='season','tap the badge → Orders → Season tab')
     t=E(pg,"document.getElementById('ordBody').innerText")
     ok('Winter Heating Export' in t and 'Nordic Heating Co-op' in t and 'Winter Supplier' in t,'Season tab: theme, buyer and trophy shown')
     ok(not re.search(r'NaN|undefined|Infinity|null',t),'no NaN/undefined in the tab')
-    pg.click('#scYes'); pg.wait_for_timeout(400)
+    pg.click('#scYes'); paint(pg)
     ok(E(pg,"S.seas.st")=='run' and E(pg,"!!document.getElementById('scDel')"),'Sign → in progress, Deliver button')
-    E(pg,"(()=>{for(let k=0;k<5;k++){S.forest.m=1e9;tick(1,false);}})()"); pg.wait_for_timeout(500)
+    E(pg,"(()=>{for(let k=0;k<5;k++){S.forest.m=1e9;tick(1,false);}TT.render();})()"); paint(pg)
     ok('%' in E(pg,"document.getElementById('wxSc').textContent"),'HUD badge shows progress')
     pg.screenshot(path=os.path.join(HERE,'v237_desktop.png'))
     r=E(pg,"(()=>{closeSheet();wxOpen=true;wxSig='';updateWx();return document.getElementById('wxPop').innerText;})()")
     ok('Winter Heating Export' in r,'season popup names the contract')
-    E(pg,"document.getElementById('wxScGo').click()"); pg.wait_for_timeout(300)
+    E(pg,"document.getElementById('wxScGo').click()"); paint(pg)
     ok(E(pg,"TT.curSheet")=='ord' and E(pg,"TT.ordTab")=='season','popup Open → Season tab')
     ctx.close()
     # ---------------- perf: flat frame cost with a running contract ----------------
@@ -164,24 +182,22 @@ with sync_playwright() as p:
     # ---------------- phones ----------------
     for dev in ['iPhone 13','Pixel 7']:
         ctx,pg=page(dev,dev+': '); E(pg,SETUP); E(pg,f"(()=>{{window.toast=()=>{{}};({GO})(0,1);}})()")
-        pg.tap('#bbOrd'); pg.wait_for_timeout(700)
-        pg.tap('#ordTabs button[data-t="season"]'); pg.wait_for_timeout(500)
-        ok(E(pg,"TT.ordTab")=='season','%s: tap the Season tab'%dev)
+        ok(tap_until(pg,'#bbOrd',"TT.curSheet==='ord'"),'%s: tap Orders'%dev)
+        ok(tap_until(pg,'#ordTabs button[data-t="season"]',"TT.ordTab==='season'"),'%s: tap the Season tab'%dev)
         vw=E(pg,'innerWidth')
         tabs=E(pg,"[...document.querySelectorAll('#ordTabs button')].map(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,r.height]})")
         ok(len(tabs)==3 and all(x[0]>=0 and x[1]<=vw+.5 for x in tabs),f'{dev}: three tabs fit ({tabs})')
         ok(E(pg,'(()=>{const e=document.getElementById("shBody");return e.scrollWidth<=e.clientWidth+1})()'),f'{dev}: no sideways scroll')
-        E(pg,"document.getElementById('scYes').scrollIntoView({block:'center'})"); pg.wait_for_timeout(200)
+        E(pg,"document.getElementById('scYes').scrollIntoView({block:'center'})"); paint(pg,1)
         bb=pg.locator('#scYes').bounding_box(); ok(bb and bb['height']>=44,f'{dev}: Sign button ≥ 44 px')
-        pg.tap('#scYes'); pg.wait_for_timeout(500)
-        ok(E(pg,"S.seas.st")=='run','%s: tap Sign → in progress'%dev)
+        ok(tap_until(pg,'#scYes',"S.seas.st==='run'"),'%s: tap Sign → in progress'%dev)
         # hold the automatic fill so the storage button is what finishes it
-        E(pg,"(()=>{window.scCollect=()=>{};for(const k in S.buildings) S.buildings[k].on=false;for(const l of S.seas.c.lines){S.autosell[l.item]=false;l.got=l.amt-5;S.res[l.item]=Math.max(S.res[l.item],0)+10;}})()"); pg.wait_for_timeout(300)
-        E(pg,"document.getElementById('scDel').scrollIntoView({block:'center'})"); pg.wait_for_timeout(300)
+        E(pg,"(()=>{window.scCollect=()=>{};for(const k in S.buildings) S.buildings[k].on=false;for(const l of S.seas.c.lines){S.autosell[l.item]=false;l.got=l.amt-5;S.res[l.item]=Math.max(S.res[l.item],0)+10;TT.render();}})()"); paint(pg)
+        E(pg,"document.getElementById('scDel').scrollIntoView({block:'center'})"); paint(pg,1)
         bb=pg.locator('#scDel').bounding_box(); ok(bb and bb['height']>=44,f'{dev}: Deliver button ≥ 44 px')
-        pg.tap('#scDel'); pg.wait_for_timeout(500)
-        r=E(pg,"[S.seas.st,S.seas.won.spring,S.seas.c&&S.seas.c.lines.map(l=>[l.item,l.got,l.amt,S.res[l.item]])]"); ok(r[0]=='done' and r[1]==1,f'{dev}: tap Deliver → delivered ({r})')
-        E(pg,"document.querySelectorAll('.toast').forEach(t=>t.remove())"); E(pg,"document.getElementById('shBody').scrollTop=0"); pg.wait_for_timeout(200)
+        ok(tap_until(pg,'#scDel',"S.seas.st==='done'&&S.seas.won.spring===1"),f'{dev}: tap Deliver → delivered')
+        r=E(pg,"[S.seas.st,S.seas.won.spring,S.seas.c&&S.seas.c.lines.map(l=>[l.item,l.got,l.amt,S.res[l.item]])]"); ok(r[0]=='done' and r[1]==1,f'{dev}: delivered state ({r})')
+        E(pg,"document.querySelectorAll('.toast').forEach(t=>t.remove())"); E(pg,"document.getElementById('shBody').scrollTop=0"); paint(pg,1)
         pg.screenshot(path=os.path.join(HERE,f'v237_{dev.split()[0].lower()}.png'))
         ctx.close()
     b.close()

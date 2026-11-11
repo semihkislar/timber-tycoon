@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.51-6b8e23" alt="version 2.51">
+  <img src="https://img.shields.io/badge/version-2.52-6b8e23" alt="version 2.52">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,14 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.51: Prices that keep up after a Replant
-The power plant, Builders' Yard, shipping yard, harbour, trade routes and managers used to keep their original coin prices, so after a Replant they cost pocket change. They now follow your forest value, and once the forest is worth more than a first run they also cost at least a short stretch of your income. The first run still pays the old prices. The Premium Area, the planting crew, client orders and daily contracts no longer ask you to "earn 500" when the forest is worth millions. Logs are still not for sale.
-
-<p align="center"><img src="screenshots/history/v2.51/mobile-pricing.png" alt="v2.51: phone power-plant price after a Replant" width="360"></p>
+### New in v2.52: The same factory, with checks that stay green
+Nothing in the mill changed. Prices, recipes and the way logs stay unsold are the same as v2.51. This release only steadies the test suite: the checks for orders, belts, seasonal contracts, the first-steps guide and notifications were sometimes looking before the page had finished starting, or while a tick was still moving the numbers. They now wait until the game is ready. A save from v2.51 still loads.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.51** | 💰 **Prices that keep up after a Replant** | The power plant, Builders' Yard, shipping yard, harbour, trade routes and managers follow forest value, and after a Replant they cost at least a short stretch of income. The first run still pays the old prices. |
 | **v2.50** | 🪵 **Chips and chairs catch up** | Drum Chipper and Chair Line get more chips and chairs from the same logs and planks from the mid game. The price is 15× that building's current upgrade, and at least 30 seconds of income. |
 | **v2.49** | ⏱️ **Order timer stays readable** | On a phone, a project's countdown stays clear of the 🔗 step badge. A very long amount ellipsizes instead of covering the timer. |
 | **v2.48** | 📱 **Calm waiting badges** | A late-game phone at the fit zoom hides spare-stock and mild "waiting" badges. The worst real bottleneck still shows (up to three), and the building you point at keeps its badge. Zoom in, or set Scene labels to Always, and every badge comes back. |
@@ -124,7 +123,9 @@ python3 -m http.server 8000
 ```
 
 It needs `http://`, not `file://`, because the sprite atlas is fetched. Tests use Python + Playwright
-(`pip install playwright && playwright install chromium`), for example `python3 test/v238.py`.
+(`pip install -r requirements-dev.txt && playwright install chromium`), for example `python3 test/v252.py`.
+`test/v23.py` compares day and night screenshots with Pillow, which is in that file. If Pillow is missing,
+the suite says how to install it and stops.
 
 ## 🗂️ Project structure
 ```

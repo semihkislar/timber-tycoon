@@ -17,7 +17,11 @@ CLEAR='if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{lo
 SEED='(()=>{let s=47;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};})();'
 CALM="S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e6;S.orders.next=S.time+1e6;if(S.mish)S.mish.next=S.time+1e6;S.prefs.autoFocus=false;if(S.ob)S.ob.st='skip';"
 LINES=[['peelknife','peeler'],['carriage','beamsaw'],['daylight','plymill'],['rfcure','glulam']]
-EARLY='''(()=>{let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
+# The 2-hour sim below is one synchronous call. On a busy machine that call takes long enough
+# for Date.now() to move, and a check keyed off the wall clock (a toast merge, an achievement
+# stamp that a later read treats as "just now") shifts total earned by a few thousand. Pin the
+# clock for the sim so a loaded run matches the v2.46 snapshot the same way a quiet one does.
+EARLY='''(()=>{const __t=Date.now();Date.now=()=>__t;let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
  S.coins=50;S.totalEarned=0;S.time=0;S.events=[];S.nextEvent=75;S.clicks=0;if(S.wx){S.wx.next=1e15;S.wx.w='clear';}if(S.ob)S.ob.st='skip';
  if(S.mish)S.mish.next=1e15;S.fires={};if(S.orders)S.orders.next=1e15;S.upgrades={};
  for(const c of COLLECTORS)S.collectors[c.id]=0;for(const b of BUILDINGS){S.buildings[b.id].lvl=0;S.buildings[b.id].on=true;}

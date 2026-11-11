@@ -110,8 +110,8 @@ with sync_playwright() as p:
         cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]});cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
         pg.wait_for_timeout(350)
     pg=page()
-    ok(ver(E(pg,'TT.VERSION'))==(2,51),f"VERSION is 2.51 ({E(pg,'TT.VERSION')})")
-    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read());ok(m and m.group(1)=='2.51','service-worker cache is v2.51')
+    ok(ver(E(pg,'TT.VERSION'))>=(2,51),f"VERSION >= 2.51 ({E(pg,'TT.VERSION')})")
+    m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read());ok(m and ver(m.group(1))>=(2,51),f"service-worker cache >= v2.51 ({m and m.group(1)})")
     ok(E(pg,'canSell("logs")') is False,'logs stay unsellable')
     # Opening ladder vs the v2.50 snapshot, quiet income, forest value ×1.
     newL=E(pg,LADDER);pg.close()

@@ -1,4 +1,8 @@
 # v2.38 Onboarding for new players (maintenance notes item 7): a short first-steps guide for brand-new saves only —
+# The live loop is stopped (test/_pace.py). The guide card's flash lasts 700 ms and then the entrance
+# animation runs again from fully transparent. A fixed sleep after "accept the order" sometimes measured
+# the card in that transparent frame, so rect() reported it missing. We render ourselves and wait until
+# the card's opacity has settled. Boot waits for TT.
 # tap the forest → hire the free Lumberjack → build the Sawmill with logs → first coins → upgrade the Sawmill → first client
 # order → wrap-up. One card (bottom-left on desktop, above the bottom bar on phones) that moves clear of sheets / order card /
 # side buttons, a pointer on the scene target, a gold ring on the button to press. Skip, replay from Settings, old saves never
@@ -8,6 +12,7 @@ from playwright.sync_api import sync_playwright
 import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
+from _pace import STOP,ready,paint,until
 from shots import shot_path
 FAILS=[]
 def ok(c,msg):
@@ -22,6 +27,39 @@ def rect(pg,sel): return E(pg,f"(()=>{{const e=document.querySelector('{sel}');i
 def hit(a,b): return a and b and a['l']<b['r']-1 and a['r']>b['l']+1 and a['t']<b['b']-1 and a['b']>b['t']+1
 def inview(pg,a): W,H=E(pg,"[innerWidth,innerHeight]"); return a and a['l']>=0 and a['t']>=0 and a['r']<=W+.5 and a['b']<=H+.5
 def step(pg): E(pg,"TT.render()"); return E(pg,"S.ob.step")
+def _until(pg, expr, timeout):
+    try: return until(pg, expr, timeout=timeout)
+    except TimeoutError: return None
+def card_settled(pg, timeout=4000):
+    # Opacity passes 0.9 while the entrance animation is still translating the card,
+    # and getBoundingClientRect includes that shift, so the card looks like it covers the bar.
+    # Wait until the card and the sheet have no running animation and the camera has landed.
+    return _until(pg, '''()=>{
+      if(typeof TT!=='undefined'&&TT.render) TT.render();
+      if(typeof stepScene==='function') stepScene(1/30);
+      const e=document.getElementById('obCard');
+      if(!e) return (S.ob&&S.ob.st!=='on')?{gone:1,st:S.ob.st}:null;
+      const op=+getComputedStyle(e).opacity;
+      const busy=el=>el&&el.getAnimations&&el.getAnimations().some(a=>a.playState==='running');
+      if(op>0.98 && !busy(e) && !busy(document.getElementById('sheet')) && !(scene.cam&&scene.cam.fly))
+        return {op,step:S.ob.step,st:S.ob.st};
+      return null;
+    }''', timeout)
+def pointer_at(pg, kind=None, timeout=4000):
+    # Pointer position and the hit test in one turn, after the camera has finished flying.
+    kind_js='null' if kind is None else "'%s'"%kind
+    return _until(pg, '''()=>{
+      if(TT.render) TT.render();
+      if(typeof stepScene==='function') stepScene(1/30);
+      if(scene.cam&&scene.cam.fly) return null;
+      const e=document.getElementById('obCard');
+      if(e && +getComputedStyle(e).opacity<0.9) return null;
+      const p=TT.obPointer(); if(!p) return null;
+      const h=hitTest(p[0],p[1]);
+      const t=h&&h.type;
+      if(%s && t!==%s) return null;
+      return {p:p, type:t};
+    }'''%(kind_js, kind_js), timeout)
 def card_ok(pg,tag):
     c=rect(pg,'#obCard'); ok(inview(pg,c),f'{tag}: guide card fully on screen ({c})')
     for s in ['#sheet.open','#bottombar','#fabs','#orderCard']:
@@ -31,10 +69,10 @@ with sync_playwright() as p:
     def page(dev=None,tag='',init=CLEAR,vp=None):
         if dev: d=dict(p.devices[dev]); d.pop('default_browser_type',None); ctx=b.new_context(**d,service_workers='block')
         else: ctx=b.new_context(viewport=vp or {'width':1280,'height':800},service_workers='block')
-        ctx.add_init_script(init); pg=ctx.new_page()
+        ctx.add_init_script(STOP+init); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(f'{tag}{e}')); pg.on('console',lambda m: errs.append(f'{tag}console: {m.text}') if m.type=='error' else None)
         pg.on('response',lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
-        pg.goto(URL); pg.wait_for_timeout(1400); E(pg,CALM); return ctx,pg
+        pg.goto(URL,wait_until='domcontentloaded'); ready(pg); E(pg,CALM); paint(pg); return ctx,pg
     def tap(pg,x,y,touch):
         if touch:
             cdp=pg.context.new_cdp_session(pg)
@@ -44,70 +82,91 @@ with sync_playwright() as p:
                 cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
             finally: cdp.detach()
         else: pg.mouse.click(x,y)
-        pg.wait_for_timeout(500 if touch else 140)
+        pg.wait_for_timeout(40)
     def click(pg,sel,touch):
-        r=rect(pg,sel); assert r,sel; tap(pg,(r['l']+r['r'])/2,(r['t']+r['b'])/2,touch); pg.wait_for_timeout(250)
+        # Wait until the control can take the event. A sheet still sliding open used to
+        # sit over the button, so a coordinate click landed on the overlay.
+        loc=pg.locator(sel).first
+        loc.wait_for(state='visible', timeout=5000)
+        if touch:
+            loc.scroll_into_view_if_needed(); box=loc.bounding_box(); assert box, sel
+            tap(pg, box['x']+box['width']/2, box['y']+min(box['height']/2, 22), True)
+        else:
+            loc.click(timeout=5000)
+        E(pg,"TT.render()"); paint(pg)
     def walkthrough(pg,tag,touch,shots=None,dev=None):
         ok(E(pg,"S.ob.st")=='on' and E(pg,"S.ob.step")==0,f"{tag}: a brand-new save starts the guide at step 1 ({E(pg,'JSON.stringify(S.ob)')})")
-        pg.wait_for_timeout(300); card_ok(pg,tag+' step 1')
+        card_settled(pg); card_ok(pg,tag+' step 1')
         ok('Tap the forest' in E(pg,"document.getElementById('obCard').innerText"),f'{tag}: step 1 says tap the forest')
-        pt=E(pg,"TT.obPointer()"); ok(pt is not None,f'{tag}: a pointer shows on the scene ({pt})')
-        ok(pt and E(pg,f"hitTest({pt[0]},{pt[1]}).type")=='forest',f'{tag}: the pointer sits on the forest')
-        if shots and shots.get(0): pg.wait_for_timeout(500); pg.screenshot(path=shots[0])
+        hitp=pointer_at(pg,'forest'); pt=hitp and hitp['p']
+        ok(pt is not None,f'{tag}: a pointer shows on the scene ({pt})')
+        ok(hitp and hitp['type']=='forest',f'{tag}: the pointer sits on the forest')
+        if shots and shots.get(0): pg.screenshot(path=shots[0])
         c0=E(pg,"S.clicks")
-        for k in range(5):
-            if touch:
+        guard=0
+        while E(pg,'S.clicks')-c0<5 and guard<12:
+            spot=pointer_at(pg,'forest')
+            p=(spot and spot['p']) or pt
+            if p:
                 # A real finger lands at a slightly different spot each time. Chromium's
                 # mobile tap recogniser intermittently drops exact-repeat synthetic taps.
-                tap(pg,pt[0]+(k%3-1)*2,pt[1]+(k%2)*2,touch)
-            else: tap(pg,pt[0],pt[1],touch)
-            if touch:
-                pg.wait_for_timeout(150)
-                if E(pg,'S.clicks')-c0<k+1:
-                    print(f'{tag}: synthetic touch {k+1} dropped by Chromium; retrying once',flush=True)
-                    pt=E(pg,'TT.obPointer()') or pt; tap(pg,pt[0],pt[1],touch)
+                tap(pg,p[0]+(guard%3-1)*2,p[1]+(guard%2)*2,touch)
+            guard+=1
+            if E(pg,'S.clicks')-c0<min(5,guard):
+                print(f'{tag}: synthetic touch {guard} dropped by Chromium; retrying',flush=True)
         ok(E(pg,"S.clicks")-c0>=5,f"{tag}: tapping at the pointer chops ({E(pg,'S.clicks')} chops)")
-        pg.wait_for_timeout(300); ok(step(pg)==1,f'{tag}: 5 chops → step 2 (hire)')
+        ok(step(pg)==1,f'{tag}: 5 chops → step 2 (hire)')
         ok(E(pg,"$('bbCrew').classList.contains('ob-hl')"),f'{tag}: the Crew button is highlighted')
-        click(pg,'#bbCrew',touch); pg.wait_for_timeout(450); E(pg,"TT.render()"); pg.wait_for_timeout(300)
+        click(pg,'#bbCrew',touch); card_settled(pg)
         ok(E(pg,"TT.curSheet")=='crew',f'{tag}: Crew sheet opens')
         ok(E(pg,"colEls.lumberjack.btn.classList.contains('ob-hl')"),f'{tag}: the Lumberjack Hire button is highlighted in the sheet')
         c=rect(pg,'#obCard'); sh=rect(pg,'#sheet'); ok(inview(pg,c) and not hit(c,sh),f'{tag}: the card stays clear of the open sheet ({c} vs {sh})')
-        ok(E(pg,"TT.obPointer()") is None or not hit({'l':E(pg,'TT.obPointer()')[0]-15,'r':E(pg,'TT.obPointer()')[0]+15,'t':E(pg,'TT.obPointer()')[1]-15,'b':E(pg,'TT.obPointer()')[1]+15},sh),f'{tag}: the pointer never draws over the sheet')
+        ph=E(pg,"(()=>{const p=TT.obPointer();return p?{l:p[0]-15,r:p[0]+15,t:p[1]-15,b:p[1]+15}:null})()")
+        ok(ph is None or not hit(ph,sh),f'{tag}: the pointer never draws over the sheet')
         if shots and shots.get(1): pg.screenshot(path=shots[1])
-        E(pg,"colEls.lumberjack.btn.scrollIntoView({block:'center'})"); pg.wait_for_timeout(200)
+        E(pg,"colEls.lumberjack.btn.scrollIntoView({block:'center'})"); paint(pg,1)
         coins=E(pg,"S.coins"); click(pg,'#pane-crew .ob-hl',touch)
         ok(E(pg,"S.collectors.lumberjack")==1 and abs(E(pg,"S.coins")-coins)<1e-9,f'{tag}: the free Lumberjack is hired (no coins change)')
         ok(step(pg)==2,f'{tag}: → step 3 (Sawmill)')
-        click(pg,'#shClose',touch); pg.wait_for_timeout(400)
+        click(pg,'#shClose',touch); card_settled(pg)
         ok('40' in E(pg,"document.getElementById('obCard').innerText"),f'{tag}: step 3 shows the log progress')
-        E(pg,"S.res.logs=40;TT.render()"); pg.wait_for_timeout(500)
-        pt=E(pg,"TT.obPointer()"); ls=E(pg,"TT.lotScreen('sawmill')")
-        ok(pt and abs(pt[0]-ls[0])<40 and abs(pt[1]-ls[1])<60,f'{tag}: with 40 logs the pointer moves to the Sawmill lot ({pt} vs {ls})')
-        if shots and shots.get(2): pg.wait_for_timeout(400); pg.screenshot(path=shots[2])
-        tap(pg,pt[0],pt[1],touch); pg.wait_for_timeout(600); E(pg,"TT.render()"); pg.wait_for_timeout(300)
+        E(pg,"S.res.logs=40;TT.render()")
+        spot=_until(pg, '''()=>{
+          TT.render(); if(typeof stepScene==='function') stepScene(1/30);
+          if(scene.cam&&scene.cam.fly) return null;
+          const p=TT.obPointer(), ls=TT.lotScreen('sawmill');
+          if(!p||!ls) return null;
+          if(Math.abs(p[0]-ls[0])<40 && Math.abs(p[1]-ls[1])<60) return {p:p,ls:ls};
+          return null;
+        }''', 4000)
+        pt,ls=(spot or {}).get('p'),(spot or {}).get('ls')
+        ok(pt and ls and abs(pt[0]-ls[0])<40 and abs(pt[1]-ls[1])<60,f'{tag}: with 40 logs the pointer moves to the Sawmill lot ({pt} vs {ls})')
+        if shots and shots.get(2): pg.screenshot(path=shots[2])
+        tap(pg,pt[0],pt[1],touch); E(pg,"TT.render()"); paint(pg)
         ok(E(pg,"S.buildings.sawmill.lvl")==1 and E(pg,"TT.curSheet")=='bld' and E(pg,"TT.sheetBld")=='sawmill',f'{tag}: tapping at the pointer builds the Sawmill from logs and opens it')
         ok(step(pg)==3,f'{tag}: → step 4 (first coins)')
-        card_ok(pg,tag+' sawmill sheet')
+        card_settled(pg); card_ok(pg,tag+' sawmill sheet')
         click(pg,'#shClose',touch)
         # the other way in: open the unbuilt Sawmill first → its Build button gets the ring
         ctx2,pg2=page(dev,tag=tag+' build-btn: ') if True else (None,None)
-        E(pg2,"(()=>{S.collectors.lumberjack=1;S.clicks=9;S.res.logs=40;openSheet('bld','sawmill');TT.render();})()"); pg2.wait_for_timeout(400); E(pg2,"TT.render()")
+        E(pg2,"(()=>{S.collectors.lumberjack=1;S.clicks=9;S.res.logs=40;openSheet('bld','sawmill');TT.render();})()"); paint(pg2)
         ok(E(pg2,"S.ob.step")==2 and E(pg2,"$('bpBuy').classList.contains('ob-hl')"),f'{tag}: in the Sawmill sheet the Build button is highlighted')
         click(pg2,'#bpBuy',touch); ok(E(pg2,"S.buildings.sawmill.lvl")==1 and step(pg2)==3,f'{tag}: Build in the sheet also advances')
         ctx2.close()
         E(pg,"for(let i=0;i<120&&S.coins<bldNextCost('sawmill');i++) TT.tick(1,false)"); ok(step(pg)==4,f"{tag}: enough coins for Lv 2 → step 5 (upgrade) ({E(pg,'S.coins'):.0f} coins)")
-        E(pg,"openSheet('bld','sawmill')"); pg.wait_for_timeout(500); E(pg,"TT.render()")
+        E(pg,"openSheet('bld','sawmill');TT.render()"); paint(pg)
         ok(E(pg,"$('bpBuy').classList.contains('ob-hl')"),f'{tag}: the Upgrade button is highlighted')
         click(pg,'#bpBuy',touch); ok(E(pg,"S.buildings.sawmill.lvl")==2 and step(pg)==5,f'{tag}: Sawmill Lv 2 → step 6 (first order)')
         click(pg,'#shClose',touch)
-        E(pg,"S.orders.next=S.time;for(let i=0;i<600&&!(S.orders.offers.length&&ordersOpen());i++){TT.tick(1,false);S.events=[];golden.cur=null;}TT.render()"); pg.wait_for_timeout(700); E(pg,"TT.render()"); pg.wait_for_timeout(300)
+        E(pg,"S.orders.next=S.time;for(let i=0;i<600&&!(S.orders.offers.length&&ordersOpen());i++){TT.tick(1,false);S.events=[];golden.cur=null;}TT.render()"); paint(pg)
         ok(E(pg,"S.orders.offers.length")>0,f'{tag}: a client offer arrives')
         ok(E(pg,"!!document.querySelector('#ocYes.ob-hl')"),f'{tag}: the order card Accept button is highlighted')
+        card_settled(pg)
         c=rect(pg,'#obCard'); oc=rect(pg,'#orderCard'); ok(inview(pg,c) and not hit(c,oc),f'{tag}: the guide card stays clear of the order card ({c} vs {oc})')
         if shots and shots.get(3): pg.screenshot(path=shots[3])
         click(pg,'#ocYes',touch); ok(step(pg)==6,f'{tag}: order accepted → wrap-up card')
-        pg.wait_for_timeout(300); ok(rect(pg,'#obGo') is not None and "Settings" in E(pg,"document.getElementById('obCard').innerText"),f"{tag}: wrap-up mentions replay in Settings and has a Let's go button")
+        card_settled(pg)
+        ok(rect(pg,'#obGo') is not None and "Settings" in E(pg,"document.getElementById('obCard').innerText"),f"{tag}: wrap-up mentions replay in Settings and has a Let's go button")
         card_ok(pg,tag+' wrap-up')
         click(pg,'#obGo',touch); E(pg,"TT.render()")
         ok(E(pg,"S.ob.st")=='done' and E(pg,"!document.getElementById('obCard')&&!document.getElementById('obHand')"),f'{tag}: guide finished, card and pointer gone')
@@ -117,9 +176,9 @@ with sync_playwright() as p:
     m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read()); ok(m and ver(m.group(1))>=(2,38),'sw cache bumped to >= v2.38')
     ok('js/onboard.js' in open(ROOT+'/index.html').read(),'index.html loads js/onboard.js')
     walkthrough(pg,'desktop',False,{2:shot_path('onboarding.png')})
-    pg.reload(); pg.wait_for_timeout(1300); ok(E(pg,"S.ob.st")=='done' and E(pg,"!document.getElementById('obCard')"),'desktop: a finished guide stays finished after reload')
+    pg.reload(wait_until='domcontentloaded'); ready(pg); ok(E(pg,"S.ob.st")=='done' and E(pg,"!document.getElementById('obCard')"),'desktop: a finished guide stays finished after reload')
     # replay from Settings: steps already done wait for Next
-    E(pg,"openSheet('set')"); pg.wait_for_timeout(300); click(pg,'#obReplay',False); E(pg,"TT.render()"); pg.wait_for_timeout(300)
+    E(pg,"openSheet('set')"); paint(pg); click(pg,'#obReplay',False); card_settled(pg)
     ok(E(pg,"S.ob.st")=='on' and E(pg,"S.ob.rep")==1 and E(pg,"TT.curSheet") is None,'Settings → Replay restarts the guide (and closes Settings)')
     ok(E(pg,"document.querySelector('#obCard .ob-e').textContent")=='✅' and rect(pg,'#obGo') is not None,'replay: a step already done shows ✅ and Next')
     n=0
@@ -143,9 +202,9 @@ with sync_playwright() as p:
     ok(E(pg,"S.ob.st")=='skip' and E(pg,"!document.getElementById('obCard')&&!document.getElementById('obHand')"),'skip: ✕ hides the guide and the pointer')
     ok(any('Settings' in t for t in E(pg,"[...document.querySelectorAll('.toast')].map(t=>t.innerText)")),'skip: a toast says it can be replayed in Settings')
     ok(E(pg,"[S.coins,S.res.logs]")==c0,'skip: nothing changes in the economy')
-    E(pg,"TT.save(true)"); pg.reload(); pg.wait_for_timeout(1300); ok(E(pg,"S.ob.st")=='skip' and E(pg,"!document.getElementById('obCard')"),'skip: stays hidden after reload')
+    E(pg,"TT.save(true)"); pg.reload(wait_until='domcontentloaded'); ready(pg); ok(E(pg,"S.ob.st")=='skip' and E(pg,"!document.getElementById('obCard')"),'skip: stays hidden after reload')
     # reset → a brand-new save gets the guide again
-    E(pg,"TT.hardReset()"); pg.wait_for_timeout(300); E(pg,"TT.render()")
+    E(pg,"TT.hardReset()"); E(pg,"TT.render()"); card_settled(pg)
     ok(E(pg,"S.ob.st")=='on' and E(pg,"S.ob.step")==0 and E(pg,"!!document.getElementById('obCard')"),'reset: the wiped save shows the guide again')
     # far along without finishing (or after a Replant): ends quietly
     E(pg,"S.totalEarned=2e6;TT.render()"); ok(E(pg,"S.ob.st")=='done' and E(pg,"!document.getElementById('obCard')"),'a run far past the first minutes (🪙1M earned) closes the guide quietly')
@@ -166,11 +225,11 @@ with sync_playwright() as p:
            ('damaged ob {st:zzz,step:99}',dict(base,version='2.38',ob={'st':'zzz','step':99})),('ob array',dict(base,version='2.38',ob=[1,2]))]
     for name,sv in cases:
         sv=dict(sv); sv['lastSave']=0 if 'lastSave' not in sv else sv['lastSave']
-        ctx,pg=page(tag=f'{name}: ',init=oldsave(sv)); E(pg,"document.querySelectorAll('.modal-bg').forEach(m=>m.remove());TT.render()"); pg.wait_for_timeout(300)
+        ctx,pg=page(tag=f'{name}: ',init=oldsave(sv)); E(pg,"document.querySelectorAll('.modal-bg').forEach(m=>m.remove());TT.render()"); paint(pg)
         r=E(pg,"({st:S.ob.st,step:S.ob.step,card:!!document.getElementById('obCard'),hand:!!document.getElementById('obHand'),ver:S.version})")
         ok(r['st'] in ('old',) and not r['card'] and not r['hand'] and tuple(map(int,r['ver'].split('.')))>=(2,38) and 0<=r['step']<=6,f'{name}: loads, no guide ({r})')
         if name.startswith('v2.37 save with'):
-            E(pg,"openSheet('set')"); pg.wait_for_timeout(300)
+            E(pg,"openSheet('set')"); paint(pg)
             ok(rect(pg,'#obReplay') is not None,'old save: Settings offers 📘 Replay')
             click(pg,'#obReplay',False); E(pg,"TT.render()"); ok(E(pg,"S.ob.st")=='on' and E(pg,"!!document.getElementById('obCard')"),'old save: replay shows the guide on request')
         ctx.close()
@@ -188,14 +247,14 @@ with sync_playwright() as p:
     ctx,pg=page('iPhone 13',tag='tt: ')
     r=rect(pg,'#obSkip'); ok(r and r['b']-r['t']>=34,f'phone: Skip button is a comfortable touch target ({r})')
     # a tall sheet: the card shrinks to a slim strip above it, never over it
-    E(pg,"openSheet('crew');setSheetState&&setSheetState('full')"); pg.wait_for_timeout(600); E(pg,"TT.render()"); pg.wait_for_timeout(300)
+    E(pg,"openSheet('crew');setSheetState&&setSheetState('full');TT.render()"); card_settled(pg)
     c=rect(pg,'#obCard'); s=rect(pg,'#sheet'); ok(c and not hit(c,s) or E(pg,"document.getElementById('obCard').getBoundingClientRect().bottom")<=s['t']+1 or E(pg,"getComputedStyle(document.getElementById('sheet')).zIndex>getComputedStyle(document.getElementById('obCard')).zIndex"),f'phone full sheet: the card never draws over the sheet ({c} vs {s})')
     ctx.close()
     # landscape phone (left rail + side sheet)
-    ctx=b.new_context(viewport={'width':844,'height':390},is_mobile=True,has_touch=True,device_scale_factor=2,service_workers='block'); ctx.add_init_script(CLEAR); pg=ctx.new_page()
-    pg.on('pageerror',lambda e: errs.append(f'land {e}')); pg.goto(URL); pg.wait_for_timeout(1400); E(pg,CALM); E(pg,"TT.render()"); pg.wait_for_timeout(300)
+    ctx=b.new_context(viewport={'width':844,'height':390},is_mobile=True,has_touch=True,device_scale_factor=2,service_workers='block'); ctx.add_init_script(STOP+CLEAR); pg=ctx.new_page()
+    pg.on('pageerror',lambda e: errs.append(f'land {e}')); pg.goto(URL,wait_until='domcontentloaded'); ready(pg); E(pg,CALM); card_settled(pg)
     card_ok(pg,'landscape'); bb=rect(pg,'#bottombar'); c=rect(pg,'#obCard'); ok(not hit(c,bb),'landscape: card clear of the rail')
-    E(pg,"openSheet('crew')"); pg.wait_for_timeout(500); E(pg,"TT.render()"); pg.wait_for_timeout(300); c=rect(pg,'#obCard'); s=rect(pg,'#sheet')
+    E(pg,"openSheet('crew');TT.render()"); card_settled(pg); c=rect(pg,'#obCard'); s=rect(pg,'#sheet')
     ok(inview(pg,c) and not hit(c,s),f'landscape: card clear of the side sheet ({c} vs {s})')
     ctx.close()
     ok(not errs,f'no console errors ({errs[:4]})'); ok(not missing,f'no 404s ({missing[:4]})')

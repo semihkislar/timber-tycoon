@@ -106,11 +106,13 @@ with sync_playwright() as p:
     ok(pg.evaluate("TT.bstat.kiln.f")==0 and pg.evaluate("TT.bstat.kiln.fire"),'a burning building pauses (output 0)')
     ok(pg.evaluate("Object.keys(TT.S.fires)")==['kiln'],'only one fire at a time')
     pg.evaluate("TT.openSheet('bld','kiln')") if False else pg.evaluate("TT.render()")
-    c0=pg.evaluate("TT.S.coins"); cr=pg.evaluate("TT.coinRate")
-    for k in range(11): pg.evaluate("TT.tapFire('kiln')")
-    ok(pg.evaluate("TT.onFire('kiln')"),'11 taps are not enough')
-    pg.evaluate("TT.tapFire('kiln')"); ok(not pg.evaluate("TT.onFire('kiln')"),'12th tap puts the fire out')
-    got=pg.evaluate("TT.S.coins")-c0; ok(got>=max(150,cr*30)*.98,f'tap reward = 30s of income ({got:.0f} vs rate {cr:.0f}/s)')
+    # One turn. A live tick between the taps was paying wages, so the coin delta came out
+    # a hair under 30 s of the rate we had read a moment earlier.
+    fr=pg.evaluate('''(()=>{const c0=S.coins,cr=coinRate;for(let k=0;k<11;k++) tapFire("kiln");const still=!!onFire("kiln");tapFire("kiln");
+      return {still,out:!onFire("kiln"),got:S.coins-c0,cr,want:Math.max(150*cs(),cr*30)};})()''')
+    ok(fr['still'],'11 taps are not enough')
+    ok(fr['out'],'12th tap puts the fire out')
+    ok(fr['got']>=fr['want']*.98,f"tap reward = 30s of income ({fr['got']:.0f} vs rate {fr['cr']:.0f}/s)")
     ok(pg.evaluate("TT.S.fireStats")=={'n':1,'tap':1},'fire stats count the rescue')
     pg.evaluate("TT.simulate(1,.5)"); ok(pg.evaluate("TT.bstat.kiln.f")>0,'building resumes right after')
     pg.evaluate("TT.S.fireCool=0;TT.startFire('pellet')"); pg.evaluate("TT.simulate(30,.5)"); ok(pg.evaluate("TT.onFire('pellet')"),'unattended fire still burning at 30s')
@@ -118,9 +120,23 @@ with sync_playwright() as p:
     ok(not pg.evaluate("TT.onFire('pellet')") and pg.evaluate("TT.S.buildings.pellet.lvl")==lvl,'unattended fire burns out after 60s with no permanent loss')
     ok(pg.evaluate("TT.S.fireCool>TT.S.time+100"),'cooldown after a fire')
     # fire station
-    pg.evaluate("TT.S.coins=0"); ok(not pg.evaluate("TT.buyStation()"),'station needs coins')
-    c=pg.evaluate("TT.stationCost()"); pg.evaluate(f"TT.S.coins={c}"); ok(pg.evaluate("TT.buyStation()") and pg.evaluate("TT.stationLvl()")==1,'build the fire station')
-    ok(pg.evaluate("TT.stationCost()")/c>=5.99,'station upgrades cost at least x6 (income floor can raise them)')
+    # One turn: a live tick between reading the price and paying it was moving income,
+    # so the coins set aside no longer covered the station. v2.45 prices both the build
+    # and the next level as max(sticker × forest value, N seconds of income): 15 s then 45 s,
+    # which is ×3 once income is the larger term, and ×6 while the old sticker still wins.
+    r=pg.evaluate('''(()=>{
+      S.coins=0; const poor=buyStation()===false;
+      const inc0=stationInc(), fv=cs(), build=stationCost();
+      const want0=Math.max(6e4*fv, STATION_SEC[0]*inc0);
+      S.coins=build; const yes=buyStation()===true, lvl=stationLvl();
+      const inc1=stationInc(), next=stationCost();
+      const want1=Math.max(6e4*6*fv, STATION_SEC[1]*inc1);
+      return {poor:poor,yes:yes,lvl:lvl,build:build,next:next,want0:want0,want1:want1,ratio:next/build};
+    })()''')
+    ok(r['poor'],'station needs coins')
+    ok(r['yes'] and r['lvl']==1,'build the fire station')
+    ok(abs(r['build']-r['want0'])<=max(1,abs(r['want0']))*1e-6 and abs(r['next']-r['want1'])<=max(1,abs(r['want1']))*1e-6,
+       f"station price is max(sticker × forest value, 15 s then 45 s of income) (×{r['ratio']:.2f}; build {r['build']:.6g} vs {r['want0']:.6g}, next {r['next']:.6g} vs {r['want1']:.6g})")
     rk=pg.evaluate("TT.fireRisk('kiln')"); pg.evaluate("TT.S.coins=1e30;TT.buyStation();TT.buyStation()"); ok(abs(pg.evaluate("TT.fireRisk('kiln')")/rk-.7/.9)<.01,'each station level cuts risk 10%')
     pg.evaluate("TT.S.fireCool=0;TT.S.fires={};TT.startFire('kiln')"); eta=pg.evaluate("TT.S.fires.kiln.eta")
     ok(eta==11+7,f'station Lv3 truck ETA {eta}s')
@@ -175,3 +191,4 @@ with sync_playwright() as p:
     ok(not bad,'no console errors/warnings '+json.dumps(bad[:4]))
     b.close()
 print('\n%d failures'%len(FAILS)); [print(' -',f) for f in FAILS]
+sys.exit(1 if FAILS else 0)
