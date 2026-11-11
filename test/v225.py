@@ -1,4 +1,6 @@
 # v2.25: order sizing after Replant (item 5 of Semih's Oct 20 list). Client orders, daily contracts and export contracts
+# The live loop is stopped (test/_pace.py): a tick between two checks was finishing an order or adding another
+# offer, and the phone taps were locator.tap(), which Chromium sometimes drops. Boot waits for TT, not a fixed sleep.
 # are sized on the line's real output with a value floor that follows this run's income (forest value as the floor), rewards
 # stay proportional to the goods, daily contracts wait for running lines and follow output until accepted, and the client
 # order board holds several offers and runs 1–3 orders at once. Multi-Replant sims, old saves, desktop + touch.
@@ -6,12 +8,30 @@ from playwright.sync_api import sync_playwright
 import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,BASE,ROOT,ver
+from _pace import STOP,ready,paint,touch_at
 import sim_v225
 FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
     if not c: FAILS.append(msg)
 def E(pg,js,arg=None): return pg.evaluate(js,arg) if arg is not None else pg.evaluate(js)
+def tap_sel(pg,sel):
+    loc=pg.locator(sel).first
+    try: loc.scroll_into_view_if_needed()
+    except Exception: return False
+    box=loc.bounding_box()
+    if not box: return False
+    touch_at(pg, box['x']+box['width']/2, box['y']+min(box['height']/2, 22))
+    paint(pg)
+    return True
+def tap_until(pg,sel,expr,n=4):
+    for _ in range(n):
+        tap_sel(pg,sel)
+        try:
+            if E(pg,expr): return True
+        except Exception: pass
+    try: return bool(E(pg,expr))
+    except Exception: return False
 CLEAR='if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'
 QUIET="(()=>{document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e6;S.orders.next=S.time+1e6;window.toast=()=>{};})()"
 # a mid/late factory: Phase I + II running, Premium Area open with two workshops
@@ -28,7 +48,7 @@ with sync_playwright() as p:
     def page(dev=None,tag='',init=CLEAR):
         if dev: d=dict(p.devices[dev]); d.pop('default_browser_type',None); ctx=b.new_context(**d,service_workers='block')
         else: ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
-        ctx.add_init_script(init); pg=ctx.new_page(); watch(pg,tag); pg.goto(URL); pg.wait_for_timeout(1300); E(pg,QUIET); return ctx,pg
+        ctx.add_init_script(STOP+init); pg=ctx.new_page(); watch(pg,tag); pg.goto(URL,wait_until='domcontentloaded'); ready(pg); E(pg,QUIET); return ctx,pg
 
     ctx,pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,25),f"VERSION >= 2.25 ({E(pg,'TT.VERSION')})")
@@ -44,11 +64,13 @@ with sync_playwright() as p:
       o.made1=!!S.daily._made;o.goods1=dailyGoods().length;
       for(const [b,n] of [['sawmill',30],['chipper',15],['kiln',10],['peeler',10]]){S.coins=1e30;buyBuilding(b,n);}S.coins=1e9*cs();M=computeMods();
       for(let k=0;k<60;k++){S.forest.m=1e9;tick(1,false);}
-      o.made2=!!S.daily._made;o.offers=S.daily.offers.map(x=>({it:x.item,amt:x.amt,rw:x.reward,val:x.amt*price(x.item),p:prodRate(x.item)}));o.inc=ordInc();return o;})()""")
+      o.made2=!!S.daily._made;o.offers=S.daily.offers.map(x=>{const d=DAILY_DIFFS.find(z=>z.id===x.diff)||DAILY_DIFFS[1];return {it:x.item,amt:x.amt,rw:x.reward,val:x.amt*price(x.item),p:prodRate(x.item),am:d.amt};});o.inc=ordInc();return o;})()""")
     ok(r['cs']>5,f"after a Replant with Legacy 2000 the forest value is ×{r['cs']:.0f}")
     ok(not r['made0'] and r['c0'] is None,f"no daily contract before any product line runs (old: 3 contracts of 5 units from a fallback list) ({r['c0']})")
     ok(r['offers'] and all(x['amt']>=20 for x in r['offers']),f"the day's contracts, once drawn, ask for ≥ 20 units ({[x['amt'] for x in r['offers']]})")
-    ok(r['offers'] and all(x['val']>=4.5*r['inc'] for x in r['offers']),f"… and are each worth ≥ 5 s of income ({[round(x['val']/r['inc'],1) for x in r['offers']]} s)")
+    # Easy is 0.55 × the 5 s floor, Standard 0.85, Hard 1.2. A quiet line sits on that floor, so the easy
+    # contract is about 2.75 s of income and used to fail a flat 4.5 s check whenever output had not outgrown it.
+    ok(r['offers'] and all(x['val']>=4.5*r['inc']*x['am'] for x in r['offers']),f"… and each is worth ≥ 5 s of income × its difficulty ({[round(x['val']/r['inc']/x['am'],1) for x in r['offers']]} s)")
     ok(r['offers'] and all(x['p']>0.015 for x in r['offers']),'… only for goods the factory makes')
     # ---------------- daily offers follow output until accepted ----------------
     r=E(pg,"""(()=>{const D=S.daily;const o=D.offers[0];o.amt=5;o.reward=40;S.coins=1e30;buyBuilding(BUILDINGS.find(b=>b.out[o.item]).id,60);M=computeMods();
@@ -132,42 +154,42 @@ with sync_playwright() as p:
         ok(not R['errs'],f'{label}: no page errors')
     # ---------------- desktop UI ----------------
     ctx,pg=page(); E(pg,SETUP)
-    E(pg,"(()=>{const O=S.orders;O.offer=null;O.active=null;offerOrder('chairs');offerOrder('planks');offerOrder('furniture');acceptOrder();for(const o of O.acts) o.amt=1e30;render();})()"); pg.wait_for_timeout(500)
+    E(pg,"(()=>{const O=S.orders;O.offer=null;O.active=null;O.next=S.time+1e6;offerOrder('chairs');offerOrder('planks');offerOrder('furniture');acceptOrder();for(const o of O.acts) o.amt=1e30;render();})()"); paint(pg)
     ok(pg.locator('#orderCard').is_visible() and '+2' in E(pg,"document.getElementById('orderCard').innerText"),'order card shows the running order and "+2" more on the board')
-    E(pg,"TT.ordTab='clients'"); pg.click('#bbOrd'); pg.wait_for_timeout(500)
+    E(pg,"TT.ordTab='clients'"); pg.click('#bbOrd'); paint(pg)
     ok(E(pg,"document.querySelectorAll('#ordBody .ord-card.act').length")==1 and E(pg,"document.querySelectorAll('#ordBody .ord-card.offer').length")==2,'Clients tab: one card per running order and per offer')
     ok('1/3' in E(pg,"document.querySelector('#ordBody .ord-board').innerText"),'board header shows slots in use (1/3)')
-    id2=E(pg,"S.orders.offers[1].id"); pg.click(f'[data-oyes="{id2}"]'); pg.wait_for_timeout(400)
+    id2=E(pg,"S.orders.offers[1].id"); pg.click(f'[data-oyes="{id2}"]'); paint(pg)
     ok(E(pg,f"S.orders.acts.some(o=>o.id==={id2})"),'click Accept on the second offer accepts that one'); E(pg,"for(const o of S.orders.acts) o.amt=1e30")
-    id1=E(pg,"S.orders.offers[0].id"); pg.click(f'[data-ono="{id1}"]'); pg.wait_for_timeout(400)
+    id1=E(pg,"S.orders.offers[0].id"); pg.click(f'[data-ono="{id1}"]'); paint(pg)
     ok(E(pg,"S.orders.offers.length")==0 and E(pg,"S.orders.acts.length")==2,'click Decline removes that offer')
     oid=E(pg,"S.orders.acts[1].id")
     r=E(pg,"""(()=>{const o=S.orders.acts[1];o.amt=Math.max(1e6,prodRate(o.item)*2000);o.got=0;S.res[o.item]=o.amt*1.5;updateOrders();const b=document.querySelector(`[data-odel="${o.id}"]`);const dis=b.disabled;b.click();return dis;})()""")
     ok(r==False,'Deliver from storage button is enabled with stock on hand')
     ok(E(pg,f"!S.orders.acts.some(o=>o.id==={oid})") and E(pg,"S.orders.done")>=1,'Deliver from storage on the second order completes it')
-    E(pg,"(()=>{offerOrder('paper');offerOrder('chairs');acceptOrder();acceptOrder();for(const o of S.orders.acts) o.amt=1e30;ordSig='';})()"); pg.wait_for_timeout(500)
-    E(pg,"(()=>{offerOrder('furniture');ordSig='';})()"); pg.wait_for_timeout(500)
+    E(pg,"(()=>{S.orders.next=S.time+1e6;offerOrder('paper');offerOrder('chairs');acceptOrder();acceptOrder();for(const o of S.orders.acts) o.amt=1e30;ordSig='';render();})()"); paint(pg)
+    E(pg,"(()=>{offerOrder('furniture');ordSig='';render();})()"); paint(pg)
     ok(E(pg,"S.orders.acts.length")==3 and E(pg,"[...document.querySelectorAll('[data-oyes]')].every(b=>b.disabled)"),'with all slots busy the Accept buttons are disabled')
     pg.screenshot(path='/tmp/v225_desk_board.png')
     ctx.close()
     # ---------------- phones (touch) ----------------
     for dev in ['iPhone 13','Pixel 7']:
         ctx,pg=page(dev,dev+' '); E(pg,SETUP)
-        E(pg,"(()=>{const O=S.orders;O.offer=null;O.active=null;offerOrder('chairs');offerOrder('planks');offerOrder('paper');render();})()"); pg.wait_for_timeout(600)
+        E(pg,"(()=>{const O=S.orders;O.offer=null;O.active=null;O.next=S.time+1e6;offerOrder('chairs');offerOrder('planks');offerOrder('paper');render();})()"); paint(pg)
         ok(pg.locator('#ocYes').is_visible(),f'{dev}: order card with Accept')
-        id0=E(pg,"S.orders.offers[0].id"); pg.tap('#ocYes'); pg.wait_for_timeout(400); E(pg,"for(const o of S.orders.acts) o.amt=1e30")
-        ok(E(pg,f"S.orders.acts.some(o=>o.id==={id0})"),f'{dev}: tap Accept on the card')
-        E(pg,"TT.ordTab='clients'"); E(pg,"TT.openSheet('ord')"); pg.wait_for_timeout(700)
+        id0=E(pg,"S.orders.offers[0].id")
+        ok(tap_until(pg,'#ocYes',f"S.orders.acts.some(o=>o.id==={id0})"),f'{dev}: tap Accept on the card')
+        E(pg,"for(const o of S.orders.acts) o.amt=1e30")
+        E(pg,"TT.ordTab='clients'"); E(pg,"TT.openSheet('ord')"); paint(pg)
         vw=E(pg,'innerWidth')
         bx=E(pg,'[...document.querySelectorAll("#ordBody [data-oyes],#ordBody [data-ono],#ordBody [data-odel]")].map(b=>{const r=b.getBoundingClientRect();return [r.left,r.right,r.height]})')
         ok(len(bx)==5 and all(x[0]>=0 and x[1]<=vw+.5 and x[2]>=36 for x in bx),f'{dev}: order buttons fit the screen and are touch-sized ({[round(x[2]) for x in bx]})')
         ok(E(pg,'(()=>{const e=document.getElementById("ordBody");return e.scrollWidth<=e.clientWidth+1})()'),f'{dev}: no sideways scroll in the Orders sheet')
-        id1=E(pg,"S.orders.offers[1].id"); E(pg,f"document.querySelector('[data-oyes=\"{id1}\"]').scrollIntoView({{block:'center'}})"); pg.wait_for_timeout(200)
-        pg.tap(f'[data-oyes="{id1}"]'); pg.wait_for_timeout(400)
-        ok(E(pg,f"S.orders.acts.some(o=>o.id==={id1})") and E(pg,"S.orders.acts.length")==2,f'{dev}: tap Accept on the second offer in the sheet'); E(pg,"for(const o of S.orders.acts) o.amt=1e30")
-        E(pg,"document.querySelector('#ordBody .ord-board').scrollIntoView({block:'start'})"); pg.wait_for_timeout(200)
+        id1=E(pg,"S.orders.offers[1].id"); E(pg,f"document.querySelector('[data-oyes=\"{id1}\"]').scrollIntoView({{block:'center'}})"); paint(pg,1)
+        ok(tap_until(pg,f'[data-oyes="{id1}"]',f"S.orders.acts.some(o=>o.id==={id1})&&S.orders.acts.length===2"),f'{dev}: tap Accept on the second offer in the sheet'); E(pg,"for(const o of S.orders.acts) o.amt=1e30")
+        E(pg,"document.querySelector('#ordBody .ord-board').scrollIntoView({block:'start'})"); paint(pg,1)
         pg.screenshot(path=f'/tmp/v225_{dev.split()[0].lower()}_board.png')
-        E(pg,"TT.ordTab='daily';ordSig='';TT.updateOrders&&TT.updateOrders()"); pg.wait_for_timeout(200)
+        E(pg,"TT.ordTab='daily';ordSig='';TT.updateOrders&&TT.updateOrders()"); paint(pg,1)
         ctx.close()
     ok(not errs,f'no console errors ({errs[:3]})')
     ok(not missing,f'no 404s ({missing[:3]})')

@@ -1,4 +1,7 @@
 # v2.31 logistics tiers, part 2 (item 8): conveyor belts (logistics tier 2). Four raised belts straight across the lane
+# The live loop is stopped (test/_pace.py). Boot waits until TT exists. Belt travel on the phone is one
+# explicit stepScene span, the same way the desktop check works: two live samples could pair different
+# goods after the belt offset wrapped, or see nothing if the frame loop had not drawn yet.
 # (Sawmill → Carpentry, Chipper → Pellet Press, Veneer Peeler → Furniture, Beam Saw → Glulam): unlock at Forklift Depot Lv 3,
 # per-link levels 0–10 (+10 % of the carried good at the source, +5 % output at the destination, no extra demand), forest-value
 # costs, Replant reset, grid-aligned isometric geometry, moving goods (bounded, cached), forklifts leave belted links,
@@ -7,6 +10,7 @@ from playwright.sync_api import sync_playwright
 import sys,os,re,json
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from _server import URL,ver
+from _pace import STOP,ready,paint,touch_at
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAILS=[]
 def ok(c,msg):
@@ -26,9 +30,9 @@ with sync_playwright() as p:
     def page(dev=None,tag='',init=CLEAR):
         if dev: d=dict(p.devices[dev]); d.pop('default_browser_type',None); ctx=b.new_context(**d,service_workers='block')
         else: ctx=b.new_context(viewport={'width':1280,'height':800},service_workers='block')
-        ctx.add_init_script(init); pg=ctx.new_page()
+        ctx.add_init_script(STOP+init); pg=ctx.new_page()
         pg.on('pageerror',lambda e: errs.append(f'{tag}{e}')); pg.on('console',lambda m: errs.append(f'{tag}console: {m.text}') if m.type=='error' else None)
-        pg.goto(URL); pg.wait_for_timeout(1300); pg.evaluate(QUIET); return ctx,pg
+        pg.goto(URL,wait_until='domcontentloaded'); ready(pg); pg.evaluate(QUIET); return ctx,pg
     E=lambda pg,js: pg.evaluate(js)
     ctx,pg=page()
     ok(ver(E(pg,'TT.VERSION'))>=(2,31),f"VERSION >= 2.31 ({E(pg,'TT.VERSION')})")
@@ -91,14 +95,23 @@ with sync_playwright() as p:
     ok(len(a)>=3 and len(a)==len(c) and any(abs(x[0]-y[0])+abs(x[1]-y[1])>.5 for x,y in zip(a,c)),f'goods move along the belt ({len(a)} items, e.g. {a[0][:2]} → {c[0][:2]})')
     g=E(pg,"(()=>{const g=beltGeom(BELT_LINKS[0]);return [g.ci,g.cj];})()")
     ok(all((abs(x[0]-g[0])<1e-6 or abs(x[1]-g[1])<1e-6) and x[2]>=E(pg,'BELT_Z0')-1e-6 for x in c),'goods sit on the belt line (no floating items)')
-    sp=E(pg,"(()=>{const st=scene.belts.sawmill,G=beltGeom(BELT_BY_SRC.sawmill),dt=1/30;const old=st.off;st.off=(old+dt*BELT_V/G.tot)%1;const b=beltItemPos('sawmill');st.off=old;const a=beltItemPos('sawmill');return Math.max(...a.map((p,k)=>Math.hypot(b[k][0]-p[0],b[k][1]-p[1])))/dt;})()")
+    # A good that crosses the seam in that one step is still moving at BELT_V along the belt.
+    # Pairing the two ends with a straight-line distance reported ~190 tiles/s whenever the
+    # random offset put an item on the join.
+    sp=E(pg,r'''()=>{const st=scene.belts.sawmill,G=beltGeom(BELT_BY_SRC.sawmill),dt=1/30,n=beltItems(BELT_BY_SRC.sawmill);
+      const old=st.off,step=dt*BELT_V/G.tot;let worst=0;
+      for(let k=0;k<n;k++){const s0=((old+k/n)%1)*G.tot,s1=((old+step+k/n)%1)*G.tot;
+        let along=Math.abs(s1-s0);const wrap=along>G.tot/2;if(wrap) along=G.tot-along;
+        const p0=beltAt(G,s0),p1=beltAt(G,s1);const eu=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);
+        worst=Math.max(worst,(wrap?along:eu)/dt);}
+      st.off=old;return worst;}''')
     ok(sp<1.0,f'calm belt speed ({sp:.2f} tiles/s)')
     ok(E(pg,"BELT_LINKS.every(l=>beltItems(l)<=BELT_ITEMS)&&BELT_ITEMS<=8"),'at most 8 goods per belt (bounded)')
     ok(E(pg,"(()=>{const L=tierLinks();return !L.some(l=>l.src==='sawmill'&&l.dst==='carpentry')&&!L.some(l=>l.src==='chipper'&&l.dst==='pellet')&&L.some(l=>l.src==='sawmill'&&l.dst==='furniture');})()"),'belted links drop their cross-lane forklifts; other links keep theirs')
     r=E(pg,"(()=>{for(let k=0;k<60;k++) stepScene(1/30);const n=[...SPR.map.keys()].filter(k=>k.startsWith('belt|')).length;let calls=0;const raw=beltFrameRaw;window.beltFrameRaw=beltFrameRaw=function(){calls++;return raw.apply(this,arguments);};for(let k=0;k<60;k++) stepScene(1/30);window.beltFrameRaw=beltFrameRaw=raw;return [n,calls];})()")
     ok(r[0]>=4 and r[0]<=4*20,f'belt frames are cached sprites, one per depth strip ({r[0]} cached)')
     ok(r[1]==0,f'steady state: the belt frames are never redrawn (only blitted) ({r[1]} redraws / 60 frames)')
-    E(pg,f"{CAM}([12,11,2.6])"); pg.wait_for_timeout(900)
+    E(pg,f"{CAM}([12,11,2.6])"); paint(pg)
     ok(E(pg,"scene.objCount>0"),'scene renders with the belts on screen')
     # ---- Bottleneck Advisor ----
     r=E(pg,'''(()=>{for(const l of BELT_LINKS) S.logi.belt[l.src]=0;S.buildings.sawmill.lvl=1;S.buildings.carpentry.lvl=60;S.buildings.furniture.lvl=0;S.buildings.cabinetry.lvl=0;M=computeMods();
@@ -107,19 +120,19 @@ with sync_playwright() as p:
     ok(r[0]=='planks' and r[1]=='belt' and 'Sawmill → Carpentry Workshop belt' in (r[2] or '') and r[3]=='upg',f'Advisor: Carpentry waits on planks → "build the belt" when affordable, else "upgrade the Sawmill" ({r})')
     E(pg,WORLD)
     # ---- Shipping sheet + Supply Flow, desktop ----
-    E(pg,"(()=>{S.logi.fk=2;for(const l of BELT_LINKS) S.logi.belt[l.src]=0;TT.openSheet('ship');})()"); pg.wait_for_timeout(700)
+    E(pg,"(()=>{S.logi.fk=2;for(const l of BELT_LINKS) S.logi.belt[l.src]=0;TT.openSheet('ship');})()"); paint(pg)
     t=pg.locator('#lgBox').inner_text()
     ok('Conveyor belts' in t and 'Forklift Depot Lv 3' in t and pg.locator('#lgBB_sawmill').count()==0,'Depot Lv 2: belts shown as locked (unlock at Depot Lv 3)')
-    E(pg,"(()=>{S.logi.fk=3;S.coins=1e15;})()"); pg.wait_for_timeout(900)
+    E(pg,"(()=>{S.logi.fk=3;S.coins=1e15;shSig='';TT.render();})()"); paint(pg)
     t=pg.locator('#lgBox').inner_text()
     ok(pg.locator('#lgBB_sawmill').count()==1 and all(x in t for x in ['Sawmill → Carpentry Workshop','Wood Chipper → Pellet Press','Veneer Peeler → Furniture Factory','Beam Saw → Glulam Plant']),'Depot Lv 3: the sheet switches to the four belt rows')
     ok(not re.search(r'NaN|undefined|Infinity',pg.locator('#shipBody').inner_text()),'no NaN / undefined in the sheet')
     ok('Planks ×1.00 → ×1.10' in t and 'output ×1.00 → ×1.05' in t,'rows show the next level\'s gain')
-    pg.locator('#lgBB_sawmill').click(); pg.wait_for_timeout(300)
+    pg.locator('#lgBB_sawmill').click(); paint(pg)
     ok(E(pg,"beltLvl('sawmill')")==1,'clicking 🛤️ builds the belt')
-    pg.locator('#lgBB_sawmill').click(); pg.wait_for_timeout(300)
+    pg.locator('#lgBB_sawmill').click(); paint(pg)
     ok(E(pg,"beltLvl('sawmill')")==2 and 'Lv 2/10' in pg.locator('#lgBL_sawmill').inner_text(),'clicking ⬆ upgrades it (Lv 2/10)')
-    E(pg,"closeSheet();toggleFlow(true)"); pg.wait_for_timeout(900)
+    E(pg,"closeSheet();toggleFlow(true);TT.render()"); paint(pg)
     lg=pg.locator('#flowLegend').inner_text()
     ok('belt' in lg and 'Lv 2' in lg,f'Supply Flow shows the belts ({lg[lg.find("Forklifts"):][:90]!r})')
     ok(E(pg,"beltOnEdge('sawmill','carpentry')&&!beltOnEdge('sawmill','furniture')"),'Supply Flow marks the belted arc (🛤️ on its label)')
@@ -132,7 +145,7 @@ with sync_playwright() as p:
         ctx,pg=page(tag=name+': ')
         E(pg,WORLD)
         E(pg,f"(()=>{{S.logi.belt={{sawmill:3,chipper:7,peeler:1,beamsaw:0}};const o=JSON.parse(JSON.stringify(S));{mut};localStorage.setItem(SAVE_KEY,JSON.stringify(o));sessionStorage.setItem('_c','1');}})()")
-        pg.reload(); pg.wait_for_timeout(1300)
+        pg.reload(wait_until='domcontentloaded'); ready(pg)
         r=E(pg,"[BELT_LINKS.map(l=>S.logi.belt[l.src]),S.logi.fk,TT.VERSION]")
         ok(r[0]==(exp or [3,7,1,0]),f'{name}: loads with sane belt levels ({r})')
         E(pg,QUIET); E(pg,"for(let k=0;k<20;k++) stepScene(1/30)")
@@ -144,23 +157,34 @@ with sync_playwright() as p:
     ctx.close()
     # ---- phone touch ----
     ctx,pg=page('iPhone 13','iPhone: '); E(pg,WORLD)
-    E(pg,"(()=>{for(const l of BELT_LINKS) S.logi.belt[l.src]=0;TT.openSheet('ship');})()"); pg.wait_for_timeout(900)
-    btn=pg.locator('#lgBB_chipper'); btn.scroll_into_view_if_needed(); pg.wait_for_timeout(300); bb=btn.bounding_box()
+    E(pg,"(()=>{for(const l of BELT_LINKS) S.logi.belt[l.src]=0;TT.openSheet('ship');})()"); paint(pg)
+    btn=pg.locator('#lgBB_chipper'); btn.scroll_into_view_if_needed(); paint(pg,1); bb=btn.bounding_box()
     ok(bb and bb['height']>=40 and bb['x']+bb['width']<=390+1,f'iPhone: belt buttons are full touch targets on screen ({bb})')
     h=E(pg,"$('lgBelt_sawmill').querySelector('.nm').getBoundingClientRect().height"); nm=pg.locator('#lgBelt_sawmill .nm').inner_text()
     ok(h<=48 and 'Sawmill → Carpentry' in nm and 'Workshop' not in nm,f'iPhone: belt rows use short names and stay compact ({nm!r}, {h:.0f}px)')
-    btn.tap(); pg.wait_for_timeout(400)
-    ok(E(pg,"beltLvl('chipper')")==1,'iPhone: tapping 🛤️ builds the Chipper → Pellet Press belt')
+    built=False
+    for _ in range(4):
+        bb=btn.bounding_box()
+        if not bb: paint(pg); continue
+        touch_at(pg, bb['x']+bb['width']/2, bb['y']+min(bb['height']/2, 22)); paint(pg)
+        if E(pg,"beltLvl('chipper')")==1: built=True; break
+    ok(built,'iPhone: tapping 🛤️ builds the Chipper → Pellet Press belt')
     w=E(pg,"Math.max(...[...document.querySelectorAll('#shipBody *')].map(e=>e.getBoundingClientRect().right))")
     ok(w<=391,f'iPhone: nothing in the sheet runs off the screen ({w:.0f}px)')
-    E(pg,"closeSheet();toggleFlow(true)"); pg.wait_for_timeout(900)
+    E(pg,"closeSheet();toggleFlow(true);TT.render()"); paint(pg)
     g=pg.locator('#lgFlowGo'); bb=g.bounding_box()
     ok(bb and bb['height']>=34 and 'belt' in pg.locator('#flowLegend').inner_text(),f'iPhone: Supply Flow shows the belt line and the Logistics button ({bb})')
-    g.tap(); pg.wait_for_timeout(900)
-    ok(E(pg,"TT.curSheet")=='ship','iPhone: tapping it opens Logistics')
+    opened=False
+    for _ in range(4):
+        bb=g.bounding_box()
+        if not bb: paint(pg); continue
+        touch_at(pg, bb['x']+bb['width']/2, bb['y']+min(bb['height']/2, 22)); paint(pg)
+        if E(pg,"TT.curSheet")=='ship': opened=True; break
+    ok(opened,'iPhone: tapping it opens Logistics')
     E(pg,"closeSheet();toggleFlow(false)")
-    E(pg,f"{CAM}([17,16,2.2])"); pg.wait_for_timeout(600)
-    a=E(pg,"beltItemPos('chipper')"); pg.wait_for_timeout(1500); c=E(pg,"beltItemPos('chipper')")
+    E(pg,f"{CAM}([17,16,2.2])"); paint(pg)
+    mv=E(pg,'''()=>{for(let k=0;k<8;k++) stepScene(1/30); const a=beltItemPos('chipper'); for(let k=0;k<45;k++) stepScene(1/30); const c=beltItemPos('chipper'); return {a,c};}''')
+    a,c=mv['a'],mv['c']
     ok(len(a)>=3 and any(abs(x[0]-y[0])+abs(x[1]-y[1])>.3 for x,y in zip(a,c)),'iPhone: goods move on the belt in the live scene')
     r=E(pg,"(()=>{let v=0;const prev=new Map();for(let n=0;n<300;n++){stepScene(1/30);for(const f of scene.tierLifts||[]){const q=prev.get(f);if(q&&q.path===f.path) v=Math.max(v,Math.hypot(f.i-q.i,f.j-q.j)*30);prev.set(f,{i:f.i,j:f.j,path:f.path});}}return v;})()")
     ok(r<=1.06*1.05,f'iPhone: forklifts on the other links stay calm with belts on ({r:.2f} tiles/s)')

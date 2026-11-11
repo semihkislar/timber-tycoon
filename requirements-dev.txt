@@ -1,0 +1,3 @@
+# Test-only. The game itself is static HTML, CSS and classic scripts, with no install step.
+playwright>=1.40
+pillow>=10

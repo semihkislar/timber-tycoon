@@ -5,6 +5,32 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.52] — 2026-11-11
+
+**Test-suite stability.** A maintenance release. Recipes, prices, order rewards and the rule that logs are never sold are unchanged. Photo mode is not part of this release.
+
+Five suites were failing on some runs and passing on others. Each one was racing the page, not checking the wrong rule.
+
+### Fixed
+- **`test/v225.py` (orders).** The suite slept a fixed moment after loading, then read the order board. If the page was still starting, the read ran before the game existed. If the 100 ms loop ticked in the gap between two checks, it could finish an order or add another offer, so "+2 more" was no longer true. Phone taps used `locator.tap()`, which Chromium sometimes drops under phone emulation, so Accept looked like it did nothing. The day's contracts after a Replant also compared every offer with a flat 5 seconds of income. An Easy contract is 0.55 × that floor (about 2.75 s) whenever the line is still quiet, so the check failed on those draws. It now uses the same difficulty multiplier the later check in that file already used.
+- **`test/v231.py` (belts).** Same slow boot. On a phone the suite sampled belt goods twice, 1.5 s of wall clock apart, and hoped they had moved. Under load the scene might not have drawn yet, or the belt had wrapped so the second sample lined up with different goods and looked still. The desktop check already stepped the scene by a known amount; the phone check now does that too. A reload also slept a fixed moment instead of waiting until the game had loaded the save. The calm-speed check measured a straight line between an item's two positions. When the random belt offset put an item on the join, that line was the whole belt and the speed came out near 190 tiles/s. A step that crosses the join is now measured along the belt.
+- **`test/v237.py` (seasonal contracts).** The HUD badge and the Season tab are drawn when the game renders. The suite slept and hoped a render had happened. Sometimes it looked while the badge still said nothing, and sometimes a live tick had already moved the offer on from "New". Phone Sign / Deliver taps could be dropped the same way as the order taps.
+- **`test/v238.py` (first steps).** The guide card flashes, then its entrance animation runs again and the card is fully transparent for a frame. The wrap-up check used a fixed sleep, and on one run in five it measured the card in that transparent frame and reported it missing. The same sleep could land while a sheet was still sliding, so a click hit the overlay instead of Build. The pointer and the hit test were also read in two separate turns, so a moving camera could make a forest point miss.
+- **`test/v243.py` (notifications).** Toasts fade in, and a dismissed toast stays in the page at opacity 0 until a short timer deletes it. The suite counted whatever was on screen after a fixed sleep, which could be mid-fade, and it counted the queue before the next toast had been brought on (that happens about 120 ms after the dismiss). A live tick in a late-game factory could also push another toast between the burst and the check. The "hurry up" check slept 1.7 s and looked once; if the timer was a little late, Ben was not there yet.
+
+The suites now stop the 100 ms loop for the duration of the test (`STOP` in `test/_pace.py`), wait until `TT` exists, and poll until the card, badge or toast they care about is actually there. Phone input is a touch start and a touch end, retried when the game state did not change. `Date.now()` is left alone: freezing it made a reloaded save look hours old and played the guide card's entrance animation again.
+
+- **`test/v24.py` (Fire Station).** Since v2.50 the mid-game income is high enough that the v2.45 floor prices both the build and the next level. Those floors are 15 seconds of income, then 45 seconds, so the ratio is ×3. The suite still required ×6. It also read the price in one turn and paid it in the next, and a tick in between could move the income so the coins set aside no longer covered the station. The buy and the check now happen in one turn, and the expected price is max(sticker × forest value, 15 s then 45 s of income). The twelve fire taps and the 30-second reward check are one turn too: a tick between them was paying wages, and the coin delta came out a hair under 30 seconds of the rate read earlier. The game's pricing is unchanged. The suite now exits non-zero when an assertion fails, like the other suites.
+- **`test/v23.py` (day and night).** The brightness comparison needs Pillow. That dependency is now in `requirements-dev.txt`, and if Pillow is missing the suite prints how to install it and stops, instead of a bare import error.
+- **`test/v247.py` (early-game comparison).** The two-hour sim is one long call. On a busy machine that call takes long enough for the wall clock to move, and the earnings then missed the v2.46 snapshot by a few thousand coins. The sim now pins `Date.now()` for those ticks, so a loaded run matches a quiet one. Gameplay is unchanged.
+
+### Added
+- `test/v252.py`: version and the service-worker cache name are 2.52, a desktop click and an iPhone 13 / Pixel 7 touch boot with no console errors or 404s, and saves from v2.51, v2.50 and v2.39 still load and run. Release shots are `screenshots/history/v2.52/desktop.png` and `mobile.png`.
+- `test/v251.py` accepts VERSION and the service-worker cache at 2.51 or newer, the same way the older suites do.
+
+### Unchanged
+Recipes, building costs, order rewards, Research 2.0, Replant 2.0, overflow, and the v2.51 forest-value prices. Logs stay raw material and are never sold. A save from v2.51, v2.50 or v2.39 still loads.
+
 ## [2.51] — 2026-11-10
 
 **Forest-value pricing audit.** After a Replant, forest value `cs()` is ×50, ×675, ×1e6, ×1e12, and a handful of coin stickers were still the early-game number. A player could be shown, or could pay, a silly tiny price. The rule used since insurance (v2.42) and the Fire Station (v2.45) is: price = max(original × forest value, N seconds of this run's income). This release applies it to everything that was still left out, and leaves the systems that already followed it alone.

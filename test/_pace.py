@@ -10,6 +10,14 @@
 # The multi-minute balance and order sims still call tick() themselves. This
 # only removes the wall-clock waits and the live-tick races.
 HOLD=("(()=>{if(window.__clk)return;window.__clk=Date.now();Date.now=()=>window.__clk;})();")
+# Stop the 100 ms loop without freezing Date.now(). A frozen clock makes a reloaded
+# save look hours old (offline catch-up), and it restarts the guide card's entrance
+# animation whenever the flash class drops. The loop is what races a test: one tick
+# between two checks can finish an order, move a price, or award a trophy.
+# Scene frames still run on requestAnimationFrame. Call paint() when the DOM must
+# catch up, because render() no longer runs from the loop.
+STOP=("(()=>{if(window.__ttStop)return;window.__ttStop=1;const si=window.setInterval.bind(window);"
+      "window.setInterval=function(fn,ms){if(fn&&fn.name==='loop'){window.__ttLoop=fn;return si(function(){},1e9);}return si.apply(this,arguments);};})();")
 # HUD order line after renderOrderCard(). One row, timer fully drawn, clear of the 🔗 badge.
 HUD_LINE=r'''(()=>{
   if(typeof renderOrderCard==='function') renderOrderCard();
@@ -57,3 +65,29 @@ def paint(pg, frames=2):
     pg.evaluate("()=>{if(window.TT&&TT.render)TT.render();if(typeof stepScene==='function')stepScene(1/60);}")
     if frames:
         pg.evaluate("(n)=>new Promise(res=>{let k=0;(function step(){requestAnimationFrame(()=>{if(++k>=n)res(1);else step();});})();})", frames)
+def until(pg, expr, timeout=8000, step=40):
+    # Poll a page expression until it is truthy. Use this instead of a fixed sleep:
+    # the value we need (a booted game, a card that has faded in, the next toast)
+    # arrives when it arrives, and a sleep can look in the gap.
+    import time
+    end=time.monotonic()+timeout/1000; last=None
+    while time.monotonic()<end:
+        try:
+            v=pg.evaluate(expr)
+            if v: return v
+            last=v
+        except Exception as e:
+            last=e
+        pg.wait_for_timeout(step)
+    raise TimeoutError('not ready (%s) last=%r'%(str(expr)[:140], last))
+def touch_at(pg, x, y):
+    # locator.tap() is dropped sometimes under phone emulation. A start/end pair is the same
+    # events the game already handles, and the caller can retry if the state did not change.
+    cdp=pg.context.new_cdp_session(pg)
+    try:
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':float(x),'y':float(y)}]})
+        pg.wait_for_timeout(30)
+        cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+    finally:
+        try: cdp.detach()
+        except Exception: pass
