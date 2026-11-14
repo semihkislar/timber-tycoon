@@ -170,10 +170,15 @@ function drawGroundLayer(ctx,vx0,vy0,vx1,vy1,force){
       if(M<0) M=0;
       const nw=cv.width+2*M, nh=cv.height+2*M;
       scene.chunkMax=Math.max(42,Math.ceil((Math.ceil(nw/(CHUNK*s))+1)*(Math.ceil(nh/(CHUNK*s))+1)*1.5)+8);
-      if(G.c.width!==nw||G.c.height!==nh){G.c.width=nw;G.c.height=nh;}
-      const g=G.c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,nw,nh);g.setTransform(s,0,0,s,e+M,f+M);
-      drawChunks(g,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false);
-      G.s=s;G.e=e+M;G.f=f+M;G.key=key;G.builds++;dx=-M;dy=-M;
+      // Fill the chunk cache one chunk a frame. Composing the whole layer every frame was a long task,
+      // and saving it early left the boot flag stuck.
+      if(scene.groundBoot) drawChunks(ctx,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false,false);
+      if(!scene.groundBoot){
+        if(G.c.width!==nw||G.c.height!==nh){G.c.width=nw;G.c.height=nh;}
+        const g=G.c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,nw,nh);g.setTransform(s,0,0,s,e+M,f+M);
+        drawChunks(g,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false);
+        G.s=s;G.e=e+M;G.f=f+M;G.key=key;G.builds++;dx=-M;dy=-M;
+      }
     } else if(G.s){
       const r=s/G.s, x0=e-r*G.e, y0=f-r*G.f;
       if(x0<=.5&&y0<=.5&&x0+W*r>=cv.width-.5&&y0+H*r>=cv.height-.5){ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(G.c,x0,y0,W*r,H*r);ctx.setTransform(m);scene.groundScaled=(scene.groundScaled||0)+1;return;}
@@ -189,7 +194,7 @@ function drawGroundLayer(ctx,vx0,vy0,vx1,vy1,force){
   if(SPR._b&&SPR._b.ctx===ctx) SPR._b.dev=false;
   o.setTransform(m.a,m.b,m.c,m.d,m.e,m.f);
 }
-function drawChunks(ctx,vx0,vy0,vx1,vy1,force){
+function drawChunks(ctx,vx0,vy0,vx1,vy1,force,paint){
   const tier=S.tree*10+SEAS, boot=!!scene.groundBoot;
   if(scene.chunkTier!==tier){scene.chunks.clear();scene.chunkTier=tier; if(!boot) force=true;}
   // v2.53: the first view used a 99-chunk budget in one turn. It now uses the zoom budget (one chunk a frame).
@@ -202,7 +207,7 @@ function drawChunks(ctx,vx0,vy0,vx1,vy1,force){
       if(!fb&&pacing&&budget<=0){missed++; continue;}
       if(fb&&(pacing||budget<=0)) c=fb; else if(budget>0||!fb){c=getChunk(cx,cy,cs,true);budget--;} else c=fb;
     }
-    if(c) ctx.drawImage(c.cv,cx*CHUNK-c.pad,cy*CHUNK-c.pad,c.cv.width/c.cs,c.cv.height/c.cs);
+    if(c&&paint!==false) ctx.drawImage(c.cv,cx*CHUNK-c.pad,cy*CHUNK-c.pad,c.cv.width/c.cs,c.cv.height/c.cs);
   }
   if(boot){scene.groundMiss=missed; if(!missed) scene.groundBoot=false;}
 }
