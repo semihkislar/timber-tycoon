@@ -41,6 +41,9 @@ LADDER=r'''()=>{S.runCS=1;coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}
 EARLY=r'''(()=>{const __t=Date.now();Date.now=()=>__t;let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
   window.toast=()=>{};window.save=()=>{};window.sfx=()=>{};
   S.coins=50;S.totalEarned=0;S.time=0;S.legacy=0;S.runCS=1;S.upgrades={};if(S.ob)S.ob.st='skip';if(S.wx)S.wx.next=1e15;
+  if(S.forest){S.forest.m=1200;S.forest.y=0;S.forest.s=0;S.forest.st=0;}
+  if(S.res){for(const k in S.res)S.res[k]=0;}
+  if(S.wx){S.wx.clock=126;S.wx.w='clear';S.wx.ends=0;S.wx.next=1e15;}
   coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}
   for(const c of COLLECTORS) S.collectors[c.id]=0;for(const b of BUILDINGS){S.buildings[b.id].lvl=0;S.buildings[b.id].on=true;}
   const want=['sawmill','chipper','kiln','carpentry','peeler','pellet','paper','furniture'];
@@ -177,10 +180,10 @@ with sync_playwright() as p:
     ok(r['re']['g'] and r['re']['sold']==0 and r['re']['logs'] is False and r['re']['pw']==3 and r['re']['dock']==4 and r['re']['mgr']==1 and r['re']['cs']>1 and r['re']['ratio']>=r['re']['cs']*0.999,f"Replant keeps the plant, dock and foreman; the next plant price follows forest value ({r['re']})")
     ok(r['odd'] and near(r['gold'],75) and r['fire']>=150*0.999,f"odd states stay finite; ×1 golden haul is 75; fire floor follows forest value ({r['gold']}, {r['fire']})")
     # Saves.
-    sv=E(pg,"""()=>{const o=JSON.parse(JSON.stringify(S));o.version='2.50';o.coins=250000;o.runCS=40;o.power={lvl:2,on:true,fuel:'mix'};o.ship={dock:3,fork:2,fspd:0,crane:0};o.mgr={emre:2};o.buildings.sawmill={lvl:12,on:true};o.res={logs:40};return JSON.stringify(o);}""")
+    sv=E(pg,"""()=>{coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}const o=JSON.parse(JSON.stringify(S));o.version='2.50';o.coins=250000;o.runCS=40;o.power={lvl:2,on:true,fuel:'mix'};o.ship={dock:3,fork:2,fspd:0,crane:0};o.mgr={emre:2};o.buildings.sawmill={lvl:12,on:true};o.res={logs:40};if(o.run){o.run.inc=0;o.run.incE=0;}return JSON.stringify(o);}""")
     pg.close()
     pg=page(init='localStorage.setItem("timberTycoon_save_v1",'+json.dumps(sv)+');')
-    r=E(pg,"()=>({v:S.version,pw:pwLvl(),dock:S.ship.dock,mgr:mgrLvl('sawmill'),saw:S.buildings.sawmill.lvl,logs:canSell('logs'),coin:S.coins,cs:cs(),next:pwCost()/ (PW_COST*Math.pow(PW_SCALE,2)*cs())})")
+    r=E(pg,"()=>{coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}return {v:S.version,pw:pwLvl(),dock:S.ship.dock,mgr:mgrLvl('sawmill'),saw:S.buildings.sawmill.lvl,logs:canSell('logs'),coin:S.coins,cs:cs(),next:pwCost()/ (PW_COST*Math.pow(PW_SCALE,2)*cs())};}")
     ok(ver(r['v'])>=(2,51) and r['pw']==2 and r['dock']==3 and r['mgr']==2 and r['saw']==12 and r['logs'] is False and r['coin']>2e5 and r['cs']==40 and abs(r['next']-1)<1e-6,f"v2.50 save loads; the next plant price is the sticker × forest value ({r})")
     pg.close()
     for ver_s,lvl in (('2.49',20),('2.39',12),('2.33',8),('2.24',6)):

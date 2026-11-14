@@ -2,9 +2,13 @@
 #   python3 tools/release.py           -> snapshot the current game into releases/v<VERSION>/ and regenerate versions.html
 # The snapshot is a full, self-contained copy (index.html + css/ + js/ + assets/), so every release stays playable.
 # Releases up to v2.7 are single files (releases/timber-tycoon-vX.Y.html) and are left untouched.
+# The bundle is rebuilt first. If js/game.js or the TT-SOURCES comment still differs, nothing is snapshotted.
 import os,re,shutil,subprocess,sys
 R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-subprocess.check_call([sys.executable, os.path.join(R,'tools','build_js.py')])
+_build=[sys.executable, os.path.join(R,'tools','build_js.py')]
+subprocess.check_call(_build)
+if subprocess.call(_build+['--check'])!=0:
+    raise SystemExit('refusing to snapshot: js/game.js or the TT-SOURCES comment still differs from the sources')
 ver=re.search(r"const VERSION='([\d.]+)'",open(R+'/js/logic_a.js').read()).group(1)
 dst=f'{R}/releases/v{ver}'
 shutil.rmtree(dst,ignore_errors=True); os.makedirs(dst)

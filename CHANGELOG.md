@@ -5,6 +5,27 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.54] — 2026-11-14
+
+**The page matches the sources.** A maintenance release. Prices, recipes, order rewards and the rule that logs are never sold are unchanged. A save from v2.53 still loads.
+
+The page loads one script, `js/game.js`, built from `js/*.js` by `tools/build_js.py`. Editing a source and forgetting the rebuild used to leave the shipped script quietly different from the files in git.
+
+### Added
+- `python3 tools/build_js.py --check` builds `js/game.js` and the `TT-SOURCES` list in memory. It exits non-zero if the file on disk or the comment in `index.html` differs, and it writes nothing. The message names which of the two is stale.
+- `test/v254.py` runs that check on a clean tree, then on a temporary copy. Changing a source fails the check. Changing only the `TT-SOURCES` comment fails it too. The copy is thrown away, and the real tree is not modified.
+- `tools/release.py` still rebuilds before it snapshots. If the bundle still differs after that build, it prints the check's message and refuses to write `releases/`.
+
+### Fixed
+- `test/v232.py` measured the frame cost without drones and with 8 drones in two separate windows, one after the other, and took the cheaper of two tries. A pause or a busy stretch during one window moved that median, so the check failed when nothing in the drawing had changed. The fleet stays up. After a warm-up, each round draws a short block with the drones and a short block without them, and the order flips. The first frames of a block are dropped, so a pause left over from the block before does not count. The number compared is the without-drone median plus the median of the rounds' differences, so a pause has to land in every round before it counts. The limit is the same: the drone view stays within 20 % + 1 ms of the view without drones. A cost that is present on every drawn frame still fails it.
+
+### Changed
+- `test/v253.py` accepts VERSION and the service-worker cache at 2.53 or newer, the same way the older suites do.
+- `test/v251.py` puts the forest, the stock and the weather clock back to a fresh start before the opening-script comparison, and it clears the income reference before it saves and reads the v2.50 plant price. A tick of the live loop in that gap was moving the total by a few coins, or leaving a huge income in the save so the next plant price was no longer the sticker. The prices themselves are unchanged.
+
+### Unchanged
+Recipes, building costs, order rewards, Research 2.0, Replant 2.0, and the v2.53 canvas cap. Logs stay raw material and are never sold. A save from v2.53 still loads.
+
 ## [2.53] — 2026-11-14
 
 **A smoother open on a big desktop window.** The mill is the same: prices, recipes, order rewards and the rule that logs are never sold are unchanged. A save from v2.52 still loads. Phones stay as sharp as they were.

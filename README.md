@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.53-6b8e23" alt="version 2.53">
+  <img src="https://img.shields.io/badge/version-2.54-6b8e23" alt="version 2.54">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,12 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.53: A smoother open on a big desktop window
-The mill is the same. Prices, recipes and the way logs stay unsold are the same as v2.52, and a v2.52 save still loads. On a large or high-density desktop window the scene no longer asks the GPU for a huge canvas, so the frame rate stays smooth. An opening card covers the first view while it fills in. Phones stay as sharp as they were.
+### New in v2.54: The page matches the sources
+The mill is the same. Prices, recipes and the way logs stay unsold are the same as v2.53, and a v2.53 save still loads. The game is still one script, built from the files in `js/`. A check now fails when that script is out of date, so a forgotten rebuild cannot ship.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.53** | 🖼️ **A smoother open on a big desktop window** | On a large or high-density desktop window the scene no longer asks the GPU for a huge canvas, so the frame rate stays smooth. An opening card covers the first view. Phones stay as sharp as they were. |
 | **v2.52** | ✅ **Checks that stay green** | The suites for orders, belts, seasonal contracts, the first-steps guide and notifications wait until the page is ready. Nothing in the mill changed. |
 | **v2.51** | 💰 **Prices that keep up after a Replant** | The power plant, Builders' Yard, shipping yard, harbour, trade routes and managers follow forest value, and after a Replant they cost at least a short stretch of income. The first run still pays the old prices. |
 | **v2.50** | 🪵 **Chips and chairs catch up** | Drum Chipper and Chair Line get more chips and chairs from the same logs and planks from the mid game. The price is 15× that building's current upgrade, and at least 30 seconds of income. |
@@ -119,7 +120,8 @@ The game is a static site. `index.html` loads one deferred script, `js/game.js`,
 ```bash
 git clone https://github.com/semihkislar/timber-tycoon.git
 cd timber-tycoon
-python3 tools/build_js.py   # after editing js/*.js
+python3 tools/build_js.py          # after editing js/*.js
+python3 tools/build_js.py --check  # fails if js/game.js is stale; writes nothing
 python3 -m http.server 8000
 # open http://localhost:8000/
 ```
@@ -134,7 +136,7 @@ the suite says how to install it and stops.
 index.html             game shell. Loads deferred js/game.js
 css/style.css          styles
 js/                    game code (edit these). js/game.js is the bundle index.html loads
-tools/build_js.py      rebuild js/game.js after editing js/*.js
+tools/build_js.py      rebuild js/game.js after editing js/*.js (--check compares, writes nothing)
 assets/                sprite atlases and PWA icons
 manifest.webmanifest   PWA manifest      sw.js  service worker (network-first)
 releases/vX.Y/         playable snapshot of every release (see versions.html)
