@@ -12,6 +12,28 @@ const SPR={map:new Map(),px:0,budget:20e6,pool:[],hits:0,miss:0,direct:0,frameMi
    pixel and costs ~7x more in software rasterisers). Sprites are therefore rendered at the exact current device scale and blitted
    with an identity transform at rounded positions. While the camera zooms, cache misses draw directly instead. */
 function sprFrame(){SPR.frameMiss=0;SPR.liveRe=0;const c=scene.cam;SPR.stable=Math.abs(c.z-c.tz)<1e-4&&!camZooming();}
+/* v2.53: consecutive blits stay in device space. The next world-space draw restores the transform once. */
+function mat6(m){return {a:m.a,b:m.b||0,c:m.c||0,d:m.d,e:m.e||0,f:m.f||0};}
+function sprWorld(ctx){
+  const b=SPR._b; if(!b||b.ctx!==ctx||!b.dev||!b.m) return;
+  b.dev=false; ctx.setTransform(b.m.a,b.m.b,b.m.c,b.m.d,b.m.e,b.m.f);
+}
+function sprBlit(ctx,m,c,w,h,dx,dy,dw,dh){
+  const o=ctx.__o||ctx; dw=dw===undefined?w:dw; dh=dh===undefined?h:dh;
+  if(!(SPR._b&&SPR._b.ctx===ctx&&SPR._b.dev)) o.setTransform(1,0,0,1,0,0);
+  SPR._b={ctx:ctx,dev:true,m:mat6(m)};
+  o.drawImage(c,0,0,w,h,dx,dy,dw,dh);
+}
+function armSceneCtx(ctx){
+  if(!ctx||ctx.__o) return;
+  const o={setTransform:ctx.setTransform.bind(ctx),drawImage:ctx.drawImage.bind(ctx),getTransform:ctx.getTransform.bind(ctx)};
+  ctx.__o=o;
+  const wrap=n=>{if(typeof ctx[n]!=='function') return; const fn=ctx[n].bind(ctx); ctx[n]=function(){sprWorld(ctx); return fn.apply(null,arguments);};};
+  ['fill','stroke','fillRect','strokeRect','clearRect','fillText','strokeText','beginPath','closePath','moveTo','lineTo','quadraticCurveTo','bezierCurveTo','arc','arcTo','ellipse','rect','clip','save','restore','translate','scale','rotate','transform','setLineDash','roundRect'].forEach(wrap);
+  ctx.setTransform=function(){if(SPR._b&&SPR._b.ctx===ctx) SPR._b.dev=false; return o.setTransform.apply(null,arguments);};
+  ctx.drawImage=function(){sprWorld(ctx); return o.drawImage.apply(null,arguments);};
+  ctx.getTransform=function(){const b=SPR._b; if(b&&b.ctx===ctx&&b.dev&&b.m) return b.m; return o.getTransform();};
+}
 /* v2.9: while a pinch / wheel / fly-to zoom is in progress, cache misses blit the most recent cached frame of the same sprite
    scaled (one resampled drawImage) instead of re-running the vector drawing; sharp sprites are rendered once the zoom settles */
 function camZooming(){return !!(scene.zoomUntil&&performance.now()<scene.zoomUntil);}
@@ -19,18 +41,18 @@ function sprCanvas(w,h){let c=null;for(let k=SPR.pool.length-1;k>=0;k--){const p
   if(!c) c=mkCanvas(w,h);const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.globalAlpha=1;g.globalCompositeOperation='source-over';return c;}
 function sprEvict(){while(SPR.px>SPR.budget&&SPR.map.size){const k=SPR.map.keys().next().value,e=SPR.map.get(k);SPR.map.delete(k);if(SPR.last.get(e.base)===e) SPR.last.delete(e.base);SPR.px-=e.c.width*e.c.height;if(SPR.pool.length<96) SPR.pool.push(e.c);}}
 function sprClear(){for(const e of SPR.map.values()) if(SPR.pool.length<96) SPR.pool.push(e.c);SPR.map.clear();SPR.last.clear();SPR.px=0;LIVE.clear();PILLS.clear();}
-function blit(ctx,c,w,h,m,x,y){ // x,y = top-left in the current (scale-only) transform
-  const dx=Math.round(m.a*x+m.e),dy=Math.round(m.d*y+m.f);ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(c,0,0,w,h,dx,dy,w,h);ctx.setTransform(m);}
+function blit(ctx,c,w,h,m,x,y){
+  sprBlit(ctx,m,c,w,h,Math.round(m.a*x+m.e),Math.round(m.d*y+m.f));}
 /* draw `fn(g,0,0)` (anchor at the origin) through the cache; box = [x0,y0,x1,y1] around the anchor in world units */
 function sprite(ctx,key,x,y,box,fn){
-  if(!SPR.on||ctx!==scene.ctx){fn(ctx,x,y);return;}
+  if(!SPR.on||ctx!==scene.ctx){sprWorld(ctx);fn(ctx,x,y);return;}
   const m=ctx.getTransform();
-  if(m.b!==0||m.c!==0||Math.abs(m.a-m.d)>1e-6){fn(ctx,x,y);SPR.direct++;return;}
+  if(m.b!==0||m.c!==0||Math.abs(m.a-m.d)>1e-6){sprWorld(ctx);fn(ctx,x,y);SPR.direct++;return;}
   const sc=m.a, k=key+'@'+sc.toFixed(4); let e=SPR.map.get(k);
   if(e){SPR.map.delete(k);SPR.map.set(k,e);SPR.hits++;if(SPR.last.get(key)!==e) SPR.last.set(key,e);}
   else{
     if(!SPR.stable){const l=SPR.last.get(key);
-      if(l){const r=sc/l.sc,ax=m.a*x+m.e,ay=m.d*y+m.f;ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(l.c,0,0,l.w,l.h,ax+l.ox*r,ay+l.oy*r,l.w*r,l.h*r);ctx.setTransform(m);SPR.scaled++;return;}}
+      if(l){const r=sc/l.sc,ax=m.a*x+m.e,ay=m.d*y+m.f;sprBlit(ctx,m,l.c,l.w,l.h,ax+l.ox*r,ay+l.oy*r,l.w*r,l.h*r);SPR.scaled++;return;}}
     if(SPR.frameMiss>=(SPR.stable?SPR.maxMiss:8)){SPR.direct++;fn(ctx,x,y);return;}   // while zooming a few new sprites are still cached so later frames can scale them
     SPR.frameMiss++;SPR.miss++;
     // render with the anchor's sub-pixel phase baked in so the blit lands on whole pixels
@@ -41,7 +63,7 @@ function sprite(ctx,key,x,y,box,fn){
     e={c,w,h,ox,oy,sc,base:key};SPR.map.set(k,e);SPR.last.set(key,e);SPR.px+=c.width*c.height;sprEvict();
   }
   const dx=Math.floor(m.a*x+m.e)+e.ox,dy=Math.floor(m.d*y+m.f)+e.oy;
-  ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(e.c,0,0,e.w,e.h,dx,dy,e.w,e.h);ctx.setTransform(m);
+  sprBlit(ctx,m,e.c,e.w,e.h,dx,dy);
 }
 const _lookId=new WeakMap();let _lookSeq=0;
 function lookKey(L){if(!L) return 'd';let k=_lookId.get(L);if(k===undefined){k=++_lookSeq;_lookId.set(L,k);}return k;}
@@ -77,9 +99,14 @@ function drawTree(ctx,x,y,t,tier){
 }
 /* pre-rendered atlases are optional: the game runs on runtime-rendered sprites until (or if) they load */
 function loadAtlas(){
-  if(/[?&]noatlas/.test(location.search)) return;
-  fetch('assets/atlas-trees.json').then(r=>r.ok?r.json():null).then(j=>{if(!j) return;const im=new Image();
-    im.onload=()=>{SPR.atlas=im;SPR.atlasFrames=j.frames;SPR.atlasScale=j.scale;sprClear();};im.src='assets/'+j.image;}).catch(()=>{});
+  if(/[?&]noatlas/.test(location.search)||SPR._atlasBegun) return;
+  SPR._atlasBegun=true;
+  fetch('assets/atlas-trees.json').then(r=>r.ok?r.json():null).then(j=>{
+    if(!j) return; const im=new Image();
+    im.onload=()=>{const done=()=>{SPR.atlas=im;SPR.atlasFrames=j.frames;SPR.atlasScale=j.scale;sprClear();};
+      const d=im.decode?im.decode():Promise.resolve(); d.then(done,done);};
+    im.src='assets/'+j.image;
+  }).catch(()=>{});
 }
 /* ---------- live sprites: one cached canvas per building, re-rendered at a reduced animation rate ----------
    Buildings are the heaviest vector drawings. Each one is rendered into its own offscreen canvas and re-rendered only when its
@@ -88,8 +115,8 @@ function loadAtlas(){
    accumulated dt of the skipped frames, so emission rates stay the same. */
 const LIVE=new Map();
 function liveSprite(ctx,id,box,sig,fps,fn){
-  if(!SPR.on||ctx!==scene.ctx) return fn(ctx);
-  const m=ctx.getTransform(); if(m.b!==0||m.c!==0||Math.abs(m.a-m.d)>1e-6) return fn(ctx);
+  if(!SPR.on||ctx!==scene.ctx){sprWorld(ctx); return fn(ctx);}
+  const m=ctx.getTransform(); if(m.b!==0||m.c!==0||Math.abs(m.a-m.d)>1e-6){sprWorld(ctx); return fn(ctx);}
   const sc=m.a; let e=LIVE.get(id);
   const ox=Math.floor(m.a*box[0]+m.e), oy=Math.floor(m.d*box[1]+m.f), fx=m.a*box[0]+m.e-ox, fy=m.d*box[1]+m.f-oy;
   const pos=fx.toFixed(3)+','+fy.toFixed(3);
@@ -98,9 +125,9 @@ function liveSprite(ctx,id,box,sig,fps,fn){
   // zooming, or (v2.9) too many buildings went stale at once after a zoom: scale the last frame, re-render a few per frame
   const scaleOnly=e&&e.sc&&e.w&&e.sig===sig&&e.bw===box[2]-box[0]&&e.bh===box[3]-box[1];
   if(stale&&(!SPR.stable||(scaleOnly&&SPR.liveRe>=4))){
-    if(e&&e.sc&&e.w){const r=sc/e.sc;ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(e.c,0,0,e.w,e.h,m.a*box[0]+m.e,m.d*box[1]+m.f,e.w*r,e.h*r);ctx.setTransform(m);
+    if(e&&e.sc&&e.w){const r=sc/e.sc;sprBlit(ctx,m,e.c,e.w,e.h,m.a*box[0]+m.e,m.d*box[1]+m.f,e.w*r,e.h*r);
       for(const q of e.lq) scene.lq.push(q);SPR.scaled++;return e.ret;}
-    return fn(ctx);}
+    sprWorld(ctx); return fn(ctx);}
   if(due&&(stale||SPR.frameMiss<SPR.maxMiss)){
     SPR.frameMiss++;if(stale) SPR.liveRe++;
     const w=Math.max(1,Math.ceil((box[2]-box[0])*sc)+1),h=Math.max(1,Math.ceil((box[3]-box[1])*sc)+1);
@@ -110,7 +137,7 @@ function liveSprite(ctx,id,box,sig,fps,fn){
     const dt0=scene.dtF;scene.dtF=Math.min(.3,Math.max(dt0,scene.t-e.t));const lq0=scene.lq.length;
     e.ret=fn(g);scene.dtF=dt0;e.lq=scene.lq.slice(lq0);e.t=scene.t;e.sig=sig;e.sc=sc;e.pos=pos;e.bw=box[2]-box[0];e.bh=box[3]-box[1];e.w=w;e.h=h;
   } else if(e.lq.length) for(const q of e.lq) scene.lq.push(q);
-  ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(e.c,0,0,e.w,e.h,ox,oy,e.w,e.h);ctx.setTransform(m);
+  sprBlit(ctx,m,e.c,e.w,e.h,ox,oy);
   return e.ret;
 }
 function liveClear(){LIVE.clear();}

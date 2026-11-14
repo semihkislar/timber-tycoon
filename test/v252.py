@@ -44,9 +44,9 @@ with sync_playwright() as p:
         touch_at(pg, box['x']+box['width']/2, box['y']+min(box['height']/2, 22))
         paint(pg); return True
     pg=page(); E(pg,QUIET)
-    ok(ver(E(pg,'TT.VERSION'))==(2,52),f"VERSION is 2.52 ({E(pg,'TT.VERSION')})")
+    ok(ver(E(pg,'TT.VERSION'))>=(2,52),f"VERSION >= 2.52 ({E(pg,'TT.VERSION')})")
     m=re.search(r"timber-tycoon-v([\d.]+)'",open(ROOT+'/sw.js').read())
-    ok(m and m.group(1)=='2.52','service-worker cache is timber-tycoon-v2.52')
+    ok(m and ver(m.group(1))>=(2,52),'service-worker cache is timber-tycoon-v2.52 or newer')
     ok(E(pg,'canSell("logs")') is False,'logs stay unsellable')
     E(pg,SHOW); paint(pg)
     pg.locator('#bbCrew').click(); paint(pg)

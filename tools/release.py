@@ -2,8 +2,9 @@
 #   python3 tools/release.py           -> snapshot the current game into releases/v<VERSION>/ and regenerate versions.html
 # The snapshot is a full, self-contained copy (index.html + css/ + js/ + assets/), so every release stays playable.
 # Releases up to v2.7 are single files (releases/timber-tycoon-vX.Y.html) and are left untouched.
-import os,re,shutil
+import os,re,shutil,subprocess,sys
 R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+subprocess.check_call([sys.executable, os.path.join(R,'tools','build_js.py')])
 ver=re.search(r"const VERSION='([\d.]+)'",open(R+'/js/logic_a.js').read()).group(1)
 dst=f'{R}/releases/v{ver}'
 shutil.rmtree(dst,ignore_errors=True); os.makedirs(dst)

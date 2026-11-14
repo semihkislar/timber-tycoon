@@ -5,6 +5,16 @@
   --hud:rgba(43,27,14,.78); --tb:52px; --bb:76px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+#boot{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#1c3a16 0%,#3f6b34 46%,#24441e 100%);color:#fff6e0;transition:opacity .35s ease}
+#boot.off{opacity:0}
+.boot-card{text-align:center;padding:24px}
+.boot-mark{font-size:56px;line-height:1;filter:drop-shadow(0 8px 0 rgba(0,0,0,.28))}
+.boot-name{margin-top:10px;font-weight:900;font-size:28px;letter-spacing:.3px;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.boot-name b{color:var(--gold)}
+#boot p{margin:8px 0 0;font-weight:700;color:#e7f5d4}
+.boot-bar{margin:16px auto 0;width:168px;height:6px;border-radius:99px;background:rgba(0,0,0,.28);overflow:hidden}
+.boot-bar i{display:block;height:100%;width:42%;border-radius:99px;background:var(--gold);animation:bootBar 1.05s ease-in-out infinite}
+@keyframes bootBar{0%{transform:translateX(-130%)}100%{transform:translateX(320%)}}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;color:var(--cream);background:#3f6b34;user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit}

@@ -60,7 +60,7 @@ with sync_playwright() as p:
     ok(ver(E(pg,'TT.VERSION'))>=(2,15),f"VERSION>=2.15 ({E(pg,'TT.VERSION')})")
     sw=E(pg,'fetch("sw.js").then(r=>r.text())'); m=re.search(r"timber-tycoon-v([\d.]+)'",sw)
     ok(m and ver(m.group(1))>=(2,15),f'sw.js cache bumped to >= v2.15 ({m and m.group(1)})')
-    ok(E(pg,"[...document.scripts].some(s=>/js\\/staffworld\\.js/.test(s.src))"),'index.html loads js/staffworld.js')
+    ok('js/staffworld.js' in open(ROOT+'/index.html').read() and E(pg,'typeof swUpdate')=='function','staffworld.js is in the bundle and running')
     ok(E(pg,'TT.SW.list.length')==0,'fresh game: no staff in the world')
     ctx.close()
 

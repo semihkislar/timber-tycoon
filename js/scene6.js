@@ -102,10 +102,11 @@ function forestChop(sx,sy){
 
 /* ---------------- main draw ---------------- */
 function resizeScene(){
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  scene.dpr=dpr; scene.w=window.innerWidth; scene.h=window.innerHeight;
-  scene.canvas.width=Math.round(scene.w*dpr); scene.canvas.height=Math.round(scene.h*dpr);
-  scene.canvas.style.width=scene.w+'px'; scene.canvas.style.height=scene.h+'px';
+  const cssW=window.innerWidth, cssH=window.innerHeight;
+  const dpr=backingDpr(cssW,cssH,window.devicePixelRatio||1);
+  scene.dpr=dpr; scene.w=cssW; scene.h=cssH;
+  scene.canvas.width=Math.max(1,Math.round(cssW*dpr)); scene.canvas.height=Math.max(1,Math.round(cssH*dpr));
+  scene.canvas.style.width=cssW+'px'; scene.canvas.style.height=cssH+'px';
   const r=document.documentElement.style; r.setProperty('--tb',(($('topbar').offsetHeight)||52)+'px'); r.setProperty('--bb',(typeof railMode==='function'&&railMode()?0:(($('bottombar').offsetHeight)||76))+'px');
   const keep=scene._fitted&&Math.abs(scene.cam.z-scene.cam.fitZ)>1e-3;
   fitCamera(!keep); if(!scene._fitted) scene._fitted=true;
@@ -113,10 +114,11 @@ function resizeScene(){
 }
 function initScene(){
   scene.canvas=$('scene'); scene.ctx=scene.canvas.getContext('2d');
+  if(typeof armSceneCtx==='function') armSceneCtx(scene.ctx);
   initWorld(); resizeScene(); setupInput();
   window.addEventListener('resize',()=>{resizeScene();});
   document.addEventListener('visibilitychange',()=>{scene.visible=!document.hidden; if(scene.visible&&!scene.running){scene.lastRAF=performance.now();scene.running=true;requestAnimationFrame(sceneLoop);}});
-  scene.lastEarned=S.totalEarned; scene.firstFrame=true;
+  scene.lastEarned=S.totalEarned; scene.firstFrame=true; scene.groundBoot=true;
   scene.running=true; requestAnimationFrame(sceneLoop);
 }
 function sceneLoop(now){
@@ -142,7 +144,8 @@ function drawScene(dt){
   ctx.fillStyle=scene.bg; ctx.fillRect(0,0,W,H);
   ctx.setTransform(dpr*z,0,0,dpr*z,dpr*(W/2-c.x*z),dpr*(H/2-c.y*z));
   const vx0=c.x-W/2/z,vx1=c.x+W/2/z,vy0=c.y-H/2/z,vy1=c.y+H/2/z;
-  drawGroundLayer(ctx,vx0,vy0,vx1,vy1,scene.firstFrame);
+  drawGroundLayer(ctx,vx0,vy0,vx1,vy1,false);
+  if(scene.groundBoot===false&&!scene._bootVis){scene._bootVis=true; if(typeof bootHide==='function') bootHide();}
   const inView=(x,y,m)=>x>vx0-m&&x<vx1+m&&y>vy0-m&&y<vy1+m*2;
   drawPuddles(ctx,inView);
   // decals: conveyors, dynamic shadows
