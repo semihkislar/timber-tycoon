@@ -104,9 +104,35 @@ with sync_playwright() as p:
       for(let k=0;k<60;k++) stepScene(1/30);window.cdPadRaw=cdPadRaw=raw;window.cdDroneRaw=cdDroneRaw=dr;window.cdDrone=cdDrone=dd;return [pad,calls,dcalls,draws];})()''')
     ok(r[0]>=1 and r[1]==0,f'the pad is a cached sprite, never redrawn in steady state ({r[0]} cached, {r[1]} redraws)')
     ok(r[3]>0 and r[2]<=max(8,r[3]*.15),f'drone poses come from the sprite cache ({r[2]} renders for {r[3]} drone draws in 60 frames)')
-    # perf: frame cost with the full fleet vs none (same view)
-    r=E(pg,'''(()=>{const t=L=>{S.logi.drone=L;scene.cdr=[];for(let k=0;k<90;k++) stepScene(1/30);const a=[];for(let k=0;k<150;k++){const t0=performance.now();stepScene(1/30);a.push(performance.now()-t0);}a.sort((x,y)=>x-y);return a[75];};
-      const x0=t(0),x1=t(10),x2=t(0),x3=t(10);return [Math.min(x0,x2),Math.min(x1,x3)];})()''')
+    # perf: frame cost with the full fleet vs none (same view).
+    # The two medians used to be separate back-to-back windows, so a pause during one window
+    # moved one of them and the check failed on a busy machine. The fleet stays up. After a
+    # warm-up, each round draws a short block with the drones and a short block without them
+    # (the first frames of a block are dropped, so a pause spilling out of the previous block
+    # does not count). The order of the two blocks flips every round. What gets compared is
+    # the without-drone median plus the median of those rounds' differences, so a pause has
+    # to land in every round before it counts. The limit is the same one as before. A cost on
+    # every drawn frame (draws that stop using the sprite cache and stay expensive) is in
+    # every round, so it still fails.
+    r=E(pg,'''(()=>{const med=a=>{const b=a.slice().sort((x,y)=>x-y);return b[b.length>>1];};
+      const air=cdDrawAir,pad=cdDraw;let hide=false;
+      window.cdDrawAir=cdDrawAir=function(){if(!hide) return air.apply(this,arguments);};
+      window.cdDraw=cdDraw=function(){if(!hide) return pad.apply(this,arguments);};
+      try{
+        S.logi.drone=10;scene.cdr=[];
+        for(let k=0;k<90;k++){hide=false;stepScene(1/30);}
+        if(cdCount()<8) return [0,1e9];
+        const diffs=[],bases=[];
+        for(let p=0;p<11;p++){
+          const order=p%2?[false,true]:[true,false];
+          const got={};
+          for(const h of order){
+            hide=h;const a=[];
+            for(let i=0;i<12;i++){const t0=performance.now();stepScene(1/30);const ms=performance.now()-t0;if(i>=4)a.push(ms);}
+            got[h?'z':'d']=med(a);}
+          diffs.push(got.d-got.z);bases.push(got.z);}
+        const z=med(bases);return [z,z+med(diffs)];
+      }finally{hide=false;window.cdDrawAir=cdDrawAir=air;window.cdDraw=cdDraw=pad;}})()''')
     ok(r[1]<=r[0]*1.2+1.0,f'flat frame cost: median {r[0]:.2f} ms without drones → {r[1]:.2f} ms with 8 drones and the pad on screen')
     ok(E(pg,"scene.objCount>0"),'scene renders with the drones on screen')
     # ---- Bottleneck Advisor ----
