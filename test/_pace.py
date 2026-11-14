@@ -56,7 +56,7 @@ def ready(pg, timeout=15000):
     end=time.monotonic()+timeout/1000; last=None
     while time.monotonic()<end:
         try:
-            if pg.evaluate('() => typeof TT!=="undefined" && typeof S!=="undefined"'): return
+            if pg.evaluate('() => typeof TT!=="undefined" && typeof S!=="undefined" && window.__booted!==false'): return
         except Exception as e:
             last=e
         pg.wait_for_timeout(40)

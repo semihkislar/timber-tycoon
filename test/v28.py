@@ -31,7 +31,7 @@ with sync_playwright() as p:
     # --- layout: slim shell + css/ + js/ + assets/ ---
     html=open(ROOT+'/index.html').read()
     ok(len(html)<20000 and '<style>' not in html and 'css/style.css' in html,f'index.html is a slim shell ({len(html)} bytes, external CSS)')
-    ok(html.count('<script src="js/')>=20 and 'function ' not in html,'scripts load from js/ (no inline code)')
+    ok('js/game.js' in html and 'defer' in html and 'function ' not in html and html.count('js/')>=20,'deferred bundle from js/ (sources listed, no inline code)')
     ok(os.path.exists(ROOT+'/assets/atlas-trees.png') and os.path.exists(ROOT+'/assets/atlas-trees.json'),'assets/ holds the tree atlas + frame map')
     fr=json.load(open(ROOT+'/assets/atlas-trees.json'))
     ok(fr['scale']==2 and len(fr['frames'])>=400,f"atlas is 2x with {len(fr['frames'])} frames")

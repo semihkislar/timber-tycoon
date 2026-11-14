@@ -2,6 +2,14 @@
 
 /* ---------------- ground (cached in chunks) ---------------- */
 const CHUNK=512;
+/* v2.53: cap backing-store pixels, not only DPR. 1440p at DPR 2 was 14.7 MP plus a larger ground
+   layer and the desktop frame fell off 60. Phones stay on the old DPR-2 cap: their CSS area is
+   small enough that sqrt(MAX/area) is still above 2. */
+const MAX_BACKING=4e6;
+function backingDpr(cssW,cssH,dev){
+  const cap=Math.sqrt(MAX_BACKING/Math.max(1,cssW*cssH));
+  return Math.min(dev>0?dev:1,2,cap);
+}
 const GRASS=['#8cc761','#88c35d','#90cb65','#85c05a'], FOREST_FLOOR=['#74b052','#70ab4e','#78b455','#6ca84b'];
 function drawGround(ctx,x0,y0,x1,y1){
   const GR=GRASS_S[SEAS]||GRASS, FF=FLOOR_S[SEAS]||FOREST_FLOOR;
@@ -157,33 +165,51 @@ function drawGroundLayer(ctx,vx0,vy0,vx1,vy1,force){
   if(!(covers&&G.key===key)){
     if(SPR.stable){
       // margin: 256 css px, but never more than half a chunk of world (zoomed-out views would otherwise need far more chunks)
-      const M=Math.round(Math.min(256*dpr,.5*CHUNK*s)), nw=cv.width+2*M, nh=cv.height+2*M;
+      let M=Math.round(Math.min(256*dpr,.5*CHUNK*s));
+      while(M>0&&(cv.width+2*M)*(cv.height+2*M)>MAX_BACKING) M-=8;
+      if(M<0) M=0;
+      const nw=cv.width+2*M, nh=cv.height+2*M;
       scene.chunkMax=Math.max(42,Math.ceil((Math.ceil(nw/(CHUNK*s))+1)*(Math.ceil(nh/(CHUNK*s))+1)*1.5)+8);
-      if(G.c.width!==nw||G.c.height!==nh){G.c.width=nw;G.c.height=nh;}
-      const g=G.c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,nw,nh);g.setTransform(s,0,0,s,e+M,f+M);
-      drawChunks(g,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false);
-      G.s=s;G.e=e+M;G.f=f+M;G.key=key;G.builds++;dx=-M;dy=-M;
+      // Fill the chunk cache one chunk a frame. Composing the whole layer every frame was a long task,
+      // and saving it early left the boot flag stuck.
+      if(scene.groundBoot) drawChunks(ctx,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false,false);
+      if(!scene.groundBoot){
+        if(G.c.width!==nw||G.c.height!==nh){G.c.width=nw;G.c.height=nh;}
+        const g=G.c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,nw,nh);g.setTransform(s,0,0,s,e+M,f+M);
+        drawChunks(g,vx0-M/s,vy0-M/s,vx1+M/s,vy1+M/s,false);
+        G.s=s;G.e=e+M;G.f=f+M;G.key=key;G.builds++;dx=-M;dy=-M;
+      }
     } else if(G.s){
       const r=s/G.s, x0=e-r*G.e, y0=f-r*G.f;
       if(x0<=.5&&y0<=.5&&x0+W*r>=cv.width-.5&&y0+H*r>=cv.height-.5){ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(G.c,x0,y0,W*r,H*r);ctx.setTransform(m);scene.groundScaled=(scene.groundScaled||0)+1;return;}
       drawChunks(ctx,vx0,vy0,vx1,vy1,false);return;
     } else {drawChunks(ctx,vx0,vy0,vx1,vy1,false);return;}
   }
-  ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(G.c,Math.round(dx),Math.round(dy));ctx.setTransform(m);
+  const o=ctx.__o||ctx;
+  o.setTransform(1,0,0,1,0,0);
+  const sx=Math.max(0,Math.round(-dx)), sy=Math.max(0,Math.round(-dy));
+  const dx0=Math.max(0,Math.round(dx)), dy0=Math.max(0,Math.round(dy));
+  const sw=Math.min(G.c.width-sx, cv.width-dx0), sh=Math.min(G.c.height-sy, cv.height-dy0);
+  if(sw>0&&sh>0) o.drawImage(G.c,sx,sy,sw,sh,dx0,dy0,sw,sh);
+  if(SPR._b&&SPR._b.ctx===ctx) SPR._b.dev=false;
+  o.setTransform(m.a,m.b,m.c,m.d,m.e,m.f);
 }
-function drawChunks(ctx,vx0,vy0,vx1,vy1,force){
-  if(scene.chunkTier!==S.tree*10+SEAS){scene.chunks.clear();scene.chunkTier=S.tree*10+SEAS;force=true;}
-  const cs=chunkScale(), zooming=!force&&camZooming(); let budget=force?99:zooming?1:2;   // v2.9: while zooming only render chunks that have no fallback at all
+function drawChunks(ctx,vx0,vy0,vx1,vy1,force,paint){
+  const tier=S.tree*10+SEAS, boot=!!scene.groundBoot;
+  if(scene.chunkTier!==tier){scene.chunks.clear();scene.chunkTier=tier; if(!boot) force=true;}
+  // v2.53: the first view used a 99-chunk budget in one turn. It now uses the zoom budget (one chunk a frame).
+  const cs=chunkScale(), pacing=!force&&(boot||camZooming()); let budget=force?99:pacing?1:2;
+  let missed=0;
   for(let cy=Math.floor(vy0/CHUNK);cy<=Math.floor(vy1/CHUNK);cy++) for(let cx=Math.floor(vx0/CHUNK);cx<=Math.floor(vx1/CHUNK);cx++){
     let c=getChunk(cx,cy,cs,false);
     if(!c){
-      // fallback to any cached resolution of this chunk while the sharp one renders
       let fb=null; for(const s of [2.5,2,1.5,1.25,1,.75,.5]){fb=getChunk(cx,cy,s,false); if(fb) break;}
-      if(!fb&&zooming&&budget<=0) continue;   // filled in over the next frames (only at the far edge of a zoom-out)
-      if(fb&&(zooming||budget<=0)) c=fb; else if(budget>0||!fb){c=getChunk(cx,cy,cs,true);budget--;} else c=fb;
+      if(!fb&&pacing&&budget<=0){missed++; continue;}
+      if(fb&&(pacing||budget<=0)) c=fb; else if(budget>0||!fb){c=getChunk(cx,cy,cs,true);budget--;} else c=fb;
     }
-    ctx.drawImage(c.cv,cx*CHUNK-c.pad,cy*CHUNK-c.pad,c.cv.width/c.cs,c.cv.height/c.cs);
+    if(c&&paint!==false) ctx.drawImage(c.cv,cx*CHUNK-c.pad,cy*CHUNK-c.pad,c.cv.width/c.cs,c.cv.height/c.cs);
   }
+  if(boot){scene.groundMiss=missed; if(!missed) scene.groundBoot=false;}
 }
 
 /* ---------------- trees ---------------- */

@@ -5,6 +5,18 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.53] — 2026-11-14
+
+**A smoother open on a big desktop window.** The mill is the same: prices, recipes, order rewards and the rule that logs are never sold are unchanged. A save from v2.52 still loads. Phones stay as sharp as they were.
+
+### Fixed
+- **Large windows.** The scene canvas used to grow with the window and the screen's pixel density, up to 2×. A 2560×1440 window at 2× was about 15 million pixels, and the offscreen ground layer was larger still, so the desktop frame rate fell off 60. The backing store is now capped at 4 million pixels (front buffer and ground layer, margin included). At ordinary sizes, including every phone we check, the cap is above the old 2× density, so nothing gets softer. Hit tests, taps and zoom still use CSS pixels.
+- **The first view.** The ground used to be built in one turn (a 99-chunk budget, a cold sprite cache and the tree atlas). That turn is now one chunk a frame, the same budget the game already uses while you zoom. An opening card covers the fill-in and fades once the first view is up. The atlas is decoded off that first draw.
+- **Script start-up.** The page loads one deferred script, `js/game.js`, built from the same `js/*.js` files by `tools/build_js.py`. The service worker registers after the first frames, on idle, and it still leaves `releases/` and `screenshots/` out of the cache.
+- **Sprite drawing.** A run of cached sprites keeps the canvas in device space and restores the world transform once, instead of twice per sprite.
+
+The opening minutes were checked against the v2.46, v2.49 and v2.50 snapshots and match. The v2.50 and v2.51 comparisons pin `Date.now()` for that sim, the same way the v2.47 comparison already did, so a busy machine does not move the total.
+
 ## [2.52] — 2026-11-11
 
 **Test-suite stability.** A maintenance release. Recipes, prices, order rewards and the rule that logs are never sold are unchanged. Photo mode is not part of this release.

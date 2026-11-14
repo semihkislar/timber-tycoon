@@ -1,5 +1,6 @@
 'use strict';
-const VERSION='2.52';
+window.__splashShown=!!document.getElementById('boot');
+const VERSION='2.53';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;

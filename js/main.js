@@ -78,6 +78,14 @@ function welcomeBack(elapsed,r){
     ${lines?`<div class="gainlist">${lines}</div>`:''}`,[{label:'Back to work!',cls:'gold'}]);
 }
 function hardResetScene(){scene.workers=[];scene.jacks=[];scene.forklifts=[];yardSigV='';scene._fsig='';scene.lastEarned=S.totalEarned;}
+function bootHide(){
+  const el=document.getElementById('boot'); if(!el||el.dataset.bye) return;
+  el.dataset.bye='1'; el.style.pointerEvents='none';
+  try{performance.mark('tt-splash-off');}catch(e){}
+  if(navigator.webdriver){el.remove(); return;}
+  el.classList.add('off');
+  setTimeout(()=>{if(el.parentNode) el.remove();}, 380);
+}
 function init(){
   loadAtlas();
   const loaded=load();
@@ -96,10 +104,13 @@ function init(){
   scene.lastEarned=S.totalEarned;
   rebuildAll();
   if(!loaded&&typeof obStart==='function') obStart(false);   // v2.38: the first-steps guide, brand-new saves only
-  lastNow=Date.now();
+  // The old first scene was one long task, so the first loop tick covered that stall.
+  // Spreading the scene removes the stall; this catch-up keeps the opening minutes in step.
+  lastNow=Date.now()-320;
   setInterval(loop,100);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){save(true);lastSaveAt=Date.now();} else loop();});
   window.addEventListener('pagehide',()=>save(true));
+  bootHide();
 }
 
 // test / debug hook
@@ -163,5 +174,7 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   BP_SLOTS,BP_GAP,BP_BATCH,BP_BUDGETS,BP_PRI,BP_STEP,bpTier,bpUnlocked,bpSlotsOpen,bpClean,bpState,bpPlan,bpActive,bpCapture,bpClear,bpSetTarget,bpBump,bpSetPri,bpCyclePri,bpSetRun,bpSetBudget,bpSetSlot,bpSetInc,
   OB_STEPS,OB_FAR,OB_BLD,obFar,obStart,obSkip,obNext,obActive,obState,obTarget,obNorm,obPointer,   // v2.38 onboarding
   bpSteps,bpBudget,bpDo,bpApplySettings,bpStartRun,bpKeep,bpProgress,bpLeft,bpStatus,bpTick,updateBlueprint,updateBpChip,bpOpenTab,rpTabOpen,
-  get cam(){return scene.cam;}};
+  get cam(){return scene.cam;}, backingDpr, MAX_BACKING};
+window.__booted=false;
 init();
+window.__booted=true;

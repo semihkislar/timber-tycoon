@@ -245,6 +245,9 @@ function mobileRender(){
 }
 /* ---------- PWA ---------- */
 function registerSW(){
-  try{if(!('serviceWorker' in navigator)||location.protocol!=='https:'||/\/releases\//.test(location.pathname)) return;
-    navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(_){}
+  const go=()=>{try{if(!('serviceWorker' in navigator)||location.protocol!=='https:'||/\/releases\//.test(location.pathname)) return;
+    navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(_){}};
+  const later=()=>{const ric=window.requestIdleCallback; if(ric) ric(()=>go(),{timeout:3000}); else setTimeout(go,1200);};
+  const frames=()=>requestAnimationFrame(()=>requestAnimationFrame(later));
+  if(document.readyState==='complete') frames(); else window.addEventListener('load', frames, {once:true});
 }
