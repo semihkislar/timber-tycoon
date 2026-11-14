@@ -43,7 +43,7 @@ BOUND=r'''(L)=>{
   const o={}; for(const id of ids) o[id]={chip:acc[id].chip/n,chair:acc[id].chair/n,ply:acc[id].ply/n,f:acc[id].f/n};
   return {has,up:has?[upLvl('drum'),upLvl('chairline')]:[0,0],ply:ply/n,o};
 }'''
-EARLY=r'''(()=>{let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
+EARLY=r'''(()=>{const __t=Date.now();Date.now=()=>__t;let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
   S.coins=50;S.totalEarned=0;S.time=0;S.legacy=0;S.upgrades={};if(S.ob)S.ob.st='skip';if(S.wx)S.wx.next=1e15;
   for(const c of COLLECTORS) S.collectors[c.id]=0;for(const b of BUILDINGS){S.buildings[b.id].lvl=0;S.buildings[b.id].on=true;}
   const want=['sawmill','chipper','kiln','carpentry','peeler','pellet','paper','furniture'];

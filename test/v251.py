@@ -38,7 +38,7 @@ LADDER=r'''()=>{S.runCS=1;coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}
   o.daily=typeof DAILY_OPEN==='number'?DAILY_OPEN*cs():500;
   o.logs=canSell('logs'); o.saw=SAW_LOGS;
   return o;}'''
-EARLY=r'''(()=>{let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
+EARLY=r'''(()=>{const __t=Date.now();Date.now=()=>__t;let sd=12345;Math.random=()=>{sd=(sd*1103515245+12345)%2147483648;return sd/2147483648;};
   window.toast=()=>{};window.save=()=>{};window.sfx=()=>{};
   S.coins=50;S.totalEarned=0;S.time=0;S.legacy=0;S.runCS=1;S.upgrades={};if(S.ob)S.ob.st='skip';if(S.wx)S.wx.next=1e15;
   coinRate=0;if(S.run){S.run.inc=0;S.run.incE=0;}

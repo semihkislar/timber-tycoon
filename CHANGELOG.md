@@ -15,7 +15,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - **Script start-up.** The page loads one deferred script, `js/game.js`, built from the same `js/*.js` files by `tools/build_js.py`. The service worker registers after the first frames, on idle, and it still leaves `releases/` and `screenshots/` out of the cache.
 - **Sprite drawing.** A run of cached sprites keeps the canvas in device space and restores the world transform once, instead of twice per sprite.
 
-The opening minutes were checked against the v2.46, v2.49 and v2.50 snapshots and match.
+The opening minutes were checked against the v2.46, v2.49 and v2.50 snapshots and match. The v2.50 and v2.51 comparisons pin `Date.now()` for that sim, the same way the v2.47 comparison already did, so a busy machine does not move the total.
 
 ## [2.52] — 2026-11-11
 
