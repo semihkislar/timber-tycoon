@@ -229,6 +229,7 @@ function isForestPt(i,j){
   if(i>=6.2&&i<10.6&&j>=-8.4&&j<-4.4) return false;   // v2.7: tree-nursery clearing
   if(i>=20.7&&i<28&&j>=-7.6&&j<-.6) return false;     // v2.10: power-plant clearing
   if(i>=32&&j>=16.8&&j<20.4) return false;
+  if(typeof townPlot==='function'&&townPlot(i,j)) return false;   // v2.55: the south-gate village verge stays clear of trees
   return true;
 }
 function isLumberZone(i,j){const u=i+j,v=i-j;return (v>=-28&&v<=-22.5&&u>=-3&&u<=36)||(v>=-18&&v<=-12.5&&u>=-3&&u<=15.5)||(u>=-6&&u<=2.6&&Math.abs(v)<=17);}
@@ -265,6 +266,7 @@ function initWorld(){
   for(let i=-34;i<=62;i++) for(let j=-34;j<=62;j++){
     const [x,y]=P(i+.5,j+.5,0); if(x<-1250||x>1250||y<-560||y>1500) continue;
     const z=zoneAt(i+.5,j+.5); if(z!=='grass'||inPremRow(i+.5,j+.5,.9)) continue;
+    if(typeof townPlot==='function'&&townPlot(i+.5,j+.5)) continue;   // v2.55: no rocks under the village
     const h=hash2(i*7+3,j*13+5);
     if(h<0.05) scene.deco.push({t:'rock',i:i+.3+hash2(i,j)*.4,j:j+.3+hash2(j,i)*.4,s:.6+h*8});
     else if(h<0.11&&!isForestPt(i+.5,j+.5)) scene.deco.push({t:'bush',i:i+.5,j:j+.5,s:.7+hash2(j,i)*.5});

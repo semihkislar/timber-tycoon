@@ -1,7 +1,7 @@
 # v2.54: the shipped bundle matches the sources. tools/build_js.py --check passes on a clean
 # tree and writes nothing. In a temporary copy of the tree, the same check fails when a source
 # changes, and again when only the TT-SOURCES comment changes. The real tree is not modified.
-import os, shutil, subprocess, sys, tempfile
+import os, re, shutil, subprocess, sys, tempfile
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAILS=[]
 def ok(c,msg):
@@ -14,10 +14,13 @@ def read(path):
     return open(path,encoding='utf-8').read()
 def snapshot(root):
     return read(os.path.join(root,'js','game.js')), read(os.path.join(root,'index.html'))
+def ver_of(text, pat):
+    m=re.search(pat, text)
+    return tuple(int(x) for x in m.group(1).split('.')) if m else None
 logic=read(os.path.join(ROOT,'js','logic_a.js'))
 sw=read(os.path.join(ROOT,'sw.js'))
-ok("const VERSION='2.54'" in logic, 'VERSION is 2.54')
-ok("timber-tycoon-v2.54" in sw, 'service-worker cache is timber-tycoon-v2.54')
+ok(ver_of(logic, r"const VERSION='([\d.]+)'")>=(2,54), 'VERSION is 2.54 or newer')
+ok(ver_of(sw, r"timber-tycoon-v([\d.]+)")>=(2,54), 'service-worker cache is timber-tycoon-v2.54 or newer')
 before=snapshot(ROOT)
 r=run_check(ROOT)
 ok(r.returncode==0, f'clean tree: --check passes ({r.stdout.strip()[:160]})')

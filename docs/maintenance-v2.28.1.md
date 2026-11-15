@@ -99,7 +99,7 @@ Effort: S ≈ a day, M ≈ 2–3 days, L ≈ a week or more.
 | 7 | **Insurance claims & safety drills** *(shipped in v2.41)* | Mishaps leave a claim you can file (mini-decision: payout now or a premium discount). Drills cut setback odds for a while. | Makes bad luck a decision, not only a loss. | S |
 | 8 | **Order chains** | Multi-step clients (houses → furniture → cabinets for the same chalet project) with a bigger final reward and a story line. | Story ("kurgu") and a reason to keep several premium lines running. | M |
 | 9 | **Seasonal contracts** | Each season brings a themed export contract with a trophy (winter: pellets and charcoal; spring: houses). | Ties the world clock and weather into goals; good for daily play. | S |
-| 10 | **Town growth** | Delivered Timber-frame Houses appear as a small village by the south gate; more houses bring more market-van demand. | Visible progress and a world that reacts to the new top product. | M |
+| 10 | **Town growth** *(shipped in v2.55)* | Delivered Timber-frame Houses appear as a small village by the south gate; more houses bring more market-van demand. | Visible progress and a world that reacts to the new top product. | M |
 | 11 | **Staff careers** | Trained staff can be promoted to foremen who run a whole phase column (small aura bonus, a name tag in the world). | Gives the staff system a long-term arc. | M |
 | 12 | **Photo mode / share card** | One tap hides the UI and frames the whole factory with a stats banner, ready to share. | Low cost, good for showing off the art. | S |
 

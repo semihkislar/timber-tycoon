@@ -26,6 +26,7 @@ const SHEETS={
   prem:{title:'Premium Factory Area',icon:'prem'},
   staff:{title:'Team, Hires & Fire',icon:'staff'},
   rnd:{title:'Research & Trade',icon:'rnd'},
+  town:{title:'Town',icon:'houses'},   // v2.55 south-gate village
 };
 function openSheet(name,arg){
   const prev=curSheet;
@@ -35,6 +36,7 @@ function openSheet(name,arg){
   Object.keys(SHEETS).forEach(k=>$('pane-'+k).classList.toggle('hidden',k!==name));
   const sh=$('sheet'); sh.dataset.s=name; sh.classList.add('open'); document.body.classList.add('sheet-on'); sh.setAttribute('aria-hidden','false');
   if(name==='bld'){ const b=BMAP[arg]; $('shTitle').textContent=b.name; $('shIc').innerHTML=svgIcon(b.svg,30); }
+  else if(name==='town'){ $('shTitle').textContent=typeof townStageName==='function'?townStageName():'Town'; $('shIc').innerHTML=svgIcon('houses',30); }
   else { $('shTitle').textContent=SHEETS[name].title; $('shIc').innerHTML=UI_ICONS[SHEETS[name].icon]||''; }
   document.querySelectorAll('#bottombar .bb').forEach(x=>x.classList.toggle('on',x.dataset.s===name));
   if(prev!==name||name==='bld') $('shBody').scrollTop=0;
@@ -42,6 +44,7 @@ function openSheet(name,arg){
   render();
   if(name==='bld') requestAnimationFrame(()=>focusLot(arg));
   if(name==='prem'&&S.premium.lvl>0) requestAnimationFrame(()=>focusPrem());
+  if(name==='town'&&typeof focusTown==='function') requestAnimationFrame(()=>focusTown());
 }
 function closeSheet(){
   if(curSheet==='ach') achFresh={};
@@ -250,7 +253,7 @@ function updateMarket(){
     if(e.raw){const cap=logCap(),f=Math.min(1,S.res[id]/cap);e.raw.querySelector('i').style.width=(f*100).toFixed(1)+'%';
       const ov=typeof ovfYardTxt==='function'?ovfYardTxt(cap):null,cl=ov?ov[1]:'';if(e.raw._c!==cl){e.raw._c=cl;e.raw.classList.remove('full','ovf','part');if(cl) e.raw.classList.add(...cl.split(' '));}   // v2.40 overflow
       const t=ov?ov[0]:`Log Yard ${Math.round(f*100)}% of ${fmt(cap)}`;const tx=e.raw.querySelector('.yardtx');if(tx.textContent!==t) tx.textContent=t;continue;}
-    const p=price(id); e.price.textContent='🪙'+fmt(p,p<10?2:0);
+    const p=typeof marketPrice==='function'?marketPrice(id):price(id); e.price.textContent='🪙'+fmt(p,p<10?2:0);   // v2.55: the Sell button pays this (Town demand included)
     e.price.classList.toggle('boost',M.price[id]*M.priceAll>TREES[S.tree].mult*baseUpgPrice(id)+1e-9);
     e.cb.checked=!!S.autosell[id]; e.btn.disabled=S.res[id]<1;
   }

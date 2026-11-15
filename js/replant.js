@@ -155,7 +155,9 @@ function updateCompany(){
   const st=S.rpStats||{},last=(st.runs||[]).slice(-1)[0];
   const rows=[['Forest Legacy',`${fmt(L)} 🌳 (×${fx2(P)})`],['Seeds to spend',`${fmt(S.seeds)} 🌱`],['Run forest value','×'+fx2(cs())],['Earned this run','🪙 '+fmt(S.totalEarned)],['Lifetime earnings','🪙 '+fmt(S.lifetimeEarned)],
     ['Logs per second',fr(logRate())],['Chops (run / lifetime)',`${fmt(S.clicks)} / ${fmt(S.lifetimeClicks)}`],['Replants',S.prestiges],['Last run',last?`${last.min} min · +${fmt(last.g)} 🌱`:'—'],
-    ['Current wood',TREES[S.tree].name],['Trophies',`${achCount()} / ${ACH.length} (+${Math.round(achCount()*ACH_BONUS*100)}%)`],['Golden logs caught',S.golden||0],['Milestone stars',`${totStars()} ⭐`],['Play time',fmtTime(S.playTime)],['Version',S.version||VERSION]];
+    ['Current wood',TREES[S.tree].name],['Trophies',`${achCount()} / ${ACH.length} (+${Math.round(achCount()*ACH_BONUS*100)}%)`],['Golden logs caught',S.golden||0],['Milestone stars',`${totStars()} ⭐`],
+    ['South-gate village',typeof townStageName==='function'?`${townStageName()} · ${fmt(townMade())} houses · Town demand +${townPctLabel()}%`:'—'],
+    ['Play time',fmtTime(S.playTime)],['Version',S.version||VERSION]];
   const h=rows.map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join(''); const k=$('statsKv'); if(k._h!==h){k.innerHTML=h;k._h=h;}
 }
 /* confirm sheet: what resets, what stays, what you get */
@@ -165,7 +167,7 @@ function rpConfirm(){
   const keepShop=SHOP.filter(u=>shopLvl(u.id)).map(u=>u.e).join(' ');
   const body=`<div class="rp-cf-gain">+${fmt(g)} 🌱 <small>Legacy ${fmt(L)} → <b>${fmt(L+g)}</b> · production ×${fx2(P)} → <b>×${fx2(P2)}</b></small></div>
   <div class="rp-cf">
-   <div class="rp-cf-col reset"><b>🔄 Resets</b><ul><li>Coins &amp; stock</li><li>Buildings &amp; levels</li><li>Collectors &amp; planters</li><li>Upgrades &amp; wood species</li><li>Premium Area</li><li>Storage, orders in progress</li><li>Run goals</li></ul></div>
+   <div class="rp-cf-col reset"><b>🔄 Resets</b><ul><li>Coins &amp; stock</li><li>Buildings &amp; levels</li><li>Collectors &amp; planters</li><li>Upgrades &amp; wood species</li><li>Premium Area</li><li>Storage, orders in progress</li><li>Run goals</li><li>South-gate village (best stage stays)</li></ul></div>
    <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li>${typeof bpUnlocked==='function'&&bpUnlocked()?'<li>📐 Blueprints</li>':''}</ul></div>
   </div>${typeof bpReplantHtml==='function'?bpReplantHtml():''}
   <div class="legend">The new run is priced in your forest's value (×${fx2(Math.pow(legacyOf(L+g)*(1+.25*shopLvl('soil'))*Math.sqrt((1+.5*shopLvl('crews'))*(1+.5*shopLvl('mills')))*(1+.1*shopLvl('market'))*TREES[Math.min(shopLvl('arbor'),TREES.length-1)].mult,RPC.csE))}): costs and goals grow with it, so the climb stays meaningful.</div>`;

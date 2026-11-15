@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.54-6b8e23" alt="version 2.54">
+  <img src="https://img.shields.io/badge/version-2.55-6b8e23" alt="version 2.55">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.41: the factory in the late game" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.55: the late-game factory, with the village by the south gate" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,12 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.54: The page matches the sources
-The mill is the same. Prices, recipes and the way logs stay unsold are the same as v2.53, and a v2.53 save still loads. The game is still one script, built from the files in `js/`. A check now fails when that script is out of date, so a forgotten rebuild cannot ship.
+### New in v2.55: A village by the south gate
+Timber-frame houses you finish this run settle beside the south gate. One house is a hamlet. Keep building and it becomes a village, a market town, and finally Timber Town, with a square, stalls, a well and a clock tower. A bigger town pays up to **+15%** on Phase 1 and Phase 2 goods sold at the Town Market. Orders, contracts and exports are unchanged, and logs are still not for sale. Replant clears the village. The best stage stays, for the trophies.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.54** | 📄 **The page matches the sources** | The game is one script, built from the files in `js/`. A check now fails when that script is out of date, so a forgotten rebuild cannot ship. Prices and recipes are unchanged. |
 | **v2.53** | 🖼️ **A smoother open on a big desktop window** | On a large or high-density desktop window the scene no longer asks the GPU for a huge canvas, so the frame rate stays smooth. An opening card covers the first view. Phones stay as sharp as they were. |
 | **v2.52** | ✅ **Checks that stay green** | The suites for orders, belts, seasonal contracts, the first-steps guide and notifications wait until the page is ready. Nothing in the mill changed. |
 | **v2.51** | 💰 **Prices that keep up after a Replant** | The power plant, Builders' Yard, shipping yard, harbour, trade routes and managers follow forest value, and after a Replant they cost at least a short stretch of income. The first run still pays the old prices. |
@@ -92,6 +93,7 @@ The mill is the same. Prices, recipes and the way logs stay unsold are the same 
 |:---:|:---:|:---:|
 | <img src="screenshots/highlights/desktop-night.png" alt="Night shift" width="300"><br>**Night shift** | <img src="screenshots/highlights/desktop-supply-flow.png" alt="Supply Flow with the Bottleneck Advisor" width="300"><br>**Supply Flow + Advisor** | <img src="screenshots/highlights/blueprint.png" alt="Replant Blueprints tab" width="300"><br>**Replant Blueprints** |
 | <img src="screenshots/highlights/order-chains.png" alt="Order chain project card" width="300"><br>**Order chains** | <img src="screenshots/highlights/drones.png" alt="Drone Port on the Shipping dock" width="300"><br>**Drone Port** | <img src="screenshots/highlights/belts.png" alt="Conveyor belts across the lane" width="300"><br>**Conveyor belts** |
+| <img src="screenshots/highlights/town.png" alt="Timber Town, the village by the south gate" width="300"><br>**Timber Town** | | |
 
 **On a phone (iPhone 13):**
 

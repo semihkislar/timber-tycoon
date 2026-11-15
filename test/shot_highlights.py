@@ -16,7 +16,8 @@ ST='''(()=>{window.toast=()=>{};S.coins=1e16;S.totalEarned=1e16;TT.buyCollector(
   S.ws.sawmill=[10,10,10];S.ws.carpentry=[5,5,5];S.ws.chipper=[5,5,5];S.ws.kiln=[6,5,7];
   S.coins=3.2e11;S.playTime=6000;S.time=6000;document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e6;
   S.orders.next=S.time+1e6;S.orders.chNext=S.time+1e6;if(S.mish) S.mish.next=S.time+1e9;S.prefs.autoFocus=false;S.wx.clock=600;S.wx.w='clear';S.wx.ends=0;S.wx.next=1e15;
-  checkAch();for(const k in achFresh) delete achFresh[k];M=computeMods();TT.simulate(25);TT.rebuildAll&&TT.rebuildAll();TT.render();
+  if(S.town){S.town.made=250000;S.town.stage=6;S.town.best=6;S.town.seen=6;}
+  checkAch();for(const k in achFresh) delete achFresh[k];if(S.ach){S.ach.town2=1;S.ach.town6=1;}M=computeMods();TT.simulate(25);TT.rebuildAll&&TT.rebuildAll();TT.render();
   return {fk:S.logi.fk,drone:S.logi.drone,belt:JSON.stringify(S.logi.belt),ws:wsSetTier('sawmill')};})()'''
 CLEAN="(()=>{document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());scene.particles.length=0;S.orders.offers=[];if(TT.closeSheet) TT.closeSheet();})()"
 def aim(pg,i,j,z):
@@ -32,8 +33,14 @@ with sync_playwright() as p:
         pg.goto(URL); pg.wait_for_timeout(1500); print(pg.evaluate(ST)); pg.wait_for_timeout(2500); pg.evaluate(CLEAN)
         tag='mobile' if dev else 'desktop'
         I,J,Z=[float(x) for x in os.environ.get('AIM_'+tag.upper(),'18,16,1.15' if not dev else '16,15,1.6').split(',')]
-        aim(pg,I,J,Z); pg.evaluate(CLEAN); pg.wait_for_timeout(400)
+        pg.evaluate("()=>{if(S.town){S.town.made=250000;S.town.stage=6;S.town.best=6;S.town.seen=6;}fitCamera(true);}")
+        pg.wait_for_timeout(800); pg.evaluate(CLEAN); pg.wait_for_timeout(300)
         pg.screenshot(path=highlight_path(f'{tag}.png'))
+        if not dev:
+            pg.evaluate('''()=>{TT.setClock&&TT.setClock(10*60);S.wx.w="clear";S.wx.next=1e15;const c=scene.cam,p=P(38.5,39,0);c.fly=null;c.x=c.tx=p[0];c.y=c.ty=p[1];c.z=c.tz=Math.min(c.maxZ,c.fitZ*3.3);}''')
+            pg.wait_for_timeout(700); pg.evaluate(CLEAN); pg.wait_for_timeout(300)
+            pg.screenshot(path=highlight_path('town.png'))
+        aim(pg,I,J,Z); pg.evaluate(CLEAN); pg.wait_for_timeout(200)
         pg.evaluate("TT.setClock&&TT.setClock(21*60+30)"); aim(pg,I,J,Z*1.25); pg.evaluate(CLEAN); pg.wait_for_timeout(900)
         pg.screenshot(path=highlight_path(f'{tag}-night.png')); pg.evaluate("TT.setClock&&TT.setClock(10*60)"); pg.wait_for_timeout(500)
         pg.evaluate("openSheet('bld','sawmill');bpTab('ws')"); pg.wait_for_timeout(800)

@@ -5,6 +5,33 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.55] — 2026-11-15
+
+**A village by the south gate.** Timber-frame houses finished this run settle on the grass by the south gate. The lot grows from an empty patch to Timber Town, and a bigger town pays more for Phase 1 and Phase 2 goods at the Town Market. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. A save from v2.54 still loads. The first minutes of a run match v2.54.
+
+### Added
+- **South-gate village** (`js/town.js`). `made` counts house kits that entered stock from the Timber-frame workshop this run. Stages: Empty lot, Hamlet (1), Village (25), Large village (250), Market town (2,500), Town (25,000), Timber Town (250,000). Each stage adds cottages. From Market town there is a square with stalls and a well. Timber Town adds a church with a clock tower. Windows light at night, roofs take snow in winter, and a few chimneys puff. Residents walk the street (a small draw cap, cached sprites).
+- **Town demand.** Each stage adds 2.5% to coins from Town Market sales of Phase 1–2 goods (auto-sell and the Sell button), capped at +15% at Timber Town. `marketPrice()` is the only place the bonus is applied. Orders, contracts, exports and research keep the old price. Logs still cannot be sold.
+- Tap the village for a Town sheet: stage, houses this run, progress to the next stage, and the demand bonus now and next. The Market sheet shows "🏘️ Town demand +X%". Supply Flow and the stats list mention it once the village has started.
+- One extra Town Market van per two stages. Those vans drive the village street. The ordinary vans are unchanged.
+- Trophies: Village Green (reach Village), Timber Town (reach Timber Town).
+- `test/v255.py`. Release shots in `screenshots/history/v2.55/`.
+
+### Changed
+- Replant clears the village (`made`, `stage` and the announcement flag go back to 0). The best stage stays, so the trophies stay earned.
+- An old save that already has houses in stock starts the village from that stock. A damaged town block is repaired and never left as NaN.
+- The late-game fit view drops far enough to include the village once the first house is up. Before that, the frame matches v2.54.
+- `test/v254.py` accepts VERSION and the service-worker cache at 2.54 or newer, the same way the older suites do.
+- `test/v240.py` still requires the matched-collector case to move the same goods as v2.39. The coin total may now be up to 15% higher, which is Town demand once the run has finished houses.
+
+### Unchanged
+Recipes, building costs, order rewards, Research 2.0, Replant 2.0, and Log Yard overflow. Logs stay raw material and are never sold. A save from v2.54, v2.53, v2.39, v2.33 or v2.24 still loads. The first minutes of a run match v2.54.
+
+### Next ideas
+- Staff careers: trained staff promoted to foremen for a whole phase.
+- Research specialist branches: a capstone choice at tier 5, re-picked on Replant.
+- Photo mode stays dropped. It is not part of this release and is not next.
+
 ## [2.54] — 2026-11-14
 
 **The page matches the sources.** A maintenance release. Prices, recipes, order rewards and the rule that logs are never sold are unchanged. A save from v2.53 still loads.

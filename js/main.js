@@ -16,7 +16,7 @@ function render(){
   $('hSeeds').textContent=fmt(S.seeds)+(S.legacy?` · ×${legacyMult()<10?legacyMult().toFixed(2):fmt(legacyMult())}`:'');   // v2.18: spendable Seeds · Legacy bonus
   const L=$('sceneLabel'); if(!golden.cur){const tx=sceneLabelText(); if(L.textContent!==tx) L.textContent=tx;}
   updateBuildingSheet(); updateCollectors(); updateMarket(); updateUpgrades(); updateTrees(); updateCompany(); updateAch(); renderEvents();
-  renderOrderCard(); if(typeof ntOrderCard==='function') ntOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip(); if(typeof obTick==='function') obTick();   // v2.38 first-steps guide
+  renderOrderCard(); if(typeof ntOrderCard==='function') ntOrderCard(); renderDailyChip(); updateOrders(); updatePrem(); updateWx(); updateScBadge(); updateStaff(); updateRnd(); updateForestUI(); updatePower(); if(typeof updateRisk==='function') updateRisk(); updateBuilders(); updateShip(); updateFlowLegend(); if(typeof updateBpChip==='function') updateBpChip(); if(typeof townUpdate==='function') townUpdate(); if(typeof obTick==='function') obTick();   // v2.38 first-steps guide · v2.55 town sheet
   if(curSheet==='set'){const t=$('sndToggle'); t.checked=!S.muted;}
   mobileRender();
 }
@@ -134,6 +134,9 @@ window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,
   premScreen:()=>{const p=P(PREM.ci,PREM.cj,10);return w2s(p[0],p[1]);},PROW,PGATES,PDOCK,inPremRow,premLinks:()=>premLinks(),plifts:()=>(scene.plifts||[]).map(f=>({src:f.src,dst:f.dst,res:f.res,i:f.i,j:f.j})),
   // v2.3 world clock / seasons / weather helpers
   DAY_LEN,SEASON_DAYS,SEASONS,WEATHER,dayPhase,dayNum,seasonIdx,weatherId,setWeather,setClock,clockStr,dayState,isNight,
+  // v2.55 town growth
+  TOWN_STAGES,TOWN_BONUS,townNorm,townStage,townBest,townMade,townMult,townMarketGood,marketPrice,townCredit,townFoot,townPlot,townVanExtra,townStageName,townPctLabel,focusTown,townScreen,townHit,
+  get townHide(){return townHide;},set townHide(v){townHide=!!v;},
   // v2.5 research / trade helpers
   RNODES,CITIES,CMAP,bldUnlocked,freeSlot,harborAvail,labBuilt,nodeAvail,openResearch,openTrade,vesselPose,hasRes,doResearch,canResearch,labRP,buyHarbor,openRoute,dispatch,departNow,harborLvl,harborCost,routeOpen,tradeMult,tradeGoods,campusOpen,harborOpen,HOME,
   // v2.6 daily contracts
