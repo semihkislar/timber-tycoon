@@ -10,7 +10,7 @@ import argparse,concurrent.futures,glob,json,os,subprocess,sys,time
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # v240 stays here for its frame-cost check and the balance sims. The Log Yard tap itself no longer
 # races the live loop (v2.49, test/_pace.py); v234 and v249 are not load-sensitive.
-SERIAL={'v20.py','v28.py','v224.py','v226.py','v231.py','v25.py','v2151.py','v2201.py','v232.py','v238.py','v239.py','v240.py','v245.py'}
+SERIAL={'v20.py','v28.py','v224.py','v226.py','v231.py','v25.py','v2151.py','v2201.py','v232.py','v238.py','v239.py','v240.py','v245.py','v255.py'}
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--workers',type=int,default=int(os.environ.get('TT_TEST_WORKERS','4')))

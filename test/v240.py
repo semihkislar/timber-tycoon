@@ -133,7 +133,9 @@ with sync_playwright() as p:
             ok(n['short']==0,f"budget {B:.0e} ×{K}: Phase-I mills never short of logs")
             ok(n['sold']==0 and n['logs']<=n['cap']*1.0001,f"budget {B:.0e} ×{K}: no logs sold, stock within the cap")
             ok(n['fuel']<=n['need']*1.001+1e-9 and abs(n['pw']-o['pw'])<.02,f"budget {B:.0e} ×{K}: the plant burns no more fuel than its need and its power is unchanged ({n['pw']:.2f} vs {o['pw']:.2f})")
-            if K==1.0: ok(abs(d)<.005,f"budget {B:.0e}: collectors matched to the mills: no change ({d:+.2%})")
+            if K==1.0:
+                # v2.55: the goods are unchanged. Town demand can add up to 15% on Phase 1–2 market coins once houses exist.
+                ok(-.005<d<.155, f"budget {B:.0e}: collectors matched to the mills: goods unchanged, income within the town-demand cap ({d:+.2%})")
             else:
                 ok(n['yr']>=o['yr']-1e-9,f"budget {B:.0e} ×{K}: collectors work at least as much as in v2.39 ({o['yr']:.0%}→{n['yr']:.0%})")
                 ok(n['oc']<=n['cc']*1.001,f"budget {B:.0e} ×{K}: chute within ½ of the Chipper intake")

@@ -11,12 +11,18 @@ const MKT_COLS=[
   ['#8a7ab0','#f1eef6','#6a5a9a'],
   ['#c09060','#f6f0e4','#a07040']
 ];
-function mktFleetWant(){
+function mktFleetBase(){
   if(!(coinRate>0.05)) return 0;
   if(coinRate<8) return 1;
   if(coinRate<80) return 2;
   if(coinRate<800) return 2;
   return 3;
+}
+function mktFleetWant(){
+  const n=mktFleetBase();
+  // v2.55: one extra cosmetic van per two village stages, and only while the market is already sending vans
+  const ex=n>0&&typeof townVanExtra==='function'?townVanExtra():0;
+  return n+ex;
 }
 function mktSellBids(){
   const out=[];
@@ -57,7 +63,10 @@ function mkMktVan(slot){
   // early game: canvas cart until a few buildings are up / income is tiny
   const built=MAIN_BLD.filter(b=>S.buildings[b.id].lvl>0).length;
   const cart=built<3||coinRate<2;
-  const v={kind:'mkt',legs:mktVanLegs(pt,fromEast),li:0,s:0,v:0,col:c[0],box:c[1],stripe:c[2],load:0,cargo:pick.res,bid:pick.bid,cart,logo:cart?'CART':'TOWN',acc:0};
+  // v2.55: once the ordinary fleet is full, further vans are the village extras and drive the south-gate street
+  const have=(scene.marketVans||[]).filter(v=>!v.town).length;
+  const town=have>=mktFleetBase()&&typeof mktTownLegs==='function'&&typeof townVanExtra==='function'&&townVanExtra()>0;
+  const v={kind:'mkt',town:!!town,legs:town?mktTownLegs():mktVanLegs(pt,fromEast),li:0,s:0,v:0,col:town?'#8d4a32':c[0],box:town?'#f4e6c8':c[1],stripe:town?'#6b4226':c[2],load:0,cargo:town?'planks':pick.res,bid:pick.bid,cart:town?false:cart,logo:cart&&!town?'CART':'TOWN',acc:0};
   return v;
 }
 function mktFleetSync(){
@@ -94,6 +103,7 @@ function mktFleetUpdate(dt){
 }
 function mktFleetDraw(ctx,objs,inView){
   for(const v of scene.marketVans||[]){
+    if(v.town&&typeof townHide!=='undefined'&&townHide) continue;   // v2.55 frame-cost check can hide the village vans with the cottages
     if(v.i===undefined) continue; const [x,y]=P(v.i,v.j); if(!inView(x,y,90)) continue;
     objs.push({k:v.i+v.j,f:()=>{
       const st=mktVan(ctx,v.i,v.j,v.yaw,{col:v.col,box:v.box,stripe:v.stripe,load:v.load,cargo:v.cargo,cart:v.cart,logo:v.logo,brake:v.brake,bounce:0});

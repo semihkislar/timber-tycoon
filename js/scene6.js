@@ -11,7 +11,7 @@ function fitCamera(instant){
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0,(typeof townStage==='function'&&townStage()>=1)?1360:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -59,6 +59,7 @@ function hitTest(sx,sy){
   if(STATION.hit){const d=polyDist(STATION.hit,wx,wy);if(d<pd){pd=d;pb={type:'station'};}}
   if(PWZ.hit&&pwVisible()){const d=polyDist(PWZ.hit,wx,wy);if(d<pd){pd=d;pb={type:'power'};}}
   if(BYZ.hit&&byVisible()){const d=polyDist(BYZ.hit,wx,wy);if(d<pd){pd=d;pb={type:'build'};}}
+  if(typeof townHit==='function'&&townHit(wx,wy)) return {type:'town'};   // v2.55 south-gate village
   if(pb) return pb;
   const [gi,gj]=toGrid(wx,wy);
   for(const d of [0,.7,1.4,2.1]) if(isForestPt(gi+d,gj+d)) return {type:'forest',i:gi,j:gj};
@@ -84,6 +85,7 @@ function sceneTap(sx,sy){
   else if(h.type==='office') openDaily();
   else if(h.type==='campus') openResearch();
   else if(h.type==='harbor') openTrade();
+  else if(h.type==='town') openSheet('town');   // v2.55
   else if(h.type==='forest') forestChop(sx,sy);
   else closeSheet();
 }
@@ -132,7 +134,7 @@ function sceneLoop(now){
 function stepScene(dt){
   scene.t+=dt; scene.dtF=dt;
   camUpdate(dt);
-  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); if(typeof mktFleetUpdate==='function') mktFleetUpdate(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); bySceneUpdate(dt); if(typeof swUpdate==='function') swUpdate(dt); premUpdate(dt); updateGolden(dt);
+  updateWorldVis(dt); syncEntities(); premSync(); updateEntities(dt); if(typeof mktFleetUpdate==='function') mktFleetUpdate(dt); fireSceneUpdate(dt); courierUpdate(dt); techVisTick(); powerSceneUpdate(dt); bySceneUpdate(dt); if(typeof swUpdate==='function') swUpdate(dt); premUpdate(dt); updateGolden(dt); if(typeof townStep==='function') townStep(dt);
   drawScene(dt); if(typeof obFrame==='function') obFrame();   // v2.38 guide pointer
   scene.firstFrame=false;
 }
@@ -186,7 +188,7 @@ function drawScene(dt){
   if(typeof tierLiftDraw==='function'){tierLiftDraw(ctx,objs,inView);tierSignDraw(ctx,objs,inView);}
   if(typeof beltDraw==='function') beltDraw(ctx,objs,inView);if(typeof cdDraw==='function') cdDraw(ctx,objs,inView);   // v2.32 drone pad
     // v2.31 conveyor belts   // v2.20 factory tiers
-  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView); if(typeof swDraw==='function') swDraw(ctx,objs,inView);   // v2.15 staff in the world
+  premDraw(ctx,objs,inView); staffDraw(ctx,objs,inView); techDraw(ctx,objs,inView); forestDraw(ctx,objs,inView); powerDraw(ctx,objs,inView); byDraw(ctx,objs,inView); if(typeof swDraw==='function') swDraw(ctx,objs,inView); if(typeof townDraw==='function') townDraw(ctx,objs,inView);   // v2.15 staff in the world · v2.55 village
   for(const L of lots){const o=stockObj(ctx,L);if(o) objs.push(o);}
   objs.sort((a,b)=>a.k-b.k);
   for(const o of objs) o.f();
@@ -222,7 +224,7 @@ function drawScene(dt){
   // ---- screen-space overlays ----
   ctx.setTransform(dpr,0,0,dpr,0,0);
   drawSky(ctx); drawWeather(ctx,dt);
-  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx); byOverlays(ctx); if(typeof mishOverlays==='function') mishOverlays(ctx); if(typeof swOverlays==='function') swOverlays(ctx);
+  drawOverlays(ctx); staffOverlays(ctx); techOverlays(ctx); forestOverlays(ctx); powerOverlays(ctx); byOverlays(ctx); if(typeof mishOverlays==='function') mishOverlays(ctx); if(typeof swOverlays==='function') swOverlays(ctx); if(typeof townOverlay==='function') townOverlay(ctx);
   drawGolden(ctx,dt);
 }
 function pill(ctx,x,y,txt,o){if(o&&o.lo&&typeof dcCalm==='function'&&dcCalm()){scene.dcHid++;return [x,y,0,0];}return pillCached(ctx,x,y,txt,o);}   // v2.44: {lo:1} = info-only, hidden at fit zoom on late-game phones

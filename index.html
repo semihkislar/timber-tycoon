@@ -102,9 +102,11 @@
       <div class="list" id="treeList"></div>
     </div>
     <div class="pane" id="pane-market">
+      <div class="legend town-mkt" id="townMkt"></div>
       <table class="mkt"><thead><tr><th>Item</th><th>Stock</th><th class="hm">Made/s</th><th class="hm">Used/s</th><th>Price</th><th>Auto</th><th></th></tr></thead><tbody id="mktBody"></tbody></table>
       <div class="legend">Trucks at the shipping dock haul your goods away. Auto-sell sells surplus only and always keeps a ~2s buffer for downstream buildings.</div>
     </div>
+    <div class="pane" id="pane-town"><div class="town-card" id="townCard"></div></div>
     <div class="pane" id="pane-ord"><div id="ordBody"></div></div>
     <div class="pane" id="pane-prem"><div id="premBody"></div></div>
     <div class="pane" id="pane-staff"><div id="staffBody"></div></div>
@@ -160,7 +162,7 @@
 <div id="toasts"></div>
 <div id="modalRoot"></div>
 <div id="fxLayer"></div>
-<!-- TT-SOURCES: js/logic_a.js js/logic_b.js js/notify.js js/stations.js js/ui.js js/premium.js js/chains.js js/world.js js/seasonal.js js/staff.js js/staffsys.js js/research.js js/forest.js js/power.js js/mishaps.js js/claims.js js/builders.js js/shipping.js js/flow.js js/advisor.js js/overflow.js js/spec.js js/replant.js js/scene1.js js/sprites.js js/chimney.js js/forestveh.js js/facade.js js/input.js js/scene2.js js/scene3.js js/scene4.js js/scene5.js js/marketfleet.js js/scene6.js js/declutter.js js/scene7.js js/scene8.js js/scene9.js js/scene10.js js/scene11.js js/scene12.js js/scene13.js js/staffworld.js js/mobile.js js/tiers.js js/logistics.js js/belts.js js/drones.js js/blueprint.js js/onboard.js js/main.js -->
+<!-- TT-SOURCES: js/logic_a.js js/logic_b.js js/notify.js js/stations.js js/ui.js js/premium.js js/chains.js js/world.js js/seasonal.js js/staff.js js/staffsys.js js/research.js js/forest.js js/power.js js/mishaps.js js/claims.js js/builders.js js/shipping.js js/flow.js js/advisor.js js/overflow.js js/spec.js js/replant.js js/scene1.js js/sprites.js js/chimney.js js/forestveh.js js/facade.js js/input.js js/scene2.js js/scene3.js js/scene4.js js/scene5.js js/marketfleet.js js/town.js js/scene6.js js/declutter.js js/scene7.js js/scene8.js js/scene9.js js/scene10.js js/scene11.js js/scene12.js js/scene13.js js/staffworld.js js/mobile.js js/tiers.js js/logistics.js js/belts.js js/drones.js js/blueprint.js js/onboard.js js/main.js -->
 <script src="js/game.js" defer></script>
 </body>
 </html>

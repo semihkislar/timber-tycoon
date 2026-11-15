@@ -1,6 +1,6 @@
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.54';
+const VERSION='2.55';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -348,6 +348,9 @@ const ACH=[
   {id:'sc_year',g:'sys',t:'gold',e:'🗓️',n:'Four Seasons',d:'Deliver a seasonal contract in every season',p:()=>[typeof scYear==='function'?scYear():0,4]},
   {id:'sc_10',g:'sys',t:'silver',e:'🚢',n:'Seasoned Exporter',d:'Deliver 10 seasonal export contracts',p:()=>[(S.seas&&+S.seas.total)||0,10]},
   {id:'team12',g:'sys',t:'silver',e:'👥',n:'Full Payroll',d:'Have 12 staff on the team',p:()=>[(S.staff&&S.staff.team&&S.staff.team.length)||0,12]},
+  // v2.55 south-gate village. best survives a Replant; progress stays finite on old saves.
+  {id:'town2',g:'sys',t:'bronze',e:'🏘️',n:'Village Green',d:'Grow a Village by the south gate (25 houses this run)',p:()=>[typeof townBest==='function'?townBest():0,2]},
+  {id:'town6',g:'sys',t:'gold',e:'⛪',n:'Timber Town',d:'Grow Timber Town by the south gate (250,000 houses this run)',p:()=>[typeof townBest==='function'?townBest():0,6]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
 function achWsMax(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n=Math.max(n,x|0);}return n;}
@@ -368,7 +371,7 @@ function freshState(keep){
     planters:{planter:1,team:0,nursery:0,sdrone:0},forest:{m:1200,y:0,s:0,st:0,eff:1,warn:0,D:0},forestLife:{planted:0},prefs:{autoFocus:true,haptics:true,fatigue:true,plankMode:'fair'},power:{lvl:0,on:true,fuel:'mix',logs:'surplus',res:60,eff:0,burn:{}},mish:{next:0,ins:0,broke:{},log:[],stats:{n:0,dodged:0,lost:0,repairs:0}},staff:{team:[],candidates:[],nextRefresh:40,nextReroll:0,seq:0,unpaid:false},
     builders:{lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0},
     ship:{dock:1,fork:2,fspd:0,crane:0,bays:[],contract:null,offer:null,nextOffer:40,stats:{trucks:0,contracts:0,bonus:0,failed:0}},
-    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0},ob:{st:'off',step:0},   // v2.38 first-steps guide (init turns it on for a brand-new save only)
+    spec:{},specStats:{picks:0,switches:0},logi:{fk:0,belt:{},drone:0},ob:{st:'off',step:0},town:{made:0,stage:0,best:0,seen:0},   // v2.55 south-gate village (best kept through Replant)   // v2.38 first-steps guide (init turns it on for a brand-new save only)
    
     bp:{act:0,slots:[null,null,null],run:true,budget:.5,cool:0,stats:{steps:0,spent:0,lv:0,full:0,saved:0},r:{staff:{},set:0,done:0,t0:0}}};   // v2.35 Replant Blueprints (plans kept through Replant)   // v2.30 logistics (Forklift Depot level; v2.31 belt levels per link; v2.32 Drone Port level; rebuilt after a Replant)
     // v2.17 line specialisations   // v2.7: one free planter, a full forest
@@ -470,6 +473,7 @@ function migrateSave(o){
   if(!o.upgrades||typeof o.upgrades!=='object') o.upgrades={}; for(const k in o.upgrades){const v=o.upgrades[k];o.upgrades[k]=v===true?1:Math.max(0,Math.floor(+v||0));}
   if(typeof wsGrandfather==='function') wsGrandfather(o);
   if(typeof obNorm==='function') obNorm(o); else if(!o.ob||typeof o.ob!=='object') o.ob={st:'old',step:0};   // v2.38: saves from before the guide never show it
+  if(typeof townNorm==='function') townNorm(o); else if(!o.town||typeof o.town!=='object') o.town={made:0,stage:0,best:0,seen:0};   // v2.55
   o.version=VERSION;
   return o;
 }
@@ -498,6 +502,7 @@ function sanitizeState(s){
   if(!s.logi||typeof s.logi!=='object'||Array.isArray(s.logi)) s.logi={fk:0};s.logi.fk=Math.max(0,Math.min(10,Math.floor(+s.logi.fk||0)));   // v2.30
   {const b=s.logi.belt&&typeof s.logi.belt==='object'&&!Array.isArray(s.logi.belt)?s.logi.belt:{},o={};for(const k of ['sawmill','chipper','peeler','beamsaw']) o[k]=Math.max(0,Math.min(10,Math.floor(+b[k]||0)));s.logi.belt=o;}   // v2.31 belts (v2.30 saves have none)
   s.logi.drone=Math.max(0,Math.min(10,Math.floor(+s.logi.drone||0)));   // v2.32 Drone Port (v2.31 saves have none)
+  if(typeof townNorm==='function') townNorm(s);   // v2.55: a damaged town block cannot leave NaN in the village
   return s;
 }
 
@@ -695,7 +700,9 @@ function tick(dt,offline){
     if(b.id==='kiln'&&M.tar){pend.glue=(pend.glue||0)+b.out.charcoal*sp*dt*f*mo*TAR_GLUE;}   // v2.5 pine tar glue (v2.24: .5 → .65 so late Plywood Mills aren't glue-bound)
     const o0=bstat[b.id];bstat[b.id]={f,lim:full?null:lim,speed:sp,full,fs:(o0&&isFinite(o0.fs)?o0.fs:1)+(f-(o0&&isFinite(o0.fs)?o0.fs:1))*Math.min(1,dt/6)};   // fs: smoothed (~6 s) for warnings
   }
+  const houseBefore=S.res.houses;
   for(const k in pend){S.res[k]+=pend[k];fl[k].p+=pend[k];if(caps[k]<Infinity&&S.res[k]>caps[k]) S.res[k]=caps[k];}
+  if(pend.houses>0&&typeof townCredit==='function') townCredit(Math.max(0,S.res.houses-houseBefore),!!offline);   // v2.55: kits that fitted into stock grow the village
   if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'pri');   // v2.37: a signed seasonal contract loads its share before the boiler
   let ovC=[0,0];if(ovf>1e-12){ovC=ovfToChipper(ovf,dt,caps);ovf-=ovC[0];if(ovC[1]>0) fl.chips.p+=ovC[1];}   // v2.40 overflow → the Wood Chipper's chute
   if(typeof powerTick==='function') powerTick(demand,dt,fl,frac,ovf);   // v2.10: the power plant takes its fuel before auto-sell (v2.40: overflow logs first)
@@ -712,7 +719,7 @@ function tick(dt,offline){
     if(!S.autosell[r.id]||!canSell(r.id)) continue;
     const reserve=((dHi[r.id]+(loUsed[r.id]||0)*1.05)/dt)*Math.max(BUFFER_SEC,dt*1.5);   // v2.33: a surplus consumer only reserves what it actually used (an idle Panel Press must not hoard planks)
     const sell=S.res[r.id]-reserve;
-    if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*price(r.id);sold[r.id]=sell;}
+    if(sell>1e-9){S.res[r.id]-=sell;fl[r.id].s+=sell;earned+=sell*(typeof marketPrice==='function'?marketPrice(r.id):price(r.id));sold[r.id]=sell;}   // v2.55: Town demand on Phase 1–2 market sales only
   }
   if(earned>0) earn(earned);
   if(typeof shipTick==='function') shipTick(dt,sold,earned,offline);   // v2.13 shipping yard
@@ -845,7 +852,7 @@ function chop(){
   S.clicks++; S.lifetimeClicks++; chopRateEma+=1; sfx('chop'); return n;
 }
 function sellAll(id){
-  const n=S.res[id]; if(n<=0||!canSell(id)) return 0; const v=n*price(id); S.res[id]=0; earn(v); sfx('coin'); return v;
+  const n=S.res[id]; if(n<=0||!canSell(id)) return 0; const v=n*(typeof marketPrice==='function'?marketPrice(id):price(id)); S.res[id]=0; earn(v); sfx('coin'); return v;   // v2.55 Town demand, same gate as auto-sell
 }
 /* v2.18: seedsFor / pendingSeeds live in js/replant.js */
 function doPrestige(){
@@ -865,6 +872,7 @@ function doPrestige(){
   keep.ship=typeof shKeep==='function'?shKeep():S.ship;   // v2.13: docks, forklifts and crane are kept through Replant
   {const B=S.builders||{};keep.builders={lvl:B.lvl||0,on:B.on!==false,plan:B.plan||'ms',budget:B.budget||.25,off:Object.assign({},B.off||{}),jobs:[],stats:Object.assign({lv:0,spent:0,jobs:0},B.stats||{}),seq:B.seq||0,cool:0};}   // v2.12: the yard stays built, jobs are dropped
   keep.bp=typeof bpKeep==='function'?bpKeep():S.bp;   // v2.35: blueprints stay, the run's restore progress starts over
+  keep.town={made:0,stage:0,best:(S.town&&isFinite(+S.town.best)?Math.max(0,Math.min(6,Math.floor(+S.town.best))):0),seen:0};   // v2.55: the village resets, the best stage stays for trophies
   S=freshState(keep); rpStartRun(); M=computeMods(); if(typeof bpStartRun==='function') bpStartRun();   // v2.18: Seed Shop start bonuses, fresh run goals
   RES.forEach(r=>{rates[r.id]={p:0,c:0,s:0,d:0};}); coinRate=0;
   save(); rebuildAll(); toast(`🌱 Forest replanted! <b>+${g}</b> Seeds · Legacy <b>${fmt(S.legacy)}</b> (production ×${legacyMult().toFixed(2)}) · ${fmt(S.seeds)} 🌱 to spend in the Seed Shop`,5200);
