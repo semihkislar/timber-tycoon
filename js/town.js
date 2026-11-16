@@ -8,7 +8,9 @@
    only for trophies — Replant clears `made`, `stage` and `seen`, and keeps `best`.
    `seen` is the last stage we announced, so a loaded save does not toast its history.
    Town demand is townMult() on Town Market sales only (auto-sell and the Sell button) of
-   Phase 1–2 goods. Logs stay unsellable. Orders, contracts, exports and research use price(). */
+   Phase 1–2 goods. Logs stay unsellable. Orders, contracts, exports and research use price().
+   v2.56: a tall piece is two depths (far half at the back corner, near half at the front
+   corner) so a walker, a van or the scaffold cannot paint across a roof. */
 const TOWN_STAGES=[
   {n:0,name:'Empty lot',say:'A cleared lot by the south gate, waiting on the first house kit.'},
   {n:1,name:'Hamlet',say:'One timber-frame cottage, a garden and a tree.'},
@@ -211,6 +213,14 @@ function townCot(ctx,p){
   if(p.chim) townChim(ctx,i0+.16,j0+.16,h+3.2);
   // flower box under the east window
   box(ctx,i1-.02,j0+.16,i1+.08,j0+.34,3.6,4.5,'#6b4226',{top:'#5a9a40'});
+  // street-side picket and a few blooms, kept inside the footprint so the cached sprite does not grow
+  for(let t=0;t<4;t++){
+    const jj=j0+.08+(j1-j0-.16)*t/3;
+    box(ctx,i0+.015,jj-.018,i0+.052,jj+.018,0,2.05,'#f7f1e4',{top:'#fff6e8',edge:false});
+  }
+  box(ctx,i0+.02,j0+.08,i0+.048,j1-.08,1.02,1.28,'#f4e6c8',{top:false,edge:false});
+  const blooms=['#e85a78','#ffd24a','#f7f4ee'];
+  for(let t=0;t<3;t++){const jj=j0+.2+t*(j1-j0-.4)/2, q=P(i0+.11,jj,1.2); ell(ctx,q[0],q[1],1.6,.9,blooms[t]);}
 }
 function townChurch(ctx,p){
   const i0=p.i-p.wi/2,i1=p.i+p.wi/2,j0=p.j-p.wj/2,j1=p.j+p.wj/2,h=13;
@@ -219,6 +229,8 @@ function townChurch(ctx,p){
   box(ctx,i0,j0,i1,j1,1.8,h,'#f6ead0',{top:false});
   townBeams(ctx,i0,j0,i1,j1,1.8,h);
   townDoor(ctx,p.i-.12,j1,1.8,.26,7.6);
+  box(ctx,p.i-.28,j1-.02,p.i-.04,j1+.05,1.25,2.1,'#6b4226',{top:'#5a9a40'});
+  {const q=P(p.i-.16,j1+.01,2.25); ell(ctx,q[0],q[1],1.7,.95,'#e85a78'); ell(ctx,q[0]+3.2,q[1]+.4,1.3,.75,'#ffd24a');}
   townWin(ctx,'J',i0+.16,j1,6.2,.22,4.2);
   townWin(ctx,'J',i1-.4,j1,6.2,.22,4.2);
   townWin(ctx,'I',i1,p.j-.05,6.4,.24,4);
@@ -348,19 +360,102 @@ function townLooks(){
     {female:false,skin:SKINS[1],hair:HAIRS[2],style:'short',beard:HAIRS[2],hat:'cap',hatc:'#7a3a24',shirt:'#f4e6c8',plaid:null,vest:null,pants:'#3e4c5c',boots:'#2c2118'},
     {female:true,skin:SKINS[0],hair:HAIRS[4],style:'pony',beard:null,hat:'beanie',hatc:'#c44536',shirt:'#f7f1e4',plaid:null,vest:'#7aaa48',pants:'#4a3a32',boots:'#3a2414'},
     {female:false,skin:SKINS[3],hair:HAIRS[0],style:'short',beard:null,hat:'cap',hatc:'#2f4a32',shirt:'#ead8b0',plaid:null,vest:null,pants:'#2e3a48',boots:'#241810'},
-    {female:true,skin:SKINS[2],hair:HAIRS[7],style:'bun',beard:null,hat:null,hatc:'#8d3d28',shirt:'#fff6e8',plaid:null,vest:'#d8a24a',pants:'#5a4030',boots:'#3a2414'}
+    {female:true,skin:SKINS[2],hair:HAIRS[7],style:'bun',beard:null,hat:null,hatc:'#8d3d28',shirt:'#fff6e8',plaid:null,vest:'#d8a24a',pants:'#5a4030',boots:'#3a2414'},
+    {female:false,skin:SKINS[4],hair:HAIRS[5],style:'short',beard:null,hat:'cap',hatc:'#3a4a6a',shirt:'#d8d2c4',plaid:null,vest:'#8d3d28',pants:'#2c241c',boots:'#241810'},
+    {female:true,skin:SKINS[5],hair:HAIRS[3],style:'pony',beard:null,hat:'beanie',hatc:'#6a8f4a',shirt:'#f2c1b0',plaid:null,vest:null,pants:'#3e4c5c',boots:'#2c2118'}
   ];
   return _twLooks;
 }
+/* Places a walker actually stops: beside the well, beside the stalls, and on a cottage doorstep.
+   Every point is outside the solid footprints. */
+function townStops(s){
+  const o=[];
+  if(s>=4){
+    o.push({j:34.50,i:37.22,fx:-1});
+    o.push({j:35.30,i:37.72,fx:-1});
+  }
+  if(s>=2){
+    const js=[33.72,35.15,36.62,38.20,39.72,41.22,42.55];
+    const end=townRoadEnd(s);
+    const door=js.filter(j=>j+.55<end);
+    if(door.length){const j=door[(s+1)%door.length]; o.push({j:j+.48,i:38.28,fx:1});}
+  }
+  return o;
+}
 function townFolk(){
   const s=townStage(); if(s<1||townHide) return [];
-  const n=Math.min(townCap(), 1+(s>1?1:0)+(s>3?1:0)+(s>5?1:0));
+  const n=Math.min(townCap(), 1+(s>1?1:0)+(s>3?1:0)+(s>4?1:0)+(s>5?1:0));
   const j0=33.15, j1=Math.min(townRoadEnd(s)-.35, 42.7), span=Math.max(.4,j1-j0);
-  const looks=townLooks(), out=[];
+  const looks=townLooks(), stops=townStops(s), out=[];
+  const HOLD=1.65;
   for(let k=0;k<n;k++){
-    const spd=.28+(k%3)*.06, ph=(scene.t*spd+k*span/n)%(span*2);
-    const going=ph<span, j=going?j0+ph:j1-(ph-span);
-    out.push({i:TOWN_ROAD+(k%2?.06:-.06), j, look:looks[k%looks.length], fx:going?1:-1, ph:scene.t*7+k});
+    const spd=.28+(k%3)*.06, holds=[];
+    for(let si=0;si<stops.length;si++){
+      const st=stops[si];
+      if(st.j<=j0+.25||st.j>=j1-.2) continue;
+      if((si+k)%2) continue;                 // neighbours do not all stop at the same bench
+      holds.push({ph:st.j-j0,st});
+      holds.push({ph:span+(j1-st.j),st});
+    }
+    holds.sort((a,b)=>a.ph-b.ph);
+    const holdPh=HOLD*spd, cycle=span*2, tot=cycle+holds.length*holdPh;
+    let t=((scene.t*spd)+k*tot/Math.max(1,n))%tot;
+    let ph=0, prev=0, pose='walk', stop=null;
+    for(const h of holds){
+      const walk=h.ph-prev;
+      if(t<=walk){ph=prev+t; t=-1; break;}
+      t-=walk;
+      if(t<=holdPh){ph=h.ph; stop=h.st; pose='stand'; t=-1; break;}
+      t-=holdPh; prev=h.ph;
+    }
+    if(t>=0) ph=Math.min(cycle, prev+t);
+    const going=ph<span;
+    let j=Math.max(j0, Math.min(j1, going?j0+ph:j1-(ph-span)));
+    let i=TOWN_ROAD+(k%2?.06:-.06), fx=going?1:-1;
+    if(stop){i=stop.i; j=stop.j; fx=stop.fx;}
+    out.push({i,j,look:looks[k%looks.length],fx,ph:scene.t*(pose==='walk'?7:1.4)+k,pose});
+  }
+  return out;
+}
+/* A resident's feet sort a hair in front of the ground tile they stand on. */
+const TOWN_FEET=0.004;
+function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake';}
+function townBoxOf(p){return {i0:p.i-p.wi/2,j0:p.j-p.wj/2,i1:p.i+p.wi/2,j1:p.j+p.wj/2};}
+/* Screen pixels above the footprint centre where the near half begins.
+   The roof slope that faces the camera stays with the near half. The far roof stays above the line. */
+function townSplitLift(p){
+  if(p.kind==='church') return 46;
+  if(p.kind==='tree') return 22;
+  if(p.kind==='well') return 14;
+  if(p.kind==='stall') return 9;
+  if(p.kind==='sign') return 7;
+  return 14;
+}
+/* Far half at the back corner, near half at the front corner.
+   One key for the whole cottage was the front corner, so the far roof was treated as
+   closer than a walker whose feet were already in front of the near wall. */
+function townPieceKeys(p){
+  const box=townBoxOf(p);
+  if(p.kind==='path') return [{k:p.i+p.j-.4,half:'all',box}];
+  if(townFlat(p)) return [{k:p.i+p.j-.02,half:'all',box}];
+  return [{k:box.i0+box.j0,half:'back',box},{k:box.i1+box.j1,half:'front',box}];
+}
+function townClip(ctx,p,half){
+  if(half==='all'){townStamp(ctx,p);return;}
+  const y=P(p.i,p.j,0)[1]-townSplitLift(p);
+  ctx.save(); ctx.beginPath();
+  if(half==='back') ctx.rect(-1e5,-1e5,2e5,y+.8);
+  else ctx.rect(-1e5,y-.8,2e5,2e5);
+  ctx.clip(); townStamp(ctx,p); ctx.restore();
+}
+function townSortParts(){
+  const out=[];
+  for(const p of townLive()) for(const part of townPieceKeys(p)) out.push({kind:p.kind,half:part.half,k:part.k,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
+  for(const f of townFolk()) out.push({kind:'folk',half:'pt',k:f.i+f.j+TOWN_FEET,i:f.i,j:f.j,pose:f.pose});
+  if(scene.townFx){
+    const fx=scene.townFx, host=townPieces().find(q=>Math.abs(q.i-fx.i)<.02&&Math.abs(q.j-fx.j)<.02);
+    const parts=host?townPieceKeys(host):[{k:fx.i+fx.j,half:'all',box:townBoxOf({i:fx.i,j:fx.j,wi:.2,wj:.2})}];
+    for(const part of parts) if(part.half!=='all') out.push({kind:'scaffold',half:part.half,k:part.k+.008,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
   }
   return out;
 }
@@ -379,18 +474,35 @@ function townStep(dt){
 }
 function townDraw(ctx,objs,inView){
   if(townHide) return;
-  const live=townLive();
-  for(const p of live){
+  for(const p of townLive()){
     const [x,y]=P(p.i,p.j,0); if(!inView(x,y-20,80)) continue;
-    const k=p.kind==='path'?p.i+p.j-.4:p.i+p.wi/2+p.j+p.wj/2;
-    const piece=p;
-    objs.push({k,f:()=>{townStamp(ctx,piece); townLights(piece);}});
+    const parts=townPieceKeys(p), piece=p;
+    let lit=false;
+    for(const part of parts){
+      const half=part.half;
+      objs.push({k:part.k,f:()=>{townClip(ctx,piece,half); if(!lit&&half!=='back'){townLights(piece); lit=true;}}});
+    }
   }
   for(const f of townFolk()){
     const [x,y]=P(f.i,f.j); if(!inView(x,y,40)) continue;
-    objs.push({k:f.i+f.j+.03,f:()=>human(ctx,x,y,{look:f.look,fx:f.fx,pose:'walk',ph:f.ph})});
+    const folk=f;
+    objs.push({k:f.i+f.j+TOWN_FEET,f:()=>human(ctx,x,y,{look:folk.look,fx:folk.fx,pose:folk.pose||'walk',ph:folk.ph})});
   }
-  if(scene.townFx){const fx=scene.townFx; const [x,y]=P(fx.i,fx.j); if(inView(x,y,60)) objs.push({k:fx.i+fx.j+.4,f:()=>townScaffold(ctx,fx)}); }
+  if(scene.townFx){
+    const fx=scene.townFx; const [x,y]=P(fx.i,fx.j); if(!inView(x,y,60)) return;
+    const host=townPieces().find(q=>Math.abs(q.i-fx.i)<.02&&Math.abs(q.j-fx.j)<.02);
+    let draw=host?townPieceKeys(host):[{k:fx.i+fx.j+.4,half:'all',box:null}];
+    if(draw.every(part=>part.half==='all')) draw=[draw[draw.length-1]];
+    for(const part of draw){
+      objs.push({k:part.k+.008,f:()=>{
+        if(!host||part.half==='all'){townScaffold(ctx,fx);return;}
+        const yy=P(host.i,host.j,0)[1]-townSplitLift(host);
+        ctx.save(); ctx.beginPath();
+        if(part.half==='back') ctx.rect(-1e5,-1e5,2e5,yy+.8); else ctx.rect(-1e5,yy-.8,2e5,2e5);
+        ctx.clip(); townScaffold(ctx,fx); ctx.restore();
+      }});
+    }
+  }
 }
 function townOverlay(ctx){
   if(townHide) return;

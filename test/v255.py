@@ -63,9 +63,10 @@ with sync_playwright() as p:
         pg.on('response', lambda r: missing.append(r.url) if r.status>=400 and 'favicon' not in r.url else None)
         pg.goto(url); ready(pg); return pg
     pg=page(); E(pg, QUIET)
-    ok(E(pg,'TT.VERSION')=='2.55', f"VERSION is 2.55 ({E(pg,'TT.VERSION')})")
+    ok(ver(E(pg,'TT.VERSION'))>=(2,55), f"VERSION is 2.55 or newer ({E(pg,'TT.VERSION')})")
     sw=open(os.path.join(ROOT,'sw.js'), encoding='utf-8').read()
-    ok("timber-tycoon-v2.55" in sw, 'service-worker cache is timber-tycoon-v2.55')
+    m=re.search(r"timber-tycoon-v([\d.]+)", sw)
+    ok(m and ver(m.group(1))>=(2,55), f"service-worker cache is timber-tycoon-v2.55 or newer ({m.group(1) if m else sw[:40]})")
     ok(E(pg,'canSell("logs")') is False and E(pg,'sellAll("logs")')==0, 'logs stay unsellable')
     # ---- rules ----
     r=E(pg, r'''()=>{

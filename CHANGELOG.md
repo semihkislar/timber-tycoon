@@ -5,6 +5,28 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.56] — 2026-11-16
+
+**Residents stay on the street.** In Timber Town a walker could be painted across a roof, or hidden by a wall that was beside them. Each tall building is now two depths, so the near half is in front of the walker and the far half is behind them. A save from v2.55 still loads. The first minutes of a run match v2.55.
+
+### Fixed
+- **Village depth.** A cottage, the church, a stall, the well or a tree was one picture, and that picture was sorted at the front corner of its footprint. A resident is sorted at their feet, the same way a worker in the yard is. The front corner sits closer to the camera than the near wall, so the whole picture — including the far roof — was drawn after a walker who was already in front of that wall. The same single key put a walker who was east of a stall on top of the awning, and it did the same to a market van and to the short scaffold that appears when a new piece is built. The yard does not sort a building that way: the lot uses its centre and the person uses the ground under their boots. The village sprites stay cached. Each tall one is drawn in two halves, split on the depth line. The far half sorts at the back corner. The near half, including the roof slope that faces you, sorts at the front corner. A resident, a town van and the scaffold fall between those two keys when they are beside the building. Paths, gardens and stakes stay one flat key, under the feet.
+
+### Changed
+- Walkers pause at the well, at the stalls and on a cottage doorstep, and there is one more of them at Timber Town on a large screen. Phones keep the same draw cap. Two more outfits. Cottages grow a short street-side picket and a few flowers, and the church door has a flower box. All of it is in the cached sprites.
+- `test/v240.py` checks the matched-collector case (collectors at the mills, K = 1) against v2.39 good by good: chips, pellets, paper, pellets sold, power and the share of collectors that are working. With Town demand forced off, the coin total matches v2.39 as well. The old income bound, up to the +15% Town demand cap, stays as a second check. Collectors are a whole number of lumberjacks, so "matched" can still be up to half a lumberjack ahead of the mills. That sliver is the only overflow on this case. It goes to the chute once the yard is full, and nothing is burned or thrown away. v2.39 had no chute, so it dropped the same sliver, and the goods move by about a hundredth of a percent because of it. That is not a recipe change.
+
+### Added
+- `test/v256.py`. Release shots in `screenshots/history/v2.56/`.
+
+### Unchanged
+Recipes, building costs, order rewards, town demand percentages, Research 2.0, Replant 2.0, and Log Yard overflow. Logs stay raw material and are never sold. A save from v2.55, v2.54, v2.39 or v2.24 still loads. The first minutes of a run match v2.55.
+
+### Next ideas
+- Staff careers: trained staff promoted to foremen for a whole phase.
+- Research specialist branches: a capstone choice at tier 5, re-picked on Replant.
+- Photo mode stays dropped. It is not part of this release and is not next.
+
 ## [2.55] — 2026-11-15
 
 **A village by the south gate.** Timber-frame houses finished this run settle on the grass by the south gate. The lot grows from an empty patch to Timber Town, and a bigger town pays more for Phase 1 and Phase 2 goods at the Town Market. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. A save from v2.54 still loads. The first minutes of a run match v2.54.
