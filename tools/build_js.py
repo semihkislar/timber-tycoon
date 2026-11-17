@@ -5,7 +5,7 @@
 # Names are not mangled: a minifier that folded expressions moved an early-game purchase.
 import os, re, sys
 R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SOURCES=['logic_a','logic_b','notify','stations','ui','premium','chains','world','seasonal','staff','staffsys','research','forest','power','mishaps','claims','builders','shipping','flow','advisor','overflow','spec','replant','scene1','sprites','chimney','forestveh','facade','input','scene2','scene3','scene4','scene5','marketfleet','town','scene6','declutter','scene7','scene8','scene9','scene10','scene11','scene12','scene13','staffworld','mobile','tiers','logistics','belts','drones','blueprint','onboard','main']
+SOURCES=['logic_a','logic_b','notify','stations','ui','premium','chains','world','seasonal','staff','staffsys','research','forest','power','mishaps','claims','builders','shipping','flow','advisor','overflow','spec','replant','scene1','sprites','chimney','forestveh','facade','input','scene2','scene3','scene4','scene5','marketfleet','town','scene6','declutter','quality','scene7','scene8','scene9','scene10','scene11','scene12','scene13','staffworld','mobile','tiers','logistics','belts','drones','blueprint','onboard','main']
 HEADER='/* Timber Tycoon bundle. Built by tools/build_js.py — edit js/*.js, then rebuild. */\n'
 def build():
     missing=[s for s in SOURCES if not os.path.isfile(f'{R}/js/{s}.js')]

@@ -66,7 +66,13 @@ function forestGround(ctx){
   // gravel path from the clearing toward the logging road
   fillP(ctx,[P(i1+.55,j1+.5),P(i1+2.4,j1+.5),P(i1+2.4,j1+.95),P(i1+.55,j1+.95)],SEAS===3?'#eef2f4':'#c9b48a');
 }
+/* v2.56: a seed bed (5 × 3 saplings, ~75 canvas calls) only changes with the season and the tree tier, so it is cached */
 function seedBed(ctx,i0,j0,i1,j1,seed){
+  const a=P(i0,j0),di=i1-i0,dj=j1-j0;
+  sprite(ctx,'seedbed|'+seed+'|'+SEAS+'|'+S.tree+'|'+di.toFixed(2)+'|'+dj.toFixed(2),a[0],a[1],[-dj*HW-10,-34,di*HW+10,(di+dj)*HH+5],
+    (g,x,y)=>{g.save();g.translate(x-a[0],y-a[1]);seedBedRaw(g,i0,j0,i1,j1,seed);g.restore();});
+}
+function seedBedRaw(ctx,i0,j0,i1,j1,seed){
   box(ctx,i0,j0,i1,j1,0,2.2,'#8a5a2c',{top:SEAS===3?'#f4f8fb':'#5a3f22',nosnow:true,hl:false});
   if(SEAS===3) return;
   const R=rng(seed);const pal=TREE_PAL[S.tree]||TREE_PAL[0];

@@ -89,7 +89,7 @@ function atlasBlit(g,key,scale){const f=SPR.atlasFrames&&SPR.atlasFrames[key];if
 function drawTree(ctx,x,y,t,tier){
   if(!SPR.on||ctx!==scene.ctx||t.down||t.fall>0||t.shake>0){drawTreeRaw(ctx,x,y,t,tier);return;}
   const qv=Math.round((t.var||0)*10)/10, g=t.grow===undefined?1:t.grow, qg=g>=.4?1:Math.round(g*50)/50, qs=Math.round((t.s||1)*50)/50, st=t.stump>0;
-  const wind=!st&&t.dyn&&scene.wxv&&scene.wxv.wind>.05&&g>=.4?Math.sin(scene.t*2.3+t.var*9)*.045*scene.wxv.wind:0;
+  const wind=!gfxLow()&&!st&&t.dyn&&scene.wxv&&scene.wxv.wind>.05&&g>=.4?Math.sin(scene.t*2.3+t.var*9)*.045*scene.wxv.wind:0;
   if(wind){drawTreeRaw(ctx,x,y,t,tier);return;}
   // grown trees between 0.4 and 1 are drawn at s*grow, so they share the mature frame scaled
   const sc=st||g<.4?1:qs*Math.round(g*50)/50, key='t'+tier+'|'+SEAS+'|'+qv+'|'+qg+'|'+(st?1:sc);

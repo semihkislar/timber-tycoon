@@ -258,8 +258,14 @@ function drawPremDock(ctx){
 }
 /* fence: dark iron railings with gold finials round the Phase 3 row; forklift gates face Phase 2, the arch faces the dock */
 const PARCH=[-19.7,-16.5];   // v span of the south arch (towards the premium dock)
+/* v2.56: every segment of a fence side is the same drawing moved along the fence, so one cached sprite per direction serves
+   them all (the fence was ~570 canvas calls per frame in the late game) */
 function fenceSeg(ctx,a,b,open){
-  const pa=P(a[0],a[1]),pb=P(b[0],b[1]);
+  const pa=P(a[0],a[1]),pb=P(b[0],b[1]),dx=pb[0]-pa[0],dy=pb[1]-pa[1];
+  sprite(ctx,'fence|'+(open?1:0)+'|'+dx.toFixed(2)+'|'+dy.toFixed(2),pa[0],pa[1],[Math.min(0,dx)-4,Math.min(0,dy)-18,Math.max(0,dx)+4,Math.max(0,dy)+3],
+    (g,x,y)=>fenceSegRaw(g,[x,y],[x+dx,y+dy],open));
+}
+function fenceSegRaw(ctx,pa,pb,open){
   if(!open){ // construction hoarding
     fillP(ctx,[pa,pb,[pb[0],pb[1]-11],[pa[0],pa[1]-11]],'#e8e0cc','rgba(90,70,40,.5)');
     ctx.strokeStyle='rgba(216,140,40,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pa[0],pa[1]-8);ctx.lineTo(pb[0],pb[1]-8);ctx.stroke();return;}
