@@ -8840,11 +8840,11 @@ function dcSync(){const a=!!(S.prefs&&S.prefs.dcAll===true);document.querySelect
    save) and then tried again. Settings → Graphics: Auto / High / Low (`S.prefs.gfx`). Pure drawing: no game state changes. */
 const GFX_KEY='timberTycoon_gfx_v1', GFX_MIN_FPS=40, GFX_WIN=4000, GFX_BAD=2, GFX_GRACE=8000, GFX_STALL=1500, GFX_KEEP=3*864e5;
 const GFX_GAP_HI=10, GFX_GAP_LO=28, GFX_SKIP_HI=3, GFX_SKIP_LO=8;
-const GFX={low:false,autoLow:false,watch:!navigator.webdriver,t0:0,last:0,n:0,ms:0,bad:0,skip:0,drops:0,fps:0};
+const GFX={low:false,autoLow:false,until:0,watch:!navigator.webdriver,t0:0,last:0,n:0,ms:0,bad:0,skip:0,drops:0,fps:0};
 function gfxMode(){const p=S&&S.prefs&&S.prefs.gfx;return p==='low'||p==='high'?p:'auto';}
 function gfxLow(){return GFX.low;}
-function gfxLoadAuto(){let t=0;try{t=+localStorage.getItem(GFX_KEY)||0;}catch(e){}GFX.autoLow=t>0&&Date.now()-t<GFX_KEEP;}
-function gfxStoreAuto(on){GFX.autoLow=on;try{if(on) localStorage.setItem(GFX_KEY,String(Date.now()));else localStorage.removeItem(GFX_KEY);}catch(e){}}
+function gfxLoadAuto(){let t=0;try{t=+localStorage.getItem(GFX_KEY)||0;}catch(e){}GFX.until=t+GFX_KEEP;GFX.autoLow=t>0&&Date.now()<GFX.until;}
+function gfxStoreAuto(on){GFX.autoLow=on;GFX.until=Date.now()+GFX_KEEP;try{if(on) localStorage.setItem(GFX_KEY,String(Date.now()));else localStorage.removeItem(GFX_KEY);}catch(e){}}
 function gfxResetWatch(){GFX.last=0;GFX.n=0;GFX.ms=0;GFX.bad=0;}
 function gfxSet(mode){
   if(typeof prefs==='function') prefs(); else if(!S.prefs||typeof S.prefs!=='object') S.prefs={};
@@ -8852,7 +8852,8 @@ function gfxSet(mode){
   if(mode==='high') gfxStoreAuto(false);   // "this device can take it": Auto measures again the next time it is picked
   gfxResetWatch(); gfxRefresh(); gfxSync();
 }
-function gfxRefresh(){const m=gfxMode(),low=m==='low'||(m==='auto'&&GFX.autoLow);
+function gfxRefresh(){if(GFX.autoLow&&Date.now()>=GFX.until) gfxStoreAuto(false);   // three days are over, also in a tab that stayed open
+  const m=gfxMode(),low=m==='low'||(m==='auto'&&GFX.autoLow);
   if(low!==GFX.low){GFX.low=low;GFX.skip=0;if(typeof scene==='object'){scene.lmSig='';if(low) scene.lm=scene.lmUp=null;}}
   return low;}
 function gfxAutoDrop(){

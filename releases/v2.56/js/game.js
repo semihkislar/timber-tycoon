@@ -8840,11 +8840,11 @@ function dcSync(){const a=!!(S.prefs&&S.prefs.dcAll===true);document.querySelect
    save) and then tried again. Settings → Graphics: Auto / High / Low (`S.prefs.gfx`). Pure drawing: no game state changes. */
 const GFX_KEY='timberTycoon_gfx_v1', GFX_MIN_FPS=40, GFX_WIN=4000, GFX_BAD=2, GFX_GRACE=8000, GFX_STALL=1500, GFX_KEEP=3*864e5;
 const GFX_GAP_HI=10, GFX_GAP_LO=28, GFX_SKIP_HI=3, GFX_SKIP_LO=8;
-const GFX={low:false,autoLow:false,watch:!navigator.webdriver,t0:0,last:0,n:0,ms:0,bad:0,skip:0,drops:0,fps:0};
+const GFX={low:false,autoLow:false,until:0,watch:!navigator.webdriver,t0:0,last:0,n:0,ms:0,bad:0,skip:0,drops:0,fps:0};
 function gfxMode(){const p=S&&S.prefs&&S.prefs.gfx;return p==='low'||p==='high'?p:'auto';}
 function gfxLow(){return GFX.low;}
-function gfxLoadAuto(){let t=0;try{t=+localStorage.getItem(GFX_KEY)||0;}catch(e){}GFX.autoLow=t>0&&Date.now()-t<GFX_KEEP;}
-function gfxStoreAuto(on){GFX.autoLow=on;try{if(on) localStorage.setItem(GFX_KEY,String(Date.now()));else localStorage.removeItem(GFX_KEY);}catch(e){}}
+function gfxLoadAuto(){let t=0;try{t=+localStorage.getItem(GFX_KEY)||0;}catch(e){}GFX.until=t+GFX_KEEP;GFX.autoLow=t>0&&Date.now()<GFX.until;}
+function gfxStoreAuto(on){GFX.autoLow=on;GFX.until=Date.now()+GFX_KEEP;try{if(on) localStorage.setItem(GFX_KEY,String(Date.now()));else localStorage.removeItem(GFX_KEY);}catch(e){}}
 function gfxResetWatch(){GFX.last=0;GFX.n=0;GFX.ms=0;GFX.bad=0;}
 function gfxSet(mode){
   if(typeof prefs==='function') prefs(); else if(!S.prefs||typeof S.prefs!=='object') S.prefs={};
@@ -8852,7 +8852,8 @@ function gfxSet(mode){
   if(mode==='high') gfxStoreAuto(false);   // "this device can take it": Auto measures again the next time it is picked
   gfxResetWatch(); gfxRefresh(); gfxSync();
 }
-function gfxRefresh(){const m=gfxMode(),low=m==='low'||(m==='auto'&&GFX.autoLow);
+function gfxRefresh(){if(GFX.autoLow&&Date.now()>=GFX.until) gfxStoreAuto(false);   // three days are over, also in a tab that stayed open
+  const m=gfxMode(),low=m==='low'||(m==='auto'&&GFX.autoLow);
   if(low!==GFX.low){GFX.low=low;GFX.skip=0;if(typeof scene==='object'){scene.lmSig='';if(low) scene.lm=scene.lmUp=null;}}
   return low;}
 function gfxAutoDrop(){
@@ -9416,10 +9417,10 @@ function drawWeather(ctx,dt){
   const W=scene.w,H=scene.h,v=scene.wxv,t=scene.t,D=scene.dn, dim=1-.35*D.night;
   const wx=-60-v.wind*260; // wind drift px/s
   const P2=scene.wp||(scene.wp={rain:[],snow:[],leaf:[],streak:[],splash:[]});
-  const low=gfxLow(), area=W*H/1e6*(low?.4:1);   // v2.56: Low graphics keeps 40% of the particles and no splashes
+  const low=gfxLow(), thin=low?.4:1, area=W*H/1e6;   // v2.56: Low graphics keeps 40% of the particles (after the caps) and no splashes
   const sync=(arr,n,mk)=>{while(arr.length<n) arr.push(mk(true));if(arr.length>n) arr.length=n;};
   // rain
-  const nr=Math.round(Math.min(340,260*area)*v.rain);
+  const nr=Math.round(Math.min(340,260*area)*v.rain*thin);
   sync(P2.rain,nr,()=>({x:Math.random()*(W+300),y:Math.random()*H,s:900+Math.random()*350,l:15+Math.random()*12}));
   if(nr){ctx.strokeStyle=`rgba(210,225,248,${.62*dim})`;ctx.lineWidth=1.3;ctx.beginPath();
     for(const d of P2.rain){d.y+=d.s*dt;d.x+=wx*1.4*dt;if(d.y>H){if(!low&&Math.random()<.5) P2.splash.push({x:d.x,y:H*(.3+Math.random()*.7),l:0});d.y=-20-Math.random()*60;d.x=Math.random()*(W+300);}
@@ -9428,13 +9429,13 @@ function drawWeather(ctx,dt){
     for(const s of P2.splash){s.l+=dt*4;const r=2+s.l*5;ctx.globalAlpha=Math.max(0,1-s.l);ctx.beginPath();ctx.ellipse(s.x,s.y,r,r*.4,0,0,TAU);ctx.stroke();}
     ctx.globalAlpha=1;P2.splash=P2.splash.filter(s=>s.l<1).slice(-80);}
   // snow
-  const ns=Math.round(Math.min(260,200*area)*v.snow);
+  const ns=Math.round(Math.min(260,200*area)*v.snow*thin);
   sync(P2.snow,ns,()=>({x:Math.random()*W,y:Math.random()*H,s:35+Math.random()*55,r:1.1+Math.random()*1.9,ph:Math.random()*9}));
   if(ns){ctx.fillStyle=`rgba(255,255,255,${.92*dim})`;for(const f of P2.snow){f.y+=f.s*dt;f.x+=(Math.sin(t*1.3+f.ph)*22+wx*.35)*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x<-10) f.x+=W+20;if(f.x>W+10) f.x-=W+20;}
     ctx.beginPath();for(const f of P2.snow){ctx.moveTo(f.x+f.r,f.y);ctx.arc(f.x,f.y,f.r,0,TAU);}ctx.fill();}   // v2.56: one path, one fill
   // autumn leaves / spring petals
   const lv=SEAS===2?(.4+v.wind*.9)*(1-v.snow):SEAS===0?(.3+v.wind*.7):0;
-  const nl=Math.round(Math.min(60,46*area)*lv);
+  const nl=Math.round(Math.min(60,46*area)*lv*thin);
   const LCOL=SEAS===2?['#d8702a','#e8a43a','#b8402a','#f0c850']:['#ffc0d4','#ffd8e4','#fff0f4','#f7a8c4'];
   sync(P2.leaf,nl,()=>({x:Math.random()*W,y:Math.random()*H,s:30+Math.random()*35,ph:Math.random()*9,c:Math.floor(Math.random()*4),r:Math.random()*6}));
   for(const f of P2.leaf){f.y+=f.s*dt;f.x+=(Math.sin(t*1.1+f.ph)*30+wx*.7)*dt;f.r+=dt*(1.5+Math.sin(f.ph));if(f.y>H+8){f.y=-8;f.x=Math.random()*W*1.2;}if(f.x<-12) f.x+=W+24;
