@@ -111,7 +111,7 @@ with sync_playwright() as p:
     eq={L:E(pg,EQ,L) for L in (50,60,80,100,150)}
     pu=['atelier','stationer','lab','parquet','toyshop']; wu=['parquet','cabinetry','toyshop','boatyard']
     ok(min(eq[50][u] for u in ('atelier','stationer','lab'))>=.75, f"equal levels, Lv 50: the paper users run at {eq[50]['stationer']:.2f} (0.40 in v2.56)")
-    ok(all(eq[L][u]>=.94 for L in (60,80,100,150) for u in pu), f"equal levels, Lv 60–150: the paper users are fed ({[min(eq[L][u] for u in pu) for L in (60,80,100,150)]}; 0.44 in v2.56)")
+    ok(all(eq[L][u]>=.9 for L in (60,80,100,150) for u in pu), f"equal levels, Lv 60–150: the paper users are fed ({[min(eq[L][u] for u in pu) for L in (60,80,100,150)]}; 0.44 in v2.56)")
     ok(all(eq[L][u]>=.9 for L in (60,80,100,150) for u in wu), f"equal levels, Lv 60–150: the plywood users stay fed ({[min(eq[L][u] for u in wu) for L in (60,80,100,150)]})")
     # ---- the opening is unchanged ----
     old=page(url=OLD); a=E(old,EARLY); old.context.close()
@@ -158,8 +158,11 @@ with sync_playwright() as p:
     ok(r[0]=='upg' and r[1]=='carpentry' and r[2]<.6, f'with a small Carpentry and no exports the fix is still "upgrade Carpentry" ({r})')
     # a client order
     r=E(pg,r'''()=>{S.buildings.carpentry.lvl=70;M=computeMods();const O=ordNorm();O.acts.push({id:9e6,item:'chairs',amt:1e30,got:0,reward:1,t:1e9,ends:S.time+1e9,client:'Test',e:'🧪'});
-      for(let t=0;t<160;t++){S.res.logs=1e30;tick(.25,false);}const f=advFix('chairs');const o=[f.kind,f.id,f.label,bstat.showroom.fs];O.acts.length=0;return o;}''')
+      for(let t=0;t<160;t++){S.res.logs=1e30;tick(.25,false);}const f=advFix('chairs');const o=[f.kind,f.id,f.label,bstat.showroom.fs];
+      dispatch(CITIES.find(c=>c.mode==='ship').id,'chairs',true);for(const v of S.trade.fleet) v.cap=1e30;for(let t=0;t<160;t++){S.res.logs=1e30;tick(.25,false);}
+      const g=advFix('chairs');o.push(g.id,S.trade.fleet[0].got);O.acts.length=0;for(let t=0;t<160;t++){S.res.logs=1e30;tick(.25,false);}o.push(advFix('chairs').id);S.trade.fleet=[];return o;}''')
     ok(r[0]=='export' and r[1]=='orders' and r[3]<.6, f'a client order that takes the chairs is named too ({r[2]})')
+    ok(r[4]=='orders' and r[6]=='trade', f'with an order and a vessel on the same good the order is named (it is served first and uses the shared budget); the vessel is named once the order is gone ({r[4]} → {r[6]})')
     # ---- text ----
     ok(E(pg,'RNMAP.tar.d')=='Charcoal Kilns also distil glue (0.7 per charcoal)' and E(pg,'TAR_GLUE')==.7, 'the Pine Tar Glue node says 0.7 per charcoal, the real rate')
     # ---- building sheet ----

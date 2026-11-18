@@ -4771,9 +4771,7 @@ function advGap(k){let g=0;for(const b of BUILDINGS){if(!b.inp[k]||surplusIn(b.i
 function advExport(k){
   const x=PRI_RATE[k]||0;if(!(x>0)) return null;const gap=advGap(k);if(!(gap>0)||x<.5*gap) return null;
   const R=RMAP[k],n=R.name.toLowerCase(),src=advSrc(k),who=src?'the '+BMAP[src].name:'you',tail=` and takes up to 80 % of what ${who} make${src?'s':''} before your workshops`;
-  if(S.trade&&S.trade.fleet.some(v=>v.state==='load'&&v.good===k))
-    return {id:'trade',kind:'export',k,via:[],label:`🚢 A vessel is loading ${n}`,btn:'🚢 Trade',short:`a vessel is loading ${n}`,
-      why:`A vessel is loading <b>${n}</b>${tail}. Send it off (Depart) or load another good.`,open:()=>openTrade()};
+  // named in the order tick() serves them: the first one takes the shared 80 % budget, so a vessel behind a contract or an order gets none of it
   if(S.seas&&S.seas.st==='run'&&S.seas.c&&S.seas.c.lines.some(l=>l.item===k&&l.got<l.amt-1e-9))
     return {id:'season',kind:'export',k,via:[],label:`🚢 Export contract takes ${n}`,btn:'🚢 Contract',short:`the export contract is loading ${n}`,
       why:`The seasonal export contract is loading <b>${n}</b>${tail}. It ends when the contract is delivered.`,open:()=>openSeason()};
@@ -4784,6 +4782,9 @@ function advExport(k){
   if(S.daily&&S.daily.active&&S.daily.active.some(o=>o.item===k&&o.got<o.amt-1e-9))
     return {id:'daily',kind:'export',k,via:[],label:`📅 A daily contract takes ${n}`,btn:'📅 Daily',short:`a daily contract is collecting ${n}`,
       why:`A daily contract is collecting <b>${n}</b>${tail}. It ends when the contract is delivered.`,open:()=>openDaily()};
+  if(S.trade&&S.trade.fleet.some(v=>v.state==='load'&&v.good===k))
+    return {id:'trade',kind:'export',k,via:[],label:`🚢 A vessel is loading ${n}`,btn:'🚢 Trade',short:`a vessel is loading ${n}`,
+      why:`A vessel is loading <b>${n}</b>${tail}. Send it off (Depart) or load another good.`,open:()=>openTrade()};
   return null;
 }
 function advGo(id,tab){return ()=>{openSheet('bld',id);if(tab&&typeof bpTab==='function') bpTab(tab);if(typeof focusLot==='function') focusLot(id,true);advPing(id);};}
