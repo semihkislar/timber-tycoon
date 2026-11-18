@@ -1,6 +1,6 @@
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.56';
+const VERSION='2.57';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -582,6 +582,14 @@ const YIELD_BLD={sawmill:1,peeler:1,plymill:1};
    same logs, and from Lv 100 every milestone adds ×1.6 (like the Sawmill curve, one milestone later). Lv ≤ 25 is unchanged, so the
    first minutes of a run play exactly as before. */
 function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,msCount(l)-3));}
+/* v2.57 paper and pellet yield. One Paper Mill (10 paper per level) feeds five lines (Stationery 40, Toys 16, Gift Boxes 10,
+   Parquet 10 and the Lab 6 per level) and one Pellet Press (8 per level) feeds the Gift Box Atelier (25 per level) and the boiler.
+   They were the last shared goods without a yield curve: with the same coins in every building both ran at full speed and their
+   users still got 31–96 % of the paper and, from 1e11, about half of the pellets they could use. From Lv 25 each level gets
+   +4 % paper / +2 % pellets out of the same chips. Lv ≤ 25 is unchanged, and so are the chips they use. */
+const PAPER_FROM=25, PAPER_STEP=.04, PELLET_FROM=25, PELLET_STEP=.02;
+function paperYieldAt(l){return 1+Math.max(0,l-PAPER_FROM)*PAPER_STEP;}
+function pelletYieldAt(l){return 1+Math.max(0,l-PELLET_FROM)*PELLET_STEP;}
 /* v2.50 yield relief (Drum Chipper / Chair Line). M.chipLine / M.chairLine is the upgrade's level scale g(L)
    (1 at Lv 1, 1.2 at Lv 3, 1.4 at Lv 5). The curve stays ×1 until the building is past the opening of a run,
    then rises to `cap` at from+span. Same inputs: it multiplies chainYield, not bSpeed. */
@@ -624,7 +632,7 @@ function plyBal(){const st=S.buildings.plymill,on=st&&st.lvl>0&&(typeof bldUnloc
   const made=on?BMAP.plymill.out.plywood*bSpeed('plymill')*bOutMult('plymill'):0;let need=0;
   for(const b of plyUsers()){const s2=S.buildings[b.id];if(!s2||!s2.lvl||!s2.on||(typeof bldUnlocked==='function'&&!bldUnlocked(b.id))) continue;need+=b.inp.plywood*bSpeed(b.id)*bInMult(b.id);}
   return {made,need,r:need>0?made/need:Infinity,own:M.bld.plymill,par:plyParity(),res:plyRes()};}
-function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl)*reliefMul('chipper',st.lvl);if(id==='carpentry') return reliefMul('carpentry',st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
+function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl)*reliefMul('chipper',st.lvl);if(id==='carpentry') return reliefMul('carpentry',st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);if(id==='paper') return paperYieldAt(st.lvl);if(id==='pellet') return pelletYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
 function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
@@ -646,6 +654,15 @@ const SHARED_GOODS=['planks','veneer','plywood'];
 /* v2.33: surplus consumers take a good only after every other consumer has its fill (the Panel Press on veneer and planks,
    the Decor Studio on plywood), so the new line soaks up late surpluses without ever starving an older line. */
 const SURPLUS_IN={panelpress:{veneer:1,planks:1},decorstudio:{plywood:1}};
+/* v2.57: a by-product never pauses its building. A full bark store used to stop the Veneer Peeler (and with it the Furniture
+   Factory and the Plywood Mill), and a full chip store the Beam Saw (and the Glulam Plant and the houses behind it). The part
+   that does not fit is dropped, as the Sawmill's sawdust and the Kiln's glue always were. */
+const BYPROD={peeler:{bark:1},beamsaw:{chips:1}};
+function byProd(id,k){const o=BYPROD[id];return !!(o&&o[k]);}
+/* v2.57: what orders, contracts and loading vessels take ahead of the workshops (the share beyond the surplus), per second,
+   smoothed over ~6 s. Read by the Bottleneck Advisor; not saved. */
+const PRI_RATE={};
+function priRateTick(dt){const a=Math.min(1,dt/6);for(const k in PRI_TAKEN){const v=(PRI_RATE[k]||0)+(PRI_TAKEN[k]/dt-(PRI_RATE[k]||0))*a;PRI_RATE[k]=v>1e-9?v:0;}}
 /* v2.33: the Panel Press gets bigger presses from Lv 50 (+5 % throughput per level), so a late Peeler's veneer surplus has
    somewhere to go; it still only ever takes the surplus, so the bigger press never takes veneer from anyone else. */
 function pressCapAt(l){return 1+Math.max(0,l-50)/20;}
@@ -692,7 +709,7 @@ function tick(dt,offline){
   const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
   for(const [b,sp,f0,lim] of pre){
     let f=f0,full=null;
-    for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
+    for(const k in b.out) if(!byProd(b.id,k)&&ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
     const mi=bInMult(b.id), mo=bOutMult(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
     for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;if(surplusIn(b.id,k)) loUsed[k]=(loUsed[k]||0)+a;}
     for(const k in b.out){const a=b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo*(typeof beltSrcMult==='function'?beltSrcMult(b.id,k):1));pend[k]=(pend[k]||0)+a;}   // v2.31 belts   // v2.24: peel yield makes more veneer, not more bark
@@ -713,7 +730,7 @@ function tick(dt,offline){
     if(!offline){const a=Math.min(1,dt/1.5);YOVF.chip+=(ovC[0]/dt-YOVF.chip)*a;YOVF.pow+=(ovP/dt-YOVF.pow)*a;YOVF.chips+=(ovC[1]/dt-YOVF.chips)*a;YOVF.w+=(ovf/dt-YOVF.w)*a;YOVF.in+=((ovCol+tap)/dt-YOVF.in)*a;
       for(const k in YOVF) if(YOVF[k]<1e-9) YOVF[k]=0;}
     else if(offlineAcc){offlineAcc.ovf=(offlineAcc.ovf||0)+used;}}
-  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'sur'); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
+  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'sur'); tradeCollect(demand,dt,pend); priRateTick(dt); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
     if(!S.autosell[r.id]||!canSell(r.id)) continue;

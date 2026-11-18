@@ -26,7 +26,8 @@ SEED='(()=>{let s=11;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s
 CLEAR='if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{localStorage.clear()}catch(e){}}'
 QUIET="(()=>{window.toast=()=>{};window.save=()=>{};window.sfx=()=>{};window.checkAch=()=>{};S.ach={};document.querySelectorAll('.toast,.modal-bg').forEach(t=>t.remove());S.events=[];S.nextEvent=S.time+1e6;S.fires={};S.fireCool=S.time+1e15;S.orders.next=S.time+1e15;if(S.mish) S.mish.next=S.time+1e15;S.prefs.autoFocus=false;S.wx.clock=200;S.wx.w='clear';S.wx.ends=0;S.wx.next=1e15;if(S.daily) S.daily.next=1e15;if(S.ob) S.ob.st='skip';M=computeMods();})()"
 # cost-balanced factory: every building gets the same coins B; research tiers ≤ T (no repeatables)
-BAL='''([B,T])=>{S.premium.lvl=T>0?1:0;for(const n of RNODES) S.research[n.id]=n.t<=T&&!n.rep?1:0;if(S.trade) S.trade.lvl=1;
+# v2.57: the paper and pellet yield curves are switched off here, so this still compares the overflow routing alone with v2.39
+BAL='''([B,T])=>{if(typeof paperYieldAt==='function'){paperYieldAt=()=>1;pelletYieldAt=()=>1;}S.premium.lvl=T>0?1:0;for(const n of RNODES) S.research[n.id]=n.t<=T&&!n.rep?1:0;if(S.trade) S.trade.lvl=1;
  for(const b of BUILDINGS){S.buildings[b.id].lvl=Math.max(0,Math.floor(Math.log(B/b.cost)/Math.log(b.scale)));S.buildings[b.id].on=true;}M=computeMods();}'''
 # collectors bring K × the Phase-I log use; plant Lv PL in log mode MODE; full yard at the start; 100 s warm-up, 100 s measured
 RUN='''([B,T,K,PL,MODE,CS])=>{S.runCS=CS||1;(%s)([B,T]);S.power.lvl=PL;S.power.logs=MODE;S.power.on=true;for(const k in S.res) S.res[k]=0;S.orders.offers=[];S.orders.active=null;if(S.daily) S.daily.active=[];if(S.trade) S.trade.fleet=[];for(const k in S.autosell) S.autosell[k]=true;

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.56-6b8e23" alt="version 2.56">
+  <img src="https://img.shields.io/badge/version-2.57-6b8e23" alt="version 2.57">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
@@ -30,12 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.56: A lighter scene for slow browsers
-The scene now costs less to draw, and a slow browser or device gets a lighter version of it. The yard fence and the nursery seed beds are drawn once and reused. The scene draws at most every other tick on a 120 Hz screen. A new **Graphics** setting has Auto, High and Low. Low turns off smoke, puddles, tree shadows and night lights, thins the weather and draws at 30 fps. Auto starts on High and switches to Low when the game stays under 40 fps. Nothing in the mill changed, and a v2.55 save still loads.
+### New in v2.57: Paper and pellets keep up
+The Paper Mill and the Pellet Press now get more out of the same chips from Lv 25 (+4 % paper and +2 % pellets per level), so Stationery, Toys, Gift Boxes, Parquet and the Research Lab stop waiting on them. A full bark or chip store no longer stops the Veneer Peeler or the Beam Saw. When a ship, a train, an order or a contract takes a good ahead of your workshops, the Bottleneck Advisor now says so instead of "upgrade the maker". The first minutes of a run are unchanged, and a v2.56 save still loads.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.56** | 🎚️ **A lighter scene for slow browsers** | A new Graphics setting (Auto, High, Low). Low turns off smoke, puddles, tree shadows and night lights and draws at 30 fps; Auto switches to it when the game stays under 40 fps. The fence and the seed beds are drawn once and reused. |
 | **v2.55** | 🏘️ **A village by the south gate** | Timber-frame houses finished this run settle by the south gate and grow from a hamlet into Timber Town. A bigger town pays up to +15% on Phase 1 and Phase 2 goods at the Town Market. |
 | **v2.54** | 📄 **The page matches the sources** | The game is one script, built from the files in `js/`. A check now fails when that script is out of date, so a forgotten rebuild cannot ship. Prices and recipes are unchanged. |
 | **v2.53** | 🖼️ **A smoother open on a big desktop window** | On a large or high-density desktop window the scene no longer asks the GPU for a huge canvas, so the frame rate stays smooth. An opening card covers the first view. Phones stay as sharp as they were. |
