@@ -167,7 +167,7 @@ window.TT={get S(){return S;},set S(v){S=v;},GFX,gfxSet,gfxLow,gfxMode,simulate,
   PW_MAX,PW_FUELS,PW_PERKS,PWZ,pwLvl,pwCost,pwUnlocked,pwVisible,pwShare,pwEff,pwBoost,pwNeed,pwCapacity,pwStatus,buyPower,setPowerFuel,setPowerOn,openPower,
   MISH_DEF,MISH_GAP,INS_MAX,mishState,mishRoll,mishApply,mishWeights,mishGrace,mishActive,mishBroken,mishRepair,mishRepairCost,buyInsurance,insLvl,insCost,insCut,mishInc,mishBldMult,mishKeep,insBase,INS_SEC,   // v2.26 (+ v2.42 insBase/INS_SEC)
   CL_MAX,CL_TTL,CL_DISC,CL_DISC_MAX,CL_SEC,DR_DUR,DR_COOL,DR_DODGE,DR_REPAIR,clState,clAdd,clFile,clBank,clPay,clDisc,drActive,drLeft,drCool,drCost,drCan,runDrill,   // v2.41
-  PW_LOGMODES,PW_RESERVES,PW_LOG_FUEL,pwLogMode,pwReserveSec,pwLogReserve,pwLogUse,setPowerLogs,setPowerReserve,chainYield,shareAlloc,SHARED_GOODS,TAR_GLUE,   // v2.24
+  PW_LOGMODES,PW_RESERVES,PW_LOG_FUEL,pwLogMode,pwReserveSec,pwLogReserve,pwLogUse,setPowerLogs,setPowerReserve,chainYield,shareAlloc,SHARED_GOODS,TAR_GLUE,paperYieldAt,pelletYieldAt,PAPER_FROM,PAPER_STEP,PELLET_FROM,PELLET_STEP,BYPROD,byProd,PRI_RATE,advExport,advGap,   // v2.24
   powerScreen:()=>{const p=P(PWZ.ci,PWZ.cj,20);return w2s(p[0],p[1]);},
   // v2.12 builders' yard helpers
   BY_MAX,BY_LV,BY_PLANS,BY_BUDGETS,BY_PERKS,BY_WAIT,BYZ,byLvl,byCost,byUnlocked,byVisible,byCrews,byBatch,byDur,byBudget,byAfford,byPick,byStatus,byJobOf,byAllowed,

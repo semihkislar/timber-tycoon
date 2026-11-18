@@ -5,6 +5,48 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.57] — 2026-11-18
+
+**Paper and pellets keep up, by-products stop blocking, and the advisor names exports.** An audit of every recipe, input and output. The recipes are consistent: every input has a maker and every building adds value at every level. Four things were not. Recipes, prices, the chips each building uses and the first minutes of a run are unchanged. A save from v2.56 still loads.
+
+### Fixed
+- **Paper was the one shared good without a yield curve.** One Paper Mill (10 paper per level) feeds Stationery (40 per level), Toys (16), Gift Boxes (10), Parquet (10) and the Research Lab (6). With the same next-level cost in every building the mill ran at full speed and those five still got 31–96 % of the paper they could use. Planks, veneer, chips, chairs and plywood got a yield fix in v2.15.1, v2.24, v2.29.1, v2.39 and v2.50. Paper did not.
+  - `paperYieldAt`: from Lv 25 each Paper Mill level makes **+4 % paper** out of the same chips (×2 at Lv 50, ×4 at Lv 100).
+- **Pellets** had the same gap behind it: the Gift Box Atelier (25 pellets per level) got about half of what it could use between its own milestones and the Pellet Press's (1e11–1e12 and 1e15–1e16).
+  - `pelletYieldAt`: from Lv 25 each Pellet Press level makes **+2 % pellets** out of the same chips (×1.5 at Lv 50, ×2.5 at Lv 100).
+  - Both are ×1 through Lv 25. The building sheet shows "📜 Paper yield ×…" and "🟤 Pellet yield ×…" from Lv 15, and the stores grow with the yield.
+- **A by-product paused its building.** With auto-sell off for bark, a full bark store stopped the Veneer Peeler, and the Furniture Factory and the Plywood Mill behind it fell to 0 %. A full chip store stopped the Beam Saw, the Glulam Plant and the houses. The Sawmill's sawdust and the Kiln's glue never did that. Bark (Peeler) and chips (Beam Saw) are now by-products (`BYPROD`): what does not fit is dropped and the building keeps running. The Wood Chipper still pauses on a full chip store, and the Peeler on a full veneer store.
+- **The Bottleneck Advisor blamed the maker for an export.** A loading vessel, a client order, a daily contract or a seasonal export contract takes up to 80 % of a good's fresh output before the workshops. In a 10 h run vessels loading chairs held the Luxury Showroom and the Cabinet Studio at 21 % while Carpentry made more chairs than both could use, and the advisor said "⬆ Upgrade the Carpentry Workshop". It now says "🚢 A vessel is loading chairs" (or the order or contract), explains the 80 % in the building sheet and opens the Trade tab or the order board. `PRI_RATE` holds what the exports take beyond the surplus; the export is named when that is at least half of what the workshops miss. When several exports want the same good, the one served first is named (contract, client order, daily contract, then vessel): it uses the shared 80 % budget before the others. A real shortage still says "upgrade".
+- **Text:** the Pine Tar Glue node said "½ per charcoal". The rate has been 0.7 since v2.33; the text now reads it from `TAR_GLUE`.
+
+### Balance
+Same next-level cost in every building, research tier III, upgrades Lv 3, endless logs. Supply ÷ demand at full speed:
+
+| Budget | 1e8 | 1e9 | 1e10 | 1e11 | 1e12 | 1e13 | 1e14 | 1e15 | 1e16 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Paper, v2.56 | 1.11 | 0.57 | 0.68 | 0.45 | 0.31 | 0.27 | 0.52 | 0.38 | 0.27 |
+| Paper, v2.57 | 1.64 | 1.13 | 1.66 | 1.31 | 1.06 | 1.05 | 2.28 | 1.85 | 1.46 |
+| Pellets, v2.56 | 1.37 | 1.15 | 1.03 | 0.49 | 0.47 | 0.90 | 0.88 | 0.43 | 0.42 |
+| Pellets, v2.57 | 1.94 | 1.94 | 1.98 | 1.06 | 1.14 | 2.41 | 2.58 | 1.36 | 1.45 |
+
+- In the 60 s steady run at each budget no workshop waits on paper or pellets, and none waits on plywood because of the extra paper (plywood supply stays at 2.5–13× demand).
+- Greedy bot, first run, 6 h, three seeds, v2.56 → v2.57:
+  - share of hours 1–6 where the Lab, Stationery, Parquet and Toys wait on paper: 80–97 % → 0 %, 0 % and 51 %. In the third run a vessel was loading paper: the mill made 1.4× what the workshops could use.
+  - total earned +12 %, +20 %, +16 %.
+  - in the two runs without a paper vessel the Research Lab runs at 100 % instead of 82–89 %, so Research Points come that much faster.
+- Equal levels, every research node (the v2.50 table): the paper users ran at 40–44 % at every level from 50 to 200. They now run at 80 % at Lv 50 and 93–100 % from Lv 60. The plywood users dip to 93–95 % at Lv 60 and are at 100 % from Lv 70.
+- The 20-minute opening script matches the v2.56 snapshot exactly.
+
+### Not changed
+- Vessels, orders and contracts still take up to 80 % of fresh output first. Chairs and paper shipped by a vessel are the remaining waits in the greedy runs; the advisor now names them.
+- Glulam can wait on beams (74–92 % fed at some budgets) and houses on glulam (69 % at 1e11). Both are a level choice between two buildings, not a shared good.
+- Glue has no store cap, and the bark cap counts the peel yield. Changing either would cut stock a player already holds.
+- Mid game the collectors bring 4–6× the logs the mills use (the Log Yard is full and they idle); at the very start they bring 36–84 %.
+
+### Tests
+- `test/v257.py`: both curves and their stores, the same chips in, the cost-balanced run at 1e8…1e16, equal levels 50–150, the opening against the v2.56 snapshot, by-products (and the stores that must still pause), the advisor with two vessels, without them, with a real shortage and with a client order, the sheet text on desktop and iPhone 13, a v2.56 save, no console errors or 404s.
+- `test/v240.py` and `test/v250.py` switch the two new curves off, so they still compare the overflow routing with v2.39 and the Drum Chipper / Chair Line with v2.49 on their own.
+
 ## [2.56] — 2026-11-17
 
 **A lighter scene for slow browsers.** The late-game scene sent about 3,500 to 4,000 canvas commands per frame, and browsers without fast canvas drawing fell well under 60 fps. This release cuts the commands that changed nothing on screen and adds a Low graphics level for the rest. Prices, recipes, orders and the simulation are unchanged. A save from v2.55 still loads.

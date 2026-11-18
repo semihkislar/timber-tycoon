@@ -52,7 +52,7 @@ const RNODES=[
   {id:'eternal', b:'for',t:5,name:'Eternal Forest',  icon:'🏞️',rp:250000,req:['canopy','livsoil'],d:'Saplings grow ×2, trees yield ×1.5',fx:m=>{m.grow*=2;m.yield*=1.5;}},
   // ---------- Milling ----------
   {id:'blades',  b:'mil',t:1,name:'Carbide Blades',  icon:'🪚',rp:30,   req:['science'], d:'Sawmill & Wood Chipper +15 %',fx:m=>{m.bld.sawmill*=1.15;m.bld.chipper*=1.15;}},
-  {id:'tar',     b:'mil',t:1,name:'Pine Tar Glue',   icon:'🍯',rp:40,   req:['science'], d:'Charcoal Kilns also distil glue (½ per charcoal)',fx:m=>{m.tar=true;}},
+  {id:'tar',     b:'mil',t:1,name:'Pine Tar Glue',   icon:'🍯',rp:40,   req:['science'], d:`Charcoal Kilns also distil glue (${TAR_GLUE} per charcoal)`,fx:m=>{m.tar=true;}},
   {id:'pulp',    b:'mil',t:1,name:'Pulp Chemistry',  icon:'🧪',rp:30,   req:['science'], d:'Paper Mill +15 %',fx:m=>{m.bld.paper*=1.15;}},
   {id:'plywood', b:'mil',t:1,name:'Plywood Mill',    icon:'🟧',rp:120,  req:['tar'],     d:'Unlocks the Plywood Mill (veneer + glue → plywood)',unlock:'plymill'},
   {id:'drying',  b:'mil',t:1,name:'Kiln Science',    icon:'🌡️',rp:500,  req:['plywood'], d:'Kiln & Pellet Press +15 %, fire risk −30 %',fx:m=>{m.bld.kiln*=1.15;m.bld.pellet*=1.15;m.fire*=.7;}},

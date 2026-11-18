@@ -17,7 +17,10 @@ CLEAR='if(!sessionStorage.getItem("_c")){sessionStorage.setItem("_c","1");try{lo
 SEED='(()=>{let s=50;Math.random=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648;};})();'
 CALM="S.events=[];S.nextEvent=S.time+1e9;S.fires={};S.fireCool=S.time+1e9;if(S.orders)S.orders.next=S.time+1e9;if(S.mish)S.mish.next=S.time+1e9;S.prefs.autoFocus=false;if(S.ob)S.ob.st='skip';if(S.wx)S.wx.next=1e15;"
 # equal levels, research on, gates grandfathered. On v2.50 the new lines are bought as far as the level allows.
+# v2.57: the paper and pellet yield curves are switched off here, so this still compares the two lines alone with v2.49
+# (with the curves on, test/v257.py checks that the plywood users stay fed at equal levels)
 BOUND=r'''(L)=>{
+  if(typeof paperYieldAt==='function'){paperYieldAt=()=>1;pelletYieldAt=()=>1;}
   window.toast=()=>{};window.save=()=>{};window.sfx=()=>{};window.mishTick=()=>{};window.fireTick=()=>{};
   if(S.ob)S.ob.st='skip';S.events=[];S.nextEvent=1e12;S.fires={};if(S.mish)S.mish.next=1e12;if(S.orders)S.orders.next=1e12;
   if(S.daily){S.daily.active=[];S.daily.offers=[];} if(S.trade){S.trade.fleet=[];S.trade.lvl=1;} if(S.seas)S.seas.st='skip';

@@ -24,6 +24,30 @@ function advSrc(k){
   const mk=b=>b.out[k]||(k==='chips'&&b.id==='sawmill'&&M.sawdust)||(k==='glue'&&b.id==='kiln'&&M.tar);
   const P=BUILDINGS.filter(b=>b.out[k]);
   return (P.find(b=>S.buildings[b.id].lvl)||BUILDINGS.find(b=>mk(b)&&S.buildings[b.id].lvl)||P[0]||{}).id||null;}
+/* v2.57: orders, contracts and loading vessels take up to 80 % of a good's fresh output before the workshops. When that
+   share (PRI_RATE) is at least half of what the workshops are missing, the fix is the export, not the maker: before this the
+   advisor said "upgrade the Carpentry Workshop" while Carpentry already made more chairs than the workshops could use. */
+function advGap(k){let g=0;for(const b of BUILDINGS){if(!b.inp[k]||surplusIn(b.id,k)) continue;const st=S.buildings[b.id],bs=bstat[b.id];
+  if(!st.lvl||!st.on||!bs||bs.lim!==k) continue;g+=b.inp[k]*(bs.speed||0)*bInMult(b.id)*Math.max(0,1-advFs(bs));}return g;}
+function advExport(k){
+  const x=PRI_RATE[k]||0;if(!(x>0)) return null;const gap=advGap(k);if(!(gap>0)||x<.5*gap) return null;
+  const R=RMAP[k],n=R.name.toLowerCase(),src=advSrc(k),who=src?'the '+BMAP[src].name:'you',tail=` and takes up to 80 % of what ${who} make${src?'s':''} before your workshops`;
+  // named in the order tick() serves them: the first one takes the shared 80 % budget, so a vessel behind a contract or an order gets none of it
+  if(S.seas&&S.seas.st==='run'&&S.seas.c&&S.seas.c.lines.some(l=>l.item===k&&l.got<l.amt-1e-9))
+    return {id:'season',kind:'export',k,via:[],label:`🚢 Export contract takes ${n}`,btn:'🚢 Contract',short:`the export contract is loading ${n}`,
+      why:`The seasonal export contract is loading <b>${n}</b>${tail}. It ends when the contract is delivered.`,open:()=>openSeason()};
+  const O=typeof ordNorm==='function'?ordNorm():null;
+  if(O&&O.acts.some(o=>o.item===k))
+    return {id:'orders',kind:'export',k,via:[],label:`📋 A client order takes ${n}`,btn:'📋 Orders',short:`a client order is collecting ${n}`,
+      why:`A client order is collecting <b>${n}</b>${tail}. It ends when the order is delivered.`,open:()=>{ordTab='clients';openSheet('ord');}};
+  if(S.daily&&S.daily.active&&S.daily.active.some(o=>o.item===k&&o.got<o.amt-1e-9))
+    return {id:'daily',kind:'export',k,via:[],label:`📅 A daily contract takes ${n}`,btn:'📅 Daily',short:`a daily contract is collecting ${n}`,
+      why:`A daily contract is collecting <b>${n}</b>${tail}. It ends when the contract is delivered.`,open:()=>openDaily()};
+  if(S.trade&&S.trade.fleet.some(v=>v.state==='load'&&v.good===k))
+    return {id:'trade',kind:'export',k,via:[],label:`🚢 A vessel is loading ${n}`,btn:'🚢 Trade',short:`a vessel is loading ${n}`,
+      why:`A vessel is loading <b>${n}</b>${tail}. Send it off (Depart) or load another good.`,open:()=>openTrade()};
+  return null;
+}
 function advGo(id,tab){return ()=>{openSheet('bld',id);if(tab&&typeof bpTab==='function') bpTab(tab);if(typeof focusLot==='function') focusLot(id,true);advPing(id);};}
 function advFix(k,seen,via){
   seen=seen||{};via=via||[];seen[k]=1;
@@ -35,6 +59,7 @@ function advFix(k,seen,via){
     return {id,kind:'build',k,via,label:`🔨 Build the ${nm}`,btn:`🔨 ${nm}`,short:`build the ${nm}`,open:advGo(id)};}
   if(advDown(id)) return {id,kind:'repair',k,via,label:`🔧 Fix the ${nm}`,btn:`🔧 ${nm}`,short:`fix the ${nm}`,open:advGo(id)};
   if(!st.on) return {id,kind:'on',k,via,label:`▶ Turn on the ${nm}`,btn:`▶ ${nm}`,short:`turn on the ${nm}`,open:advGo(id)};
+  {const ex=advExport(k);if(ex){ex.via=via;return ex;}}   // v2.57: an export is taking it ahead of the workshops
   const w=advWait(id);
   if(w&&!seen[w.k]){const r=advFix(w.k,seen,via.concat([id]));if(r) return r;}   // the producer is starved too: fix the root
   if(typeof wsBlocked==='function'&&wsBlocked(id)){const g=wsGate(id);
@@ -107,6 +132,7 @@ function advChip(id){const w=advWait(id);if(!w) return null;const n=RMAP[w.k]?RM
 function advHintHtml(id){
   const w=advWait(id);if(!w) return '';const f=advFix(w.k);if(!f) return '';
   if(w.spare){const nm=BMAP[id].name;return `<div class="adv-why">♻ The ${nm} only takes the ${RMAP[w.k].name.toLowerCase()} the other lines leave over, so it never slows them down. More ${RMAP[w.k].name.toLowerCase()} keeps it busy.</div><button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;}
+  if(f.kind==='export') return `<div class="adv-why">👉 ${f.why}</div><button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
   const chain=f.via.length?` · the ${f.via.map(v=>BMAP[v].name).join(' and the ')} ${f.via.length>1?'are':'is'} waiting too, so the real fix is ${f.kind==='crew'?'more logs':'the '+(BMAP[f.id]?BMAP[f.id].name:'source')}`:'';
   return `${chain?`<div class="adv-why">👉 <b>Fix:</b> ${f.short}${chain}.</div>`:''}<button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
 }

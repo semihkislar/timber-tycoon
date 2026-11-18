@@ -1,7 +1,7 @@
 /* Timber Tycoon bundle. Built by tools/build_js.py — edit js/*.js, then rebuild. */
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.56';
+const VERSION='2.57';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -583,6 +583,14 @@ const YIELD_BLD={sawmill:1,peeler:1,plymill:1};
    same logs, and from Lv 100 every milestone adds ×1.6 (like the Sawmill curve, one milestone later). Lv ≤ 25 is unchanged, so the
    first minutes of a run play exactly as before. */
 function chipYieldAt(l){return (1+Math.max(0,l-25)*.07)*Math.pow(1.6,Math.max(0,msCount(l)-3));}
+/* v2.57 paper and pellet yield. One Paper Mill (10 paper per level) feeds five lines (Stationery 40, Toys 16, Gift Boxes 10,
+   Parquet 10 and the Lab 6 per level) and one Pellet Press (8 per level) feeds the Gift Box Atelier (25 per level) and the boiler.
+   They were the last shared goods without a yield curve: with the same coins in every building both ran at full speed and their
+   users still got 31–96 % of the paper and, from 1e11, about half of the pellets they could use. From Lv 25 each level gets
+   +4 % paper / +2 % pellets out of the same chips. Lv ≤ 25 is unchanged, and so are the chips they use. */
+const PAPER_FROM=25, PAPER_STEP=.04, PELLET_FROM=25, PELLET_STEP=.02;
+function paperYieldAt(l){return 1+Math.max(0,l-PAPER_FROM)*PAPER_STEP;}
+function pelletYieldAt(l){return 1+Math.max(0,l-PELLET_FROM)*PELLET_STEP;}
 /* v2.50 yield relief (Drum Chipper / Chair Line). M.chipLine / M.chairLine is the upgrade's level scale g(L)
    (1 at Lv 1, 1.2 at Lv 3, 1.4 at Lv 5). The curve stays ×1 until the building is past the opening of a run,
    then rises to `cap` at from+span. Same inputs: it multiplies chainYield, not bSpeed. */
@@ -625,7 +633,7 @@ function plyBal(){const st=S.buildings.plymill,on=st&&st.lvl>0&&(typeof bldUnloc
   const made=on?BMAP.plymill.out.plywood*bSpeed('plymill')*bOutMult('plymill'):0;let need=0;
   for(const b of plyUsers()){const s2=S.buildings[b.id];if(!s2||!s2.lvl||!s2.on||(typeof bldUnlocked==='function'&&!bldUnlocked(b.id))) continue;need+=b.inp.plywood*bSpeed(b.id)*bInMult(b.id);}
   return {made,need,r:need>0?made/need:Infinity,own:M.bld.plymill,par:plyParity(),res:plyRes()};}
-function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl)*reliefMul('chipper',st.lvl);if(id==='carpentry') return reliefMul('carpentry',st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
+function chainYield(id){const st=S.buildings[id];if(!st) return 1;if(id==='chipper') return chipYieldAt(st.lvl)*reliefMul('chipper',st.lvl);if(id==='carpentry') return reliefMul('carpentry',st.lvl);if(id==='plymill') return plyYieldAt(st.lvl);if(id==='paper') return paperYieldAt(st.lvl);if(id==='pellet') return pelletYieldAt(st.lvl);return YIELD_BLD[id]?sawYieldAt(st.lvl):1;}
 function bOutMult(id){return mgrOut(id)*chainYield(id)*(typeof wsOut==='function'?wsOut(id):1)*(typeof logiOut==='function'?logiOut(id):1)*(typeof beltDstMult==='function'?beltDstMult(id):1)*(typeof cdOut==='function'?cdOut(id):1);}   // v2.30 Forklift Depot · v2.31 belt destination · v2.32 cargo drones
 /* v2.31: output multiplier for one good (a conveyor belt raises the source's yield of the good it carries) */
 function bOutK(id,k){return bOutMult(id)*(typeof beltSrcMult==='function'?beltSrcMult(id,k):1);}
@@ -647,6 +655,15 @@ const SHARED_GOODS=['planks','veneer','plywood'];
 /* v2.33: surplus consumers take a good only after every other consumer has its fill (the Panel Press on veneer and planks,
    the Decor Studio on plywood), so the new line soaks up late surpluses without ever starving an older line. */
 const SURPLUS_IN={panelpress:{veneer:1,planks:1},decorstudio:{plywood:1}};
+/* v2.57: a by-product never pauses its building. A full bark store used to stop the Veneer Peeler (and with it the Furniture
+   Factory and the Plywood Mill), and a full chip store the Beam Saw (and the Glulam Plant and the houses behind it). The part
+   that does not fit is dropped, as the Sawmill's sawdust and the Kiln's glue always were. */
+const BYPROD={peeler:{bark:1},beamsaw:{chips:1}};
+function byProd(id,k){const o=BYPROD[id];return !!(o&&o[k]);}
+/* v2.57: what orders, contracts and loading vessels take ahead of the workshops (the share beyond the surplus), per second,
+   smoothed over ~6 s. Read by the Bottleneck Advisor; not saved. */
+const PRI_RATE={};
+function priRateTick(dt){const a=Math.min(1,dt/6);for(const k in PRI_TAKEN){const v=(PRI_RATE[k]||0)+(PRI_TAKEN[k]/dt-(PRI_RATE[k]||0))*a;PRI_RATE[k]=v>1e-9?v:0;}}
 /* v2.33: the Panel Press gets bigger presses from Lv 50 (+5 % throughput per level), so a late Peeler's veneer surplus has
    somewhere to go; it still only ever takes the surplus, so the bigger press never takes veneer from anyone else. */
 function pressCapAt(l){return 1+Math.max(0,l-50)/20;}
@@ -693,7 +710,7 @@ function tick(dt,offline){
   const ofr={}; for(const k in want){const room=Math.max(0,caps[k]-S.res[k]);ofr[k]=want[k]>room+1e-12?room/want[k]:1;}
   for(const [b,sp,f0,lim] of pre){
     let f=f0,full=null;
-    for(const k in b.out) if(ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
+    for(const k in b.out) if(!byProd(b.id,k)&&ofr[k]<1&&f0*ofr[k]<f-1e-12){f=f0*ofr[k];full=k;}
     const mi=bInMult(b.id), mo=bOutMult(b.id);   // v2.4 managers: lean line (less input) / lucky batch (expected extra output)
     for(const k in b.inp){const a=b.inp[k]*sp*dt*f*mi;S.res[k]=Math.max(0,S.res[k]-a);fl[k].c+=a;if(surplusIn(b.id,k)) loUsed[k]=(loUsed[k]||0)+a;}
     for(const k in b.out){const a=b.out[k]*sp*dt*f*(k==='bark'?mo/chainYield(b.id):mo*(typeof beltSrcMult==='function'?beltSrcMult(b.id,k):1));pend[k]=(pend[k]||0)+a;}   // v2.31 belts   // v2.24: peel yield makes more veneer, not more bark
@@ -714,7 +731,7 @@ function tick(dt,offline){
     if(!offline){const a=Math.min(1,dt/1.5);YOVF.chip+=(ovC[0]/dt-YOVF.chip)*a;YOVF.pow+=(ovP/dt-YOVF.pow)*a;YOVF.chips+=(ovC[1]/dt-YOVF.chips)*a;YOVF.w+=(ovf/dt-YOVF.w)*a;YOVF.in+=((ovCol+tap)/dt-YOVF.in)*a;
       for(const k in YOVF) if(YOVF[k]<1e-9) YOVF[k]=0;}
     else if(offlineAcc){offlineAcc.ovf=(offlineAcc.ovf||0)+used;}}
-  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'sur'); tradeCollect(demand,dt,pend); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
+  orderCollect(demand,dt,offline,pend); dailyCollect(demand,dt,offline,pend); if(typeof scCollect==='function') scCollect(demand,dt,offline,pend,'sur'); tradeCollect(demand,dt,pend); priRateTick(dt); researchTick(dt); if(!offline&&typeof rpTick==='function'&&(S.time%5)<dt) rpTick();
   let earned=0;const sold=SOLD_TMP;for(const k in sold) sold[k]=0;
   for(const r of RES){
     if(!S.autosell[r.id]||!canSell(r.id)) continue;
@@ -1460,7 +1477,7 @@ function updateBuildingSheet(){
   const ins=Object.entries(b.inp).map(([k,v])=>`<div class="r${st.lvl&&st.on&&bstat[b.id].lim===k?' short':''}">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?fr(v*sp*f*bInMult(b.id))+' / '+fr(v*sp*bInMult(b.id)):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
   let outsArr=Object.entries(b.out).map(([k,v])=>[k,k==='bark'?v:v*chainYield(b.id)]); if(b.id==='sawmill'&&M.sawdust) outsArr.push(['chips',2]); if(b.id==='kiln'&&M.tar) outsArr.push(['glue',b.out.charcoal*TAR_GLUE]);
   const outs=b.rp?`<div class="r"><span style="font-size:20px">🔬</span><div>${st.lvl?'+'+fr(labRP()):fr(RP_PER)}<small>Research Pts/s</small></div></div>`:outsArr.map(([k,v])=>`<div class="r">${svgIcon(RMAP[k].svg,22)}<div>${st.lvl?'+'+fr(v*sp*f):v}<small>${RMAP[k].name}/s</small></div></div>`).join('<span class="arr">+</span>');
-  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt]}[b.id];   // v2.24: Peeler + Plywood Mill. Chipper and Carpentry have their own lines (v2.50).
+  const YL={sawmill:['🪚 Saw yield','planks per log',50,sawYieldAt],peeler:['📃 Peel yield','veneer per log',50,sawYieldAt],plymill:['🟧 Press yield','plywood per sheet',10,plyYieldAt],paper:['📜 Paper yield','paper per chip',PAPER_FROM,paperYieldAt],pellet:['🟤 Pellet yield','pellets per chip',PELLET_FROM,pelletYieldAt]}[b.id];   // v2.24: Peeler + Plywood Mill. Chipper and Carpentry have their own lines (v2.50).
   const yl=(b.id==='chipper'&&typeof ovfChuteHtml==='function'?ovfChuteHtml():'')+(b.id==='plymill'?plyYieldHtml(st):b.id==='panelpress'&&st.lvl&&pressRes()>M.bld.panelpress*1.0005?`<div class="bp-yield" id="pressPar">🤝 Keeps pace with the Peeler: research speed <b>×${pressRes().toFixed(2)}</b> (spare veneer only)</div>`:(YL&&st.lvl>=YL[2]-10?`<div class="bp-yield">${YL[0]} <b>×${chainYield(b.id).toFixed(2)}</b> ${YL[1]}${st.lvl<YL[2]?' · grows from Lv '+YL[2]:` · Lv ${st.lvl+1}: ×${YL[3](st.lvl+1).toFixed(2)}`}</div>`:''))+(b.id==='chipper'?chipYieldHtml(st):'')+lineUpHtml(b.id);   // v2.47: the line's ×2 upgrade · v2.39: the Plywood Mill has its own lines · v2.40: the Wood Chipper's overflow chute
   const io=ins+'<span class="arr">➜</span>'+outs+yl; const ie=$('bpIo'); if(ie._h!==io){ie.innerHTML=io;ie._h=io;}
   if(typeof mishBldPanel==='function') mishBldPanel(b);   // v2.26 repair panel
@@ -3559,7 +3576,7 @@ const RNODES=[
   {id:'eternal', b:'for',t:5,name:'Eternal Forest',  icon:'🏞️',rp:250000,req:['canopy','livsoil'],d:'Saplings grow ×2, trees yield ×1.5',fx:m=>{m.grow*=2;m.yield*=1.5;}},
   // ---------- Milling ----------
   {id:'blades',  b:'mil',t:1,name:'Carbide Blades',  icon:'🪚',rp:30,   req:['science'], d:'Sawmill & Wood Chipper +15 %',fx:m=>{m.bld.sawmill*=1.15;m.bld.chipper*=1.15;}},
-  {id:'tar',     b:'mil',t:1,name:'Pine Tar Glue',   icon:'🍯',rp:40,   req:['science'], d:'Charcoal Kilns also distil glue (½ per charcoal)',fx:m=>{m.tar=true;}},
+  {id:'tar',     b:'mil',t:1,name:'Pine Tar Glue',   icon:'🍯',rp:40,   req:['science'], d:`Charcoal Kilns also distil glue (${TAR_GLUE} per charcoal)`,fx:m=>{m.tar=true;}},
   {id:'pulp',    b:'mil',t:1,name:'Pulp Chemistry',  icon:'🧪',rp:30,   req:['science'], d:'Paper Mill +15 %',fx:m=>{m.bld.paper*=1.15;}},
   {id:'plywood', b:'mil',t:1,name:'Plywood Mill',    icon:'🟧',rp:120,  req:['tar'],     d:'Unlocks the Plywood Mill (veneer + glue → plywood)',unlock:'plymill'},
   {id:'drying',  b:'mil',t:1,name:'Kiln Science',    icon:'🌡️',rp:500,  req:['plywood'], d:'Kiln & Pellet Press +15 %, fire risk −30 %',fx:m=>{m.bld.kiln*=1.15;m.bld.pellet*=1.15;m.fire*=.7;}},
@@ -4746,6 +4763,30 @@ function advSrc(k){
   const mk=b=>b.out[k]||(k==='chips'&&b.id==='sawmill'&&M.sawdust)||(k==='glue'&&b.id==='kiln'&&M.tar);
   const P=BUILDINGS.filter(b=>b.out[k]);
   return (P.find(b=>S.buildings[b.id].lvl)||BUILDINGS.find(b=>mk(b)&&S.buildings[b.id].lvl)||P[0]||{}).id||null;}
+/* v2.57: orders, contracts and loading vessels take up to 80 % of a good's fresh output before the workshops. When that
+   share (PRI_RATE) is at least half of what the workshops are missing, the fix is the export, not the maker: before this the
+   advisor said "upgrade the Carpentry Workshop" while Carpentry already made more chairs than the workshops could use. */
+function advGap(k){let g=0;for(const b of BUILDINGS){if(!b.inp[k]||surplusIn(b.id,k)) continue;const st=S.buildings[b.id],bs=bstat[b.id];
+  if(!st.lvl||!st.on||!bs||bs.lim!==k) continue;g+=b.inp[k]*(bs.speed||0)*bInMult(b.id)*Math.max(0,1-advFs(bs));}return g;}
+function advExport(k){
+  const x=PRI_RATE[k]||0;if(!(x>0)) return null;const gap=advGap(k);if(!(gap>0)||x<.5*gap) return null;
+  const R=RMAP[k],n=R.name.toLowerCase(),src=advSrc(k),who=src?'the '+BMAP[src].name:'you',tail=` and takes up to 80 % of what ${who} make${src?'s':''} before your workshops`;
+  // named in the order tick() serves them: the first one takes the shared 80 % budget, so a vessel behind a contract or an order gets none of it
+  if(S.seas&&S.seas.st==='run'&&S.seas.c&&S.seas.c.lines.some(l=>l.item===k&&l.got<l.amt-1e-9))
+    return {id:'season',kind:'export',k,via:[],label:`🚢 Export contract takes ${n}`,btn:'🚢 Contract',short:`the export contract is loading ${n}`,
+      why:`The seasonal export contract is loading <b>${n}</b>${tail}. It ends when the contract is delivered.`,open:()=>openSeason()};
+  const O=typeof ordNorm==='function'?ordNorm():null;
+  if(O&&O.acts.some(o=>o.item===k))
+    return {id:'orders',kind:'export',k,via:[],label:`📋 A client order takes ${n}`,btn:'📋 Orders',short:`a client order is collecting ${n}`,
+      why:`A client order is collecting <b>${n}</b>${tail}. It ends when the order is delivered.`,open:()=>{ordTab='clients';openSheet('ord');}};
+  if(S.daily&&S.daily.active&&S.daily.active.some(o=>o.item===k&&o.got<o.amt-1e-9))
+    return {id:'daily',kind:'export',k,via:[],label:`📅 A daily contract takes ${n}`,btn:'📅 Daily',short:`a daily contract is collecting ${n}`,
+      why:`A daily contract is collecting <b>${n}</b>${tail}. It ends when the contract is delivered.`,open:()=>openDaily()};
+  if(S.trade&&S.trade.fleet.some(v=>v.state==='load'&&v.good===k))
+    return {id:'trade',kind:'export',k,via:[],label:`🚢 A vessel is loading ${n}`,btn:'🚢 Trade',short:`a vessel is loading ${n}`,
+      why:`A vessel is loading <b>${n}</b>${tail}. Send it off (Depart) or load another good.`,open:()=>openTrade()};
+  return null;
+}
 function advGo(id,tab){return ()=>{openSheet('bld',id);if(tab&&typeof bpTab==='function') bpTab(tab);if(typeof focusLot==='function') focusLot(id,true);advPing(id);};}
 function advFix(k,seen,via){
   seen=seen||{};via=via||[];seen[k]=1;
@@ -4757,6 +4798,7 @@ function advFix(k,seen,via){
     return {id,kind:'build',k,via,label:`🔨 Build the ${nm}`,btn:`🔨 ${nm}`,short:`build the ${nm}`,open:advGo(id)};}
   if(advDown(id)) return {id,kind:'repair',k,via,label:`🔧 Fix the ${nm}`,btn:`🔧 ${nm}`,short:`fix the ${nm}`,open:advGo(id)};
   if(!st.on) return {id,kind:'on',k,via,label:`▶ Turn on the ${nm}`,btn:`▶ ${nm}`,short:`turn on the ${nm}`,open:advGo(id)};
+  {const ex=advExport(k);if(ex){ex.via=via;return ex;}}   // v2.57: an export is taking it ahead of the workshops
   const w=advWait(id);
   if(w&&!seen[w.k]){const r=advFix(w.k,seen,via.concat([id]));if(r) return r;}   // the producer is starved too: fix the root
   if(typeof wsBlocked==='function'&&wsBlocked(id)){const g=wsGate(id);
@@ -4829,6 +4871,7 @@ function advChip(id){const w=advWait(id);if(!w) return null;const n=RMAP[w.k]?RM
 function advHintHtml(id){
   const w=advWait(id);if(!w) return '';const f=advFix(w.k);if(!f) return '';
   if(w.spare){const nm=BMAP[id].name;return `<div class="adv-why">♻ The ${nm} only takes the ${RMAP[w.k].name.toLowerCase()} the other lines leave over, so it never slows them down. More ${RMAP[w.k].name.toLowerCase()} keeps it busy.</div><button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;}
+  if(f.kind==='export') return `<div class="adv-why">👉 ${f.why}</div><button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
   const chain=f.via.length?` · the ${f.via.map(v=>BMAP[v].name).join(' and the ')} ${f.via.length>1?'are':'is'} waiting too, so the real fix is ${f.kind==='crew'?'more logs':'the '+(BMAP[f.id]?BMAP[f.id].name:'source')}`:'';
   return `${chain?`<div class="adv-why">👉 <b>Fix:</b> ${f.short}${chain}.</div>`:''}<button class="bp-short-go adv-go" data-adv="${w.k}">${f.label} →</button>`;
 }
@@ -12441,7 +12484,7 @@ window.TT={get S(){return S;},set S(v){S=v;},GFX,gfxSet,gfxLow,gfxMode,simulate,
   PW_MAX,PW_FUELS,PW_PERKS,PWZ,pwLvl,pwCost,pwUnlocked,pwVisible,pwShare,pwEff,pwBoost,pwNeed,pwCapacity,pwStatus,buyPower,setPowerFuel,setPowerOn,openPower,
   MISH_DEF,MISH_GAP,INS_MAX,mishState,mishRoll,mishApply,mishWeights,mishGrace,mishActive,mishBroken,mishRepair,mishRepairCost,buyInsurance,insLvl,insCost,insCut,mishInc,mishBldMult,mishKeep,insBase,INS_SEC,   // v2.26 (+ v2.42 insBase/INS_SEC)
   CL_MAX,CL_TTL,CL_DISC,CL_DISC_MAX,CL_SEC,DR_DUR,DR_COOL,DR_DODGE,DR_REPAIR,clState,clAdd,clFile,clBank,clPay,clDisc,drActive,drLeft,drCool,drCost,drCan,runDrill,   // v2.41
-  PW_LOGMODES,PW_RESERVES,PW_LOG_FUEL,pwLogMode,pwReserveSec,pwLogReserve,pwLogUse,setPowerLogs,setPowerReserve,chainYield,shareAlloc,SHARED_GOODS,TAR_GLUE,   // v2.24
+  PW_LOGMODES,PW_RESERVES,PW_LOG_FUEL,pwLogMode,pwReserveSec,pwLogReserve,pwLogUse,setPowerLogs,setPowerReserve,chainYield,shareAlloc,SHARED_GOODS,TAR_GLUE,paperYieldAt,pelletYieldAt,PAPER_FROM,PAPER_STEP,PELLET_FROM,PELLET_STEP,BYPROD,byProd,PRI_RATE,advExport,advGap,   // v2.24
   powerScreen:()=>{const p=P(PWZ.ci,PWZ.cj,20);return w2s(p[0],p[1]);},
   // v2.12 builders' yard helpers
   BY_MAX,BY_LV,BY_PLANS,BY_BUDGETS,BY_PERKS,BY_WAIT,BYZ,byLvl,byCost,byUnlocked,byVisible,byCrews,byBatch,byDur,byBudget,byAfford,byPick,byStatus,byJobOf,byAllowed,
