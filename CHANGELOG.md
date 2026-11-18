@@ -5,6 +5,36 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.56] — 2026-11-17
+
+**A lighter scene for slow browsers.** The late-game scene sent about 3,500 to 4,000 canvas commands per frame, and browsers without fast canvas drawing fell well under 60 fps. This release cuts the commands that changed nothing on screen and adds a Low graphics level for the rest. Prices, recipes, orders and the simulation are unchanged. A save from v2.55 still loads.
+
+### Added
+- **Graphics setting** (`js/quality.js`): Settings → Graphics, with Auto, High and Low. Low turns off smoke, puddles, tree shadows, stars, rain splashes and trees swaying in the wind, keeps 40% of the rain, snow and leaves, replaces the night light map with one flat tint, and draws at 30 fps. The choice is saved as `S.prefs.gfx`.
+- **Auto** (the default) starts on High and measures the real frame rate. Two 4-second windows in a row under 40 fps switch to Low, with one notification. The first 8 seconds and any pause over 1.5 seconds are not counted. The switch is kept on the device for three days (`localStorage` `timberTycoon_gfx_v1`), then High is tried again. Picking High clears it.
+- **Frame cap.** A `requestAnimationFrame` tick that comes less than 10 ms after the last drawn frame is skipped, so 120 Hz and faster screens draw every other tick. On Low the gap is 28 ms. The 100 ms simulation loop is not affected.
+- `test/v256.py`. Release shot in `screenshots/history/v2.56/`.
+
+### Changed
+- **Fence segments are cached.** Every segment along one side of the yard fence is the same drawing, so one cached sprite per direction now serves all of them. The fence was about 570 canvas commands per frame in the late game and is now about 140.
+- **Nursery seed beds are cached.** A bed with its 15 saplings is one sprite, keyed by season and tree tier.
+- Snowflakes are filled as one path.
+- `test/v255.py` accepts VERSION and the service-worker cache at 2.55 or newer.
+
+### Measured
+Late-game save, 1280×800, night with rain, median scene frame (draw and raster) in ms, on a machine without a GPU. The numbers show the direction, not what a player's device does.
+
+| Engine | v2.55 | v2.56 High | v2.56 Low |
+|---|---:|---:|---:|
+| Chromium | 18.6 | 19.4 | 13.3 |
+| Firefox | 26 | 22 | 17 |
+| WebKit | 98 | 90 | 59 |
+
+Canvas commands per frame in the same scene: 3,846 in v2.55, 3,104 on High, 2,663 on Low. Low also draws half as many frames.
+
+### Unchanged
+Everything in the simulation: recipes, prices, orders, research, Replant. High looks the same as v2.55.
+
 ## [2.55] — 2026-11-15
 
 **A village by the south gate.** Timber-frame houses finished this run settle on the grass by the south gate. The lot grows from an empty patch to Timber Town, and a bigger town pays more for Phase 1 and Phase 2 goods at the Town Market. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. A save from v2.54 still loads. The first minutes of a run match v2.54.

@@ -149,7 +149,7 @@ function smokeTex(kind,nb){const k=kind+nb;let c=SMK.tex.get(k);if(c) return c;
   SMK.tex.set(k,c);return c;}
 function smokeStep(s,dt){const w=(scene.wxv&&scene.wxv.wind)||0;s.life+=dt;const k=s.life/s.max;
   s.vx+=dt*(2.4+w*16);s.vy*=Math.pow(.62,dt);s.x+=s.vx*dt+Math.sin(s.ph+s.life*1.7)*dt*2.2;s.y+=s.vy*dt;return k<1;}
-function drawSmoke(ctx){const A=scene.smoke;if(!A.length) return;const nb=Math.round(((scene.dn&&scene.dn.night)||0)*4);const ga=ctx.globalAlpha;
+function drawSmoke(ctx){const A=scene.smoke;if(!A.length||gfxLow()) return;const nb=Math.round(((scene.dn&&scene.dn.night)||0)*4);const ga=ctx.globalAlpha;
   for(let q=0;q<A.length;q++){const s=A[q],k=s.life/s.max;const ex=s.kind==='exh';
     const R=(ex?2.2+k*7:(3.4+k*16)*(s.sz||1))*(1+.15*Math.sin(s.ph));
     const a=(k<.12?k/.12:1)*Math.pow(1-k,1.35)*(SMK_COL[s.kind]||SMK_COL.grey)[3]*2.5;

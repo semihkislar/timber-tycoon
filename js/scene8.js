@@ -44,7 +44,7 @@ function puddleSpots(){
   return scene._pud=out;
 }
 function drawPuddles(ctx,inView){
-  const w=scene.wet; if(w<.02) return; const t=scene.t, rain=scene.wxv.rain;
+  const w=scene.wet; if(w<.02||gfxLow()) return; const t=scene.t, rain=scene.wxv.rain;
   for(const q of puddleSpots()){const [x,y]=P(q.i,q.j);if(!inView(x,y,40)) continue;const r=q.r*(.45+.55*w);
     ctx.fillStyle=q.mud?`rgba(110,80,45,${.45*w})`:`rgba(96,118,148,${.42*w})`;ctx.beginPath();ctx.ellipse(x,y,r,r*.5,0,0,TAU);ctx.fill();
     ctx.fillStyle=`rgba(225,236,250,${.28*w})`;ctx.beginPath();ctx.ellipse(x-r*.25,y-r*.12,r*.4,r*.12,0,0,TAU);ctx.fill();
@@ -94,6 +94,10 @@ function collectLights(){
    multiplied over the scene with an unscaled blit (a scaled multiply blit every frame was one of the costliest steps at night). */
 function drawLighting(ctx){
   const D=scene.dn, a=D.amb; if(a[0]>253.5&&a[1]>253.5&&a[2]>253.5&&D.lights<.02){scene.lightCount=0;scene.lmSig='';return;}
+  if(gfxLow()){   // v2.56 Low graphics: one flat tint (lifted a little, since no lamp pools brighten it) instead of the light map
+    const L=.3,q=k=>Math.round(a[k]+(255-a[k])*L*Math.min(1,D.lights+D.night));
+    scene.lightCount=0; ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='multiply';
+    ctx.fillStyle=`rgb(${q(0)},${q(1)},${q(2)})`; ctx.fillRect(0,0,scene.canvas.width,scene.canvas.height); ctx.restore(); return;}
   const W=scene.w,H=scene.h,dpr=scene.dpr,c=scene.cam,z=c.z,LR=.4;
   const cw=scene.canvas.width,ch=scene.canvas.height,lw=Math.ceil(cw*LR),lh=Math.ceil(ch*LR);
   if(!scene.lm||scene.lm.width!==lw||scene.lm.height!==lh){scene.lm=document.createElement('canvas');scene.lm.width=lw;scene.lm.height=lh;scene.lmx=scene.lm.getContext('2d');}
@@ -125,7 +129,7 @@ function drawLighting(ctx){
 function drawSky(ctx){
   const D=scene.dn, n=D.night*(1-D.oc*.8); if(n<.03) return; const W=scene.w,H=scene.h, tb=barH()[0], t=scene.t;
   const g=ctx.createLinearGradient(0,0,0,H*.32);g.addColorStop(0,`rgba(12,18,48,${.62*n})`);g.addColorStop(1,'rgba(12,18,48,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.32);
-  for(let k=0;k<90;k++){const x=hash2(k,3)*W,y=tb+hash2(5,k)*H*.24;const tw=.55+.45*Math.sin(t*(1.3+hash2(k,k)*2)+k);const a=n*tw*(1-(y-tb)/(H*.26));if(a<.05) continue;
+  if(!gfxLow()) for(let k=0;k<90;k++){const x=hash2(k,3)*W,y=tb+hash2(5,k)*H*.24;const tw=.55+.45*Math.sin(t*(1.3+hash2(k,k)*2)+k);const a=n*tw*(1-(y-tb)/(H*.26));if(a<.05) continue;
     ctx.fillStyle=`rgba(255,252,235,${a})`;const r=hash2(k,9)>.9?1.6:.9;ctx.fillRect(x-r/2,y-r/2,r,r);}
   if(W>600){const mx=W*.66,my=tb+16;ctx.save();ctx.globalAlpha=n;ctx.globalCompositeOperation='lighter';glow(ctx,mx,my,46,46,'cool',.35);ctx.restore();
     ctx.globalAlpha=n;ell(ctx,mx,my,12,12,'#f4f1e2');ell(ctx,mx+5,my-3,10.5,10.5,`rgb(${Math.round(30+12*(1-n))},${Math.round(40+10*(1-n))},${Math.round(80)})`);ctx.globalAlpha=1;}
@@ -135,25 +139,25 @@ function drawWeather(ctx,dt){
   const W=scene.w,H=scene.h,v=scene.wxv,t=scene.t,D=scene.dn, dim=1-.35*D.night;
   const wx=-60-v.wind*260; // wind drift px/s
   const P2=scene.wp||(scene.wp={rain:[],snow:[],leaf:[],streak:[],splash:[]});
-  const area=W*H/1e6;
+  const low=gfxLow(), thin=low?.4:1, area=W*H/1e6;   // v2.56: Low graphics keeps 40% of the particles (after the caps) and no splashes
   const sync=(arr,n,mk)=>{while(arr.length<n) arr.push(mk(true));if(arr.length>n) arr.length=n;};
   // rain
-  const nr=Math.round(Math.min(340,260*area)*v.rain);
+  const nr=Math.round(Math.min(340,260*area)*v.rain*thin);
   sync(P2.rain,nr,()=>({x:Math.random()*(W+300),y:Math.random()*H,s:900+Math.random()*350,l:15+Math.random()*12}));
   if(nr){ctx.strokeStyle=`rgba(210,225,248,${.62*dim})`;ctx.lineWidth=1.3;ctx.beginPath();
-    for(const d of P2.rain){d.y+=d.s*dt;d.x+=wx*1.4*dt;if(d.y>H){if(Math.random()<.5) P2.splash.push({x:d.x,y:H*(.3+Math.random()*.7),l:0});d.y=-20-Math.random()*60;d.x=Math.random()*(W+300);}
+    for(const d of P2.rain){d.y+=d.s*dt;d.x+=wx*1.4*dt;if(d.y>H){if(!low&&Math.random()<.5) P2.splash.push({x:d.x,y:H*(.3+Math.random()*.7),l:0});d.y=-20-Math.random()*60;d.x=Math.random()*(W+300);}
       const k=d.l/d.s;ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-wx*1.4*k,d.y-d.l);}ctx.stroke();}
   if(P2.splash.length){ctx.strokeStyle=`rgba(225,235,255,${.55*dim})`;ctx.lineWidth=.9;
     for(const s of P2.splash){s.l+=dt*4;const r=2+s.l*5;ctx.globalAlpha=Math.max(0,1-s.l);ctx.beginPath();ctx.ellipse(s.x,s.y,r,r*.4,0,0,TAU);ctx.stroke();}
     ctx.globalAlpha=1;P2.splash=P2.splash.filter(s=>s.l<1).slice(-80);}
   // snow
-  const ns=Math.round(Math.min(260,200*area)*v.snow);
+  const ns=Math.round(Math.min(260,200*area)*v.snow*thin);
   sync(P2.snow,ns,()=>({x:Math.random()*W,y:Math.random()*H,s:35+Math.random()*55,r:1.1+Math.random()*1.9,ph:Math.random()*9}));
-  if(ns){ctx.fillStyle=`rgba(255,255,255,${.92*dim})`;for(const f of P2.snow){f.y+=f.s*dt;f.x+=(Math.sin(t*1.3+f.ph)*22+wx*.35)*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x<-10) f.x+=W+20;if(f.x>W+10) f.x-=W+20;
-    ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();}}
+  if(ns){ctx.fillStyle=`rgba(255,255,255,${.92*dim})`;for(const f of P2.snow){f.y+=f.s*dt;f.x+=(Math.sin(t*1.3+f.ph)*22+wx*.35)*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x<-10) f.x+=W+20;if(f.x>W+10) f.x-=W+20;}
+    ctx.beginPath();for(const f of P2.snow){ctx.moveTo(f.x+f.r,f.y);ctx.arc(f.x,f.y,f.r,0,TAU);}ctx.fill();}   // v2.56: one path, one fill
   // autumn leaves / spring petals
   const lv=SEAS===2?(.4+v.wind*.9)*(1-v.snow):SEAS===0?(.3+v.wind*.7):0;
-  const nl=Math.round(Math.min(60,46*area)*lv);
+  const nl=Math.round(Math.min(60,46*area)*lv*thin);
   const LCOL=SEAS===2?['#d8702a','#e8a43a','#b8402a','#f0c850']:['#ffc0d4','#ffd8e4','#fff0f4','#f7a8c4'];
   sync(P2.leaf,nl,()=>({x:Math.random()*W,y:Math.random()*H,s:30+Math.random()*35,ph:Math.random()*9,c:Math.floor(Math.random()*4),r:Math.random()*6}));
   for(const f of P2.leaf){f.y+=f.s*dt;f.x+=(Math.sin(t*1.1+f.ph)*30+wx*.7)*dt;f.r+=dt*(1.5+Math.sin(f.ph));if(f.y>H+8){f.y=-8;f.x=Math.random()*W*1.2;}if(f.x<-12) f.x+=W+24;

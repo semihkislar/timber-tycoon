@@ -1,7 +1,7 @@
 /* Timber Tycoon bundle. Built by tools/build_js.py — edit js/*.js, then rebuild. */
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.55';
+const VERSION='2.56';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -5634,7 +5634,7 @@ function atlasBlit(g,key,scale){const f=SPR.atlasFrames&&SPR.atlasFrames[key];if
 function drawTree(ctx,x,y,t,tier){
   if(!SPR.on||ctx!==scene.ctx||t.down||t.fall>0||t.shake>0){drawTreeRaw(ctx,x,y,t,tier);return;}
   const qv=Math.round((t.var||0)*10)/10, g=t.grow===undefined?1:t.grow, qg=g>=.4?1:Math.round(g*50)/50, qs=Math.round((t.s||1)*50)/50, st=t.stump>0;
-  const wind=!st&&t.dyn&&scene.wxv&&scene.wxv.wind>.05&&g>=.4?Math.sin(scene.t*2.3+t.var*9)*.045*scene.wxv.wind:0;
+  const wind=!gfxLow()&&!st&&t.dyn&&scene.wxv&&scene.wxv.wind>.05&&g>=.4?Math.sin(scene.t*2.3+t.var*9)*.045*scene.wxv.wind:0;
   if(wind){drawTreeRaw(ctx,x,y,t,tier);return;}
   // grown trees between 0.4 and 1 are drawn at s*grow, so they share the mature frame scaled
   const sc=st||g<.4?1:qs*Math.round(g*50)/50, key='t'+tier+'|'+SEAS+'|'+qv+'|'+qg+'|'+(st?1:sc);
@@ -5913,7 +5913,7 @@ function smokeTex(kind,nb){const k=kind+nb;let c=SMK.tex.get(k);if(c) return c;
   SMK.tex.set(k,c);return c;}
 function smokeStep(s,dt){const w=(scene.wxv&&scene.wxv.wind)||0;s.life+=dt;const k=s.life/s.max;
   s.vx+=dt*(2.4+w*16);s.vy*=Math.pow(.62,dt);s.x+=s.vx*dt+Math.sin(s.ph+s.life*1.7)*dt*2.2;s.y+=s.vy*dt;return k<1;}
-function drawSmoke(ctx){const A=scene.smoke;if(!A.length) return;const nb=Math.round(((scene.dn&&scene.dn.night)||0)*4);const ga=ctx.globalAlpha;
+function drawSmoke(ctx){const A=scene.smoke;if(!A.length||gfxLow()) return;const nb=Math.round(((scene.dn&&scene.dn.night)||0)*4);const ga=ctx.globalAlpha;
   for(let q=0;q<A.length;q++){const s=A[q],k=s.life/s.max;const ex=s.kind==='exh';
     const R=(ex?2.2+k*7:(3.4+k*16)*(s.sz||1))*(1+.15*Math.sin(s.ph));
     const a=(k<.12?k/.12:1)*Math.pow(1-k,1.35)*(SMK_COL[s.kind]||SMK_COL.grey)[3]*2.5;
@@ -8635,6 +8635,7 @@ function initScene(){
 }
 function sceneLoop(now){
   if(!scene.visible){scene.running=false;return;}
+  if(!gfxTick(now)){requestAnimationFrame(sceneLoop);return;}   // v2.56: frame cap (120 Hz+ screens draw every other tick; 30 fps on Low) + Auto quality watch
   const dt=Math.min(.05,Math.max(0,(now-(scene.lastRAF||now))/1000)); scene.lastRAF=now;
   const t0=performance.now();
   stepScene(dt);
@@ -8663,8 +8664,8 @@ function drawScene(dt){
   // decals: conveyors, dynamic shadows
   const lots=MAIN_BLD.map(b=>LOTS[b.id]);
   for(const L of lots) drawConveyor(ctx,L);
-  const objs=[];
-  for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!t.stump&&!t.down&&!t.fall) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
+  const objs=[], lowFx=gfxLow();   // v2.56: Low graphics skips the soft tree shadows
+  for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!lowFx&&!t.stump&&!t.down&&!t.fall) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
   for(const L of lots) objs.push({k:L.ci+L.cj,f:()=>drawLot(ctx,L)});
   objs.push({k:YARD.ci+YARD.cj,f:()=>drawYardLot(ctx)});
   objs.push({k:DOCK.ci+DOCK.cj,f:()=>drawDockLot(ctx)});
@@ -8831,6 +8832,60 @@ function dcSetupSettings(){
   dcSync();
 }
 function dcSync(){const a=!!(S.prefs&&S.prefs.dcAll===true);document.querySelectorAll('#dcSeg button').forEach(b=>b.classList.toggle('on',(b.dataset.a==='1')===a));}
+/* v2.56 — graphics quality: frame-rate relief for slow browsers and devices.
+   Low drops the per-frame vector effects that never reach the sprite cache (smoke, puddles, tree shadows, stars, rain
+   splashes, most weather particles, trees swaying in the wind), swaps the night light map for one flat tint and draws at 30 fps. High draws
+   everything and skips only the extra ticks of 120 Hz+ screens. Auto starts on High, watches the real frame rate and
+   steps down to Low once it stays under GFX_MIN_FPS; the step is remembered on this device for GFX_KEEP ms (not in the
+   save) and then tried again. Settings → Graphics: Auto / High / Low (`S.prefs.gfx`). Pure drawing: no game state changes. */
+const GFX_KEY='timberTycoon_gfx_v1', GFX_MIN_FPS=40, GFX_WIN=4000, GFX_BAD=2, GFX_GRACE=8000, GFX_STALL=1500, GFX_KEEP=3*864e5;
+const GFX_GAP_HI=10, GFX_GAP_LO=28, GFX_SKIP_HI=3, GFX_SKIP_LO=8;
+const GFX={low:false,autoLow:false,until:0,watch:!navigator.webdriver,t0:0,last:0,n:0,ms:0,bad:0,skip:0,drops:0,fps:0};
+function gfxMode(){const p=S&&S.prefs&&S.prefs.gfx;return p==='low'||p==='high'?p:'auto';}
+function gfxLow(){return GFX.low;}
+function gfxLoadAuto(){let t=0;try{t=+localStorage.getItem(GFX_KEY)||0;}catch(e){}GFX.until=t+GFX_KEEP;GFX.autoLow=t>0&&Date.now()<GFX.until;}
+function gfxStoreAuto(on){GFX.autoLow=on;GFX.until=Date.now()+GFX_KEEP;try{if(on) localStorage.setItem(GFX_KEY,String(Date.now()));else localStorage.removeItem(GFX_KEY);}catch(e){}}
+function gfxResetWatch(){GFX.last=0;GFX.n=0;GFX.ms=0;GFX.bad=0;}
+function gfxSet(mode){
+  if(typeof prefs==='function') prefs(); else if(!S.prefs||typeof S.prefs!=='object') S.prefs={};
+  if(mode==='low'||mode==='high') S.prefs.gfx=mode; else delete S.prefs.gfx;
+  if(mode==='high') gfxStoreAuto(false);   // "this device can take it": Auto measures again the next time it is picked
+  gfxResetWatch(); gfxRefresh(); gfxSync();
+}
+function gfxRefresh(){if(GFX.autoLow&&Date.now()>=GFX.until) gfxStoreAuto(false);   // three days are over, also in a tab that stayed open
+  const m=gfxMode(),low=m==='low'||(m==='auto'&&GFX.autoLow);
+  if(low!==GFX.low){GFX.low=low;GFX.skip=0;if(typeof scene==='object'){scene.lmSig='';if(low) scene.lm=scene.lmUp=null;}}
+  return low;}
+function gfxAutoDrop(){
+  gfxStoreAuto(true); GFX.drops++; gfxResetWatch(); gfxRefresh(); gfxSync();
+  if(typeof toast==='function') toast('⚡ Graphics set to <b>Low</b> for a smoother game. You can change it in ⚙️ Settings.',5200);
+}
+/* called once per requestAnimationFrame tick; false = the frame cap skips this tick */
+function gfxTick(now){
+  if(!GFX.t0){GFX.t0=now;gfxLoadAuto();}
+  const low=gfxRefresh();
+  if(GFX.watch&&!low&&gfxMode()==='auto'){
+    const d=GFX.last?now-GFX.last:0; GFX.last=now;
+    if(d>GFX_STALL||now-GFX.t0<GFX_GRACE){GFX.n=0;GFX.ms=0;}   // loading, or the tab was away
+    else if(d>0||GFX.n){GFX.n++;GFX.ms+=d;
+      if(GFX.ms>=GFX_WIN){GFX.fps=GFX.n*1000/GFX.ms;GFX.bad=GFX.fps<GFX_MIN_FPS?GFX.bad+1:0;GFX.n=0;GFX.ms=0;if(GFX.bad>=GFX_BAD){gfxAutoDrop();return true;}}}
+  } else GFX.last=0;
+  // frame cap; never more than a few ticks in a row, so a coarse or odd clock cannot stall the scene
+  if(scene.lastRAF&&now-scene.lastRAF<(low?GFX_GAP_LO:GFX_GAP_HI)&&GFX.skip<(low?GFX_SKIP_LO:GFX_SKIP_HI)){GFX.skip++;return false;}
+  GFX.skip=0; return true;
+}
+/* Settings row: Graphics Auto / High / Low (built once, after the Scene labels row) */
+function gfxSetupSettings(){
+  const pane=$('pane-set'); if(!pane||$('gfxSet')) return;
+  const row=document.createElement('div');row.className='setrow';row.id='gfxSet';
+  row.innerHTML=`<span>Graphics<small><b>Low</b> turns off smoke, puddles, tree shadows and night lights, thins the weather and draws at 30 fps. <b>Auto</b> switches to Low when the game runs slowly on this device.<span id="gfxNote"></span></small></span>
+    <span class="nt-set"><span class="seg" id="gfxSeg"><button data-g="auto">Auto</button><button data-g="high">High</button><button data-g="low">Low</button></span></span>`;
+  const anchor=$('dcSet')||$('ntSet'); if(anchor&&anchor.nextSibling) pane.insertBefore(row,anchor.nextSibling); else pane.appendChild(row);
+  row.querySelectorAll('#gfxSeg button').forEach(b=>b.onclick=()=>{gfxSet(b.dataset.g);if(typeof save==='function') save(true);});
+  gfxSync();
+}
+function gfxSync(){const m=gfxMode();document.querySelectorAll('#gfxSeg button').forEach(b=>b.classList.toggle('on',b.dataset.g===m));
+  const n=$('gfxNote'); if(n) n.textContent=m==='auto'?(GFX.low?' Now: Low.':' Now: High.'):'';}
 /* ===================== v2.2 SCENE: premium area, stockpiles, premium trucks, client van ===================== */
 const GOLD='#d8a930', GOLD_L='#f5d36a', WALNUT='#4a2c1c', SLATE='#3a3430';
 /* ---------- ground (inside cached chunks) ---------- */
@@ -9089,8 +9144,14 @@ function drawPremDock(ctx){
 }
 /* fence: dark iron railings with gold finials round the Phase 3 row; forklift gates face Phase 2, the arch faces the dock */
 const PARCH=[-19.7,-16.5];   // v span of the south arch (towards the premium dock)
+/* v2.56: every segment of a fence side is the same drawing moved along the fence, so one cached sprite per direction serves
+   them all (the fence was ~570 canvas calls per frame in the late game) */
 function fenceSeg(ctx,a,b,open){
-  const pa=P(a[0],a[1]),pb=P(b[0],b[1]);
+  const pa=P(a[0],a[1]),pb=P(b[0],b[1]),dx=pb[0]-pa[0],dy=pb[1]-pa[1];
+  sprite(ctx,'fence|'+(open?1:0)+'|'+dx.toFixed(2)+'|'+dy.toFixed(2),pa[0],pa[1],[Math.min(0,dx)-4,Math.min(0,dy)-18,Math.max(0,dx)+4,Math.max(0,dy)+3],
+    (g,x,y)=>fenceSegRaw(g,[x,y],[x+dx,y+dy],open));
+}
+function fenceSegRaw(ctx,pa,pb,open){
   if(!open){ // construction hoarding
     fillP(ctx,[pa,pb,[pb[0],pb[1]-11],[pa[0],pa[1]-11]],'#e8e0cc','rgba(90,70,40,.5)');
     ctx.strokeStyle='rgba(216,140,40,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pa[0],pa[1]-8);ctx.lineTo(pb[0],pb[1]-8);ctx.stroke();return;}
@@ -9261,7 +9322,7 @@ function puddleSpots(){
   return scene._pud=out;
 }
 function drawPuddles(ctx,inView){
-  const w=scene.wet; if(w<.02) return; const t=scene.t, rain=scene.wxv.rain;
+  const w=scene.wet; if(w<.02||gfxLow()) return; const t=scene.t, rain=scene.wxv.rain;
   for(const q of puddleSpots()){const [x,y]=P(q.i,q.j);if(!inView(x,y,40)) continue;const r=q.r*(.45+.55*w);
     ctx.fillStyle=q.mud?`rgba(110,80,45,${.45*w})`:`rgba(96,118,148,${.42*w})`;ctx.beginPath();ctx.ellipse(x,y,r,r*.5,0,0,TAU);ctx.fill();
     ctx.fillStyle=`rgba(225,236,250,${.28*w})`;ctx.beginPath();ctx.ellipse(x-r*.25,y-r*.12,r*.4,r*.12,0,0,TAU);ctx.fill();
@@ -9311,6 +9372,10 @@ function collectLights(){
    multiplied over the scene with an unscaled blit (a scaled multiply blit every frame was one of the costliest steps at night). */
 function drawLighting(ctx){
   const D=scene.dn, a=D.amb; if(a[0]>253.5&&a[1]>253.5&&a[2]>253.5&&D.lights<.02){scene.lightCount=0;scene.lmSig='';return;}
+  if(gfxLow()){   // v2.56 Low graphics: one flat tint (lifted a little, since no lamp pools brighten it) instead of the light map
+    const L=.3,q=k=>Math.round(a[k]+(255-a[k])*L*Math.min(1,D.lights+D.night));
+    scene.lightCount=0; ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='multiply';
+    ctx.fillStyle=`rgb(${q(0)},${q(1)},${q(2)})`; ctx.fillRect(0,0,scene.canvas.width,scene.canvas.height); ctx.restore(); return;}
   const W=scene.w,H=scene.h,dpr=scene.dpr,c=scene.cam,z=c.z,LR=.4;
   const cw=scene.canvas.width,ch=scene.canvas.height,lw=Math.ceil(cw*LR),lh=Math.ceil(ch*LR);
   if(!scene.lm||scene.lm.width!==lw||scene.lm.height!==lh){scene.lm=document.createElement('canvas');scene.lm.width=lw;scene.lm.height=lh;scene.lmx=scene.lm.getContext('2d');}
@@ -9342,7 +9407,7 @@ function drawLighting(ctx){
 function drawSky(ctx){
   const D=scene.dn, n=D.night*(1-D.oc*.8); if(n<.03) return; const W=scene.w,H=scene.h, tb=barH()[0], t=scene.t;
   const g=ctx.createLinearGradient(0,0,0,H*.32);g.addColorStop(0,`rgba(12,18,48,${.62*n})`);g.addColorStop(1,'rgba(12,18,48,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.32);
-  for(let k=0;k<90;k++){const x=hash2(k,3)*W,y=tb+hash2(5,k)*H*.24;const tw=.55+.45*Math.sin(t*(1.3+hash2(k,k)*2)+k);const a=n*tw*(1-(y-tb)/(H*.26));if(a<.05) continue;
+  if(!gfxLow()) for(let k=0;k<90;k++){const x=hash2(k,3)*W,y=tb+hash2(5,k)*H*.24;const tw=.55+.45*Math.sin(t*(1.3+hash2(k,k)*2)+k);const a=n*tw*(1-(y-tb)/(H*.26));if(a<.05) continue;
     ctx.fillStyle=`rgba(255,252,235,${a})`;const r=hash2(k,9)>.9?1.6:.9;ctx.fillRect(x-r/2,y-r/2,r,r);}
   if(W>600){const mx=W*.66,my=tb+16;ctx.save();ctx.globalAlpha=n;ctx.globalCompositeOperation='lighter';glow(ctx,mx,my,46,46,'cool',.35);ctx.restore();
     ctx.globalAlpha=n;ell(ctx,mx,my,12,12,'#f4f1e2');ell(ctx,mx+5,my-3,10.5,10.5,`rgb(${Math.round(30+12*(1-n))},${Math.round(40+10*(1-n))},${Math.round(80)})`);ctx.globalAlpha=1;}
@@ -9352,25 +9417,25 @@ function drawWeather(ctx,dt){
   const W=scene.w,H=scene.h,v=scene.wxv,t=scene.t,D=scene.dn, dim=1-.35*D.night;
   const wx=-60-v.wind*260; // wind drift px/s
   const P2=scene.wp||(scene.wp={rain:[],snow:[],leaf:[],streak:[],splash:[]});
-  const area=W*H/1e6;
+  const low=gfxLow(), thin=low?.4:1, area=W*H/1e6;   // v2.56: Low graphics keeps 40% of the particles (after the caps) and no splashes
   const sync=(arr,n,mk)=>{while(arr.length<n) arr.push(mk(true));if(arr.length>n) arr.length=n;};
   // rain
-  const nr=Math.round(Math.min(340,260*area)*v.rain);
+  const nr=Math.round(Math.min(340,260*area)*v.rain*thin);
   sync(P2.rain,nr,()=>({x:Math.random()*(W+300),y:Math.random()*H,s:900+Math.random()*350,l:15+Math.random()*12}));
   if(nr){ctx.strokeStyle=`rgba(210,225,248,${.62*dim})`;ctx.lineWidth=1.3;ctx.beginPath();
-    for(const d of P2.rain){d.y+=d.s*dt;d.x+=wx*1.4*dt;if(d.y>H){if(Math.random()<.5) P2.splash.push({x:d.x,y:H*(.3+Math.random()*.7),l:0});d.y=-20-Math.random()*60;d.x=Math.random()*(W+300);}
+    for(const d of P2.rain){d.y+=d.s*dt;d.x+=wx*1.4*dt;if(d.y>H){if(!low&&Math.random()<.5) P2.splash.push({x:d.x,y:H*(.3+Math.random()*.7),l:0});d.y=-20-Math.random()*60;d.x=Math.random()*(W+300);}
       const k=d.l/d.s;ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-wx*1.4*k,d.y-d.l);}ctx.stroke();}
   if(P2.splash.length){ctx.strokeStyle=`rgba(225,235,255,${.55*dim})`;ctx.lineWidth=.9;
     for(const s of P2.splash){s.l+=dt*4;const r=2+s.l*5;ctx.globalAlpha=Math.max(0,1-s.l);ctx.beginPath();ctx.ellipse(s.x,s.y,r,r*.4,0,0,TAU);ctx.stroke();}
     ctx.globalAlpha=1;P2.splash=P2.splash.filter(s=>s.l<1).slice(-80);}
   // snow
-  const ns=Math.round(Math.min(260,200*area)*v.snow);
+  const ns=Math.round(Math.min(260,200*area)*v.snow*thin);
   sync(P2.snow,ns,()=>({x:Math.random()*W,y:Math.random()*H,s:35+Math.random()*55,r:1.1+Math.random()*1.9,ph:Math.random()*9}));
-  if(ns){ctx.fillStyle=`rgba(255,255,255,${.92*dim})`;for(const f of P2.snow){f.y+=f.s*dt;f.x+=(Math.sin(t*1.3+f.ph)*22+wx*.35)*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x<-10) f.x+=W+20;if(f.x>W+10) f.x-=W+20;
-    ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,TAU);ctx.fill();}}
+  if(ns){ctx.fillStyle=`rgba(255,255,255,${.92*dim})`;for(const f of P2.snow){f.y+=f.s*dt;f.x+=(Math.sin(t*1.3+f.ph)*22+wx*.35)*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}if(f.x<-10) f.x+=W+20;if(f.x>W+10) f.x-=W+20;}
+    ctx.beginPath();for(const f of P2.snow){ctx.moveTo(f.x+f.r,f.y);ctx.arc(f.x,f.y,f.r,0,TAU);}ctx.fill();}   // v2.56: one path, one fill
   // autumn leaves / spring petals
   const lv=SEAS===2?(.4+v.wind*.9)*(1-v.snow):SEAS===0?(.3+v.wind*.7):0;
-  const nl=Math.round(Math.min(60,46*area)*lv);
+  const nl=Math.round(Math.min(60,46*area)*lv*thin);
   const LCOL=SEAS===2?['#d8702a','#e8a43a','#b8402a','#f0c850']:['#ffc0d4','#ffd8e4','#fff0f4','#f7a8c4'];
   sync(P2.leaf,nl,()=>({x:Math.random()*W,y:Math.random()*H,s:30+Math.random()*35,ph:Math.random()*9,c:Math.floor(Math.random()*4),r:Math.random()*6}));
   for(const f of P2.leaf){f.y+=f.s*dt;f.x+=(Math.sin(t*1.1+f.ph)*30+wx*.7)*dt;f.r+=dt*(1.5+Math.sin(f.ph));if(f.y>H+8){f.y=-8;f.x=Math.random()*W*1.2;}if(f.x<-12) f.x+=W+24;
@@ -10059,7 +10124,13 @@ function forestGround(ctx){
   // gravel path from the clearing toward the logging road
   fillP(ctx,[P(i1+.55,j1+.5),P(i1+2.4,j1+.5),P(i1+2.4,j1+.95),P(i1+.55,j1+.95)],SEAS===3?'#eef2f4':'#c9b48a');
 }
+/* v2.56: a seed bed (5 × 3 saplings, ~75 canvas calls) only changes with the season and the tree tier, so it is cached */
 function seedBed(ctx,i0,j0,i1,j1,seed){
+  const a=P(i0,j0),di=i1-i0,dj=j1-j0;
+  sprite(ctx,'seedbed|'+seed+'|'+SEAS+'|'+S.tree+'|'+di.toFixed(2)+'|'+dj.toFixed(2),a[0],a[1],[-dj*HW-10,-34,di*HW+10,(di+dj)*HH+5],
+    (g,x,y)=>{g.save();g.translate(x-a[0],y-a[1]);seedBedRaw(g,i0,j0,i1,j1,seed);g.restore();});
+}
+function seedBedRaw(ctx,i0,j0,i1,j1,seed){
   box(ctx,i0,j0,i1,j1,0,2.2,'#8a5a2c',{top:SEAS===3?'#f4f8fb':'#5a3f22',nosnow:true,hl:false});
   if(SEAS===3) return;
   const R=rng(seed);const pal=TREE_PAL[S.tree]||TREE_PAL[0];
@@ -11196,13 +11267,13 @@ function setupMobile(){
   $('bpNext').onclick=()=>{cycleBuilding(1);if(sheetBld) focusLot(sheetBld,true);haptic(5);};
   // light haptic tick on bottom bar / buttons
   document.addEventListener('click',e=>{if(e.isTrusted&&e.target.closest&&e.target.closest('.bb,.btn:not(:disabled),.fab,.jchip')) haptic(5);},true);
-  setupSheetGestures(); setupHold(); buildJumpBar(); if(typeof ntSetupSettings==='function') ntSetupSettings(); if(typeof dcSetupSettings==='function') dcSetupSettings();   // v2.43 · v2.44
+  setupSheetGestures(); setupHold(); buildJumpBar(); if(typeof ntSetupSettings==='function') ntSetupSettings(); if(typeof dcSetupSettings==='function') dcSetupSettings(); if(typeof gfxSetupSettings==='function') gfxSetupSettings();   // v2.43 · v2.44
   registerSW();
 }
 function mobileRender(){
   updateAttn(); updateBuyMax(); renderMore(false);
   if(document.body.classList.contains('jump-on')) buildJumpBar();
-  if(curSheet==='set'&&typeof ntSyncSettings==='function') ntSyncSettings(); if(curSheet==='set'&&typeof dcSync==='function') dcSync();
+  if(curSheet==='set'&&typeof ntSyncSettings==='function') ntSyncSettings(); if(curSheet==='set'&&typeof dcSync==='function') dcSync(); if(curSheet==='set'&&typeof gfxSync==='function') gfxSync();
   if(curSheet==='set'){$('afToggle').checked=!!prefs().autoFocus;$('hapToggle').checked=!!prefs().haptics;if($('fatToggle')) $('fatToggle').checked=!!prefs().fatigue;}
 }
 /* ---------- PWA ---------- */
@@ -12317,7 +12388,7 @@ function init(){
 }
 
 // test / debug hook
-window.TT={get S(){return S;},set S(v){S=v;},simulate,simulateOffline,tick,chop,buyCollector,
+window.TT={get S(){return S;},set S(v){S=v;},GFX,gfxSet,gfxLow,gfxMode,simulate,simulateOffline,tick,chop,buyCollector,
   buyBuilding:(id,n,opt)=>buyBuilding(id,n,Object.assign({wsAuto:true},opt||{})),   // v2.22: the test/dev API also buys the workstation levels a purchase needs
   buyBuildingRaw:buyBuilding,bldNextCost,buyWs,wsLvl,wsCap,wsRoom,wsGate,wsNext,wsCost,wsNeedFor,wsBlocked,wsGrandfather,wsSpd,wsOut,wsIn,wsMult,wsSetTier,wsSetSpd,wsSetMgr,wsSetCount,wsSetNeed,WS_SETS,WS_DEF,WS_GATES,WS_MAX,WS_LV,
   upLvl,upMax,upCost,upReqOk,upReqTxt,upDesc,buyUpgrade,buyTree,sellAll,doPrestige,hardReset,save,load,

@@ -125,6 +125,7 @@ function initScene(){
 }
 function sceneLoop(now){
   if(!scene.visible){scene.running=false;return;}
+  if(!gfxTick(now)){requestAnimationFrame(sceneLoop);return;}   // v2.56: frame cap (120 Hz+ screens draw every other tick; 30 fps on Low) + Auto quality watch
   const dt=Math.min(.05,Math.max(0,(now-(scene.lastRAF||now))/1000)); scene.lastRAF=now;
   const t0=performance.now();
   stepScene(dt);
@@ -153,8 +154,8 @@ function drawScene(dt){
   // decals: conveyors, dynamic shadows
   const lots=MAIN_BLD.map(b=>LOTS[b.id]);
   for(const L of lots) drawConveyor(ctx,L);
-  const objs=[];
-  for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!t.stump&&!t.down&&!t.fall) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
+  const objs=[], lowFx=gfxLow();   // v2.56: Low graphics skips the soft tree shadows
+  for(const t of scene.dynTrees){const [x,y]=P(t.i,t.j);if(!inView(x,y,60)) continue;if(!lowFx&&!t.stump&&!t.down&&!t.fall) treeShadow(ctx,x,y,t.s*(t.grow||1));objs.push({k:t.i+t.j,f:()=>drawTree(ctx,x,y,t,S.tree)});}
   for(const L of lots) objs.push({k:L.ci+L.cj,f:()=>drawLot(ctx,L)});
   objs.push({k:YARD.ci+YARD.cj,f:()=>drawYardLot(ctx)});
   objs.push({k:DOCK.ci+DOCK.cj,f:()=>drawDockLot(ctx)});
