@@ -19,6 +19,8 @@ FAILS=[]
 def ok(c,msg):
     print(('PASS ' if c else 'FAIL ')+msg,flush=True)
     if not c: FAILS.append(msg)
+def rel(a,b):
+    return abs(a-b)/max(abs(a),abs(b),1e-9)
 def E(pg,js,arg=None): return pg.evaluate(js,arg) if arg is not None else pg.evaluate(js)
 HERE=os.path.dirname(os.path.abspath(__file__))
 OLD=BASE+'releases/v2.39/index.html'
@@ -126,6 +128,15 @@ with sync_playwright() as p:
         for B,Tr in CASES:
             for K in KS: res[(tag,B,K)]=E(pg,f"({RUN})",[B,Tr,K,5,'surplus',1])
         ctx.close()
+    # K==1 income with Town demand forced off. Same K=1 sequence on v2.39, so leftover
+    # page state matches and the only difference is townMult. v2.57's paper and pellet
+    # curves are already 1 inside BAL, so this still compares the overflow routing alone.
+    plain={}; base={}
+    ctx,pg=page(); ctx2,pg2=page(url=OLD)
+    for B,Tr in CASES:
+        plain[B]=E(pg, "(()=>{if(typeof townMult==='function') townMult=()=>1; return (%s)([%s,%s,1,5,'surplus',1]);})()"%(RUN,B,Tr))
+        base[B]=E(pg2, f"({RUN})", [B,Tr,1,5,'surplus',1])
+    ctx.close(); ctx2.close()
     for B,Tr in CASES:
         row=[]
         for K in KS:
@@ -135,8 +146,18 @@ with sync_playwright() as p:
             ok(n['sold']==0 and n['logs']<=n['cap']*1.0001,f"budget {B:.0e} ×{K}: no logs sold, stock within the cap")
             ok(n['fuel']<=n['need']*1.001+1e-9 and abs(n['pw']-o['pw'])<.02,f"budget {B:.0e} ×{K}: the plant burns no more fuel than its need and its power is unchanged ({n['pw']:.2f} vs {o['pw']:.2f})")
             if K==1.0:
-                # v2.55: the goods are unchanged. Town demand can add up to 15% on Phase 1–2 market coins once houses exist.
-                ok(-.005<d<.155, f"budget {B:.0e}: collectors matched to the mills: goods unchanged, income within the town-demand cap ({d:+.2%})")
+                # Collectors are a whole number of lumberjacks, so "matched" (K==1) can be up to half a lumberjack
+                # ahead of the mills. v2.39 threw that sliver away. v2.40 sends it to the chute once the yard is full,
+                # which is why chips can differ by about 0.01% and why oc is that sliver rather than 0. Plant and lost stay 0.
+                # Town demand is a price, not a recipe: with townMult forced to 1 the coin total matches v2.39.
+                # v2.57's paper and pellet yield curves are forced to ×1 in BAL, so the goods still match v2.39.
+                ok(-.005<d<.155, f"budget {B:.0e}: collectors matched to the mills: income within the town-demand cap ({d:+.2%})")
+                for key,tol in (('chips',1.5e-4),('pel',1.5e-4),('pap',1.5e-4),('pelS',1.5e-4),('pw',1e-6),('yr',1e-4)):
+                    ok(rel(n[key],o[key])<=tol, f"budget {B:.0e}: {key} matches v2.39 within {tol:g} ({o[key]:.6g} → {n[key]:.6g})")
+                surplus=n['col']-n['use']
+                ok(n['op']==0 and n['ow']==0 and -1e-9<=n['oc']<=max(0.0,surplus)+1e-3 and o['oc']==0 and o['op']==0 and o['ow']==0,
+                   f"budget {B:.0e}: matched overflow is only the rounding sliver on the chute ({n['oc']:.4f}/s, surplus {surplus:.4f}/s); plant and lost stay 0, and v2.39 had no overflow")
+                ok(rel(plain[B]['inc'], base[B]['inc'])<=4e-5, f"budget {B:.0e}: income with Town demand removed matches v2.39 ({base[B]['inc']:.6g} → {plain[B]['inc']:.6g}, {plain[B]['inc']/base[B]['inc']-1:+.4%})")
             else:
                 ok(n['yr']>=o['yr']-1e-9,f"budget {B:.0e} ×{K}: collectors work at least as much as in v2.39 ({o['yr']:.0%}→{n['yr']:.0%})")
                 ok(n['oc']<=n['cc']*1.001,f"budget {B:.0e} ×{K}: chute within ½ of the Chipper intake")

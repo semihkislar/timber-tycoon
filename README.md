@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.57-6b8e23" alt="version 2.57">
+  <img src="https://img.shields.io/badge/version-2.58-6b8e23" alt="version 2.58">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.55: the late-game factory, with the village by the south gate" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.58: the late-game factory, with the village by the south gate" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,12 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.57: Paper and pellets keep up
-The Paper Mill and the Pellet Press now get more out of the same chips from Lv 25 (+4 % paper and +2 % pellets per level), so Stationery, Toys, Gift Boxes, Parquet and the Research Lab stop waiting on them. A full bark or chip store no longer stops the Veneer Peeler or the Beam Saw. When a ship, a train, an order or a contract takes a good ahead of your workshops, the Bottleneck Advisor now says so instead of "upgrade the maker". The first minutes of a run are unchanged, and a v2.56 save still loads.
+### New in v2.58: The village keeps its feet on the ground
+People in Timber Town walk the street, and the houses stay houses. A resident no longer crosses a roof or vanishes into a wall that is beside them. They pause at the well, the stalls and a doorway. Cottages have a short fence and a few flowers. On a large screen there is one more walker, and Low graphics does not add that walker. The town still pays the same bonus, and logs are still not for sale.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.57** | 📜 **Paper and pellets keep up** | The Paper Mill and the Pellet Press get more out of the same chips from Lv 25. A full bark or chip store no longer stops the Veneer Peeler or the Beam Saw. The advisor names the export that is taking a good. |
 | **v2.56** | 🎚️ **A lighter scene for slow browsers** | A new Graphics setting (Auto, High, Low). Low turns off smoke, puddles, tree shadows and night lights and draws at 30 fps; Auto switches to it when the game stays under 40 fps. The fence and the seed beds are drawn once and reused. |
 | **v2.55** | 🏘️ **A village by the south gate** | Timber-frame houses finished this run settle by the south gate and grow from a hamlet into Timber Town. A bigger town pays up to +15% on Phase 1 and Phase 2 goods at the Town Market. |
 | **v2.54** | 📄 **The page matches the sources** | The game is one script, built from the files in `js/`. A check now fails when that script is out of date, so a forgotten rebuild cannot ship. Prices and recipes are unchanged. |
