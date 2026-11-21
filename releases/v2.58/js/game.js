@@ -8122,8 +8122,9 @@ function mktFleetDraw(ctx,objs,inView){
    corner) so a walker, a van or the scaffold cannot paint across a roof. The clip is
    the sprite's own box: a canvas-sized rectangle is dropped by the browser and the
    top of the sprite never paints. The church spire stands on the near corner, so the
-   whole tower stays in the near half (townSplitLift 64). One more walker on a large
-   screen, and only while graphics are not Low. */
+   whole tower stays in the near half (townSplitLift 64). A cottage chimney stands
+   on the near corner of the roof, and its lift is 42, so the stack stays in the near half.
+   One more walker on a large screen, and only while graphics are not Low. */
 const TOWN_STAGES=[
   {n:0,name:'Empty lot',say:'A cleared lot by the south gate, waiting on the first house kit.'},
   {n:1,name:'Hamlet',say:'One timber-frame cottage, a garden and a tree.'},
@@ -8323,7 +8324,9 @@ function townCot(ctx,p){
   townWin(ctx,'J',i1-.3,j1,5.2,.18,3.3);
   townWin(ctx,'I',i1,j0+.12,5.4,.2,3.1);
   gable(ctx,i0,j0,i1,j1,h,7.2,'j',TOWN_ROOF,wall,.08);
-  if(p.chim) townChim(ctx,i0+.16,j0+.16,h+3.2);
+  // Near corner of the roof. A stack on the far corner is pulled up onto the street,
+  // and a walker pausing at the doorstep stands on the pot.
+  if(p.chim) townChim(ctx,p.i+.28,p.j+.26,9.4);
   // flower box under the east window
   box(ctx,i1-.02,j0+.16,i1+.08,j0+.34,3.6,4.5,'#6b4226',{top:'#5a9a40'});
   // street-side picket and a few blooms, kept inside the footprint so the cached sprite does not grow
@@ -8538,16 +8541,20 @@ const TOWN_FEET=0.004;
 function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake';}
 function townBoxOf(p){return {i0:p.i-p.wi/2,j0:p.j-p.wj/2,i1:p.i+p.wi/2,j1:p.j+p.wj/2};}
 /* Pixels above the footprint centre where the near half begins.
-   The roof slope that faces the camera stays with the near half. The far roof stays above the line.
-   The church tower is the exception: it stands on the near corner, and its cross clears the
-   centre by ~49px (shaft 29 + cone 22 + cross 7, minus the corner's own offset). A lower
-   line would leave the spire in the far half, where a walker between the two depths paints over it. */
+   Screen Y is (i+j)*HH - z, so a taller part or a far corner sits further above the centre.
+   The near half is everything at or below this line, and it sorts at the front corner, so a
+   walker between the two depths cannot paint over it. The far half is only what clears the line.
+   Anything left above the line is behind that walker: the church cross (about 49px up) and a
+   cottage chimney (wall 11.5, stack from +3.2, cap to +8.6, about 35px up at the far corner)
+   both did that. The back clip also reaches 0.8px below the line, so the lift sits a few
+   pixels past the tallest near-facing part. */
 function townSplitLift(p){
-  if(p.kind==='church') return 64;
-  if(p.kind==='tree') return 22;
-  if(p.kind==='well') return 14;
-  if(p.kind==='stall') return 9;
-  if(p.kind==='sign') return 7;
+  if(p.kind==='church') return 64;  // cross ~49px, nave chimney ~41px
+  if(p.kind==='cot') return 42;     // chimney cap ~35px; the near roof is below that
+  if(p.kind==='tree') return 28;    // upper cone tip ~19px
+  if(p.kind==='stall') return 22;   // awning, higher at the back, ~16px
+  if(p.kind==='well') return 20;    // little roof peak ~14px
+  if(p.kind==='sign') return 12;    // roof mark ~8px
   return 14;
 }
 /* Far half at the back corner, near half at the front corner.

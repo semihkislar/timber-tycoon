@@ -177,12 +177,14 @@ with sync_playwright() as p:
       S.town.made=250000; townStage();
       gfxSet("high"); const hi=townFolk().length;
       gfxSet("low"); const lo=townFolk().length;
-      const lift=townSplitLift(townPieces().find(q=>q.kind==="church"));
+      const lifts={};
+      for(const k of ["church","cot","stall","well","tree","sign"]) lifts[k]=townSplitLift({kind:k});
       gfxSet("auto");
-      return {hi, lo, w:scene.w, low:gfxLow(), lift, looks:townLooks().length};
+      return {hi, lo, w:scene.w, low:gfxLow(), lifts, looks:townLooks().length};
     }''')
-    ok(folk['w']>=700 and folk['hi']==5 and folk['lo']==4 and folk['low'] is False and folk['lift']==64 and folk['looks']==6,
-       f"large screen adds one walker on High only, Low stays at the v2.57 count, church lift is 64 ({folk})")
+    ok(folk['w']>=700 and folk['hi']==5 and folk['lo']==4 and folk['low'] is False and folk['looks']==6
+       and folk['lifts']=={"church":64,"cot":42,"stall":22,"well":20,"tree":28,"sign":12},
+       f"large screen adds one walker on High only, Low stays at the v2.57 count, lifts clear the tall parts ({folk})")
     order=E(pg, ORDER)
     ok(order['nb']==0 and order['checks']>1000 and order['sc']>=2 and order['scBad']==0 and order['ni']==0,
        f"sort holds for residents, vans and the scaffold ({order['checks']} checks, {order['nb']} bad, scaffold halves {order['sc']}, inside {order['inside'][:2]})")
@@ -209,7 +211,6 @@ with sync_playwright() as p:
       scene.particles.length=0;
       for(let i=0;i<5;i++){scene.t=1; stepScene(0);}
       const ch=townPieces().find(q=>q.kind==="church");
-      const cot=townPieces().filter(q=>q.kind==="cot").pop();
       const dpr=scene.dpr||1, W=scene.w, H=scene.h;
       function flatCount(piece, half){
         const z=cam.z;
@@ -227,13 +228,37 @@ with sync_playwright() as p:
         }
         return {n, gold};
       }
-      const front=flatCount(ch,"front"), back=flatCount(ch,"back"), cotBack=flatCount(cot,"back");
       function art(R,G,B){
         const roof=R>140&&G<140&&B<115&&R>G+40&&R>B+35;
         const gold=R>200&&G>165&&B<140&&G>B+40&&R-G<80;
         const cap=R>40&&R<100&&G>25&&G<75&&B<65&&R>G+15&&Math.abs(G-B)<25;
         return roof||gold||cap;
       }
+      // Cottage roof, including the shaded slope, and the chimney shaft and grey-brown cap.
+      // Timber and the cream wall stay out, so a walker in front of a door is not a hit.
+      function house(R,G,B){
+        const roof=R>105&&R<220&&G<130&&B<110&&R>G+35&&R>B+30;
+        const pot=R>65&&R<150&&G>45&&G<130&&B>35&&B<120&&R>=G-5&&R-G<45&&Math.abs(G-B)<40;
+        return roof||pot;
+      }
+      function tally(piece, half, paint){
+        const z=cam.z;
+        g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle="#00ff00"; g.fillRect(0,0,cv.width,cv.height);
+        const base=g.getImageData(0,0,cv.width,cv.height).data;
+        g.setTransform(dpr*z,0,0,dpr*z,dpr*(W/2-cam.x*z),dpr*(H/2-cam.y*z));
+        townClip(g, piece, half);
+        const d=g.getImageData(0,0,cv.width,cv.height).data;
+        let n=0, gold=0, chim=0;
+        for(let i=0;i<d.length;i+=4){
+          if(d[i]===base[i]&&d[i+1]===base[i+1]&&d[i+2]===base[i+2]) continue;
+          n++;
+          if(paint(d[i],d[i+1],d[i+2])){if(art(d[i],d[i+1],d[i+2])&&d[i]>200) gold++; if(house(d[i],d[i+1],d[i+2])) chim++;}
+        }
+        return {n, gold, chim};
+      }
+      const chimCot=townPieces().find(q=>q.kind==="cot"&&q.chim);
+      const front=flatCount(ch,"front"), back=flatCount(ch,"back");
+      const cotFront=tally(chimCot,"front",house), cotBack=tally(chimCot,"back",house);
       const keepLive=townLive, keepFolk=townFolk;
       const times=[];
       for(let t=0;t<110&&times.length<4;t+=0.45){
@@ -270,13 +295,72 @@ with sync_playwright() as p:
           }
         }
       }
+      // Same rule for every cottage roof and chimney. No handful of pixels is ignored:
+      // a walker standing on a pot is a miss. The row is on this camera.
+      const cots=keepLive().filter(q=>q.kind==="cot");
+      const cotTimes=[];
+      for(let t=0;t<110&&cotTimes.length<4;t+=0.45){
+        scene.t=t;
+        const near=townFolk().some(f=>cots.some(q=>Math.abs(f.j-q.j)<1.6));
+        if(near&&(cotTimes.length===0||t-cotTimes[cotTimes.length-1]>8)) cotTimes.push(+t.toFixed(2));
+      }
+      let cotCovered=0, cotMask=0, cotChecks=0;
+      const cotBad=[];
+      for(const clock of clocks){
+        TT.setClock(clock); S.wx.w="clear"; S.wx.next=1e15;
+        scene.particles.length=0; scene.t=cotTimes[0];
+        for(let i=0;i<3;i++) stepScene(0);
+        for(const t of cotTimes){
+          scene.particles.length=0; scene.t=t;
+          townLive=keepLive; townFolk=()=>[]; stepScene(0);
+          const A=g.getImageData(0,0,cv.width,cv.height).data;
+          townLive=()=>keepLive().filter(q=>q.kind!=="cot"); stepScene(0);
+          const B=g.getImageData(0,0,cv.width,cv.height).data;
+          townLive=keepLive; townFolk=keepFolk; stepScene(0);
+          const C=g.getImageData(0,0,cv.width,cv.height).data;
+          townLive=()=>keepLive().filter(q=>q.kind!=="cot"); stepScene(0);
+          const Ww=g.getImageData(0,0,cv.width,cv.height).data;
+          cotChecks++;
+          for(let i=0;i<A.length;i+=4){
+            if(A[i]===B[i]&&A[i+1]===B[i+1]&&A[i+2]===B[i+2]) continue;
+            if(!house(A[i],A[i+1],A[i+2])) continue;
+            cotMask++;
+            if(C[i]===A[i]&&C[i+1]===A[i+1]&&C[i+2]===A[i+2]) continue;
+            if(C[i]===Ww[i]&&C[i+1]===Ww[i+1]&&C[i+2]===Ww[i+2]){
+              cotCovered++;
+              if(cotBad.length<4) cotBad.push(clock+":"+t);
+            }
+          }
+        }
+      }
       townLive=keepLive; townFolk=keepFolk; scene.particles.length=0;
       TT.setClock(10*60); scene.visible=true;
-      return {covered, mask, checks, times, bad, front, back, cotBack:cotBack.n};
+      return {covered, mask, checks, times, bad, front, back, cotFront, cotBack, cotCovered, cotMask, cotChecks, cotTimes, cotBad};
     }''')
     ok(roof['times'] and len(roof['times'])>=3 and roof['checks']>=9 and roof['mask']>2000
-       and roof['covered']==0 and roof['cotBack']>200 and roof['front']['gold']>10 and roof['back']['gold']==0,
-       f"walkers cover 0 church roof/tower pixels ({roof['covered']} covered, mask {roof['mask']}, times {roof['times']}, clocks {roof['checks']}, far half {roof['cotBack']}, cross in the near half {roof['front']['gold']}/{roof['back']['gold']})")
+       and roof['covered']==0 and roof['front']['gold']>10 and roof['back']['gold']==0,
+       f"walkers cover 0 church roof/tower pixels ({roof['covered']} covered, mask {roof['mask']}, times {roof['times']}, clocks {roof['checks']}, cross in the near half {roof['front']['gold']}/{roof['back']['gold']})")
+    ok(roof['cotTimes'] and len(roof['cotTimes'])>=3 and roof['cotChecks']>=9 and roof['cotMask']>2000
+       and roof['cotCovered']==0 and roof['cotFront']['chim']>80 and roof['cotBack']['chim']==0,
+       f"walkers cover 0 cottage roof/chimney pixels ({roof['cotCovered']} covered, mask {roof['cotMask']}, times {roof['cotTimes']}, chimney in the near half {roof['cotFront']['chim']}/{roof['cotBack']['chim']}, {roof['cotBad']})")
+    # Feet on the cap are not a covered roof pixel: the boots sit in the grass just above the pot.
+    # The gap is in screen pixels, and zero is the only passing distance under 14.
+    gap=E(pg, r'''()=>{
+      let best=1e9;
+      for(let t=0;t<=50;t+=0.2){
+        scene.t=t;
+        for(const p of townPieces()){
+          if(!(p.kind==="cot"&&p.chim)) continue;
+          const top=P(p.i+.28, p.j+.26, 18);
+          for(const f of townFolk()){
+            const fp=P(f.i,f.j), d=Math.hypot(fp[0]-top[0], fp[1]-top[1]);
+            if(d<best) best=d;
+          }
+        }
+      }
+      return best;
+    }''')
+    ok(gap>=14, f"walker feet stay off the cottage chimney ({gap:.1f}px, need 14)")
     # ---- early game vs v2.55 ----
     pg.close()
     pg=page(); e_new=E(pg, EARLY); pg.close()
