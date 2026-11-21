@@ -8076,7 +8076,10 @@ function mktFleetDraw(ctx,objs,inView){
    Town demand is townMult() on Town Market sales only (auto-sell and the Sell button) of
    Phase 1–2 goods. Logs stay unsellable. Orders, contracts, exports and research use price().
    v2.56: a tall piece is two depths (far half at the back corner, near half at the front
-   corner) so a walker, a van or the scaffold cannot paint across a roof. */
+   corner) so a walker, a van or the scaffold cannot paint across a roof. The clip is
+   the sprite's own box: a canvas-sized rectangle is dropped by the browser and the
+   top of the sprite never paints. The church spire stands on the near corner, so the
+   whole tower stays in the near half. */
 const TOWN_STAGES=[
   {n:0,name:'Empty lot',say:'A cleared lot by the south gate, waiting on the first house kit.'},
   {n:1,name:'Hamlet',say:'One timber-frame cottage, a garden and a tree.'},
@@ -8487,10 +8490,13 @@ function townFolk(){
 const TOWN_FEET=0.004;
 function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake';}
 function townBoxOf(p){return {i0:p.i-p.wi/2,j0:p.j-p.wj/2,i1:p.i+p.wi/2,j1:p.j+p.wj/2};}
-/* Screen pixels above the footprint centre where the near half begins.
-   The roof slope that faces the camera stays with the near half. The far roof stays above the line. */
+/* Pixels above the footprint centre where the near half begins.
+   The roof slope that faces the camera stays with the near half. The far roof stays above the line.
+   The church tower is the exception: it stands on the near corner, and its cross clears the
+   centre by ~49px (shaft 29 + cone 22 + cross 7, minus the corner's own offset). A lower
+   line would leave the spire in the far half, where a walker between the two depths paints over it. */
 function townSplitLift(p){
-  if(p.kind==='church') return 46;
+  if(p.kind==='church') return 64;
   if(p.kind==='tree') return 22;
   if(p.kind==='well') return 14;
   if(p.kind==='stall') return 9;
@@ -8506,14 +8512,23 @@ function townPieceKeys(p){
   if(townFlat(p)) return [{k:p.i+p.j-.02,half:'all',box}];
   return [{k:box.i0+box.j0,half:'back',box},{k:box.i1+box.j1,half:'front',box}];
 }
-function townClip(ctx,p,half){
-  if(half==='all'){townStamp(ctx,p);return;}
-  const y=P(p.i,p.j,0)[1]-townSplitLift(p);
-  ctx.save(); ctx.beginPath();
-  if(half==='back') ctx.rect(-1e5,-1e5,2e5,y+.8);
-  else ctx.rect(-1e5,y-.8,2e5,2e5);
-  ctx.clip(); townStamp(ctx,p); ctx.restore();
+/* Clip one half to the sprite box. A rect of ±1e5 is large enough that the browser
+   drops it, and the far half then paints nothing — the spire stays in whichever half
+   the dropped clip left it, and a walker between the depths shows through. */
+function townHalfClip(ctx,p,half,draw){
+  if(half==='all'){draw();return;}
+  const b=townBoxPx(p), o=P(p.i,p.j,0);
+  const x0=o[0]+b[0], y0=o[1]+b[1], x1=o[0]+b[2], y1=o[1]+b[3];
+  if(!(x1>x0+.5)){draw();return;}
+  const seam=o[1]-townSplitLift(p);
+  let ry, rh;
+  if(half==='back'){ry=y0; rh=Math.min(y1,seam+.8)-y0;}
+  else{ry=Math.max(y0,seam-.8); rh=y1-ry;}
+  if(!(rh>.5)) return;
+  ctx.save(); ctx.beginPath(); ctx.rect(x0,ry,x1-x0,rh); ctx.clip();
+  draw(); ctx.restore();
 }
+function townClip(ctx,p,half){townHalfClip(ctx,p,half,()=>townStamp(ctx,p));}
 function townSortParts(){
   const out=[];
   for(const p of townLive()) for(const part of townPieceKeys(p)) out.push({kind:p.kind,half:part.half,k:part.k,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
@@ -8562,10 +8577,7 @@ function townDraw(ctx,objs,inView){
     for(const part of draw){
       objs.push({k:part.k+.008,f:()=>{
         if(!host||part.half==='all'){townScaffold(ctx,fx);return;}
-        const yy=P(host.i,host.j,0)[1]-townSplitLift(host);
-        ctx.save(); ctx.beginPath();
-        if(part.half==='back') ctx.rect(-1e5,-1e5,2e5,yy+.8); else ctx.rect(-1e5,yy-.8,2e5,2e5);
-        ctx.clip(); townScaffold(ctx,fx); ctx.restore();
+        townHalfClip(ctx,host,part.half,()=>townScaffold(ctx,fx));
       }});
     }
   }

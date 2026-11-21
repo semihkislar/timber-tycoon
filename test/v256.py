@@ -1,6 +1,7 @@
 # v2.56: village depth. A tall piece is two halves, so a resident, a town van and the
 # scaffold stay behind a building whose footprint is in front of them and in front
-# of a building behind them. The opening minutes match the v2.55 snapshot.
+# of a building behind them. Walkers never replace a church roof or tower pixel.
+# The opening minutes match the v2.55 snapshot.
 from playwright.sync_api import sync_playwright
 import os, sys, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -181,6 +182,89 @@ with sync_playwright() as p:
         E(pg, f'()=>{{scene.t={t};}}')
         foot_hits.append(E(pg, FEET)['hits'])
     ok(max(foot_hits)<=8, f"feet are not standing on a roof (roof-coloured pixels in the foot box: {foot_hits})")
+    # Church roof and tower, at several moments of the walk and three daytime hours.
+    # (The day is DAY_LEN seconds, so these are morning, midday and afternoon, all
+    # in the white part of the day. A night hour would relight the sprite.)
+    # A pixel counts as covered only when the walker fully replaces it. An edge the
+    # church still paints, blended with whoever stands behind it, does not.
+    roof=E(pg, r'''()=>{
+      scene.visible=false;
+      const cv=document.getElementById("scene"); const g=cv.getContext("2d");
+      const cam=scene.cam, p=P(38.35,40.8,8);
+      cam.fly=null; cam.x=cam.tx=p[0]; cam.y=cam.ty=p[1];
+      cam.z=cam.tz=Math.min(cam.maxZ, Math.max(cam.fitZ*3.4, 1.6));
+      S.town.made=250000; townStage(); S.town.seen=6; S.wx.w="clear"; S.wx.next=1e15;
+      scene.particles.length=0;
+      for(let i=0;i<5;i++){scene.t=1; stepScene(0);}
+      const ch=townPieces().find(q=>q.kind==="church");
+      const cot=townPieces().filter(q=>q.kind==="cot").pop();
+      const dpr=scene.dpr||1, W=scene.w, H=scene.h;
+      function flatCount(piece, half){
+        const z=cam.z;
+        g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle="#00ff00"; g.fillRect(0,0,cv.width,cv.height);
+        const base=g.getImageData(0,0,cv.width,cv.height).data;
+        g.setTransform(dpr*z,0,0,dpr*z,dpr*(W/2-cam.x*z),dpr*(H/2-cam.y*z));
+        townClip(g, piece, half);
+        const d=g.getImageData(0,0,cv.width,cv.height).data;
+        let n=0, gold=0;
+        for(let i=0;i<d.length;i+=4){
+          if(d[i]===base[i]&&d[i+1]===base[i+1]&&d[i+2]===base[i+2]) continue;
+          n++;
+          const R=d[i],G=d[i+1],B=d[i+2];
+          if(R>200&&G>165&&B<140&&G>B+40) gold++;
+        }
+        return {n, gold};
+      }
+      const front=flatCount(ch,"front"), back=flatCount(ch,"back"), cotBack=flatCount(cot,"back");
+      function art(R,G,B){
+        const roof=R>140&&G<140&&B<115&&R>G+40&&R>B+35;
+        const gold=R>200&&G>165&&B<140&&G>B+40&&R-G<80;
+        const cap=R>40&&R<100&&G>25&&G<75&&B<65&&R>G+15&&Math.abs(G-B)<25;
+        return roof||gold||cap;
+      }
+      const keepLive=townLive, keepFolk=townFolk;
+      const times=[];
+      for(let t=0;t<110&&times.length<4;t+=0.45){
+        scene.t=t;
+        if(townFolk().some(f=>Math.abs(f.j-ch.j)<1.7)&&(times.length===0||t-times[times.length-1]>10)) times.push(+t.toFixed(2));
+      }
+      const clocks=[0.35, 0.50, 0.65].map(p=>Math.round(p*DAY_LEN));
+      let covered=0, mask=0, checks=0;
+      const bad=[];
+      for(const clock of clocks){
+        TT.setClock(clock); S.wx.w="clear"; S.wx.next=1e15;
+        scene.particles.length=0; scene.t=times[0];
+        for(let i=0;i<3;i++) stepScene(0);
+        for(const t of times){
+          scene.particles.length=0; scene.t=t;
+          townLive=keepLive; townFolk=()=>[]; stepScene(0);
+          const A=g.getImageData(0,0,cv.width,cv.height).data;
+          townLive=()=>keepLive().filter(q=>q.kind!=="church"); stepScene(0);
+          const B=g.getImageData(0,0,cv.width,cv.height).data;
+          townLive=keepLive; townFolk=keepFolk; stepScene(0);
+          const C=g.getImageData(0,0,cv.width,cv.height).data;
+          townLive=()=>keepLive().filter(q=>q.kind!=="church"); stepScene(0);
+          const W=g.getImageData(0,0,cv.width,cv.height).data;
+          checks++;
+          for(let i=0;i<A.length;i+=4){
+            if(A[i]===B[i]&&A[i+1]===B[i+1]&&A[i+2]===B[i+2]) continue;
+            if(!art(A[i],A[i+1],A[i+2])) continue;
+            mask++;
+            if(C[i]===A[i]&&C[i+1]===A[i+1]&&C[i+2]===A[i+2]) continue;
+            if(C[i]===W[i]&&C[i+1]===W[i+1]&&C[i+2]===W[i+2]){
+              covered++;
+              if(bad.length<4) bad.push(clock+":"+t);
+            }
+          }
+        }
+      }
+      townLive=keepLive; townFolk=keepFolk; scene.particles.length=0;
+      TT.setClock(10*60); scene.visible=true;
+      return {covered, mask, checks, times, bad, front, back, cotBack:cotBack.n};
+    }''')
+    ok(roof['times'] and len(roof['times'])>=3 and roof['checks']>=9 and roof['mask']>2000
+       and roof['covered']==0 and roof['cotBack']>200 and roof['front']['gold']>10 and roof['back']['gold']==0,
+       f"walkers cover 0 church roof/tower pixels ({roof['covered']} covered, mask {roof['mask']}, times {roof['times']}, clocks {roof['checks']}, far half {roof['cotBack']}, cross in the near half {roof['front']['gold']}/{roof['back']['gold']})")
     # ---- early game vs v2.55 ----
     pg.close()
     pg=page(); e_new=E(pg, EARLY); pg.close()
