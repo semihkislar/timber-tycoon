@@ -908,6 +908,8 @@ h4 small{font-weight:600;font-size:11px;color:var(--ink2);text-transform:none;le
 .lg-box .lg-tier.lock .lg-tg{background:#8a7a68}
 #flowLegend .lg-fl:empty{display:none}
 #flowLegend .lg-flow{display:flex;align-items:center;gap:6px;white-space:normal;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,246,224,.18);pointer-events:auto;font-size:12px}
+.fm-line{margin:6px 0 8px;padding:8px 10px;border-radius:10px;background:#fff6e0;border:1px solid #e8c56a;font-size:13px;line-height:1.35}
+.fm-note{margin-top:8px}
 #flowLegend .lg-flow .lg-go{margin-left:auto;min-height:32px;padding:4px 10px;font-size:11.5px}
 @media (max-width:520px){#flowLegend .lg-flow{font-size:11px}#flowLegend .lg-flow .lg-go{min-height:36px}}
 /* v2.31 conveyor belts (logistics tier 2) */

@@ -5,6 +5,36 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.59] — 2026-11-22
+
+**A trained worker can run a phase.** Promote someone at skill 5 or higher to foreman of Phase 1, Phase 2 or Phase 3. One foreman per phase. The whole column works a little faster. A save from v2.58 still loads. The first minutes of a run match v2.58.
+
+### Added
+- **Phase foremen** (`js/foremen.js`). On the Team card, **Promote** opens the three phases and **Demote** steps them down. The career opens at Sawmill Lv 25, or when a Phase 2 line reaches Lv 10, or after any Replant. A founding manager is already a foreman of one building and cannot take a column. Skill 4 cannot either.
+- **A small aura.** Skill 5 is +5% speed. Skill 10 is +10%. It never goes past +10%. It multiplies with the building's manager, its workstation set and its research. While they run the column they are not also working their old job, so a mill worker's own speed bonus pauses.
+- **The price.** Phase 1 is 80,000, Phase 2 is 120,000, Phase 3 is 160,000, times forest value. A first run pays that sticker, even if income is already huge. After a Replant the price is at least 40 seconds of income, the same rule as the power plant and the managers.
+- **In the yard.** The foreman walks the doors of that column in a yellow hard hat, with a small name tag. The tag is a cached picture. Low graphics draws the ordinary worker and no tag. On a late-game phone at the fit zoom the tag hides, and it comes back when you zoom in.
+- The building sheet and Supply Flow name the foreman of that phase. Trophies: Shift Lead (one foreman), Three Shifts (all three phases).
+- `test/v259.py`. Release shots in `screenshots/history/v2.59/`.
+
+### Balance
+Same levels in every line (Phase 1 and 2 at Lv 28, the rest at Lv 16), full speed, made ÷ need. A Phase 1 foreman at +10% raises the goods that column makes and leaves the later columns' output where it was. A Phase 2 foreman asks for about 10% more of those goods and makes more chairs, paper and plywood. With a foreman on every phase the ratios stay put and output rises about 10%. A 60 s run with a full log yard did not leave the next phase less fed.
+
+| | Planks | Chips | Veneer | Chairs | Paper | Plywood |
+|---|---:|---:|---:|---:|---:|---:|
+| No foreman | 0.12 | 0.32 | 0.08 | 0.13 | 0.51 | 0.39 |
+| Phase 1 +10% | 0.13 | 0.35 | 0.09 | 0.13 | 0.51 | 0.39 |
+| All three +10% | 0.12 | 0.32 | 0.08 | 0.13 | 0.51 | 0.39 |
+
+A Phase 2 foreman on that same factory: planks 0.10 (the column uses more), chairs 0.14, paper 0.56, plywood 0.43.
+
+Greedy play, 12 minutes, Sawmill Lv 184, then a foreman on each phase that exists. Made ÷ need stays on the same number (planks 5.07, chips 3.42, veneer 3.09, chairs 0.38, plywood 0.06). Paper moves from 1.00 to 1.01 because the lab is not in a phase. The amount made rises about 10%.
+
+Offline, a Sawmill with a skill-10 foreman earns 10% more coins (249k → 274k in 40 s). No logs are sold.
+
+### Unchanged
+Recipes, building costs, order rewards, Research 2.0, Replant 2.0, and the village. Logs stay raw material and are never sold. A phase foreman stays with the staff when you Replant, the same way the rest of the team stays. The buildings reset, so the aura waits until that column is built again. A save from v2.58, v2.57, v2.55, v2.39 or v2.24 still loads. A damaged staff block keeps one trained foreman per phase and drops the rest. The first minutes of a run match v2.58. Graphics quality and the frame cap are unchanged.
+
 ## [2.58] — 2026-11-21
 
 **Residents stay on the street.** In Timber Town a walker could be painted across a roof, or hidden by a wall that was beside them. Each tall building is now two depths, so the near half is in front of the walker and the far half is behind them. A save from v2.57 still loads. The first minutes of a run match v2.57.

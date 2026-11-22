@@ -8,7 +8,7 @@
 | Bonus | **linear**: `×(1 + 0.1·seeds)` × trophies |
 | Spending | Seeds were spent on Research nodes (Automation 5, Masterworks 10) and on manager levels 6+ — **spending lowered the production bonus** |
 | Resets | coins, stock, buildings, collectors, planters, upgrades, wood species, Premium Area, storage, active orders |
-| Stays | research, staff + managers, fire station, power plant, builders' yard, shipping yard, harbour + routes, trophies, line picks, stats, settings |
+| Stays | research, staff + managers, phase foremen (v2.59, they stay with the staff), fire station, power plant, builders' yard, shipping yard, harbour + routes, trophies, line picks, stats, settings |
 | Costs | **every cost went back to its base value** while the multiplier stayed |
 
 **Why post-Replant costs looked silly.** Building costs are exponential (`cost·1.15–1.19^lvl`). A production multiplier X is worth

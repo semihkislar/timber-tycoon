@@ -78,7 +78,7 @@ function updateFlowLegend(){
   const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${typeof TIER_S==='object'?' · <span class="tier-b t1">I</span>→<span class="tier-b t2">II</span>→<span class="tier-b t3">III</span>':''}${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`;
   let tx=el.querySelector('.fl-txt');if(!tx){el.innerHTML='<span class="fl-txt"></span><div class="lg-fl"></div><div class="adv-box"></div>';tx=el.querySelector('.fl-txt');}
   if(tx._h!==h){tx.innerHTML=h;tx._h=h;}
-  {const lf=el.querySelector('.lg-fl'),lh=(typeof ovfFlowLine==='function'?ovfFlowLine():'')+(typeof logiFlowLine==='function'?logiFlowLine():'')+(typeof townFlowLine==='function'?townFlowLine():'');if(lf&&lf._h!==lh){lf.innerHTML=lh;lf._h=lh;const g=lf.querySelector('#lgFlowGo');if(g) g.onclick=e=>{e.stopPropagation();logiOpen();};}}   // v2.40 overflow line · v2.30 logistics tier · v2.55 town demand
+  {const lf=el.querySelector('.lg-fl'),lh=(typeof ovfFlowLine==='function'?ovfFlowLine():'')+(typeof logiFlowLine==='function'?logiFlowLine():'')+(typeof townFlowLine==='function'?townFlowLine():'')+(typeof fmFlowLine==='function'?fmFlowLine():'');if(lf&&lf._h!==lh){lf.innerHTML=lh;lf._h=lh;const g=lf.querySelector('#lgFlowGo');if(g) g.onclick=e=>{e.stopPropagation();logiOpen();};}}   // v2.40 overflow line · v2.30 logistics tier · v2.55 town demand · v2.59 phase foremen
   if(typeof advSummaryUpdate==='function') advSummaryUpdate(el.querySelector('.adv-box'));   // v2.29 top bottlenecks (rows stay put while you tap them)
 }
 (function initFlow(){

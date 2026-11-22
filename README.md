@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.58-6b8e23" alt="version 2.58">
+  <img src="https://img.shields.io/badge/version-2.59-6b8e23" alt="version 2.59">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.58: the late-game factory, with the village by the south gate" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.59: the late-game factory" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,12 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.58: The village keeps its feet on the ground
-People in Timber Town walk the street, and the houses stay houses. A resident no longer crosses a roof or vanishes into a wall that is beside them. They pause at the well, the stalls and a doorway. Cottages have a short fence and a few flowers. On a large screen there is one more walker, and Low graphics does not add that walker. The town still pays the same bonus, and logs are still not for sale.
+### New in v2.59: A foreman for each phase
+Train a worker to skill 5 and you can promote them to run a whole phase. One foreman per column. The buildings in that phase work 5% faster, and 10% faster once that worker reaches skill 10. The bonus sits on top of managers, workstations and research. They walk the column with a name tag. Low graphics and a zoomed-out phone leave the tag off. Logs are still not for sale.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.58** | 🏘️ **The village keeps its feet on the ground** | A resident no longer crosses a roof or vanishes into a wall. Houses are drawn in two depths, so the near half stays in front of the walker. |
 | **v2.57** | 📜 **Paper and pellets keep up** | The Paper Mill and the Pellet Press get more out of the same chips from Lv 25. A full bark or chip store no longer stops the Veneer Peeler or the Beam Saw. The advisor names the export that is taking a good. |
 | **v2.56** | 🎚️ **A lighter scene for slow browsers** | A new Graphics setting (Auto, High, Low). Low turns off smoke, puddles, tree shadows and night lights and draws at 30 fps; Auto switches to it when the game stays under 40 fps. The fence and the seed beds are drawn once and reused. |
 | **v2.55** | 🏘️ **A village by the south gate** | Timber-frame houses finished this run settle by the south gate and grow from a hamlet into Timber Town. A bigger town pays up to +15% on Phase 1 and Phase 2 goods at the Town Market. |
@@ -73,7 +74,7 @@ People in Timber Town walk the street, and the houses stay houses. A resident no
   💎 Master craft) from Lv 50.
 - 🔬 **Research 2.0.** A 67-node tree in 5 branches and 5 tiers, fuelled by paper in the Research Lab. Repeatable nodes keep the
   late game going.
-- 👷 **Staff and managers.** Hire, train and assign staff with roles and wages. Named managers bring skills, and your staff
+- 👷 **Staff and managers.** Hire, train and assign staff with roles and wages. A trained worker can become the foreman of a phase. Named managers bring skills, and your staff
   walk and work in the world.
 - 🌱 **Replant (prestige).** Restart the forest for Forest Legacy, then spend it in the Seed Shop and chase run goals. Costs
   scale with forest value, so every run stays meaningful.
@@ -96,7 +97,7 @@ People in Timber Town walk the street, and the houses stay houses. A resident no
 |:---:|:---:|:---:|
 | <img src="screenshots/highlights/desktop-night.png" alt="Night shift" width="300"><br>**Night shift** | <img src="screenshots/highlights/desktop-supply-flow.png" alt="Supply Flow with the Bottleneck Advisor" width="300"><br>**Supply Flow + Advisor** | <img src="screenshots/highlights/blueprint.png" alt="Replant Blueprints tab" width="300"><br>**Replant Blueprints** |
 | <img src="screenshots/highlights/order-chains.png" alt="Order chain project card" width="300"><br>**Order chains** | <img src="screenshots/highlights/drones.png" alt="Drone Port on the Shipping dock" width="300"><br>**Drone Port** | <img src="screenshots/highlights/belts.png" alt="Conveyor belts across the lane" width="300"><br>**Conveyor belts** |
-| <img src="screenshots/highlights/town.png" alt="Timber Town, the village by the south gate" width="300"><br>**Timber Town** | | |
+| <img src="screenshots/highlights/town.png" alt="Timber Town, the village by the south gate" width="300"><br>**Timber Town** | <img src="screenshots/highlights/foreman.png" alt="A phase foreman with a name tag" width="300"><br>**Phase foreman** | |
 
 **On a phone (iPhone 13):**
 

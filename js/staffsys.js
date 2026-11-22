@@ -151,55 +151,57 @@ function staffSlots(bid){
 }
 function staffSlotUsed(bid){return staffAtBuilding(bid).length;}
 function staffCanAssign(w,bid){
-  if(!w||(w.role!=='mill'&&w.role!=='engineer')) return false;
+  if(!w||w.fm===1||w.fm===2||w.fm===3||(w.role!=='mill'&&w.role!=='engineer')) return false;   // v2.59: a phase foreman is not on a station
   if(!S.buildings[bid]||!S.buildings[bid].lvl) return false;
   if(w.assign===bid) return true;
   const used=staffAtBuilding(bid).filter(x=>x.id!==w.id).length;
   return used<staffSlots(bid);
 }
 
-/* ---- effect hooks (modest stacking, founding excluded from mill/eng to avoid double-count with mgr*) ---- */
+/* ---- effect hooks (modest stacking, founding excluded from mill/eng to avoid double-count with mgr*) ----
+   v2.59: a phase foreman is running the column, not their old job, so the role bonus pauses. */
+function staffColumn(w){return !!(w&&(w.fm===1||w.fm===2||w.fm===3));}
 function staffMillSpd(bid){
   let b=1;
-  for(const w of staffAtBuilding(bid)) if(w.role==='mill'&&!w.founding) b+=STAFF_FX.mill.p*staffSkillEff(w);
+  for(const w of staffAtBuilding(bid)) if(w.role==='mill'&&!w.founding&&!staffColumn(w)) b+=STAFF_FX.mill.p*staffSkillEff(w);
   return Math.min(1+STAFF_FX.mill.cap,b);   // v2.23: +5%/skill, cap +60%
 }
 function staffEngIn(bid){
   let cut=0;
-  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=STAFF_FX.engineer.p*staffSkillEff(w);
+  for(const w of staffAtBuilding(bid)) if(w.role==='engineer'&&!staffColumn(w)) cut+=STAFF_FX.engineer.p*staffSkillEff(w);
   return 1-Math.min(STAFF_FX.engineer.cap,cut);
 }
 function staffEngFire(bid){
   let cut=0;
-  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=STAFF_FX.engineer.fire*staffSkillEff(w);
+  for(const w of staffAtBuilding(bid)) if(w.role==='engineer'&&!staffColumn(w)) cut+=STAFF_FX.engineer.fire*staffSkillEff(w);
   return 1-Math.min(STAFF_FX.engineer.fcap,cut);
 }
 function staffChopBonus(){
-  let b=0; for(const w of staffByRole('lumberjack')) b+=STAFF_FX.lumberjack.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('lumberjack')) if(!staffColumn(w)) b+=STAFF_FX.lumberjack.p*staffSkillEff(w);
   return Math.min(STAFF_FX.lumberjack.cap,b);
 }
 function staffHaulBonus(){
-  let b=0; for(const w of staffByRole('driver')) b+=STAFF_FX.driver.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('driver')) if(!staffColumn(w)) b+=STAFF_FX.driver.p*staffSkillEff(w);
   return Math.min(STAFF_FX.driver.cap,b);
 }
 function staffForkBonus(){
-  let b=0; for(const w of staffByRole('forklift')) b+=STAFF_FX.forklift.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('forklift')) if(!staffColumn(w)) b+=STAFF_FX.forklift.p*staffSkillEff(w);
   return Math.min(STAFF_FX.forklift.cap,b);
 }
 function staffDockPrem(){
-  let b=0; for(const w of staffByRole('dock')) b+=STAFF_FX.dock.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('dock')) if(!staffColumn(w)) b+=STAFF_FX.dock.p*staffSkillEff(w);
   return Math.min(STAFF_FX.dock.cap,b);
 }
 function staffDockCap(){
-  let b=0; for(const w of staffByRole('dock')) b+=STAFF_FX.dock.tp*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('dock')) if(!staffColumn(w)) b+=STAFF_FX.dock.tp*staffSkillEff(w);
   return Math.min(STAFF_FX.dock.tcap,b);
 }
 function staffFireCut(){
-  let b=0; for(const w of staffByRole('firefighter')) b+=STAFF_FX.firefighter.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('firefighter')) if(!staffColumn(w)) b+=STAFF_FX.firefighter.p*staffSkillEff(w);
   return Math.min(STAFF_FX.firefighter.cap,b);
 }
 function staffFireDelayCut(){
-  let s=0; for(const w of staffByRole('firefighter')) s+=STAFF_FX.firefighter.dl*staffSkillEff(w);
+  let s=0; for(const w of staffByRole('firefighter')) if(!staffColumn(w)) s+=STAFF_FX.firefighter.dl*staffSkillEff(w);
   return Math.min(STAFF_FX.firefighter.dcap,s);   // seconds shaved off response
 }
 function staffHiredCount(){
@@ -212,6 +214,7 @@ function staffHiredCount(){
 function staffOutputRate(){
   let v=0;
   for(const w of staffState().team){
+    if(staffColumn(w)) continue;   // v2.59: the column aura is separate from the old job
     const e=staffEff(w), sk=w.skill||1;
     const F=STAFF_FX[w.role]||{p:0};   // v2.23: same per-skill numbers as the effects (value share as before)
     if(w.role==='mill'&&w.assign){if(!w.founding){const base=bldValueRate(w.assign)||0; v+=base*F.p*sk*e;}}
