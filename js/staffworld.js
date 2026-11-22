@@ -24,11 +24,13 @@ const SW_LOOKS=new Map();
 /* the in-world look: the worker's own face/hair (v2.14 look) + role-coloured hard hat, hi-vis vest and work clothes */
 function swLook(w){
   const L=w.look||STAFF_LOOKS[0], C=SW_ROLE[w.role]||SW_ROLE.mill;
-  const key=w.role+'|'+(L.f?1:0)+'|'+(L.skin|0)+'|'+(L.hair|0)+'|'+(L.style||'short')+'|'+(L.beard|0)+'|'+(L.glasses?1:0);
+  // v2.59: a phase foreman wears a yellow hard hat. Low graphics keeps the ordinary role colours, so it draws nothing extra.
+  const boss=!!(w.fm===1||w.fm===2||w.fm===3)&&!(typeof gfxLow==='function'&&gfxLow());
+  const key=w.role+'|'+(L.f?1:0)+'|'+(L.skin|0)+'|'+(L.hair|0)+'|'+(L.style||'short')+'|'+(L.beard|0)+'|'+(L.glasses?1:0)+'|'+(boss?1:0);
   let o=SW_LOOKS.get(key); if(o) return o;
   const hair=HAIRS[L.hair|0]||HAIRS[0];
   o={female:!!L.f,skin:SKINS[L.skin|0]||SKINS[0],hair,style:L.style==='crew'?'crew':(L.style||'short'),beard:L.beard===1?hair:null,mus:L.beard===2?hair:null,
-    hat:'hard',hatc:C.hat,shirt:C.shirt,plaid:C.plaid||null,vest:C.vest,pants:C.pants,boots:'#1a1a1e',glasses:!!L.glasses};
+    hat:'hard',hatc:boss?'#f2d21a':C.hat,shirt:boss?'#3a2418':C.shirt,plaid:C.plaid||null,vest:boss?'#f7e27a':C.vest,pants:C.pants,boots:'#1a1a1e',glasses:!!L.glasses};
   SW_LOOKS.set(key,o); return o;
 }
 function swFatigueOn(w){return !(S.prefs&&S.prefs.fatigue===false)&&!(w.traits||[]).includes('steady');}
@@ -54,6 +56,12 @@ function swPickTree(a){
 /* next job for a worker: {to:[i,j], pose, tm, cargo, carry} */
 function swNextJob(a,w){
   const r=Math.random(), k=a.k;
+  // v2.59: a phase foreman walks the door line of that column. Same one sprite as any other worker.
+  if((w.fm===1||w.fm===2||w.fm===3)&&typeof fmSpots==='function'){
+    const pts=fmSpots(w.fm);
+    if(pts.length){a.leg=(a.leg||0)+1; const p=pts[a.leg%pts.length];
+      return {to:p,pose:a.leg%3===0?'point':a.leg%3===1?'clip':'stand',tm:2.6};}
+  }
   switch(w.role){
     case 'lumberjack':{const t=swPickTree(a);if(!t){const lg=LANDINGS[a.zone];return {to:swNear([lg.i+.6,lg.j+.6],.8),pose:'look',tm:3};}
       a.tree=t;a.side=Math.random()<.5?'R':'L';return {to:workSpot(t,a.side),pose:'chop',tm:4+Math.random()*3,face:a.side==='R'?-1:1};}
@@ -72,12 +80,14 @@ function swNextJob(a,w){
   return {to:[a.i,a.j],pose:'stand',tm:3};
 }
 function swSeat(a){const n=SW_SEATS.length, s=SW_SEATS[a.seat%n], ring=Math.floor(a.seat/n)*.55; return [CAMP.i+s[0]*(1+ring*.5),CAMP.j+s[1]*(1+ring*.5)];}
-function swHome(a,w){if(w.role==='lumberjack'){const lg=LANDINGS[a.zone];return [lg.i+.5,lg.j+.5];}const j=swNextJob(a,w);a.job=null;return j.to;}
+function swHome(a,w){
+  if(w.fm===1||w.fm===2||w.fm===3){const j=swNextJob(a,w);a.job=null;return j.to;}   // v2.59: start on their column, not at the old job
+  if(w.role==='lumberjack'){const lg=LANDINGS[a.zone];return [lg.i+.5,lg.j+.5];}const j=swNextJob(a,w);a.job=null;return j.to;}
 
 /* ---------- sync + simulation ---------- */
 function swSync(){
   const team=staffState().team;
-  const sig=team.map(w=>w.id+':'+w.role+':'+(w.assign||'')+':'+(w.founding?1:0)).join(',');
+  const sig=team.map(w=>w.id+':'+w.role+':'+(w.assign||'')+':'+(w.founding?1:0)+':'+(w.fm||0)).join(',');
   if(sig===SW.sig&&SW.teamRef===team) return;
   SW.sig=sig; SW.teamRef=team;
   const old=SW.map, list=[], map=new Map(), per={};
@@ -85,8 +95,8 @@ function swSync(){
     if(w.founding) continue;   // founding foremen are drawn as the building's manager
     const k=per[w.role]=(per[w.role]===undefined?0:per[w.role]+1);
     let a=old.get(w.id);
-    if(!a||a.role!==w.role||a.assign!==w.assign){
-      a={wid:w.id,role:w.role,assign:w.assign,k,zone:k%2?'L':'T',i:0,j:0,st:'go',tm:0,ph:Math.random()*6,wt:Math.random(),fx:1,back:false,pose:'stand',
+    if(!a||a.role!==w.role||a.assign!==w.assign||(a.fm||0)!==(w.fm||0)){
+      a={wid:w.id,role:w.role,assign:w.assign,fm:w.fm||0,k,zone:k%2?'L':'T',i:0,j:0,st:'go',tm:0,ph:Math.random()*6,wt:Math.random(),fx:1,back:false,pose:'stand',
         alpha:0,fade:1,rest:false,seat:-1,job:null,tree:null,nb:6+Math.random()*10,bub:null,vis:false};
       const h=swHome(a,w); a.i=h[0];a.j=h[1];a.ti=a.i;a.tj=a.j;
     }
@@ -127,7 +137,9 @@ function swStep(a,dt){
   }
 }
 function swBubbleText(a){
-  const w=a.w, se=staffSkillEff(w); if(!(se>0)) return null; const R=STAFF_ROLES[w.role]; if(!R) return null;
+  const w=a.w;
+  if(w&&(w.fm===1||w.fm===2||w.fm===3)&&typeof fmPct==='function'&&typeof TIER_S!=='undefined') return `🧢 +${Math.round(fmPct(w)*100)}%`;
+  const se=staffSkillEff(w); if(!(se>0)) return null; const R=STAFF_ROLES[w.role]; if(!R) return null;
   const v=x=>x>=9.5?Math.round(x):Math.round(x*10)/10;
   switch(w.role){
     case 'lumberjack': return `🪓 +${v(2*se)}% chop`;
@@ -203,6 +215,7 @@ function swOverlays(ctx){
     else{const k=a.bub.t/a.bub.dur;ctx.globalAlpha=k<.15?k/.15:k>.75?Math.max(0,(1-k)/.25):1;
       pill(ctx,sx,top-6-k*18,a.bub.txt,{fs:10,bg:'rgba(30,60,24,.86)',fg:'#e8ffd0',stroke:'#8fd14f',lw:1.2,padX:10,padY:6});ctx.globalAlpha=1;}
   }
+  if(typeof fmTagsDraw==='function') fmTagsDraw(ctx);   // v2.59 name tags (cached; hidden on Low and at phone fit zoom)
 }
 /* ---------- input ---------- */
 function swHit(sx,sy){
@@ -241,6 +254,10 @@ function swFind(wid){
 }
 /* status line on the Team card */
 function swStatus(w){
+  if((w.fm===1||w.fm===2||w.fm===3)&&typeof TIER_S!=='undefined'){
+    const pct=typeof fmPct==='function'?Math.round(fmPct(w)*1000)/10:0;
+    return `🧢 Running Phase ${TIER_S[w.fm]} · +${pct}% speed`;
+  }
   if(w.founding) return w.assign&&BMAP[w.assign]?`📋 Running the ${BMAP[w.assign].name}`:'📋 Foreman';
   const en=typeof w.energy==='number'?w.energy:100;
   if(swResting(w)) return `☕ On a break at the campfire · back in ${fmtTime(Math.max(1,(100-en)/staffBreakRate()))}`;

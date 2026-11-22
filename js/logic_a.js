@@ -1,6 +1,6 @@
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.58';
+const VERSION='2.59';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -351,6 +351,9 @@ const ACH=[
   // v2.55 south-gate village. best survives a Replant; progress stays finite on old saves.
   {id:'town2',g:'sys',t:'bronze',e:'🏘️',n:'Village Green',d:'Grow a Village by the south gate (25 houses this run)',p:()=>[typeof townBest==='function'?townBest():0,2]},
   {id:'town6',g:'sys',t:'gold',e:'⛪',n:'Timber Town',d:'Grow Timber Town by the south gate (250,000 houses this run)',p:()=>[typeof townBest==='function'?townBest():0,6]},
+  // v2.59 phase foremen. Missing staff and old saves report 0.
+  {id:'fm1',g:'sys',t:'bronze',e:'🧢',n:'Shift Lead',d:'Promote a trained worker to phase foreman',p:()=>[typeof fmCount==='function'?fmCount():0,1]},
+  {id:'fm3',g:'sys',t:'silver',e:'🏗️',n:'Three Shifts',d:'Have a foreman for Phase 1, 2 and 3',p:()=>[typeof fmCount==='function'?fmCount():0,3]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
 function achWsMax(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n=Math.max(n,x|0);}return n;}
@@ -454,6 +457,7 @@ function migrateSave(o){
     // deferred: staffsys may not be parsed yet during early calls; main init also migrates
     o._needStaffMig=1;
   }
+  if(typeof fmNorm==='function') fmNorm(o);   // v2.59: one trained foreman per phase, bad values dropped
   // v2.11 -> v2.12: builders' yard (construction crews)
   if(!o.builders||typeof o.builders!=='object') o.builders={lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0};
   {const B=o.builders;if(typeof B.lvl!=='number') B.lvl=0;if(typeof B.on!=='boolean') B.on=true;if(!['ms','cheap','low'].includes(B.plan)) B.plan='ms';
@@ -566,7 +570,7 @@ function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkC
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*bRes(id)*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id);}   // v2.22 workstations   // v2.17 specialisation / retool
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*bRes(id)*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id)*(typeof fmAura==='function'?fmAura(id):1);}   // v2.59 phase foreman   // v2.22 workstations   // v2.17 specialisation / retool
 /* v2.17: input per item = manager thrift × specialisation (lean −20…40 %, high-speed +15 %) */
 function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1)*(typeof wsIn==='function'?wsIn(id):1);}
 /* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),

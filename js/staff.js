@@ -189,12 +189,15 @@ function staffWorkerCard(w){
   const assign=(w.role==='mill'||w.role==='engineer')?(w.assign?`${BMAP[w.assign]?BMAP[w.assign].icon+' '+BMAP[w.assign].name:w.assign}`:'<i>unassigned</i>'):(role.area||'');
   const train=w.train?`🎓 training ${Math.max(0,Math.ceil(w.train.left))}s → ${w.train.to}`:`skill ${w.skill}${w.skill>=STAFF_SKILL_MAX?' ★':''}`;
   const en=Math.round(w.energy||100);
+  const col=typeof fmPhase==='function'?fmPhase(w):0;
   let btns='';
   if(w.founding&&w.mgrId){
     const m=MGR_MAP[w.mgrId]; if(m){const b=mgrBtnHtml(m); btns=`<button class="btn buy small mg-btn staff-btn" data-mgr="${m.id}" ${b.dis?'disabled':''}>${b.h}</button>`;}
   } else {
-    if((w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">${w.assign?'↔ Move':'📍 Assign'}</button>`;
+    if(!col&&(w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">${w.assign?'↔ Move':'📍 Assign'}</button>`;
     if(!w.train&&(w.skill||1)<STAFF_SKILL_MAX) btns+=`<button class="btn buy small staff-btn" data-train="${w.id}">🎓 Train → ${(w.skill||1)+1}<small>🪙 ${fmt(staffTrainCost(w))}</small></button>`;
+    if(typeof fmOpen==='function'&&fmOpen()&&typeof fmEligible==='function'&&fmEligible(w)) btns+=`<button class="btn gold small staff-btn" data-fmp="${w.id}" style="min-height:44px">🧢 Promote</button>`;
+    if(col) btns+=`<button class="btn ghost small staff-btn" data-fmd="${w.id}" style="min-height:44px">Demote</button>`;
     if(staffCapRoom(w.role)<0) btns+=`<button class="btn ghost small staff-btn sc-go" data-letgo="${w.id}">${staffLetGoArm===w.id?'Tap again to let go':'Let go'}</button>`;   // v2.22.1: only when the role is over its limit
   }
   const fl=(typeof SW!=='undefined'&&SW.flashWid===w.id&&performance.now()<SW.flashUntil)?' sw-flash':'', sl=(typeof SW!=='undefined'&&SW.sel===w.id)?' sw-sel':'';
@@ -202,7 +205,7 @@ function staffWorkerCard(w){
   return `<div class="mgr-card hired staff-card${fl}${sl}${staffOnBreak(w)?' on-break':''}" data-wid="${w.id}" style="--rc:${R.c}"><button class="mg-p sw-find" data-find="${w.id}" title="Show ${w.name} in the world" aria-label="Show ${w.name} in the world">${staffPortrait(w,52)}<span class="sw-pin">📍</span></button>
     <div class="mg-b"><div class="mg-n">${w.founding?'⭐ ':''}${w.name} <span class="mg-r">${w.founding?'Foreman · ':''}${R.n}</span></div>
     <div class="mg-s">${role.e} ${role.n} · ${train}${w.founding?' · wage waived':` · 🪙 ${fr(wage)}/s`}</div>
-    <div class="mg-k">${role.effect(w.skill)} · ${assign}</div>${!w.train&&(w.skill||1)<STAFF_SKILL_MAX?`<div class="mg-tg">🎓 Next level: ${staffTrainGain(w).txt}</div>`:''}${stx?`<div class="mg-st">${stx}</div>`:''}
+    <div class="mg-k">${col?`🧢 Phase ${TIER_S[col]} foreman · +${Math.round(fmPct(w)*1000)/10}% speed on that column`:`${role.effect(w.skill)} · ${assign}`}</div>${!w.train&&(w.skill||1)<STAFF_SKILL_MAX?`<div class="mg-tg">🎓 Next level: ${staffTrainGain(w).txt}</div>`:''}${stx?`<div class="mg-st">${stx}</div>`:''}
     <div class="mg-g">${traits||'—'}${!(S.prefs&&S.prefs.fatigue===false)&&!(w.traits||[]).includes('steady')?` · ⚡ ${en}%`:''}${staffState().unpaid&&!w.founding?' · <b style="color:#b33">unpaid 50%</b>':''}</div></div>
     <div class="staff-actions">${btns}</div></div>`;
 }
@@ -304,7 +307,7 @@ function updateStaff(){
   const st=staffState();
   const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||st.candidates.some(c=>S.coins>=staffHireCostOf(c)&&staffCapRoom(c.role)>0)||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
   if(curSheet!=='staff') return;
-  const sig=stationLvl()+'|'+stationVisible()+'|'+Math.round(stationCost())+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'');
+  const sig=stationLvl()+'|'+stationVisible()+'|'+Math.round(stationCost())+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.fm||0)+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'')+'|'+(typeof fmOpen==='function'&&fmOpen()?1:0);
   if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=st.team.length;
     const fl=Object.keys(S.fires);
     let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
@@ -347,6 +350,7 @@ function renderStaffTab(){
     const hired=MANAGERS.filter(m=>mgrLvl(m.bid)&&!st.team.some(w=>w.mgrId===m.id));
     if(hired.length){h+=`<h4>👔 Managers <span class="mg-count">${hired.length}</span></h4><div class="list">`+hired.map(m=>mgrCardHtml(m)).join('')+`</div>`;}
     h+=`<div class="legend">Founding foremen (from your old managers) keep their bonuses and pay no wage. New hires take a wage and add role bonuses. Mill workers & engineers need a building assignment. Hiring a foreman follows forest value, and after a Replant at least 25 seconds of income; a first run pays the original price.</div>`;
+    if(typeof fmOpen==='function'&&fmOpen()) h+=`<div class="legend fm-note">A worker at skill ${FM_SKILL} or higher can run one phase column. One per phase. The column gains +5% speed at skill 5 and +10% at skill 10, on top of managers, workstations and research. They keep their wage. While they run the column they are not also working their old job. A Replant keeps them with the rest of the team.</div>`;
     body.innerHTML=h;
     wireMgrCards(body);
     body.querySelectorAll('.mgr-card[data-id]').forEach(mgrCardUpdate);
@@ -357,6 +361,8 @@ function renderStaffTab(){
     body.querySelectorAll('[data-letgo]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.letgo;
       if(staffLetGoArm===id){staffLetGoArm=null;staffLetGo(id);} else {staffLetGoArm=id;setTimeout(()=>{if(staffLetGoArm===id){staffLetGoArm=null;staffSig='';}},4000);} staffSig='';render();});
     body.querySelectorAll('[data-train]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(staffStartTrain(b.dataset.train)){staffSig='';render();}});
+    body.querySelectorAll('[data-fmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();fmPromoteSheet(b.dataset.fmp);});
+    body.querySelectorAll('[data-fmd]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(fmDemote(b.dataset.fmd)){staffSig='';render();}});
     wireTrainAll(body);
     body.querySelectorAll('[data-find]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(typeof swFind==='function') swFind(b.dataset.find);});
     body.querySelectorAll('[data-mgr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.mgr;if(mgrLvl(MGR_MAP[id].bid)) levelMgr(id); else hireMgr(id); staffMigrateFromMgr(); staffSig='';render();});
@@ -428,9 +434,13 @@ function updateBldMgr(b){
   const fb=$('bpFire'); if(fb){const f=S.fires[b.id];fb.classList.toggle('hidden',!f);if(f){const ft=`🔥 <b>On fire!</b> Tap the flames in the scene (${Math.ceil(f.hp)} left)${f.eta>=0?(f.t<f.eta?` · 🚒 arriving in ${Math.ceil(f.eta-f.t)}s`:' · 🚒 spraying'):''}`;if(fb._t!==ft){fb.innerHTML=ft;fb._t=ft;}}}
   if(!S.buildings[b.id]||!S.buildings[b.id].lvl){el.classList.add('hidden');el.dataset.sig='';return;}
   const m=MGR_OF[b.id], crew=staffAtBuilding(b.id).filter(w=>!w.founding), slots=staffSlots(b.id), used=staffSlotUsed(b.id);
-  const free=staffState().team.filter(w=>(w.role==='mill'||w.role==='engineer')&&!w.assign&&!w.founding).length;
-  const sig=b.id+'|'+(m?m.id+(mgrAvail(m)?'a':''):'')+'|'+crew.map(w=>w.id+':'+w.skill+':'+(staffOnBreak(w)?1:0)).join(',')+'|'+used+'/'+slots+'|'+free;
+  const free=staffState().team.filter(w=>(w.role==='mill'||w.role==='engineer')&&!w.assign&&!w.founding&&!(w.fm===1||w.fm===2||w.fm===3)).length;
+  const ph=typeof BTIER==='object'?(BTIER[b.id]||0):0, fw=ph&&typeof fmOf==='function'?fmOf(ph):null;
+  const sig=b.id+'|'+(m?m.id+(mgrAvail(m)?'a':''):'')+'|'+crew.map(w=>w.id+':'+w.skill+':'+(staffOnBreak(w)?1:0)).join(',')+'|'+used+'/'+slots+'|'+free+'|'+(fw?fw.id+':'+fw.skill:'')+'|'+(typeof fmOpen==='function'&&fmOpen()?1:0);
   if(el.dataset.sig!==sig){el.dataset.sig=sig;let h='';
+    if(ph&&fw){const pct=Math.round(fmPct(fw)*1000)/10;
+      h+=`<div class="fm-line" id="bpFm">🧢 <b>${fw.name}</b> runs Phase ${TIER_S[ph]} · <b>+${pct}%</b> speed on every building in this column</div>`;}
+    else if(ph&&typeof fmOpen==='function'&&fmOpen()) h+=`<div class="fm-line" id="bpFm">🧢 No phase foreman on Phase ${TIER_S[ph]} yet</div>`;
     if(m) h+=`<h4>👔 Foreman</h4>`+mgrCardHtml(m,true);
     h+=`<h4>👷 Staff here <span class="mg-count">${used}/${slots}</span></h4><div class="bst-list">`;
     for(const w of crew){const R=STAFF_ROLES[w.role];
@@ -443,6 +453,26 @@ function updateBldMgr(b){
     const ab=el.querySelector('[data-pick]'); if(ab) ab.onclick=()=>staffPickForBld(b.id);}
   el.classList.remove('hidden');
   const mc=el.querySelector('.mgr-card[data-id]'); if(mc) mgrCardUpdate(mc);
+}
+/* v2.59: pick a phase column. The row shows the price before anything is charged. */
+function fmPromoteSheet(wid){
+  const w=staffState().team.find(x=>x.id===wid); if(!w||typeof fmEligible!=='function'||!fmEligible(w)) return;
+  let h=`<div class="as-head">${staffPortrait(w,44)}<div><div class="as-h">Promote <b>${w.name}</b></div><div class="as-sub">Skill ${w.skill} · +${Math.round(fmPct(w)*1000)/10}% speed on one phase · one foreman per phase</div></div></div>
+    <div class="as-lab">Pick a phase column</div><div class="as-list">`;
+  for(let ph=1;ph<=3;ph++){
+    const holder=fmOf(ph), here=fmPhase(w)===ph, mine=holder&&holder.id===w.id;
+    const built=fmPhaseBuilt(ph), cost=fmCost(ph), afford=S.coins+1e-9>=cost;
+    const ok=built&&!here&&(!holder||mine)&&afford;
+    const why=here?'Already running this phase':!built?'Build a line in this phase first':holder&&!mine?`${holder.name} already runs it`:!afford?`Need 🪙 ${fmt(cost-S.coins)} more`:`+${Math.round(fmPct(w)*1000)/10}% speed · 🪙 ${fmt(cost)}`;
+    h+=`<button class="as-row${here?' cur':''}" data-fmg="${w.id}" data-ph="${ph}" ${ok?'':'disabled'}><span class="as-ic">${TIER_S[ph]}</span>
+      <span class="as-tx"><b>${TIER_N[ph]}</b><small>${why}</small></span><span class="as-slots">${here?'':afford&&built?'🪙 '+fmt(cost):''}</span></button>`;
+  }
+  h+=`</div>`;
+  staffPickOpen(h,bg=>{
+    bg.querySelectorAll('[data-fmg]').forEach(btn=>btn.onclick=()=>{
+      if(fmPromote(btn.dataset.fmg,+btn.dataset.ph)){staffPickClose();staffSig='';render();}
+    });
+  });
 }
 function setupStaffUI(){}
 

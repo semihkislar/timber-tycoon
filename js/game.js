@@ -1,7 +1,7 @@
 /* Timber Tycoon bundle. Built by tools/build_js.py — edit js/*.js, then rebuild. */
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.58';
+const VERSION='2.59';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -352,6 +352,9 @@ const ACH=[
   // v2.55 south-gate village. best survives a Replant; progress stays finite on old saves.
   {id:'town2',g:'sys',t:'bronze',e:'🏘️',n:'Village Green',d:'Grow a Village by the south gate (25 houses this run)',p:()=>[typeof townBest==='function'?townBest():0,2]},
   {id:'town6',g:'sys',t:'gold',e:'⛪',n:'Timber Town',d:'Grow Timber Town by the south gate (250,000 houses this run)',p:()=>[typeof townBest==='function'?townBest():0,6]},
+  // v2.59 phase foremen. Missing staff and old saves report 0.
+  {id:'fm1',g:'sys',t:'bronze',e:'🧢',n:'Shift Lead',d:'Promote a trained worker to phase foreman',p:()=>[typeof fmCount==='function'?fmCount():0,1]},
+  {id:'fm3',g:'sys',t:'silver',e:'🏗️',n:'Three Shifts',d:'Have a foreman for Phase 1, 2 and 3',p:()=>[typeof fmCount==='function'?fmCount():0,3]},
 ];
 function achWsTot(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n+=x|0;}return n;}
 function achWsMax(){let n=0;for(const k in (S.ws||{})){const w=S.ws[k];if(Array.isArray(w)) for(const x of w) n=Math.max(n,x|0);}return n;}
@@ -455,6 +458,7 @@ function migrateSave(o){
     // deferred: staffsys may not be parsed yet during early calls; main init also migrates
     o._needStaffMig=1;
   }
+  if(typeof fmNorm==='function') fmNorm(o);   // v2.59: one trained foreman per phase, bad values dropped
   // v2.11 -> v2.12: builders' yard (construction crews)
   if(!o.builders||typeof o.builders!=='object') o.builders={lvl:0,on:true,plan:'ms',budget:.25,off:{},jobs:[],stats:{lv:0,spent:0,jobs:0},seq:0,cool:0};
   {const B=o.builders;if(typeof B.lvl!=='number') B.lvl=0;if(typeof B.on!=='boolean') B.on=true;if(!['ms','cheap','low'].includes(B.plan)) B.plan='ms';
@@ -567,7 +571,7 @@ function canFirstBuild(id){return id==='sawmill'?sawLogsOk():S.coins+1e-9>=bulkC
 function colRate(id){return COLLECTORS.find(c=>c.id===id).rate*M.col[id]*M.colAll*M.rep;}
 function logRatePot(){let t=0;for(const c of COLLECTORS) t+=S.collectors[c.id]*colRate(c.id);return t;}
 function logRate(){const base=logRatePot()*forestEff();return typeof staffApplyToLogRate==='function'?staffApplyToLogRate(base):base;}   // v2.7 + v2.14 lumberjack/driver
-function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*bRes(id)*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id);}   // v2.22 workstations   // v2.17 specialisation / retool
+function bSpeed(id){const l=S.buildings[id].lvl;const b=BMAP[id];return l*Math.pow(MS_MULT,msCount(l))*bRes(id)*M.bldAll*M.rep*(b.spd||1)*stoBonus(id)*mgrSpd(id)*(typeof staffMillSpd==='function'?staffMillSpd(id):1)*(typeof specSpd==='function'?specSpd(id):1)*(typeof wsSpd==='function'?wsSpd(id):1)*(typeof mishSpd==='function'?mishSpd(id):1)*pressCap(id)*(typeof fmAura==='function'?fmAura(id):1);}   // v2.59 phase foreman   // v2.22 workstations   // v2.17 specialisation / retool
 /* v2.17: input per item = manager thrift × specialisation (lean −20…40 %, high-speed +15 %) */
 function bInMult(id){return mgrIn(id)*(typeof specIn==='function'?specIn(id):1)*(typeof wsIn==='function'?wsIn(id):1);}
 /* v2.15.1 saw yield: from Lv 50 the Sawmill gets more planks out of every log (milestones ×1.6, plus +5 % per level above 50),
@@ -2783,12 +2787,15 @@ function staffWorkerCard(w){
   const assign=(w.role==='mill'||w.role==='engineer')?(w.assign?`${BMAP[w.assign]?BMAP[w.assign].icon+' '+BMAP[w.assign].name:w.assign}`:'<i>unassigned</i>'):(role.area||'');
   const train=w.train?`🎓 training ${Math.max(0,Math.ceil(w.train.left))}s → ${w.train.to}`:`skill ${w.skill}${w.skill>=STAFF_SKILL_MAX?' ★':''}`;
   const en=Math.round(w.energy||100);
+  const col=typeof fmPhase==='function'?fmPhase(w):0;
   let btns='';
   if(w.founding&&w.mgrId){
     const m=MGR_MAP[w.mgrId]; if(m){const b=mgrBtnHtml(m); btns=`<button class="btn buy small mg-btn staff-btn" data-mgr="${m.id}" ${b.dis?'disabled':''}>${b.h}</button>`;}
   } else {
-    if((w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">${w.assign?'↔ Move':'📍 Assign'}</button>`;
+    if(!col&&(w.role==='mill'||w.role==='engineer')) btns+=`<button class="btn wood small staff-btn" data-assign="${w.id}">${w.assign?'↔ Move':'📍 Assign'}</button>`;
     if(!w.train&&(w.skill||1)<STAFF_SKILL_MAX) btns+=`<button class="btn buy small staff-btn" data-train="${w.id}">🎓 Train → ${(w.skill||1)+1}<small>🪙 ${fmt(staffTrainCost(w))}</small></button>`;
+    if(typeof fmOpen==='function'&&fmOpen()&&typeof fmEligible==='function'&&fmEligible(w)) btns+=`<button class="btn gold small staff-btn" data-fmp="${w.id}" style="min-height:44px">🧢 Promote</button>`;
+    if(col) btns+=`<button class="btn ghost small staff-btn" data-fmd="${w.id}" style="min-height:44px">Demote</button>`;
     if(staffCapRoom(w.role)<0) btns+=`<button class="btn ghost small staff-btn sc-go" data-letgo="${w.id}">${staffLetGoArm===w.id?'Tap again to let go':'Let go'}</button>`;   // v2.22.1: only when the role is over its limit
   }
   const fl=(typeof SW!=='undefined'&&SW.flashWid===w.id&&performance.now()<SW.flashUntil)?' sw-flash':'', sl=(typeof SW!=='undefined'&&SW.sel===w.id)?' sw-sel':'';
@@ -2796,7 +2803,7 @@ function staffWorkerCard(w){
   return `<div class="mgr-card hired staff-card${fl}${sl}${staffOnBreak(w)?' on-break':''}" data-wid="${w.id}" style="--rc:${R.c}"><button class="mg-p sw-find" data-find="${w.id}" title="Show ${w.name} in the world" aria-label="Show ${w.name} in the world">${staffPortrait(w,52)}<span class="sw-pin">📍</span></button>
     <div class="mg-b"><div class="mg-n">${w.founding?'⭐ ':''}${w.name} <span class="mg-r">${w.founding?'Foreman · ':''}${R.n}</span></div>
     <div class="mg-s">${role.e} ${role.n} · ${train}${w.founding?' · wage waived':` · 🪙 ${fr(wage)}/s`}</div>
-    <div class="mg-k">${role.effect(w.skill)} · ${assign}</div>${!w.train&&(w.skill||1)<STAFF_SKILL_MAX?`<div class="mg-tg">🎓 Next level: ${staffTrainGain(w).txt}</div>`:''}${stx?`<div class="mg-st">${stx}</div>`:''}
+    <div class="mg-k">${col?`🧢 Phase ${TIER_S[col]} foreman · +${Math.round(fmPct(w)*1000)/10}% speed on that column`:`${role.effect(w.skill)} · ${assign}`}</div>${!w.train&&(w.skill||1)<STAFF_SKILL_MAX?`<div class="mg-tg">🎓 Next level: ${staffTrainGain(w).txt}</div>`:''}${stx?`<div class="mg-st">${stx}</div>`:''}
     <div class="mg-g">${traits||'—'}${!(S.prefs&&S.prefs.fatigue===false)&&!(w.traits||[]).includes('steady')?` · ⚡ ${en}%`:''}${staffState().unpaid&&!w.founding?' · <b style="color:#b33">unpaid 50%</b>':''}</div></div>
     <div class="staff-actions">${btns}</div></div>`;
 }
@@ -2898,7 +2905,7 @@ function updateStaff(){
   const st=staffState();
   const dot=$('staffDot'); if(dot) dot.classList.toggle('hidden',curSheet==='staff'||!(Object.keys(S.fires).length||st.candidates.some(c=>S.coins>=staffHireCostOf(c)&&staffCapRoom(c.role)>0)||MANAGERS.some(m=>!mgrLvl(m.bid)&&mgrAvail(m)&&S.coins>=mgrHireCost(m))));
   if(curSheet!=='staff') return;
-  const sig=stationLvl()+'|'+stationVisible()+'|'+Math.round(stationCost())+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'');
+  const sig=stationLvl()+'|'+stationVisible()+'|'+Math.round(stationCost())+'|'+staffTab+'|'+st.team.map(w=>w.id+':'+(w.skill||0)+':'+(w.assign||'')+':'+(w.fm||0)+':'+(w.train?1:0)+':'+Math.round(w.energy||0)+(w.brk?'b':'')).join(',')+'|'+(typeof SW!=='undefined'?SW.sel:'')+'|'+st.candidates.map(c=>c.id).join(',')+'|'+MANAGERS.map(m=>mgrLvl(m.bid)+(mgrAvail(m)?'a':'')).join(',')+'|'+Object.keys(S.fires).join()+'|'+(st.unpaid?1:0)+'|'+staffCapsAll().map(c=>c.n+'/'+c.cap).join()+'|'+(staffLetGoArm||'')+'|'+(typeof fmOpen==='function'&&fmOpen()?1:0);
   if(sig!==staffSig){staffSig=sig;const l=stationLvl(),n=st.team.length;
     const fl=Object.keys(S.fires);
     let h=fl.length?`<div class="fire-note">🔥 <b>Fire at the ${fl.map(b=>BMAP[b].name).join(', ')}!</b> Tap the flames in the scene${l?' — the fire brigade is on its way.':'.'}</div>`:'';
@@ -2941,6 +2948,7 @@ function renderStaffTab(){
     const hired=MANAGERS.filter(m=>mgrLvl(m.bid)&&!st.team.some(w=>w.mgrId===m.id));
     if(hired.length){h+=`<h4>👔 Managers <span class="mg-count">${hired.length}</span></h4><div class="list">`+hired.map(m=>mgrCardHtml(m)).join('')+`</div>`;}
     h+=`<div class="legend">Founding foremen (from your old managers) keep their bonuses and pay no wage. New hires take a wage and add role bonuses. Mill workers & engineers need a building assignment. Hiring a foreman follows forest value, and after a Replant at least 25 seconds of income; a first run pays the original price.</div>`;
+    if(typeof fmOpen==='function'&&fmOpen()) h+=`<div class="legend fm-note">A worker at skill ${FM_SKILL} or higher can run one phase column. One per phase. The column gains +5% speed at skill 5 and +10% at skill 10, on top of managers, workstations and research. They keep their wage. While they run the column they are not also working their old job. A Replant keeps them with the rest of the team.</div>`;
     body.innerHTML=h;
     wireMgrCards(body);
     body.querySelectorAll('.mgr-card[data-id]').forEach(mgrCardUpdate);
@@ -2951,6 +2959,8 @@ function renderStaffTab(){
     body.querySelectorAll('[data-letgo]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.letgo;
       if(staffLetGoArm===id){staffLetGoArm=null;staffLetGo(id);} else {staffLetGoArm=id;setTimeout(()=>{if(staffLetGoArm===id){staffLetGoArm=null;staffSig='';}},4000);} staffSig='';render();});
     body.querySelectorAll('[data-train]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(staffStartTrain(b.dataset.train)){staffSig='';render();}});
+    body.querySelectorAll('[data-fmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();fmPromoteSheet(b.dataset.fmp);});
+    body.querySelectorAll('[data-fmd]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(fmDemote(b.dataset.fmd)){staffSig='';render();}});
     wireTrainAll(body);
     body.querySelectorAll('[data-find]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(typeof swFind==='function') swFind(b.dataset.find);});
     body.querySelectorAll('[data-mgr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.mgr;if(mgrLvl(MGR_MAP[id].bid)) levelMgr(id); else hireMgr(id); staffMigrateFromMgr(); staffSig='';render();});
@@ -3022,9 +3032,13 @@ function updateBldMgr(b){
   const fb=$('bpFire'); if(fb){const f=S.fires[b.id];fb.classList.toggle('hidden',!f);if(f){const ft=`🔥 <b>On fire!</b> Tap the flames in the scene (${Math.ceil(f.hp)} left)${f.eta>=0?(f.t<f.eta?` · 🚒 arriving in ${Math.ceil(f.eta-f.t)}s`:' · 🚒 spraying'):''}`;if(fb._t!==ft){fb.innerHTML=ft;fb._t=ft;}}}
   if(!S.buildings[b.id]||!S.buildings[b.id].lvl){el.classList.add('hidden');el.dataset.sig='';return;}
   const m=MGR_OF[b.id], crew=staffAtBuilding(b.id).filter(w=>!w.founding), slots=staffSlots(b.id), used=staffSlotUsed(b.id);
-  const free=staffState().team.filter(w=>(w.role==='mill'||w.role==='engineer')&&!w.assign&&!w.founding).length;
-  const sig=b.id+'|'+(m?m.id+(mgrAvail(m)?'a':''):'')+'|'+crew.map(w=>w.id+':'+w.skill+':'+(staffOnBreak(w)?1:0)).join(',')+'|'+used+'/'+slots+'|'+free;
+  const free=staffState().team.filter(w=>(w.role==='mill'||w.role==='engineer')&&!w.assign&&!w.founding&&!(w.fm===1||w.fm===2||w.fm===3)).length;
+  const ph=typeof BTIER==='object'?(BTIER[b.id]||0):0, fw=ph&&typeof fmOf==='function'?fmOf(ph):null;
+  const sig=b.id+'|'+(m?m.id+(mgrAvail(m)?'a':''):'')+'|'+crew.map(w=>w.id+':'+w.skill+':'+(staffOnBreak(w)?1:0)).join(',')+'|'+used+'/'+slots+'|'+free+'|'+(fw?fw.id+':'+fw.skill:'')+'|'+(typeof fmOpen==='function'&&fmOpen()?1:0);
   if(el.dataset.sig!==sig){el.dataset.sig=sig;let h='';
+    if(ph&&fw){const pct=Math.round(fmPct(fw)*1000)/10;
+      h+=`<div class="fm-line" id="bpFm">🧢 <b>${fw.name}</b> runs Phase ${TIER_S[ph]} · <b>+${pct}%</b> speed on every building in this column</div>`;}
+    else if(ph&&typeof fmOpen==='function'&&fmOpen()) h+=`<div class="fm-line" id="bpFm">🧢 No phase foreman on Phase ${TIER_S[ph]} yet</div>`;
     if(m) h+=`<h4>👔 Foreman</h4>`+mgrCardHtml(m,true);
     h+=`<h4>👷 Staff here <span class="mg-count">${used}/${slots}</span></h4><div class="bst-list">`;
     for(const w of crew){const R=STAFF_ROLES[w.role];
@@ -3037,6 +3051,26 @@ function updateBldMgr(b){
     const ab=el.querySelector('[data-pick]'); if(ab) ab.onclick=()=>staffPickForBld(b.id);}
   el.classList.remove('hidden');
   const mc=el.querySelector('.mgr-card[data-id]'); if(mc) mgrCardUpdate(mc);
+}
+/* v2.59: pick a phase column. The row shows the price before anything is charged. */
+function fmPromoteSheet(wid){
+  const w=staffState().team.find(x=>x.id===wid); if(!w||typeof fmEligible!=='function'||!fmEligible(w)) return;
+  let h=`<div class="as-head">${staffPortrait(w,44)}<div><div class="as-h">Promote <b>${w.name}</b></div><div class="as-sub">Skill ${w.skill} · +${Math.round(fmPct(w)*1000)/10}% speed on one phase · one foreman per phase</div></div></div>
+    <div class="as-lab">Pick a phase column</div><div class="as-list">`;
+  for(let ph=1;ph<=3;ph++){
+    const holder=fmOf(ph), here=fmPhase(w)===ph, mine=holder&&holder.id===w.id;
+    const built=fmPhaseBuilt(ph), cost=fmCost(ph), afford=S.coins+1e-9>=cost;
+    const ok=built&&!here&&(!holder||mine)&&afford;
+    const why=here?'Already running this phase':!built?'Build a line in this phase first':holder&&!mine?`${holder.name} already runs it`:!afford?`Need 🪙 ${fmt(cost-S.coins)} more`:`+${Math.round(fmPct(w)*1000)/10}% speed · 🪙 ${fmt(cost)}`;
+    h+=`<button class="as-row${here?' cur':''}" data-fmg="${w.id}" data-ph="${ph}" ${ok?'':'disabled'}><span class="as-ic">${TIER_S[ph]}</span>
+      <span class="as-tx"><b>${TIER_N[ph]}</b><small>${why}</small></span><span class="as-slots">${here?'':afford&&built?'🪙 '+fmt(cost):''}</span></button>`;
+  }
+  h+=`</div>`;
+  staffPickOpen(h,bg=>{
+    bg.querySelectorAll('[data-fmg]').forEach(btn=>btn.onclick=()=>{
+      if(fmPromote(btn.dataset.fmg,+btn.dataset.ph)){staffPickClose();staffSig='';render();}
+    });
+  });
 }
 function setupStaffUI(){}
 
@@ -3193,55 +3227,57 @@ function staffSlots(bid){
 }
 function staffSlotUsed(bid){return staffAtBuilding(bid).length;}
 function staffCanAssign(w,bid){
-  if(!w||(w.role!=='mill'&&w.role!=='engineer')) return false;
+  if(!w||w.fm===1||w.fm===2||w.fm===3||(w.role!=='mill'&&w.role!=='engineer')) return false;   // v2.59: a phase foreman is not on a station
   if(!S.buildings[bid]||!S.buildings[bid].lvl) return false;
   if(w.assign===bid) return true;
   const used=staffAtBuilding(bid).filter(x=>x.id!==w.id).length;
   return used<staffSlots(bid);
 }
 
-/* ---- effect hooks (modest stacking, founding excluded from mill/eng to avoid double-count with mgr*) ---- */
+/* ---- effect hooks (modest stacking, founding excluded from mill/eng to avoid double-count with mgr*) ----
+   v2.59: a phase foreman is running the column, not their old job, so the role bonus pauses. */
+function staffColumn(w){return !!(w&&(w.fm===1||w.fm===2||w.fm===3));}
 function staffMillSpd(bid){
   let b=1;
-  for(const w of staffAtBuilding(bid)) if(w.role==='mill'&&!w.founding) b+=STAFF_FX.mill.p*staffSkillEff(w);
+  for(const w of staffAtBuilding(bid)) if(w.role==='mill'&&!w.founding&&!staffColumn(w)) b+=STAFF_FX.mill.p*staffSkillEff(w);
   return Math.min(1+STAFF_FX.mill.cap,b);   // v2.23: +5%/skill, cap +60%
 }
 function staffEngIn(bid){
   let cut=0;
-  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=STAFF_FX.engineer.p*staffSkillEff(w);
+  for(const w of staffAtBuilding(bid)) if(w.role==='engineer'&&!staffColumn(w)) cut+=STAFF_FX.engineer.p*staffSkillEff(w);
   return 1-Math.min(STAFF_FX.engineer.cap,cut);
 }
 function staffEngFire(bid){
   let cut=0;
-  for(const w of staffAtBuilding(bid)) if(w.role==='engineer') cut+=STAFF_FX.engineer.fire*staffSkillEff(w);
+  for(const w of staffAtBuilding(bid)) if(w.role==='engineer'&&!staffColumn(w)) cut+=STAFF_FX.engineer.fire*staffSkillEff(w);
   return 1-Math.min(STAFF_FX.engineer.fcap,cut);
 }
 function staffChopBonus(){
-  let b=0; for(const w of staffByRole('lumberjack')) b+=STAFF_FX.lumberjack.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('lumberjack')) if(!staffColumn(w)) b+=STAFF_FX.lumberjack.p*staffSkillEff(w);
   return Math.min(STAFF_FX.lumberjack.cap,b);
 }
 function staffHaulBonus(){
-  let b=0; for(const w of staffByRole('driver')) b+=STAFF_FX.driver.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('driver')) if(!staffColumn(w)) b+=STAFF_FX.driver.p*staffSkillEff(w);
   return Math.min(STAFF_FX.driver.cap,b);
 }
 function staffForkBonus(){
-  let b=0; for(const w of staffByRole('forklift')) b+=STAFF_FX.forklift.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('forklift')) if(!staffColumn(w)) b+=STAFF_FX.forklift.p*staffSkillEff(w);
   return Math.min(STAFF_FX.forklift.cap,b);
 }
 function staffDockPrem(){
-  let b=0; for(const w of staffByRole('dock')) b+=STAFF_FX.dock.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('dock')) if(!staffColumn(w)) b+=STAFF_FX.dock.p*staffSkillEff(w);
   return Math.min(STAFF_FX.dock.cap,b);
 }
 function staffDockCap(){
-  let b=0; for(const w of staffByRole('dock')) b+=STAFF_FX.dock.tp*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('dock')) if(!staffColumn(w)) b+=STAFF_FX.dock.tp*staffSkillEff(w);
   return Math.min(STAFF_FX.dock.tcap,b);
 }
 function staffFireCut(){
-  let b=0; for(const w of staffByRole('firefighter')) b+=STAFF_FX.firefighter.p*staffSkillEff(w);
+  let b=0; for(const w of staffByRole('firefighter')) if(!staffColumn(w)) b+=STAFF_FX.firefighter.p*staffSkillEff(w);
   return Math.min(STAFF_FX.firefighter.cap,b);
 }
 function staffFireDelayCut(){
-  let s=0; for(const w of staffByRole('firefighter')) s+=STAFF_FX.firefighter.dl*staffSkillEff(w);
+  let s=0; for(const w of staffByRole('firefighter')) if(!staffColumn(w)) s+=STAFF_FX.firefighter.dl*staffSkillEff(w);
   return Math.min(STAFF_FX.firefighter.dcap,s);   // seconds shaved off response
 }
 function staffHiredCount(){
@@ -3254,6 +3290,7 @@ function staffHiredCount(){
 function staffOutputRate(){
   let v=0;
   for(const w of staffState().team){
+    if(staffColumn(w)) continue;   // v2.59: the column aura is separate from the old job
     const e=staffEff(w), sk=w.skill||1;
     const F=STAFF_FX[w.role]||{p:0};   // v2.23: same per-skill numbers as the effects (value share as before)
     if(w.role==='mill'&&w.assign){if(!w.founding){const base=bldValueRate(w.assign)||0; v+=base*F.p*sk*e;}}
@@ -3523,6 +3560,198 @@ function staffApplyCap(base){return base*(1+staffDockCap());}
 (function(){
   if(typeof mgrIn==='function'){const _in=mgrIn; mgrIn=function(bid){return _in(bid)*(typeof staffEngIn==='function'?staffEngIn(bid):1);};}
 })();
+/* ===================== v2.59 STAFF CAREERS, PART 1: PHASE FOREMEN =====================
+   A hired worker at skill 5 or higher can be promoted to run one phase column
+   (Phase 1, 2 or 3). One foreman per phase. The column gets a small speed aura:
+   +5% at skill 5, +10% at skill 10, and never more than +10%. It multiplies with
+   managers, workstation sets and research. While they run the column they are not
+   also working their old job, so a mill worker's own speed bonus does not stack
+   on top of the aura.
+   The promotion is a coin cost: the sticker times forest value, and after a Replant
+   at least FM_SEC seconds of income (keptCoin). A first run pays the sticker.
+   It opens in the mid game (Sawmill Lv 25, a Phase 2 line at Lv 10, or any Replant),
+   so a fresh run's first minutes do not promote anyone and do not change output.
+   Replant keeps the staff, and the phase foreman stays with them (docs/replant-v2.18.md).
+   The aura only reaches buildings that exist this run. Founding foremen (the old
+   managers) are a different job and cannot take a column.
+   In the world they walk that column. The name tag is a cached pill. Low graphics
+   draws no tag and no extra hat. Late-game phones at the fit zoom hide the tag
+   the same way other info pills do ({lo:1} / dcOn). */
+const FM_SKILL=5, FM_LO=.05, FM_HI=.10, FM_CAP=.10, FM_BASE=80000, FM_SEC=40;
+const FM_PHASE_K={1:1,2:1.5,3:2};
+const FM={drawn:0};
+function fmOpen(){
+  if(!S) return false;
+  if((S.prestiges||0)>0) return true;
+  if(S.buildings&&S.buildings.sawmill&&(S.buildings.sawmill.lvl||0)>=25) return true;
+  if(typeof BUILDINGS==='undefined'||typeof BTIER!=='object') return false;
+  for(const b of BUILDINGS){if(BTIER[b.id]===2&&S.buildings[b.id]&&S.buildings[b.id].lvl>=10) return true;}
+  return false;
+}
+function fmEligible(w){
+  if(!w||w.founding||w.train) return false;
+  if(typeof STAFF_ROLES==='undefined'||!STAFF_ROLES[w.role]) return false;
+  const sk=+w.skill;
+  return isFinite(sk)&&sk>=FM_SKILL;
+}
+function fmPhase(w){const ph=w&&+w.fm;return ph===1||ph===2||ph===3?ph:0;}
+function fmOf(ph){
+  ph=+ph; if(ph!==1&&ph!==2&&ph!==3) return null;
+  const t=staffState().team;
+  for(let i=0;i<t.length;i++) if(fmPhase(t[i])===ph) return t[i];
+  return null;
+}
+function fmCount(){let n=0;for(let ph=1;ph<=3;ph++) if(fmOf(ph)) n++;return n;}
+function fmPct(w){
+  if(!w) return 0;
+  const sk=Math.max(FM_SKILL,Math.min(typeof STAFF_SKILL_MAX==='number'?STAFF_SKILL_MAX:10,+w.skill||FM_SKILL));
+  const span=(typeof STAFF_SKILL_MAX==='number'?STAFF_SKILL_MAX:10)-FM_SKILL;
+  const t=span>0?(sk-FM_SKILL)/span:1;
+  const p=FM_LO+(FM_HI-FM_LO)*t;
+  return (p>0&&isFinite(p))?Math.min(FM_CAP,p):0;
+}
+function fmAura(id){
+  const t=typeof BTIER==='object'?(BTIER[id]||0):0;
+  if(t<1||t>3) return 1;
+  const w=fmOf(t); if(!w) return 1;
+  const p=fmPct(w);
+  return 1+(p>0&&isFinite(p)?Math.min(FM_CAP,p):0);
+}
+function fmPhaseBuilt(ph){
+  ph=+ph; if(ph!==1&&ph!==2&&ph!==3||typeof BUILDINGS==='undefined') return false;
+  for(const b of BUILDINGS){
+    if(BTIER[b.id]!==ph) continue;
+    const st=S.buildings[b.id];
+    if(!st||!(st.lvl>0)) continue;
+    if(b.premium&&!(S.premium&&S.premium.lvl>0)) continue;
+    return true;
+  }
+  return false;
+}
+function fmCost(ph){
+  ph=+ph; if(ph!==1&&ph!==2&&ph!==3) return Infinity;
+  const base=FM_BASE*(FM_PHASE_K[ph]||1);
+  return typeof keptCoin==='function'?keptCoin(base,FM_SEC):base*(typeof cs==='function'?cs():1);
+}
+function fmPromote(wid,ph){
+  ph=+ph;
+  if(ph!==1&&ph!==2&&ph!==3) return false;
+  if(!fmOpen()) return false;
+  const w=staffState().team.find(x=>x&&x.id===wid);
+  if(!fmEligible(w)) return false;
+  if(!fmPhaseBuilt(ph)) return false;
+  const holder=fmOf(ph);
+  if(holder&&holder.id!==w.id) return false;
+  if(fmPhase(w)===ph) return false;
+  const cost=fmCost(ph);
+  if(!(cost>0)||!isFinite(cost)||S.coins+1e-9<cost) return false;
+  S.coins-=cost;
+  w.fm=ph;
+  if(w.assign&&(w.role==='mill'||w.role==='engineer')) w.assign=null;
+  if(typeof computeMods==='function') M=computeMods();
+  if(typeof staffSig!=='undefined') staffSig='';
+  if(typeof SW!=='undefined') SW.sig='';
+  const pct=Math.round(fmPct(w)*1000)/10;
+  const label=typeof TIER_S!=='undefined'?TIER_S[ph]:String(ph);
+  if(typeof toast==='function') toast(`🧢 <b>${w.name}</b> runs Phase ${label} · +${pct}% speed on that column`);
+  if(typeof sfx==='function') sfx('unlock');
+  if(typeof checkAch==='function') checkAch();
+  return true;
+}
+function fmDemote(wid){
+  const w=staffState().team.find(x=>x&&x.id===wid);
+  if(!w||!fmPhase(w)) return false;
+  const ph=w.fm; w.fm=0;
+  if(typeof computeMods==='function') M=computeMods();
+  if(typeof staffSig!=='undefined') staffSig='';
+  if(typeof SW!=='undefined') SW.sig='';
+  const label=typeof TIER_S!=='undefined'?TIER_S[ph]:String(ph);
+  if(typeof toast==='function') toast(`🧢 <b>${w.name}</b> steps down from Phase ${label}`);
+  if(typeof sfx==='function') sfx('buy');
+  return true;
+}
+/* door-side points along a phase column, in chain order. Empty when that phase has no building. */
+function fmSpots(ph){
+  const out=[];
+  if(typeof BUILDINGS==='undefined'||typeof swBldPts!=='function') return out;
+  ph=+ph;
+  for(const b of BUILDINGS){
+    if(BTIER[b.id]!==ph) continue;
+    const st=S.buildings[b.id];
+    if(!st||!(st.lvl>0)) continue;
+    const L=typeof LOTS!=='undefined'?LOTS[b.id]:null;
+    if(L&&L.prem&&!(S.premium&&S.premium.lvl)) continue;
+    const P2=swBldPts(b.id,0);
+    if(P2&&P2.c) out.push(P2.c);
+  }
+  return out;
+}
+/* full-speed supply and demand per good (logs left out: they are not sold). Tests and the balance note read this. */
+function fmBalance(){
+  const made={},need={};
+  if(typeof BUILDINGS==='undefined') return {};
+  for(const b of BUILDINGS){
+    const st=S.buildings[b.id];
+    if(!st||!(st.lvl>0)||st.on===false) continue;
+    if(b.premium&&!(S.premium&&S.premium.lvl)) continue;
+    const sp=bSpeed(b.id);
+    if(!(sp>0)||!isFinite(sp)) continue;
+    for(const k in b.out){if(!(b.out[k]>0)) continue; made[k]=(made[k]||0)+b.out[k]*sp*bOutK(b.id,k);}
+    for(const k in b.inp){if(!(b.inp[k]>0)) continue; need[k]=(need[k]||0)+b.inp[k]*sp*bInMult(b.id);}
+  }
+  const goods={};
+  const keys={}; for(const k in made) keys[k]=1; for(const k in need) keys[k]=1;
+  for(const k in keys){
+    if(k==='logs') continue;
+    const m=made[k]||0, n=need[k]||0;
+    goods[k]={made:m,need:n,r:n>1e-12?m/n:null};
+  }
+  goods.logs={made:0,need:need.logs||0,r:null};
+  return goods;
+}
+/* name tags. Cached pills. Low graphics and the late-game phone fit zoom draw none. */
+function fmTagsDraw(ctx){
+  if(typeof gfxLow==='function'&&gfxLow()) return;
+  if(typeof dcOn==='function'&&dcOn()) return;
+  if(typeof SW==='undefined'||!SW.hits) return;
+  const z=scene.cam.z;
+  for(const a of SW.hits){
+    const w=a.w; if(!w||!fmPhase(w)) continue;
+    const p=P(a.i,a.j), s=w2s(p[0],p[1]);
+    const y=s[1]-62*z;
+    if(s[0]<-80||s[0]>scene.w+80||y<-40||y>scene.h+40) continue;
+    const name=(w.name||'Foreman').split(' ')[0];
+    pill(ctx,s[0],y,name,{lo:1,fs:10,bg:'#fff8e4',fg:'#3a2410',stroke:'#e0b040',lw:1.5,padX:8,padY:3});
+    FM.drawn++;
+  }
+}
+function fmFlowLine(){
+  if(typeof fmCount!=='function'||!fmCount()) return '';
+  const bits=[];
+  for(let ph=1;ph<=3;ph++){
+    const w=fmOf(ph); if(!w) continue;
+    const label=typeof TIER_S!=='undefined'?TIER_S[ph]:String(ph);
+    const pct=Math.round(fmPct(w)*1000)/10;
+    bits.push(`${label} ${(w.name||'').split(' ')[0]} +${pct}%`);
+  }
+  if(!bits.length) return '';
+  return `<div class="lg-flow fm-flow">🧢 <b>Foremen</b> ${bits.join(' · ')}</div>`;
+}
+/* old and damaged saves: one foreman per phase, only a trained hired worker, never a bad value */
+function fmNorm(o){
+  const st=o&&o.staff; if(!st||!Array.isArray(st.team)) return o;
+  const seen={};
+  for(const w of st.team){
+    if(!w||typeof w!=='object') continue;
+    const ph=+w.fm;
+    const sk=+w.skill;
+    if(ph!==1&&ph!==2&&ph!==3){w.fm=0; continue;}
+    if(w.founding||!(sk>=FM_SKILL)||!isFinite(sk)){w.fm=0; continue;}
+    if(seen[ph]){w.fm=0; continue;}
+    seen[ph]=1; w.fm=ph;
+  }
+  return o;
+}
 /* ===================== v2.19 RESEARCH 2.0 + TRADE MAP ===================== */
 // Research Lab turns paper into Research Points (RP). Research is the slow, permanent track: nodes and RP are kept through Replant.
 // 5 branches × 5 tiers (~65 nodes). Tiers open with Forest Legacy (T2 25 · T3 150 · T4 800 · T5 2500 + a line at Lv 200),
@@ -4730,7 +4959,7 @@ function updateFlowLegend(){
   const s=flowStats(),h=`<b>🔀 Supply flow</b> <span class="fl-k ok"></span>fed <span class="fl-k warn"></span>low <span class="fl-k bad"></span>short <span class="fl-k sell"></span>sold${typeof TIER_S==='object'?' · <span class="tier-b t1">I</span>→<span class="tier-b t2">II</span>→<span class="tier-b t3">III</span>':''}${s.bad?` · <b class="fl-bad">${s.bad} short</b>`:''}`;
   let tx=el.querySelector('.fl-txt');if(!tx){el.innerHTML='<span class="fl-txt"></span><div class="lg-fl"></div><div class="adv-box"></div>';tx=el.querySelector('.fl-txt');}
   if(tx._h!==h){tx.innerHTML=h;tx._h=h;}
-  {const lf=el.querySelector('.lg-fl'),lh=(typeof ovfFlowLine==='function'?ovfFlowLine():'')+(typeof logiFlowLine==='function'?logiFlowLine():'')+(typeof townFlowLine==='function'?townFlowLine():'');if(lf&&lf._h!==lh){lf.innerHTML=lh;lf._h=lh;const g=lf.querySelector('#lgFlowGo');if(g) g.onclick=e=>{e.stopPropagation();logiOpen();};}}   // v2.40 overflow line · v2.30 logistics tier · v2.55 town demand
+  {const lf=el.querySelector('.lg-fl'),lh=(typeof ovfFlowLine==='function'?ovfFlowLine():'')+(typeof logiFlowLine==='function'?logiFlowLine():'')+(typeof townFlowLine==='function'?townFlowLine():'')+(typeof fmFlowLine==='function'?fmFlowLine():'');if(lf&&lf._h!==lh){lf.innerHTML=lh;lf._h=lh;const g=lf.querySelector('#lgFlowGo');if(g) g.onclick=e=>{e.stopPropagation();logiOpen();};}}   // v2.40 overflow line · v2.30 logistics tier · v2.55 town demand · v2.59 phase foremen
   if(typeof advSummaryUpdate==='function') advSummaryUpdate(el.querySelector('.adv-box'));   // v2.29 top bottlenecks (rows stay put while you tap them)
 }
 (function initFlow(){
@@ -5297,7 +5526,7 @@ function rpConfirm(){
   const body=`<div class="rp-cf-gain">+${fmt(g)} 🌱 <small>Legacy ${fmt(L)} → <b>${fmt(L+g)}</b> · production ×${fx2(P)} → <b>×${fx2(P2)}</b></small></div>
   <div class="rp-cf">
    <div class="rp-cf-col reset"><b>🔄 Resets</b><ul><li>Coins &amp; stock</li><li>Buildings &amp; levels</li><li>Collectors &amp; planters</li><li>Upgrades &amp; wood species</li><li>Premium Area</li><li>Storage, orders in progress</li><li>Run goals</li><li>South-gate village (best stage stays)</li></ul></div>
-   <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li>${typeof bpUnlocked==='function'&&bpUnlocked()?'<li>📐 Blueprints</li>':''}</ul></div>
+   <div class="rp-cf-col keep"><b>✅ Stays</b><ul><li>Forest Legacy &amp; Seeds</li><li>Seed Shop ${keepShop}</li><li>Research tree</li><li>Staff &amp; managers</li><li>Phase foremen (with the staff)</li><li>Fire station, power plant</li><li>Builders' &amp; Shipping Yard</li><li>Harbour &amp; trade routes</li><li>Trophies, line picks, stats</li>${typeof bpUnlocked==='function'&&bpUnlocked()?'<li>📐 Blueprints</li>':''}</ul></div>
   </div>${typeof bpReplantHtml==='function'?bpReplantHtml():''}
   <div class="legend">The new run is priced in your forest's value (×${fx2(Math.pow(legacyOf(L+g)*(1+.25*shopLvl('soil'))*Math.sqrt((1+.5*shopLvl('crews'))*(1+.5*shopLvl('mills')))*(1+.1*shopLvl('market'))*TREES[Math.min(shopLvl('arbor'),TREES.length-1)].mult,RPC.csE))}): costs and goals grow with it, so the climb stays meaningful.</div>`;
   confirmModal('🌱 Replant the Forest?',body,'Replant',()=>{if(typeof bpBeforeReplant==='function') bpBeforeReplant();if(doPrestige()!==false){closeSheet();fitCamera();if(S.seeds>0&&shopAffordable()) setTimeout(()=>{if(curSheet) return;openSheet('co');rpTabOpen('shop');},700);/* v2.28.1: never replaces a sheet the player opened meanwhile */}});
@@ -10983,11 +11212,13 @@ const SW_LOOKS=new Map();
 /* the in-world look: the worker's own face/hair (v2.14 look) + role-coloured hard hat, hi-vis vest and work clothes */
 function swLook(w){
   const L=w.look||STAFF_LOOKS[0], C=SW_ROLE[w.role]||SW_ROLE.mill;
-  const key=w.role+'|'+(L.f?1:0)+'|'+(L.skin|0)+'|'+(L.hair|0)+'|'+(L.style||'short')+'|'+(L.beard|0)+'|'+(L.glasses?1:0);
+  // v2.59: a phase foreman wears a yellow hard hat. Low graphics keeps the ordinary role colours, so it draws nothing extra.
+  const boss=!!(w.fm===1||w.fm===2||w.fm===3)&&!(typeof gfxLow==='function'&&gfxLow());
+  const key=w.role+'|'+(L.f?1:0)+'|'+(L.skin|0)+'|'+(L.hair|0)+'|'+(L.style||'short')+'|'+(L.beard|0)+'|'+(L.glasses?1:0)+'|'+(boss?1:0);
   let o=SW_LOOKS.get(key); if(o) return o;
   const hair=HAIRS[L.hair|0]||HAIRS[0];
   o={female:!!L.f,skin:SKINS[L.skin|0]||SKINS[0],hair,style:L.style==='crew'?'crew':(L.style||'short'),beard:L.beard===1?hair:null,mus:L.beard===2?hair:null,
-    hat:'hard',hatc:C.hat,shirt:C.shirt,plaid:C.plaid||null,vest:C.vest,pants:C.pants,boots:'#1a1a1e',glasses:!!L.glasses};
+    hat:'hard',hatc:boss?'#f2d21a':C.hat,shirt:boss?'#3a2418':C.shirt,plaid:C.plaid||null,vest:boss?'#f7e27a':C.vest,pants:C.pants,boots:'#1a1a1e',glasses:!!L.glasses};
   SW_LOOKS.set(key,o); return o;
 }
 function swFatigueOn(w){return !(S.prefs&&S.prefs.fatigue===false)&&!(w.traits||[]).includes('steady');}
@@ -11013,6 +11244,12 @@ function swPickTree(a){
 /* next job for a worker: {to:[i,j], pose, tm, cargo, carry} */
 function swNextJob(a,w){
   const r=Math.random(), k=a.k;
+  // v2.59: a phase foreman walks the door line of that column. Same one sprite as any other worker.
+  if((w.fm===1||w.fm===2||w.fm===3)&&typeof fmSpots==='function'){
+    const pts=fmSpots(w.fm);
+    if(pts.length){a.leg=(a.leg||0)+1; const p=pts[a.leg%pts.length];
+      return {to:p,pose:a.leg%3===0?'point':a.leg%3===1?'clip':'stand',tm:2.6};}
+  }
   switch(w.role){
     case 'lumberjack':{const t=swPickTree(a);if(!t){const lg=LANDINGS[a.zone];return {to:swNear([lg.i+.6,lg.j+.6],.8),pose:'look',tm:3};}
       a.tree=t;a.side=Math.random()<.5?'R':'L';return {to:workSpot(t,a.side),pose:'chop',tm:4+Math.random()*3,face:a.side==='R'?-1:1};}
@@ -11031,12 +11268,14 @@ function swNextJob(a,w){
   return {to:[a.i,a.j],pose:'stand',tm:3};
 }
 function swSeat(a){const n=SW_SEATS.length, s=SW_SEATS[a.seat%n], ring=Math.floor(a.seat/n)*.55; return [CAMP.i+s[0]*(1+ring*.5),CAMP.j+s[1]*(1+ring*.5)];}
-function swHome(a,w){if(w.role==='lumberjack'){const lg=LANDINGS[a.zone];return [lg.i+.5,lg.j+.5];}const j=swNextJob(a,w);a.job=null;return j.to;}
+function swHome(a,w){
+  if(w.fm===1||w.fm===2||w.fm===3){const j=swNextJob(a,w);a.job=null;return j.to;}   // v2.59: start on their column, not at the old job
+  if(w.role==='lumberjack'){const lg=LANDINGS[a.zone];return [lg.i+.5,lg.j+.5];}const j=swNextJob(a,w);a.job=null;return j.to;}
 
 /* ---------- sync + simulation ---------- */
 function swSync(){
   const team=staffState().team;
-  const sig=team.map(w=>w.id+':'+w.role+':'+(w.assign||'')+':'+(w.founding?1:0)).join(',');
+  const sig=team.map(w=>w.id+':'+w.role+':'+(w.assign||'')+':'+(w.founding?1:0)+':'+(w.fm||0)).join(',');
   if(sig===SW.sig&&SW.teamRef===team) return;
   SW.sig=sig; SW.teamRef=team;
   const old=SW.map, list=[], map=new Map(), per={};
@@ -11044,8 +11283,8 @@ function swSync(){
     if(w.founding) continue;   // founding foremen are drawn as the building's manager
     const k=per[w.role]=(per[w.role]===undefined?0:per[w.role]+1);
     let a=old.get(w.id);
-    if(!a||a.role!==w.role||a.assign!==w.assign){
-      a={wid:w.id,role:w.role,assign:w.assign,k,zone:k%2?'L':'T',i:0,j:0,st:'go',tm:0,ph:Math.random()*6,wt:Math.random(),fx:1,back:false,pose:'stand',
+    if(!a||a.role!==w.role||a.assign!==w.assign||(a.fm||0)!==(w.fm||0)){
+      a={wid:w.id,role:w.role,assign:w.assign,fm:w.fm||0,k,zone:k%2?'L':'T',i:0,j:0,st:'go',tm:0,ph:Math.random()*6,wt:Math.random(),fx:1,back:false,pose:'stand',
         alpha:0,fade:1,rest:false,seat:-1,job:null,tree:null,nb:6+Math.random()*10,bub:null,vis:false};
       const h=swHome(a,w); a.i=h[0];a.j=h[1];a.ti=a.i;a.tj=a.j;
     }
@@ -11086,7 +11325,9 @@ function swStep(a,dt){
   }
 }
 function swBubbleText(a){
-  const w=a.w, se=staffSkillEff(w); if(!(se>0)) return null; const R=STAFF_ROLES[w.role]; if(!R) return null;
+  const w=a.w;
+  if(w&&(w.fm===1||w.fm===2||w.fm===3)&&typeof fmPct==='function'&&typeof TIER_S!=='undefined') return `🧢 +${Math.round(fmPct(w)*100)}%`;
+  const se=staffSkillEff(w); if(!(se>0)) return null; const R=STAFF_ROLES[w.role]; if(!R) return null;
   const v=x=>x>=9.5?Math.round(x):Math.round(x*10)/10;
   switch(w.role){
     case 'lumberjack': return `🪓 +${v(2*se)}% chop`;
@@ -11162,6 +11403,7 @@ function swOverlays(ctx){
     else{const k=a.bub.t/a.bub.dur;ctx.globalAlpha=k<.15?k/.15:k>.75?Math.max(0,(1-k)/.25):1;
       pill(ctx,sx,top-6-k*18,a.bub.txt,{fs:10,bg:'rgba(30,60,24,.86)',fg:'#e8ffd0',stroke:'#8fd14f',lw:1.2,padX:10,padY:6});ctx.globalAlpha=1;}
   }
+  if(typeof fmTagsDraw==='function') fmTagsDraw(ctx);   // v2.59 name tags (cached; hidden on Low and at phone fit zoom)
 }
 /* ---------- input ---------- */
 function swHit(sx,sy){
@@ -11200,6 +11442,10 @@ function swFind(wid){
 }
 /* status line on the Team card */
 function swStatus(w){
+  if((w.fm===1||w.fm===2||w.fm===3)&&typeof TIER_S!=='undefined'){
+    const pct=typeof fmPct==='function'?Math.round(fmPct(w)*1000)/10:0;
+    return `🧢 Running Phase ${TIER_S[w.fm]} · +${pct}% speed`;
+  }
   if(w.founding) return w.assign&&BMAP[w.assign]?`📋 Running the ${BMAP[w.assign].name}`:'📋 Foreman';
   const en=typeof w.energy==='number'?w.energy:100;
   if(swResting(w)) return `☕ On a break at the campfire · back in ${fmtTime(Math.max(1,(100-en)/staffBreakRate()))}`;
@@ -12602,7 +12848,8 @@ window.TT={get S(){return S;},set S(v){S=v;},GFX,gfxSet,gfxLow,gfxMode,simulate,
   STAFF_ROLES,STAFF_TRAITS,staffState,staffFresh,staffHireCandidate,staffAssign,staffUnassign,staffStartTrain,staffMigrateFromMgr,staffRefreshCandidates,staffRerollFree,
   staffTrainCost,staffTrainTime,staffTrainGain,staffTrainAllPlan,staffTrainAll,staffTrainAllSheet,staffEco,staffIncRef,STAFF_FX,STAFF_R0,
   staffWageOf,staffHireCostOf,staffWageTotal,staffOutputRate,staffMillSpd,staffEngIn,staffForkBonus,staffChopBonus,staffHaulBonus,staffSlots,staffCanAssign,staffAtBuilding,staffHiredCount,staffTick,
-  staffCap,staffCapNow,staffCapCount,staffCapRoom,staffCapsAll,staffOverCap,staffLetGo,staffAssignSheet,staffPickForBld,staffPickClose,STAFF_CAPS,
+  staffCap,staffCapNow,staffCapCount,staffCapRoom,staffCapsAll,staffOverCap,staffLetGo,staffAssignSheet,staffPickForBld,staffPickClose,STAFF_CAPS,staffColumn,
+  FM_SKILL,FM_LO,FM_HI,FM_CAP,FM_BASE,FM_SEC,FM,fmOpen,fmEligible,fmPhase,fmOf,fmCount,fmPct,fmAura,fmPhaseBuilt,fmCost,fmPromote,fmDemote,fmSpots,fmBalance,fmNorm,fmFlowLine,fmTagsDraw,
   get staffTabCur(){return staffTab;},set staffTabCur(v){staffTab=v;},
   // v2.15 staff in the world
   SW,SW_ROLE,SW_CAP,swLook,swHit,swOpenCard,swFind,swStatus,swSync,staffOnBreak,staffBreakRate,STAFF_BREAK_AT,STAFF_BREAK_REFILL,
