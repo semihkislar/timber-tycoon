@@ -18,7 +18,8 @@
    One more walker on a large screen, and only while graphics are not Low.
    v2.60: the empty lot draws foundation outlines and a larger sign until the first kit.
    The name stays readable at phone fit zoom. A stage-up toast has a Look action;
-   nothing moves the camera on its own, and an offline catch-up does not toast. */
+   nothing moves the camera on its own, and an offline catch-up does not toast.
+   The sheet's Look button stays in the visible half-height sheet, above the toolbar. */
 const TOWN_STAGES=[
   {n:0,name:'Empty lot',say:'A cleared lot by the south gate, waiting on the first house kit.'},
   {n:1,name:'Hamlet',say:'One timber-frame cottage, a garden and a tree.'},
@@ -646,14 +647,14 @@ function townSheetHtml(){
   const cur='+'+townPctLabel()+'%', nxt=nx?'+'+((s+1)*2.5).toFixed(1).replace(/\.0$/,'')+'%':'at the cap';
   const goal=townGoalText();
   const src=(typeof BMAP!=='undefined'&&BMAP.framer&&BMAP.framer.name)||'Timber-frame Houses';
-  return `<div class="town-hero"><div class="town-ic">${svgIcon('houses',56)}</div><div><div class="town-stage">${st.name}</div><div class="legend">${st.say}</div></div></div>
+  return `<div class="town-scroll"><div class="town-hero"><div class="town-ic">${svgIcon('houses',56)}</div><div><div class="town-stage">${st.name}</div><div class="legend">${st.say}</div></div></div>
     <div class="town-row"><span>Houses this run</span><b>${fmt(made, made<10&&made%1?1:0)}</b></div>
     ${goal?`<div class="town-goal">${goal}</div>`:''}
     <div class="pbar town-bar"><i style="width:${pct.toFixed(1)}%"></i></div>
     <div class="legend">${nx?`${fmt(Math.max(0,nx.n-made))} more to <b>${nx.name}</b>`:'Timber Town is built. The demand bonus is at its cap.'}</div>
     <div class="legend town-src">House kits come from the <b>${src}</b> workshop.</div>
     <div class="town-bonus"><div class="b"><div class="legend">Town demand now</div><b>${cur}</b></div><div class="b"><div class="legend">${nx?'Next stage':'Cap'}</div><b>${nxt}</b></div></div>
-    <p class="legend">The Town Market pays this on planks, beams, chairs and the other Phase 1–2 goods, whether they auto-sell or you press Sell. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. Replant clears the village; the best stage stays for trophies.</p>
+    <p class="legend">The Town Market pays this on planks, beams, chairs and the other Phase 1–2 goods, whether they auto-sell or you press Sell. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. Replant clears the village; the best stage stays for trophies.</p></div>
     <button class="btn wood" id="townLook" type="button">Look at the village</button>`;
 }
 function townUpdate(){

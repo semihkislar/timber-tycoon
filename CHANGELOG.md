@@ -19,6 +19,9 @@ and this project uses [Semantic Versioning](https://semver.org/).
 ### Changed
 - Once a cottage exists, the fit view includes it and leaves a gap above the bottom bar, on a desktop and on a phone. Before that first kit the frame is the v2.59 frame.
 
+### Fixed
+- **Look at the village** stays in the visible Town sheet. The goal line and the workshop line had pushed the button behind the bottom bar until you scrolled. The copy scrolls; the button does not.
+
 ### Unchanged
 Recipes, prices, town demand percentages and order rewards. Logs stay raw material and are never sold. Residents still do not walk on roofs or chimneys. Low graphics draws the same village it drew in v2.58. A save from v2.59, v2.58, v2.55, v2.39 or v2.24 still loads. The first minutes of a run match v2.59.
 

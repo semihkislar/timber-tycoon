@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 import os, sys, json, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _server import URL, BASE, ROOT, ver
-from _pace import ready, paint, touch_at
+from _pace import ready, paint, touch_at, until
 from shots import shot_path
 FAILS=[]
 def ok(c, msg):
@@ -59,6 +59,37 @@ def shot_clean(pg):
     E(pg, QUIET)
     E(pg, r'''()=>{if(typeof checkAch==="function")checkAch(true);if(typeof ntClear==="function")ntClear();document.querySelectorAll(".toast,.confetti,.modal-bg").forEach(e=>e.remove());const f=document.getElementById("fxLayer");if(f)f.innerHTML="";if(scene.particles)scene.particles.length=0;}''')
     paint(pg, 2)
+LOOK=r'''()=>{const b=document.getElementById("townLook"); if(!b) return null;
+  const r=b.getBoundingClientRect(); const bar=document.getElementById("bottombar").getBoundingClientRect();
+  const fab=document.getElementById("fabs"); const op=fab?+getComputedStyle(fab).opacity:0;
+  const f=fab?fab.getBoundingClientRect():null;
+  const overlap=!!(op>0.2&&f&&r.right>f.left&&r.left<f.right&&r.bottom>f.top&&r.top<f.bottom);
+  const mid=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
+  const on=!!(mid&&(mid.id==="townLook"||(mid.closest&&mid.closest("#townLook"))));
+  const body=document.getElementById("shBody");
+  return {top:+r.top.toFixed(1),bot:+r.bottom.toFixed(1),l:+r.left.toFixed(1),ri:+r.right.toFixed(1),h:+r.height.toFixed(1),
+    vw:innerWidth,vh:innerHeight,bar:+bar.top.toFixed(1),scroll:body?body.scrollTop:0,
+    above:r.bottom<=bar.top+0.5,inView:r.top>=-0.5&&r.left>=-0.5&&r.right<=innerWidth+0.5&&r.bottom<=innerHeight+0.5,overlap,on};}'''
+def settle_sheet(pg):
+    # The sheet slides up for 240ms. Measure it at rest, not halfway down the screen.
+    E(pg, 'window.__lookY=null')
+    until(pg, r'''()=>{const sh=document.getElementById("sheet"); if(!sh||!sh.classList.contains("open")) return false;
+      const t=getComputedStyle(sh).transform||"none"; let ty=0; const m=t.match(/matrix\(([^)]+)\)/);
+      if(m) ty=parseFloat(m[1].split(",")[5])||0; if(Math.abs(ty)>0.8) return false;
+      const b=document.getElementById("townLook"); if(!b) return false;
+      const y=b.getBoundingClientRect().bottom; const p=window.__lookY; window.__lookY=y;
+      return p!=null && Math.abs(p-y)<0.35;}''')
+def town_look(pg, label):
+    # Default half-height sheet, stage 0 (both new lines), no scroll. The button has to clear the toolbar on its own.
+    E(pg, r'''()=>{S.town.made=0;S.town.stage=0;S.town.seen=0;townStage();openSheet("town");
+      const b=document.getElementById("shBody"); if(b) b.scrollTop=0;
+      const s=document.querySelector(".town-scroll"); if(s) s.scrollTop=0;}''')
+    settle_sheet(pg)
+    paint(pg, 2)
+    geo=E(pg, LOOK)
+    ok(geo and geo['h']>=44 and geo['above'] and geo['inView'] and geo['on'] and not geo['overlap'] and geo['scroll']==0,
+       f'{label}: Look at the village is fully above the toolbar and inside the viewport ({geo})')
+    E(pg, 'closeSheet()')
 def click_dom(pg, sel, phone=False):
     loc=pg.locator(sel).first
     try:
@@ -175,10 +206,12 @@ with sync_playwright() as p:
     E(pg, 'closeSheet()')
     for made in (1, 250000):
         houses(pg, made, f'desktop 1280×800 stage made={made}')
+    town_look(pg, 'desktop 1280×800')
     pg.close()
     pg=page(vp={'width':1920,'height':1080}); E(pg, QUIET)
     houses(pg, 25, 'desktop 1920×1080')
     houses(pg, 250000, 'desktop 1920×1080 Timber Town')
+    town_look(pg, 'desktop 1920×1080')
     pg.close()
     pg=page('iPhone 13'); E(pg, QUIET)
     houses(pg, 1, 'iPhone 13 hamlet')
@@ -227,6 +260,7 @@ with sync_playwright() as p:
     paint(pg, 2)
     look=E(pg, r'''()=>{const b=document.querySelector(".toast-look"); if(!b) return null; const r=b.getBoundingClientRect(); const t=b.closest(".toast").getBoundingClientRect(); return {h:r.height,w:r.width,top:r.top,bot:r.bottom,clip:r.bottom<=t.bottom+1&&r.top>=t.top-1,vh:innerHeight};}''')
     ok(look and look['h']>=43.5 and look['clip'] and look['top']>0 and look['bot']<look['vh'], f'iPhone Look button is fully visible ({look})')
+    town_look(pg, 'iPhone 13')
     pg.close()
     # ---- opening view and opening script match v2.59 ----
     fresh={}
@@ -267,7 +301,7 @@ with sync_playwright() as p:
     pg.screenshot(path=shot_path('stage0-lot.png'))
     E(pg, r'''()=>{S.town.made=0;townStage();openSheet("town");TT.render();}''')
     paint(pg, 2); shot_clean(pg)
-    E(pg, 'openSheet("town")'); paint(pg, 2)
+    E(pg, 'openSheet("town")'); settle_sheet(pg); paint(pg, 2)
     pg.screenshot(path=shot_path('town-sheet.png'))
     pg.close()
     pg=page('iPhone 13'); E(pg, QUIET)

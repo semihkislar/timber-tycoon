@@ -162,11 +162,13 @@ function setupSheetGestures(){
   head.addEventListener('pointermove',e=>{if(SH.drag) sheetDragMove(e.clientY);});
   const up=e=>{if(!SH.drag) return;const moved=SH.drag.moved;const r=sheetDragEnd();if(!moved&&e.type==='pointerup'&&r===null&&!railMode()) setSheetState(SH.state==='full'?'half':'full');};
   head.addEventListener('pointerup',up);head.addEventListener('pointercancel',up);
-  // pulling the content down while it is scrolled to the top drags the sheet (swipe-down to close)
+  // pulling the content down while it is scrolled to the top drags the sheet (swipe-down to close).
+  // A nested scroller (the Town sheet copy) counts: only its own top edge starts the drag.
   let BS=null;
-  body.addEventListener('touchstart',e=>{if(e.touches.length!==1){BS=null;return;}BS={y0:e.touches[0].clientY,top:body.scrollTop<=0,active:false};},{passive:true});
+  const atTop=from=>{let n=from&&from.nodeType===1?from:from&&from.parentElement;while(n){if(n.scrollHeight>n.clientHeight+2){const oy=getComputedStyle(n).overflowY;if((n===body||oy==='auto'||oy==='scroll')&&n.scrollTop>0)return false;}if(n===body)break;n=n.parentElement;}return true;};
+  body.addEventListener('touchstart',e=>{if(e.touches.length!==1){BS=null;return;}BS={y0:e.touches[0].clientY,top:atTop(e.target),active:false};},{passive:true});
   body.addEventListener('touchmove',e=>{if(!BS||!BS.top) return;const y=e.touches[0].clientY,dy=y-BS.y0;
-    if(!BS.active){if(dy<-4){BS.top=false;return;} if(dy>10&&body.scrollTop<=0){BS.active=true;sheetDragStart(BS.y0+10);}}
+    if(!BS.active){if(dy<-4){BS.top=false;return;} if(dy>10&&atTop(e.target)){BS.active=true;sheetDragStart(BS.y0+10);}}
     if(BS.active){if(e.cancelable) e.preventDefault();sheetDragMove(y);}},{passive:false});
   const tend=()=>{if(BS&&BS.active) sheetDragEnd();BS=null;};
   body.addEventListener('touchend',tend);body.addEventListener('touchcancel',tend);
