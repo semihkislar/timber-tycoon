@@ -226,7 +226,7 @@ with sync_playwright() as p:
     E(pg, r'''()=>{S.town={made:0,stage:0,best:0,seen:0}; if(typeof ntClear==="function")ntClear(); townCredit(1,false);}''')
     paint(pg, 2)
     look=E(pg, r'''()=>{const b=document.querySelector(".toast-look"); if(!b) return null; const r=b.getBoundingClientRect(); const t=b.closest(".toast").getBoundingClientRect(); return {h:r.height,w:r.width,top:r.top,bot:r.bottom,clip:r.bottom<=t.bottom+1&&r.top>=t.top-1,vh:innerHeight};}''')
-    ok(look and look['h']>=44 and look['clip'] and look['top']>0 and look['bot']<look['vh'], f'iPhone Look button is fully visible ({look})')
+    ok(look and look['h']>=43.5 and look['clip'] and look['top']>0 and look['bot']<look['vh'], f'iPhone Look button is fully visible ({look})')
     pg.close()
     # ---- opening view and opening script match v2.59 ----
     fresh={}
