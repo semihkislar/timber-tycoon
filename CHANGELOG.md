@@ -5,6 +5,26 @@ All notable changes to Timber Tycoon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [2.60] — 2026-11-28
+
+**Find the village.** The south-gate lot is on the location list from the start, the Market line opens it, and an empty lot reads as house plots instead of a speck. The wide view leaves the cottages above the toolbar once the first one exists. A save from v2.59 still loads. The first minutes of a run match v2.59.
+
+### Added
+- **📍 Town** on the jump list, from the first frame. It opens the Town sheet and frames the lot. The same lot was already drawn; it was easy to miss.
+- The Market line **🏘️ Town demand** is a button. It opens the Town sheet and frames the village.
+- **Empty foundations** at stage 0, and a larger sign: "0 / 1 house kit → Hamlet". The Town sheet names the Timber-frame Houses workshop as the source of kits, and later stages show the count toward the next name.
+- A **Look** button on the toast when the village grows a stage. Tapping it frames the lot. The camera does not move on its own, and an offline catch-up does not raise the toast.
+- The village name stays readable on a phone at the fit zoom, and it sits clear of the round buttons.
+
+### Changed
+- Once a cottage exists, the fit view includes it and leaves a gap above the bottom bar, on a desktop and on a phone. Before that first kit the frame is the v2.59 frame.
+
+### Fixed
+- **Look at the village** stays in the visible Town sheet. The goal line and the workshop line had pushed the button behind the bottom bar until you scrolled. The copy scrolls; the button does not.
+
+### Unchanged
+Recipes, prices, town demand percentages and order rewards. Logs stay raw material and are never sold. Residents still do not walk on roofs or chimneys. Low graphics draws the same village it drew in v2.58. A save from v2.59, v2.58, v2.55, v2.39 or v2.24 still loads. The first minutes of a run match v2.59.
+
 ## [2.59] — 2026-11-22
 
 **A trained worker can run a phase.** Promote someone at skill 5 or higher to foreman of Phase 1, Phase 2 or Phase 3. One foreman per phase. The whole column works a little faster. A save from v2.58 still loads. The first minutes of a run match v2.58.

@@ -1,7 +1,7 @@
 /* Timber Tycoon bundle. Built by tools/build_js.py — edit js/*.js, then rebuild. */
 'use strict';
 window.__splashShown=!!document.getElementById('boot');
-const VERSION='2.59';
+const VERSION='2.60';
 const SAVE_KEY='timberTycoon_save_v1';
 const OFFLINE_CAP=8*3600;
 const BUFFER_SEC=2;
@@ -1008,7 +1008,7 @@ function confettiBurst(){
 }
 /* ===================== UI HELPERS ===================== */
 const $=id=>document.getElementById(id);
-function toast(html,ms,cls){return ntPush(html,ms,cls);}   // v2.43: queue, priorities, merging and the log live in js/notify.js
+function toast(html,ms,cls,act){return ntPush(html,ms,cls,act);}   // v2.43: queue, priorities, merging and the log live in js/notify.js. v2.60: optional act runs from a button inside the toast.
 function modal(title,body,buttons){
   const root=$('modalRoot');
   const bg=document.createElement('div');bg.className='modal-bg';
@@ -1066,7 +1066,12 @@ function ntBadge(el,n){let b=el.querySelector(':scope>.nt-n');if(n>1){if(!b){b=d
 function ntShow(e){
   const host=ntHost(); if(!host) return;
   const t=document.createElement('div');t.className='toast'+(e.cls?' '+e.cls:'')+(e.p>=3?' nt-hi':'');t.innerHTML=e.html;t.dataset.p=e.p;
-  t.addEventListener('click',ev=>{ev.stopPropagation();ntHide(e,true);});
+  t.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    const btn=ev.target&&ev.target.closest&&ev.target.closest('button');
+    if(btn&&e.act){ev.preventDefault(); const fn=e.act; ntHide(e,true); try{fn();}catch(_){} return;}
+    ntHide(e,true);
+  });
   const pill=$('ntPill'); if(pill&&pill.parentNode===host) host.insertBefore(t,pill); else host.appendChild(t);
   e.el=t;e.gone=false;e.shownAt=performance.now();if(e.logRef) e.logRef.seen=true;ntBadge(t,e.n);NT.vis.push(e);NT.stats.shown++;ntArm(e);
 }
@@ -1085,15 +1090,15 @@ function ntPump(){
   if(NT.q.length) for(const v of NT.vis){if(v.p<=NT.q[0].p&&!v.hurry){const left=v.dur-(now-v.shownAt);if(left>1200){v.hurry=1;ntArm(v,Math.max(1200-(now-v.shownAt),0)+0);}}}
   ntPill();
 }
-function ntPush(html,ms,cls){
+function ntPush(html,ms,cls,act){
   html=String(html==null?'':html); const txt=ntText(html); if(!txt&&!/<svg/i.test(html)) return null;
   ntPrune(); NT.stats.pushed++;
   const p=ntPri(html,cls,txt), key=ntKey(txt,cls);
-  const e={id:++NT.seq,html,cls:cls||'',ms,p,key,txt,n:1,t:performance.now(),dur:ntDur(ms,p)};
+  const e={id:++NT.seq,html,cls:cls||'',ms,p,key,txt,n:1,t:performance.now(),dur:ntDur(ms,p),act:typeof act==='function'?act:null};
   ntLog(e);
   // a repeat of what is on screen: update in place with a ×N badge
   const v=NT.vis.find(x=>x.key===key);
-  if(v){v.n++;v.html=html;v.txt=txt;v.el.innerHTML=html;ntBadge(v.el,v.n);v.hurry=0;v.shownAt=performance.now();ntArm(v);NT.stats.merged++;if(v.logRef) v.logRef.seen=true;ntPill();return v.el;}
+  if(v){v.n++;v.html=html;v.txt=txt;if(typeof act==='function') v.act=act;v.el.innerHTML=html;ntBadge(v.el,v.n);v.hurry=0;v.shownAt=performance.now();ntArm(v);NT.stats.merged++;if(v.logRef) v.logRef.seen=true;ntPill();return v.el;}
   const w=NT.q.find(x=>x.key===key);
   if(w){w.n++;w.html=html;w.txt=txt;w.p=Math.max(w.p,p);NT.stats.merged++;ntPill();return null;}
   if(p===1&&ntQuiet()){NT.stats.quiet++;NT.unseen++;ntPill();return null;}
@@ -8353,7 +8358,11 @@ function mktFleetDraw(ctx,objs,inView){
    top of the sprite never paints. The church spire stands on the near corner, so the
    whole tower stays in the near half (townSplitLift 64). A cottage chimney stands
    on the near corner of the roof, and its lift is 42, so the stack stays in the near half.
-   One more walker on a large screen, and only while graphics are not Low. */
+   One more walker on a large screen, and only while graphics are not Low.
+   v2.60: the empty lot draws foundation outlines and a larger sign until the first kit.
+   The name stays readable at phone fit zoom. A stage-up toast has a Look action;
+   nothing moves the camera on its own, and an offline catch-up does not toast.
+   The sheet's Look button stays in the visible half-height sheet, above the toolbar. */
 const TOWN_STAGES=[
   {n:0,name:'Empty lot',say:'A cleared lot by the south gate, waiting on the first house kit.'},
   {n:1,name:'Hamlet',say:'One timber-frame cottage, a garden and a tree.'},
@@ -8434,7 +8443,8 @@ function townCredit(n,offline){
     t.seen=s;
     if(!offline&&typeof toast==='function'){
       const stg=TOWN_STAGES[s];
-      toast(`🏘️ <b>${stg.name}</b><br>${stg.say} Town demand <b>+${townPctLabel()}%</b>.`,4800,'ms-toast');
+      const look=()=>{if(typeof townOpen==='function') townOpen();};
+      toast(`<span>🏘️ <b>${stg.name}</b><br>${stg.say} Town demand <b>+${townPctLabel()}%</b>.</span><button type="button" class="toast-look">Look</button>`,6400,'ms-toast town-toast',look);
     }
     if(piece&&!offline&&typeof emitP==='function'){const q=P(piece.i,piece.j,16);for(let i=0;i<12;i++) emitP(q[0],q[1],'poof');}
   }
@@ -8451,7 +8461,9 @@ function townMakePieces(){
   add({kind:'stake',st:0,i:38.62,j:33.18,wi:.08,wj:.08});
   add({kind:'stake',st:0,i:39.18,j:33.18,wi:.08,wj:.08});
   add({kind:'sign',st:0,i:38.90,j:33.18,wi:.34,wj:.16});
+  add({kind:'board',st:0,i:38.90,j:33.05,wi:.96,wj:.28});
   [[1,33.72,0,0],[2,35.15,1,1],[2,36.62,0,2],[3,38.20,1,0],[3,39.72,0,1],[3,41.22,1,2],[5,42.55,0,0]].forEach(([st,j,chim,v])=>{
+    add({kind:'plot',st:0,i:38.95,j,wi:.80,wj:.68});
     add({kind:'cot',st,i:38.95,j,wi:.80,wj:.68,chim:!!chim,v});
   });
   add({kind:'tree',st:1,i:37.32,j:33.28,wi:.38,wj:.38,v:0});
@@ -8467,9 +8479,23 @@ function townMakePieces(){
   return P;
 }
 function townPieces(){return _twPcs||(_twPcs=townMakePieces());}
+/* A foundation can share a cottage's cell. The building wins, so the scaffold still splits on the house. */
+function townFxHost(i,j){
+  let flat=null;
+  for(const q of townPieces()){
+    if(Math.abs(q.i-i)>=.02||Math.abs(q.j-j)>=.02||q.kind==='plot'||q.kind==='board') continue;
+    if(!townFlat(q)) return q;
+    flat=q;
+  }
+  return flat;
+}
 function townLive(){
   const s=townStage(), end=townRoadEnd(s);
-  return townPieces().filter(p=>p.st<=s&&!(p.kind==='path'&&p.j>end));
+  return townPieces().filter(p=>{
+    if(p.kind==='plot'||p.kind==='board') return s<1;
+    if(p.kind==='sign'&&s<1) return false;
+    return p.st<=s&&!(p.kind==='path'&&p.j>end);
+  });
 }
 function townAABB(p){return {k:p.kind,st:p.st,solid:p.kind!=='path',i0:p.i-p.wi/2,i1:p.i+p.wi/2,j0:p.j-p.wj/2,j1:p.j+p.wj/2};}
 function townFoot(){return townLive().map(townAABB);}
@@ -8488,10 +8514,34 @@ function townHitPoly(){
 function townHit(wx,wy){const h=townHitPoly();return pip(h,wx,wy);}
 function townFocusPt(){const s=townStage();return P(38.35, s<2?33.6:s<4?36.4:s<6?38.8:40.2, 12);}
 function focusTown(){
-  if(typeof flyTo!=='function') return;
+  if(typeof flyTo!=='function'&&typeof flyToWorld!=='function') return;
   const p=townFocusPt(), c=scene.cam;
   const z=Math.min(c.maxZ, Math.max(c.fitZ*(scene.w<700?2.05:1.7), .9));
-  flyTo(p[0], p[1]-(scene.w<700?40:0), z);
+  if(typeof flyToWorld==='function') flyToWorld(p[0], p[1], z);
+  else flyTo(p[0], p[1]-(scene.w<700?40:0), z);
+}
+function townOpen(){if(typeof openSheet==='function') openSheet('town'); else focusTown();}
+/* World span of the cottages that exist. Null until the first kit, so a fresh fit stays the old frame. */
+function townFitSpan(){
+  if(townStage()<1) return null;
+  let foot=-1e9, x0=1e9, x1=-1e9;
+  for(const p of townLive()){
+    const wi=p.wi||.3, wj=p.wj||.3;
+    const mid=P(p.i,p.j,0), south=P(p.i, p.j+wj/2, 0);
+    const west=P(p.i-wi/2, p.j, 0), east=P(p.i+wi/2, p.j, 0);
+    foot=Math.max(foot, mid[1]+30, south[1]+10);
+    x0=Math.min(x0, west[0], east[0], south[0]);
+    x1=Math.max(x1, west[0], east[0], south[0]);
+  }
+  if(!(foot>0)) return null;
+  return {foot, x0, x1};
+}
+function townGoalText(){
+  const made=townState().made, nx=townNext();
+  if(!nx) return '';
+  const kits=nx.n===1?'house kit':'house kits';
+  const now=made<10&&made%1?(+made).toFixed(1):fmt(made);
+  return now+' / '+fmt(nx.n)+' '+kits+' → '+nx.name;
 }
 function townScreen(){const p=townFocusPt();return w2s(p[0],p[1]);}
 
@@ -8499,7 +8549,7 @@ function townScreen(){const p=townFocusPt();return w2s(p[0],p[1]);}
 const TOWN_WALL=['#f4e2c2','#f7e7cc','#f1dcc0'];
 const TOWN_TIMB='#5c3418', TOWN_ROOF='#a33b28', TOWN_ROOF2='#c45a38';
 function townBoxPx(p){
-  const hx=(p.wi+p.wj)*HW*.7+18, top=p.kind==='church'?210:p.kind==='tree'?86:p.kind==='well'?78:72;
+  const hx=(p.wi+p.wj)*HW*.7+18, top=p.kind==='church'?210:p.kind==='board'?118:p.kind==='tree'?86:p.kind==='well'?78:72;
   return [-hx,-top,hx+16,26];
 }
 function townBeams(ctx,i0,j0,i1,j1,z0,z1){
@@ -8653,6 +8703,26 @@ function townSign(ctx,p){
   const a=P(p.i-.14,p.j,6.5), b=P(p.i,p.j,7.6), c=P(p.i+.14,p.j,6.5);
   ctx.fillStyle=TOWN_ROOF; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.lineTo(c[0],c[1]); ctx.closePath(); ctx.fill();
 }
+function townBoard(ctx,p){
+  shadowAt(ctx,p.i,p.j,12,5,.18);
+  box(ctx,p.i-.045,p.j-.045,p.i+.045,p.j+.045,0,12.2,'#5c3418',{top:false,edge:false});
+  box(ctx,p.i-.46,p.j-.07,p.i+.46,p.j+.07,6.4,10.6,'#fff6e4',{top:'#fffaf2'});
+  const a=P(p.i-.5,p.j,10.5), b=P(p.i,p.j,12.6), c=P(p.i+.5,p.j,10.5);
+  ctx.fillStyle=TOWN_ROOF; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.lineTo(c[0],c[1]); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#8a5a32'; ctx.lineWidth=1.15;
+  ctx.beginPath();
+  [[-0.3,7.5,0.3],[-0.22,8.7,0.22]].forEach(([x0,z,x1])=>{const u=P(p.i+x0,p.j,z), v=P(p.i+x1,p.j,z); ctx.moveTo(u[0],u[1]); ctx.lineTo(v[0],v[1]);});
+  ctx.stroke();
+}
+function townPlotMark(ctx,p){
+  const i0=p.i-p.wi/2, i1=p.i+p.wi/2, j0=p.j-p.wj/2, j1=p.j+p.wj/2;
+  fillP(ctx,[P(i0,j0,.45),P(i1,j0,.45),P(i1,j1,.45),P(i0,j1,.45)],'rgba(236,220,184,.72)');
+  ctx.strokeStyle='#6b4226'; ctx.lineWidth=2.1; ctx.lineJoin='round';
+  ctx.beginPath();
+  [[i0,j0],[i1,j0],[i1,j1],[i0,j1]].forEach(([i,j],k)=>{const q=P(i,j,.85); if(k) ctx.lineTo(q[0],q[1]); else ctx.moveTo(q[0],q[1]);});
+  ctx.closePath(); ctx.stroke();
+  for(const [i,j] of [[i0,j0],[i1,j0],[i0,j1],[i1,j1]]) box(ctx,i-.035,j-.035,i+.035,j+.035,0,3.1,'#f4e6c8',{top:'#fff6e8',edge:false});
+}
 function townStake(ctx,p){
   box(ctx,p.i-.02,p.j-.02,p.i+.02,p.j+.02,0,2.4,'#e8d7b0',{top:'#f7f1e4',edge:false});
 }
@@ -8671,6 +8741,8 @@ function townArt(ctx,p){
   if(p.kind==='tree') return townTree(ctx,p);
   if(p.kind==='garden') return townGarden(ctx,p);
   if(p.kind==='sign') return townSign(ctx,p);
+  if(p.kind==='board') return townBoard(ctx,p);
+  if(p.kind==='plot') return townPlotMark(ctx,p);
   if(p.kind==='stake') return townStake(ctx,p);
 }
 function townStamp(ctx,p){
@@ -8767,7 +8839,7 @@ function townFolk(){
 }
 /* A resident's feet sort a hair in front of the ground tile they stand on. */
 const TOWN_FEET=0.004;
-function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake';}
+function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake'||p.kind==='plot';}
 function townBoxOf(p){return {i0:p.i-p.wi/2,j0:p.j-p.wj/2,i1:p.i+p.wi/2,j1:p.j+p.wj/2};}
 /* Pixels above the footprint centre where the near half begins.
    Screen Y is (i+j)*HH - z, so a taller part or a far corner sits further above the centre.
@@ -8784,6 +8856,7 @@ function townSplitLift(p){
   if(p.kind==='stall') return 22;   // awning, higher at the back, ~16px
   if(p.kind==='well') return 20;    // little roof peak ~14px
   if(p.kind==='sign') return 12;    // roof mark ~8px
+  if(p.kind==='board') return 22;   // stage-0 notice board; hidden once a cottage exists
   return 14;
 }
 /* Far half at the back corner, near half at the front corner.
@@ -8817,7 +8890,7 @@ function townSortParts(){
   for(const p of townLive()) for(const part of townPieceKeys(p)) out.push({kind:p.kind,half:part.half,k:part.k,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
   for(const f of townFolk()) out.push({kind:'folk',half:'pt',k:f.i+f.j+TOWN_FEET,i:f.i,j:f.j,pose:f.pose});
   if(scene.townFx){
-    const fx=scene.townFx, host=townPieces().find(q=>Math.abs(q.i-fx.i)<.02&&Math.abs(q.j-fx.j)<.02);
+    const fx=scene.townFx, host=townFxHost(fx.i,fx.j);
     const parts=host?townPieceKeys(host):[{k:fx.i+fx.j,half:'all',box:townBoxOf({i:fx.i,j:fx.j,wi:.2,wj:.2})}];
     for(const part of parts) if(part.half!=='all') out.push({kind:'scaffold',half:part.half,k:part.k+.008,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
   }
@@ -8854,7 +8927,7 @@ function townDraw(ctx,objs,inView){
   }
   if(scene.townFx){
     const fx=scene.townFx; const [x,y]=P(fx.i,fx.j); if(!inView(x,y,60)) return;
-    const host=townPieces().find(q=>Math.abs(q.i-fx.i)<.02&&Math.abs(q.j-fx.j)<.02);
+    const host=townFxHost(fx.i,fx.j);
     let draw=host?townPieceKeys(host):[{k:fx.i+fx.j+.4,half:'all',box:null}];
     if(draw.every(part=>part.half==='all')) draw=[draw[draw.length-1]];
     for(const part of draw){
@@ -8865,14 +8938,45 @@ function townDraw(ctx,objs,inView){
     }
   }
 }
+function townPill(ctx,x,y,txt,o){
+  o=o||{};
+  const fs=o.fs||11, wGuess=Math.max(48, txt.length*(fs*0.56)+(o.padX||14)+6), hGuess=fs+(o.padY||9)+6;
+  const fab=typeof townChromeFab==='function'?townChromeFab():null;
+  if(fab){
+    const hit=(px,py)=>px+wGuess/2>fab.left-4&&px-wGuess/2<fab.right+4&&py+hGuess/2>fab.top-4&&py-hGuess/2<fab.bottom+4;
+    if(hit(x,y)){
+      const left=fab.left-wGuess/2-10;
+      if(left>wGuess/2+4) x=left;
+      else y=Math.min(y, fab.top-hGuess/2-10);
+    }
+  }
+  x=Math.max(wGuess/2+2, Math.min(scene.w-wGuess/2-2, x));
+  y=Math.max(16, Math.min(scene.h-10, y));
+  const r=pill(ctx,x,y,txt,o);
+  if(r&&r[2]>0){
+    const rec={x:r[0],y:r[1],w:r[2],h:r[3],t:txt};
+    scene.townPills.push(rec);
+    if(!scene.townPill) scene.townPill=rec;
+  }
+  return r;
+}
 function townOverlay(ctx){
+  scene.townPill=null; scene.townPills=[];
   if(townHide) return;
   const s=townStage(), b=townBounds(0);
-  const [x,y]=P((b.i0+b.i1)/2, b.j0-.15, 8);
+  const [x,y]=P((b.i0+b.i1)/2, b.j0-.15, s<1?16:8);
   if(x<scene.cam.x-scene.w/scene.cam.z||x>scene.cam.x+scene.w/scene.cam.z) return;
   const [sx,sy]=w2s(x,y);
   if(sy<18||sy>scene.h-8) return;
-  pill(ctx,sx,sy,'🏘️ '+TOWN_STAGES[s].name,{lo:1,fs:11,bg:'rgba(90,48,22,.9)',fg:'#fff6e0',stroke:'#e7c48a',padX:12,padY:7});
+  // v2.60: this name is how a phone at fit zoom still finds the village. Other info pills keep {lo:1}.
+  const nr=townPill(ctx,sx,sy,'🏘️ '+TOWN_STAGES[s].name,{fs:11,bg:'rgba(90,48,22,.9)',fg:'#fff6e0',stroke:'#e7c48a',padX:12,padY:7});
+  if(s<1){
+    const goal=townGoalText();
+    if(goal){
+      const gx=nr&&nr[2]?nr[0]+nr[2]/2:sx, gy=nr&&nr[3]?nr[1]+nr[3]+18:sy+30;
+      townPill(ctx,gx,gy,goal,{fs:14,bg:'rgba(255,246,224,.96)',fg:'#5a3418',stroke:'#c99560',padX:12,padY:8});
+    }
+  }
 }
 
 /* ---------- sheet ---------- */
@@ -8884,17 +8988,30 @@ function townSheetHtml(){
   const s=townStage(), st=TOWN_STAGES[s], made=townState().made, nx=townNext();
   const span=nx?nx.n-st.n:1, into=nx?Math.max(0,made-st.n):1, pct=nx?Math.max(0,Math.min(100,into/span*100)):100;
   const cur='+'+townPctLabel()+'%', nxt=nx?'+'+((s+1)*2.5).toFixed(1).replace(/\.0$/,'')+'%':'at the cap';
-  return `<div class="town-hero"><div class="town-ic">${svgIcon('houses',56)}</div><div><div class="town-stage">${st.name}</div><div class="legend">${st.say}</div></div></div>
+  const goal=townGoalText();
+  const src=(typeof BMAP!=='undefined'&&BMAP.framer&&BMAP.framer.name)||'Timber-frame Houses';
+  return `<div class="town-scroll"><div class="town-hero"><div class="town-ic">${svgIcon('houses',56)}</div><div><div class="town-stage">${st.name}</div><div class="legend">${st.say}</div></div></div>
     <div class="town-row"><span>Houses this run</span><b>${fmt(made, made<10&&made%1?1:0)}</b></div>
+    ${goal?`<div class="town-goal">${goal}</div>`:''}
     <div class="pbar town-bar"><i style="width:${pct.toFixed(1)}%"></i></div>
     <div class="legend">${nx?`${fmt(Math.max(0,nx.n-made))} more to <b>${nx.name}</b>`:'Timber Town is built. The demand bonus is at its cap.'}</div>
+    <div class="legend town-src">House kits come from the <b>${src}</b> workshop.</div>
     <div class="town-bonus"><div class="b"><div class="legend">Town demand now</div><b>${cur}</b></div><div class="b"><div class="legend">${nx?'Next stage':'Cap'}</div><b>${nxt}</b></div></div>
-    <p class="legend">The Town Market pays this on planks, beams, chairs and the other Phase 1–2 goods, whether they auto-sell or you press Sell. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. Replant clears the village; the best stage stays for trophies.</p>
+    <p class="legend">The Town Market pays this on planks, beams, chairs and the other Phase 1–2 goods, whether they auto-sell or you press Sell. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. Replant clears the village; the best stage stays for trophies.</p></div>
     <button class="btn wood" id="townLook" type="button">Look at the village</button>`;
 }
 function townUpdate(){
   const tm=$('townMkt');
-  if(tm){const tx='🏘️ Town demand +'+townPctLabel()+'%'; if(tm.textContent!==tx){tm.textContent=tx; tm.title='Phase 1–2 goods sold at the Town Market. Orders, contracts, exports and research are not included. Logs are not sold.';}}
+  if(tm){
+    const tx='🏘️ Town demand +'+townPctLabel()+'%';
+    if(tm.textContent!==tx){tm.textContent=tx; tm.title='Phase 1–2 goods sold at the Town Market. Tap to see the village. Orders, contracts, exports and research are not included. Logs are not sold.';}
+    if(!tm._tw){
+      tm._tw=1; tm.setAttribute('role','button'); tm.tabIndex=0;
+      const go=ev=>{if(ev) ev.stopPropagation(); townOpen();};
+      tm.addEventListener('click',go);
+      tm.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go(ev);}});
+    }
+  }
   if(typeof curSheet==='undefined'||curSheet!=='town') return;
   const el=$('townCard'); if(!el) return;
   const h=townSheetHtml(); if(el._h!==h){el.innerHTML=h; el._h=h; const b=$('townLook'); if(b) b.onclick=()=>{if(typeof focusTown==='function') focusTown();};}
@@ -8923,12 +9040,42 @@ function s2w(x,y){const c=scene.cam;return [c.x+(x-scene.w/2)/c.z,c.y+(y-scene.h
 function barH(){return [$('topbar').offsetHeight||50,typeof railMode==='function'&&railMode()?0:($('bottombar').offsetHeight||70)];}
 function southYardBuilt(){const B=typeof S==='object'&&S&&S.buildings;return !!(B&&((B.beamsaw&&B.beamsaw.lvl)||(B.glulam&&B.glulam.lvl)));}
 function decorYardBuilt(){const B=typeof S==='object'&&S&&S.buildings;return !!(B&&((B.panelpress&&B.panelpress.lvl)||(B.decorstudio&&B.decorstudio.lvl)));}
+/* Right-hand action buttons, in screen pixels. Null while a sheet hides them. */
+function townChromeFab(){
+  if(typeof document==='undefined'||document.body.classList.contains('sheet-on')) return null;
+  if(!$('fabs')) return null;
+  const rail=typeof railMode==='function'&&railMode();
+  const bb=rail?0:(($('bottombar')&&$('bottombar').offsetHeight)||70);
+  const jump=document.body.classList.contains('jump-on')&&!rail;
+  const sz=rail?48:52, n=3, gap=10, edge=10;
+  if(rail){const w=n*sz+(n-1)*gap, right=scene.w-edge, bottom=scene.h-edge; return {left:right-w,right,top:bottom-sz,bottom};}
+  const bottom=scene.h-bb-12-(jump?58:0), h=n*sz+(n-1)*gap, right=scene.w-edge;
+  return {left:right-sz,right,top:bottom-h,bottom};
+}
 function fitCamera(instant){
   const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h; if(instant){c.fly=null;c.vx=c.vy=0;}
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0,(typeof townStage==='function'&&townStage()>=1)?1360:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62;
+  const base=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  // v2.60: once a cottage exists, leave air under it so it sits above the toolbar. Stage 0 is the old frame.
+  let townBy=0;
+  const span=typeof townFitSpan==='function'?townFitSpan():null;
+  if(span){
+    const tx=(bx0+bx1)/2;
+    let z=Math.min(uw/(bx1-bx0), uh/Math.max(1,base-by0));
+    for(let i=0;i<4;i++){
+      const sx0=(span.x0-tx)*z+uw/2, sx1=(span.x1-tx)*z+uw/2;
+      const fab=townChromeFab();
+      const hit=fab&&sx1>fab.left-8&&sx0<fab.right+8;
+      const margin=hit?Math.min(176,(fab.bottom-fab.top)+16):64;
+      const by=span.foot+margin/Math.max(z,.08);
+      townBy=by;
+      z=Math.min(uw/(bx1-bx0), uh/(Math.max(base,by)-by0));
+    }
+  }
+  const by1=Math.max(base, townBy);
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;
@@ -11484,6 +11631,7 @@ const JUMPS=[
   {id:'build',ic:'🏗️',l:'Builders',pt:()=>P(BYZ.ci,BYZ.cj,22),z:1.7,lock:()=>!byVisible()},
   {id:'dock',ic:'🚚',l:'Dock',pt:()=>P(DOCK.ci,DOCK.cj,20),z:1.7},
   {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
+  {id:'town',ic:'🏘️',l:'Town',pt:()=>typeof townFocusPt==='function'?townFocusPt():P(38.35,33.6,12),z:1.9},   // v2.60: the south-gate lot is there from the first frame
 ];
 /* centre of a production column (all its lots, built or not) */
 function colMid(side){const L=Object.values(LOTS).filter(l=>l.side===side);if(!L.length) return [15.5,15.5];
@@ -11497,6 +11645,15 @@ function buildJumpBar(){
 }
 function jumpTo(id){
   const j=JUMPS.find(x=>x.id===id); if(!j) return false; const c=scene.cam;
+  if(j.id==='town'){
+    GI.touchedAt=camNow();
+    if(curSheet&&curSheet!=='town') closeSheet();
+    if(curSheet!=='town'&&typeof townOpen==='function') townOpen();
+    else if(typeof focusTown==='function') focusTown();
+    haptic(6);
+    document.querySelectorAll('#jumpBar .jchip').forEach(b=>b.classList.toggle('on',b.dataset.j===id));
+    scene.lastJump=id; return true;
+  }
   const [wx,wy]=j.pt(); const z=Math.min(c.maxZ,Math.max(c.minZ,c.fitZ*j.z*(scene.w<700?1:0.8)));
   if(curSheet&&curSheet!=='bld') closeSheet();
   GI.touchedAt=camNow(); flyToWorld(wx,wy,z); haptic(6);
@@ -11609,11 +11766,13 @@ function setupSheetGestures(){
   head.addEventListener('pointermove',e=>{if(SH.drag) sheetDragMove(e.clientY);});
   const up=e=>{if(!SH.drag) return;const moved=SH.drag.moved;const r=sheetDragEnd();if(!moved&&e.type==='pointerup'&&r===null&&!railMode()) setSheetState(SH.state==='full'?'half':'full');};
   head.addEventListener('pointerup',up);head.addEventListener('pointercancel',up);
-  // pulling the content down while it is scrolled to the top drags the sheet (swipe-down to close)
+  // pulling the content down while it is scrolled to the top drags the sheet (swipe-down to close).
+  // A nested scroller (the Town sheet copy) counts: only its own top edge starts the drag.
   let BS=null;
-  body.addEventListener('touchstart',e=>{if(e.touches.length!==1){BS=null;return;}BS={y0:e.touches[0].clientY,top:body.scrollTop<=0,active:false};},{passive:true});
+  const atTop=from=>{let n=from&&from.nodeType===1?from:from&&from.parentElement;while(n){if(n.scrollHeight>n.clientHeight+2){const oy=getComputedStyle(n).overflowY;if((n===body||oy==='auto'||oy==='scroll')&&n.scrollTop>0)return false;}if(n===body)break;n=n.parentElement;}return true;};
+  body.addEventListener('touchstart',e=>{if(e.touches.length!==1){BS=null;return;}BS={y0:e.touches[0].clientY,top:atTop(e.target),active:false};},{passive:true});
   body.addEventListener('touchmove',e=>{if(!BS||!BS.top) return;const y=e.touches[0].clientY,dy=y-BS.y0;
-    if(!BS.active){if(dy<-4){BS.top=false;return;} if(dy>10&&body.scrollTop<=0){BS.active=true;sheetDragStart(BS.y0+10);}}
+    if(!BS.active){if(dy<-4){BS.top=false;return;} if(dy>10&&atTop(e.target)){BS.active=true;sheetDragStart(BS.y0+10);}}
     if(BS.active){if(e.cancelable) e.preventDefault();sheetDragMove(y);}},{passive:false});
   const tend=()=>{if(BS&&BS.active) sheetDragEnd();BS=null;};
   body.addEventListener('touchend',tend);body.addEventListener('touchcancel',tend);

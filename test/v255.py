@@ -285,7 +285,7 @@ with sync_playwright() as p:
             E(pg, r'''()=>{for(const id of ["sawmill","chipper","kiln","carpentry","peeler","pellet","paper","furniture","beamsaw","glulam","panelpress","framer"]) S.buildings[id].lvl=Math.max(4,S.buildings[id].lvl||0);S.town.made=250000;townStage();S.town.seen=6;fitCamera(true);const p=P(38.4,33.2,0);const c=scene.cam;c.fly=null;c.x=c.tx=p[0];c.y=c.ty=p[1];c.z=c.tz=c.fitZ;}''')
             E(pg, '__pl.length=0'); paint(pg, 3)
             calm=E(pg, '({on:dcOn(), pills:[...new Set(__pl)]})')
-            ok(calm['on'] and not any('Town' in t or 'Hamlet' in t or 'Village' in t for t in calm['pills']), f'{dev}: fit view hides the village label ({calm["pills"][:6]})')
+            ok(calm['on'] and any('Timber Town' in t for t in calm['pills']), f'{dev}: fit view keeps the village name ({calm["pills"][:8]})')
             E(pg, r'''()=>{const c=scene.cam;c.z=c.tz=Math.min(c.maxZ,c.fitZ*2.2);}''')
             E(pg, '__pl.length=0'); paint(pg, 3)
             back=E(pg, '[...new Set(__pl)]')

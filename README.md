@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.59-6b8e23" alt="version 2.59">
+  <img src="https://img.shields.io/badge/version-2.60-6b8e23" alt="version 2.60">
   <img src="https://img.shields.io/badge/platform-browser%20%7C%20mobile%20%7C%20PWA-8b5a2b" alt="platform">
   <img src="https://img.shields.io/badge/no%20install-play%20in%20browser-2e7d32" alt="no install">
 </p>
 
 <p align="center">
-  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.59: the late-game factory" width="900"></a>
+  <a href="https://semihkislar.github.io/timber-tycoon/"><img src="screenshots/highlights/desktop.png" alt="Timber Tycoon v2.60: the late-game factory" width="900"></a>
 </p>
 
 No download or account needed. It runs in any modern browser, plays well on phones, and can be installed as an app
@@ -30,12 +30,13 @@ No download or account needed. It runs in any modern browser, plays well on phon
 
 ## ✨ Highlights
 
-### New in v2.59: A foreman for each phase
-Train a worker to skill 5 and you can promote them to run a whole phase. One foreman per column. The buildings in that phase work 5% faster, and 10% faster once that worker reaches skill 10. The bonus sits on top of managers, workstations and research. They walk the column with a name tag. Low graphics and a zoomed-out phone leave the tag off. Logs are still not for sale.
+### New in v2.60: Find the village
+The south-gate village is on the location list from the first minute. 📍 **Town** opens the village and the Town sheet. The Market line **Town demand** does the same. Before the first house kit, the lot shows outlined foundations and a sign that reads how many kits are left. When the first kit is finished, a toast offers **Look** — the camera stays where it is until you tap it. Once a cottage exists, the wide view leaves room under the roofs so they sit above the toolbar. Logs are still not for sale.
 
 ### Recent releases
 | Version | Feature | What it does |
 |---|---|---|
+| **v2.59** | 👷 **A foreman for each phase** | A worker at skill 5 can run a phase. The column works 5% faster, and 10% at skill 10, on top of managers, workstations and research. |
 | **v2.58** | 🏘️ **The village keeps its feet on the ground** | A resident no longer crosses a roof or vanishes into a wall. Houses are drawn in two depths, so the near half stays in front of the walker. |
 | **v2.57** | 📜 **Paper and pellets keep up** | The Paper Mill and the Pellet Press get more out of the same chips from Lv 25. A full bark or chip store no longer stops the Veneer Peeler or the Beam Saw. The advisor names the export that is taking a good. |
 | **v2.56** | 🎚️ **A lighter scene for slow browsers** | A new Graphics setting (Auto, High, Low). Low turns off smoke, puddles, tree shadows and night lights and draws at 30 fps; Auto switches to it when the game stays under 40 fps. The fence and the seed beds are drawn once and reused. |

@@ -171,8 +171,19 @@ button{font:inherit;color:inherit}
 .pane h4{margin:12px 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink2);display:flex;justify-content:space-between;align-items:center}
 .pane h4:first-child{margin-top:2px}
 .legend{font-size:12px;color:var(--ink2);margin-top:6px;line-height:1.35}
-.town-mkt{margin:0 0 8px;color:#5a3418;font-weight:700}
+.town-mkt{margin:0 0 8px;color:#5a3418;font-weight:700;cursor:pointer}
+.town-mkt:hover{text-decoration:underline}
+.town-goal{margin:2px 0 6px;font-weight:800;color:#5a3418;font-size:15px}
+.town-src{margin-top:2px}
+.toast.town-toast{flex-wrap:wrap;align-items:center}
+.toast .toast-look{flex:none;margin-left:auto;min-height:32px;padding:4px 12px;border-radius:10px;border:2px solid #8a5a2b;background:#fff6e0;color:#5a3418;font:inherit;font-weight:900;cursor:pointer}
 .town-card{display:flex;flex-direction:column;gap:2px}
+/* v2.60: the goal line and the workshop line outgrew the default sheet. The copy scrolls;
+   Look at the village stays in the visible sheet, above the toolbar. */
+#sheet[data-s="town"] .sh-body{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+#sheet[data-s="town"] #pane-town{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+#sheet[data-s="town"] .town-card{flex:1 1 auto;min-height:0}
+.town-scroll{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .town-hero{display:flex;gap:12px;align-items:center;background:linear-gradient(180deg,#fff8ec,#f4e4c4);border:1px solid #e2c89a;border-radius:14px;padding:12px;margin-bottom:8px}
 .town-ic{width:56px;height:56px;flex:0 0 56px}
 .town-stage{font-size:18px;font-weight:800;color:#5a3418;line-height:1.2}
@@ -183,7 +194,7 @@ button{font:inherit;color:inherit}
 .town-bonus .b{flex:1;min-width:0;background:#fff6e0;border:1px solid #ead6b2;border-radius:12px;padding:8px 10px}
 .town-bonus .b .legend{margin:0}
 .town-bonus .b b{display:block;margin-top:2px;color:#2f6a1c;font-size:18px}
-#townLook{min-height:48px;width:100%;margin-top:4px}
+#townLook{flex:none;min-height:48px;width:100%;margin-top:8px}
 .town-flow{margin-top:4px}
 .hint{font-size:13px;color:var(--ink2);background:#fff8ea;border:1.5px dashed var(--line);padding:10px;border-radius:12px;text-align:center}
 /* buttons */
@@ -540,6 +551,8 @@ body.sheet-on #fabs,body.sheet-on #jumpBar,body.sheet-on #attnTip{opacity:0;poin
   /* toasts: top, below the HUD row, never over the bottom controls; v2.43: one at a time (js/notify.js), compact, at most ~3 lines */
   #toasts{top:calc(var(--tb) + 46px + env(safe-area-inset-top));width:min(360px,calc(100vw - 24px))}
   .toast{font-size:13px;line-height:1.3;padding:7px 11px;max-height:68px;overflow:hidden;border-radius:12px;box-shadow:0 5px 14px rgba(0,0,0,.28)}
+  .toast.town-toast{max-height:none;overflow:visible}
+  .toast .toast-look{min-height:44px}
   .toast.ach-toast svg{width:24px;height:29px}
   body.sheet-on #toasts{top:calc(var(--tb) + 4px + env(safe-area-inset-top))}
   body.sheet-on.sheet-full #toasts{top:auto;bottom:calc(var(--bb) + 10px + env(safe-area-inset-bottom));flex-direction:column-reverse}   /* v2.28.1: never over the sheet title / close button */

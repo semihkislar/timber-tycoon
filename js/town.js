@@ -15,7 +15,11 @@
    top of the sprite never paints. The church spire stands on the near corner, so the
    whole tower stays in the near half (townSplitLift 64). A cottage chimney stands
    on the near corner of the roof, and its lift is 42, so the stack stays in the near half.
-   One more walker on a large screen, and only while graphics are not Low. */
+   One more walker on a large screen, and only while graphics are not Low.
+   v2.60: the empty lot draws foundation outlines and a larger sign until the first kit.
+   The name stays readable at phone fit zoom. A stage-up toast has a Look action;
+   nothing moves the camera on its own, and an offline catch-up does not toast.
+   The sheet's Look button stays in the visible half-height sheet, above the toolbar. */
 const TOWN_STAGES=[
   {n:0,name:'Empty lot',say:'A cleared lot by the south gate, waiting on the first house kit.'},
   {n:1,name:'Hamlet',say:'One timber-frame cottage, a garden and a tree.'},
@@ -96,7 +100,8 @@ function townCredit(n,offline){
     t.seen=s;
     if(!offline&&typeof toast==='function'){
       const stg=TOWN_STAGES[s];
-      toast(`🏘️ <b>${stg.name}</b><br>${stg.say} Town demand <b>+${townPctLabel()}%</b>.`,4800,'ms-toast');
+      const look=()=>{if(typeof townOpen==='function') townOpen();};
+      toast(`<span>🏘️ <b>${stg.name}</b><br>${stg.say} Town demand <b>+${townPctLabel()}%</b>.</span><button type="button" class="toast-look">Look</button>`,6400,'ms-toast town-toast',look);
     }
     if(piece&&!offline&&typeof emitP==='function'){const q=P(piece.i,piece.j,16);for(let i=0;i<12;i++) emitP(q[0],q[1],'poof');}
   }
@@ -113,7 +118,9 @@ function townMakePieces(){
   add({kind:'stake',st:0,i:38.62,j:33.18,wi:.08,wj:.08});
   add({kind:'stake',st:0,i:39.18,j:33.18,wi:.08,wj:.08});
   add({kind:'sign',st:0,i:38.90,j:33.18,wi:.34,wj:.16});
+  add({kind:'board',st:0,i:38.90,j:33.05,wi:.96,wj:.28});
   [[1,33.72,0,0],[2,35.15,1,1],[2,36.62,0,2],[3,38.20,1,0],[3,39.72,0,1],[3,41.22,1,2],[5,42.55,0,0]].forEach(([st,j,chim,v])=>{
+    add({kind:'plot',st:0,i:38.95,j,wi:.80,wj:.68});
     add({kind:'cot',st,i:38.95,j,wi:.80,wj:.68,chim:!!chim,v});
   });
   add({kind:'tree',st:1,i:37.32,j:33.28,wi:.38,wj:.38,v:0});
@@ -129,9 +136,23 @@ function townMakePieces(){
   return P;
 }
 function townPieces(){return _twPcs||(_twPcs=townMakePieces());}
+/* A foundation can share a cottage's cell. The building wins, so the scaffold still splits on the house. */
+function townFxHost(i,j){
+  let flat=null;
+  for(const q of townPieces()){
+    if(Math.abs(q.i-i)>=.02||Math.abs(q.j-j)>=.02||q.kind==='plot'||q.kind==='board') continue;
+    if(!townFlat(q)) return q;
+    flat=q;
+  }
+  return flat;
+}
 function townLive(){
   const s=townStage(), end=townRoadEnd(s);
-  return townPieces().filter(p=>p.st<=s&&!(p.kind==='path'&&p.j>end));
+  return townPieces().filter(p=>{
+    if(p.kind==='plot'||p.kind==='board') return s<1;
+    if(p.kind==='sign'&&s<1) return false;
+    return p.st<=s&&!(p.kind==='path'&&p.j>end);
+  });
 }
 function townAABB(p){return {k:p.kind,st:p.st,solid:p.kind!=='path',i0:p.i-p.wi/2,i1:p.i+p.wi/2,j0:p.j-p.wj/2,j1:p.j+p.wj/2};}
 function townFoot(){return townLive().map(townAABB);}
@@ -150,10 +171,34 @@ function townHitPoly(){
 function townHit(wx,wy){const h=townHitPoly();return pip(h,wx,wy);}
 function townFocusPt(){const s=townStage();return P(38.35, s<2?33.6:s<4?36.4:s<6?38.8:40.2, 12);}
 function focusTown(){
-  if(typeof flyTo!=='function') return;
+  if(typeof flyTo!=='function'&&typeof flyToWorld!=='function') return;
   const p=townFocusPt(), c=scene.cam;
   const z=Math.min(c.maxZ, Math.max(c.fitZ*(scene.w<700?2.05:1.7), .9));
-  flyTo(p[0], p[1]-(scene.w<700?40:0), z);
+  if(typeof flyToWorld==='function') flyToWorld(p[0], p[1], z);
+  else flyTo(p[0], p[1]-(scene.w<700?40:0), z);
+}
+function townOpen(){if(typeof openSheet==='function') openSheet('town'); else focusTown();}
+/* World span of the cottages that exist. Null until the first kit, so a fresh fit stays the old frame. */
+function townFitSpan(){
+  if(townStage()<1) return null;
+  let foot=-1e9, x0=1e9, x1=-1e9;
+  for(const p of townLive()){
+    const wi=p.wi||.3, wj=p.wj||.3;
+    const mid=P(p.i,p.j,0), south=P(p.i, p.j+wj/2, 0);
+    const west=P(p.i-wi/2, p.j, 0), east=P(p.i+wi/2, p.j, 0);
+    foot=Math.max(foot, mid[1]+30, south[1]+10);
+    x0=Math.min(x0, west[0], east[0], south[0]);
+    x1=Math.max(x1, west[0], east[0], south[0]);
+  }
+  if(!(foot>0)) return null;
+  return {foot, x0, x1};
+}
+function townGoalText(){
+  const made=townState().made, nx=townNext();
+  if(!nx) return '';
+  const kits=nx.n===1?'house kit':'house kits';
+  const now=made<10&&made%1?(+made).toFixed(1):fmt(made);
+  return now+' / '+fmt(nx.n)+' '+kits+' → '+nx.name;
 }
 function townScreen(){const p=townFocusPt();return w2s(p[0],p[1]);}
 
@@ -161,7 +206,7 @@ function townScreen(){const p=townFocusPt();return w2s(p[0],p[1]);}
 const TOWN_WALL=['#f4e2c2','#f7e7cc','#f1dcc0'];
 const TOWN_TIMB='#5c3418', TOWN_ROOF='#a33b28', TOWN_ROOF2='#c45a38';
 function townBoxPx(p){
-  const hx=(p.wi+p.wj)*HW*.7+18, top=p.kind==='church'?210:p.kind==='tree'?86:p.kind==='well'?78:72;
+  const hx=(p.wi+p.wj)*HW*.7+18, top=p.kind==='church'?210:p.kind==='board'?118:p.kind==='tree'?86:p.kind==='well'?78:72;
   return [-hx,-top,hx+16,26];
 }
 function townBeams(ctx,i0,j0,i1,j1,z0,z1){
@@ -315,6 +360,26 @@ function townSign(ctx,p){
   const a=P(p.i-.14,p.j,6.5), b=P(p.i,p.j,7.6), c=P(p.i+.14,p.j,6.5);
   ctx.fillStyle=TOWN_ROOF; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.lineTo(c[0],c[1]); ctx.closePath(); ctx.fill();
 }
+function townBoard(ctx,p){
+  shadowAt(ctx,p.i,p.j,12,5,.18);
+  box(ctx,p.i-.045,p.j-.045,p.i+.045,p.j+.045,0,12.2,'#5c3418',{top:false,edge:false});
+  box(ctx,p.i-.46,p.j-.07,p.i+.46,p.j+.07,6.4,10.6,'#fff6e4',{top:'#fffaf2'});
+  const a=P(p.i-.5,p.j,10.5), b=P(p.i,p.j,12.6), c=P(p.i+.5,p.j,10.5);
+  ctx.fillStyle=TOWN_ROOF; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.lineTo(c[0],c[1]); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#8a5a32'; ctx.lineWidth=1.15;
+  ctx.beginPath();
+  [[-0.3,7.5,0.3],[-0.22,8.7,0.22]].forEach(([x0,z,x1])=>{const u=P(p.i+x0,p.j,z), v=P(p.i+x1,p.j,z); ctx.moveTo(u[0],u[1]); ctx.lineTo(v[0],v[1]);});
+  ctx.stroke();
+}
+function townPlotMark(ctx,p){
+  const i0=p.i-p.wi/2, i1=p.i+p.wi/2, j0=p.j-p.wj/2, j1=p.j+p.wj/2;
+  fillP(ctx,[P(i0,j0,.45),P(i1,j0,.45),P(i1,j1,.45),P(i0,j1,.45)],'rgba(236,220,184,.72)');
+  ctx.strokeStyle='#6b4226'; ctx.lineWidth=2.1; ctx.lineJoin='round';
+  ctx.beginPath();
+  [[i0,j0],[i1,j0],[i1,j1],[i0,j1]].forEach(([i,j],k)=>{const q=P(i,j,.85); if(k) ctx.lineTo(q[0],q[1]); else ctx.moveTo(q[0],q[1]);});
+  ctx.closePath(); ctx.stroke();
+  for(const [i,j] of [[i0,j0],[i1,j0],[i0,j1],[i1,j1]]) box(ctx,i-.035,j-.035,i+.035,j+.035,0,3.1,'#f4e6c8',{top:'#fff6e8',edge:false});
+}
 function townStake(ctx,p){
   box(ctx,p.i-.02,p.j-.02,p.i+.02,p.j+.02,0,2.4,'#e8d7b0',{top:'#f7f1e4',edge:false});
 }
@@ -333,6 +398,8 @@ function townArt(ctx,p){
   if(p.kind==='tree') return townTree(ctx,p);
   if(p.kind==='garden') return townGarden(ctx,p);
   if(p.kind==='sign') return townSign(ctx,p);
+  if(p.kind==='board') return townBoard(ctx,p);
+  if(p.kind==='plot') return townPlotMark(ctx,p);
   if(p.kind==='stake') return townStake(ctx,p);
 }
 function townStamp(ctx,p){
@@ -429,7 +496,7 @@ function townFolk(){
 }
 /* A resident's feet sort a hair in front of the ground tile they stand on. */
 const TOWN_FEET=0.004;
-function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake';}
+function townFlat(p){return p.kind==='path'||p.kind==='garden'||p.kind==='stake'||p.kind==='plot';}
 function townBoxOf(p){return {i0:p.i-p.wi/2,j0:p.j-p.wj/2,i1:p.i+p.wi/2,j1:p.j+p.wj/2};}
 /* Pixels above the footprint centre where the near half begins.
    Screen Y is (i+j)*HH - z, so a taller part or a far corner sits further above the centre.
@@ -446,6 +513,7 @@ function townSplitLift(p){
   if(p.kind==='stall') return 22;   // awning, higher at the back, ~16px
   if(p.kind==='well') return 20;    // little roof peak ~14px
   if(p.kind==='sign') return 12;    // roof mark ~8px
+  if(p.kind==='board') return 22;   // stage-0 notice board; hidden once a cottage exists
   return 14;
 }
 /* Far half at the back corner, near half at the front corner.
@@ -479,7 +547,7 @@ function townSortParts(){
   for(const p of townLive()) for(const part of townPieceKeys(p)) out.push({kind:p.kind,half:part.half,k:part.k,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
   for(const f of townFolk()) out.push({kind:'folk',half:'pt',k:f.i+f.j+TOWN_FEET,i:f.i,j:f.j,pose:f.pose});
   if(scene.townFx){
-    const fx=scene.townFx, host=townPieces().find(q=>Math.abs(q.i-fx.i)<.02&&Math.abs(q.j-fx.j)<.02);
+    const fx=scene.townFx, host=townFxHost(fx.i,fx.j);
     const parts=host?townPieceKeys(host):[{k:fx.i+fx.j,half:'all',box:townBoxOf({i:fx.i,j:fx.j,wi:.2,wj:.2})}];
     for(const part of parts) if(part.half!=='all') out.push({kind:'scaffold',half:part.half,k:part.k+.008,i0:part.box.i0,i1:part.box.i1,j0:part.box.j0,j1:part.box.j1});
   }
@@ -516,7 +584,7 @@ function townDraw(ctx,objs,inView){
   }
   if(scene.townFx){
     const fx=scene.townFx; const [x,y]=P(fx.i,fx.j); if(!inView(x,y,60)) return;
-    const host=townPieces().find(q=>Math.abs(q.i-fx.i)<.02&&Math.abs(q.j-fx.j)<.02);
+    const host=townFxHost(fx.i,fx.j);
     let draw=host?townPieceKeys(host):[{k:fx.i+fx.j+.4,half:'all',box:null}];
     if(draw.every(part=>part.half==='all')) draw=[draw[draw.length-1]];
     for(const part of draw){
@@ -527,14 +595,45 @@ function townDraw(ctx,objs,inView){
     }
   }
 }
+function townPill(ctx,x,y,txt,o){
+  o=o||{};
+  const fs=o.fs||11, wGuess=Math.max(48, txt.length*(fs*0.56)+(o.padX||14)+6), hGuess=fs+(o.padY||9)+6;
+  const fab=typeof townChromeFab==='function'?townChromeFab():null;
+  if(fab){
+    const hit=(px,py)=>px+wGuess/2>fab.left-4&&px-wGuess/2<fab.right+4&&py+hGuess/2>fab.top-4&&py-hGuess/2<fab.bottom+4;
+    if(hit(x,y)){
+      const left=fab.left-wGuess/2-10;
+      if(left>wGuess/2+4) x=left;
+      else y=Math.min(y, fab.top-hGuess/2-10);
+    }
+  }
+  x=Math.max(wGuess/2+2, Math.min(scene.w-wGuess/2-2, x));
+  y=Math.max(16, Math.min(scene.h-10, y));
+  const r=pill(ctx,x,y,txt,o);
+  if(r&&r[2]>0){
+    const rec={x:r[0],y:r[1],w:r[2],h:r[3],t:txt};
+    scene.townPills.push(rec);
+    if(!scene.townPill) scene.townPill=rec;
+  }
+  return r;
+}
 function townOverlay(ctx){
+  scene.townPill=null; scene.townPills=[];
   if(townHide) return;
   const s=townStage(), b=townBounds(0);
-  const [x,y]=P((b.i0+b.i1)/2, b.j0-.15, 8);
+  const [x,y]=P((b.i0+b.i1)/2, b.j0-.15, s<1?16:8);
   if(x<scene.cam.x-scene.w/scene.cam.z||x>scene.cam.x+scene.w/scene.cam.z) return;
   const [sx,sy]=w2s(x,y);
   if(sy<18||sy>scene.h-8) return;
-  pill(ctx,sx,sy,'🏘️ '+TOWN_STAGES[s].name,{lo:1,fs:11,bg:'rgba(90,48,22,.9)',fg:'#fff6e0',stroke:'#e7c48a',padX:12,padY:7});
+  // v2.60: this name is how a phone at fit zoom still finds the village. Other info pills keep {lo:1}.
+  const nr=townPill(ctx,sx,sy,'🏘️ '+TOWN_STAGES[s].name,{fs:11,bg:'rgba(90,48,22,.9)',fg:'#fff6e0',stroke:'#e7c48a',padX:12,padY:7});
+  if(s<1){
+    const goal=townGoalText();
+    if(goal){
+      const gx=nr&&nr[2]?nr[0]+nr[2]/2:sx, gy=nr&&nr[3]?nr[1]+nr[3]+18:sy+30;
+      townPill(ctx,gx,gy,goal,{fs:14,bg:'rgba(255,246,224,.96)',fg:'#5a3418',stroke:'#c99560',padX:12,padY:8});
+    }
+  }
 }
 
 /* ---------- sheet ---------- */
@@ -546,17 +645,30 @@ function townSheetHtml(){
   const s=townStage(), st=TOWN_STAGES[s], made=townState().made, nx=townNext();
   const span=nx?nx.n-st.n:1, into=nx?Math.max(0,made-st.n):1, pct=nx?Math.max(0,Math.min(100,into/span*100)):100;
   const cur='+'+townPctLabel()+'%', nxt=nx?'+'+((s+1)*2.5).toFixed(1).replace(/\.0$/,'')+'%':'at the cap';
-  return `<div class="town-hero"><div class="town-ic">${svgIcon('houses',56)}</div><div><div class="town-stage">${st.name}</div><div class="legend">${st.say}</div></div></div>
+  const goal=townGoalText();
+  const src=(typeof BMAP!=='undefined'&&BMAP.framer&&BMAP.framer.name)||'Timber-frame Houses';
+  return `<div class="town-scroll"><div class="town-hero"><div class="town-ic">${svgIcon('houses',56)}</div><div><div class="town-stage">${st.name}</div><div class="legend">${st.say}</div></div></div>
     <div class="town-row"><span>Houses this run</span><b>${fmt(made, made<10&&made%1?1:0)}</b></div>
+    ${goal?`<div class="town-goal">${goal}</div>`:''}
     <div class="pbar town-bar"><i style="width:${pct.toFixed(1)}%"></i></div>
     <div class="legend">${nx?`${fmt(Math.max(0,nx.n-made))} more to <b>${nx.name}</b>`:'Timber Town is built. The demand bonus is at its cap.'}</div>
+    <div class="legend town-src">House kits come from the <b>${src}</b> workshop.</div>
     <div class="town-bonus"><div class="b"><div class="legend">Town demand now</div><b>${cur}</b></div><div class="b"><div class="legend">${nx?'Next stage':'Cap'}</div><b>${nxt}</b></div></div>
-    <p class="legend">The Town Market pays this on planks, beams, chairs and the other Phase 1–2 goods, whether they auto-sell or you press Sell. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. Replant clears the village; the best stage stays for trophies.</p>
+    <p class="legend">The Town Market pays this on planks, beams, chairs and the other Phase 1–2 goods, whether they auto-sell or you press Sell. Orders, contracts, exports and research are unchanged. Logs stay raw material and are never sold. Replant clears the village; the best stage stays for trophies.</p></div>
     <button class="btn wood" id="townLook" type="button">Look at the village</button>`;
 }
 function townUpdate(){
   const tm=$('townMkt');
-  if(tm){const tx='🏘️ Town demand +'+townPctLabel()+'%'; if(tm.textContent!==tx){tm.textContent=tx; tm.title='Phase 1–2 goods sold at the Town Market. Orders, contracts, exports and research are not included. Logs are not sold.';}}
+  if(tm){
+    const tx='🏘️ Town demand +'+townPctLabel()+'%';
+    if(tm.textContent!==tx){tm.textContent=tx; tm.title='Phase 1–2 goods sold at the Town Market. Tap to see the village. Orders, contracts, exports and research are not included. Logs are not sold.';}
+    if(!tm._tw){
+      tm._tw=1; tm.setAttribute('role','button'); tm.tabIndex=0;
+      const go=ev=>{if(ev) ev.stopPropagation(); townOpen();};
+      tm.addEventListener('click',go);
+      tm.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go(ev);}});
+    }
+  }
   if(typeof curSheet==='undefined'||curSheet!=='town') return;
   const el=$('townCard'); if(!el) return;
   const h=townSheetHtml(); if(el._h!==h){el.innerHTML=h; el._h=h; const b=$('townLook'); if(b) b.onclick=()=>{if(typeof focusTown==='function') focusTown();};}

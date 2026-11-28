@@ -27,6 +27,7 @@ const JUMPS=[
   {id:'build',ic:'🏗️',l:'Builders',pt:()=>P(BYZ.ci,BYZ.cj,22),z:1.7,lock:()=>!byVisible()},
   {id:'dock',ic:'🚚',l:'Dock',pt:()=>P(DOCK.ci,DOCK.cj,20),z:1.7},
   {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
+  {id:'town',ic:'🏘️',l:'Town',pt:()=>typeof townFocusPt==='function'?townFocusPt():P(38.35,33.6,12),z:1.9},   // v2.60: the south-gate lot is there from the first frame
 ];
 /* centre of a production column (all its lots, built or not) */
 function colMid(side){const L=Object.values(LOTS).filter(l=>l.side===side);if(!L.length) return [15.5,15.5];
@@ -40,6 +41,15 @@ function buildJumpBar(){
 }
 function jumpTo(id){
   const j=JUMPS.find(x=>x.id===id); if(!j) return false; const c=scene.cam;
+  if(j.id==='town'){
+    GI.touchedAt=camNow();
+    if(curSheet&&curSheet!=='town') closeSheet();
+    if(curSheet!=='town'&&typeof townOpen==='function') townOpen();
+    else if(typeof focusTown==='function') focusTown();
+    haptic(6);
+    document.querySelectorAll('#jumpBar .jchip').forEach(b=>b.classList.toggle('on',b.dataset.j===id));
+    scene.lastJump=id; return true;
+  }
   const [wx,wy]=j.pt(); const z=Math.min(c.maxZ,Math.max(c.minZ,c.fitZ*j.z*(scene.w<700?1:0.8)));
   if(curSheet&&curSheet!=='bld') closeSheet();
   GI.touchedAt=camNow(); flyToWorld(wx,wy,z); haptic(6);
@@ -152,11 +162,13 @@ function setupSheetGestures(){
   head.addEventListener('pointermove',e=>{if(SH.drag) sheetDragMove(e.clientY);});
   const up=e=>{if(!SH.drag) return;const moved=SH.drag.moved;const r=sheetDragEnd();if(!moved&&e.type==='pointerup'&&r===null&&!railMode()) setSheetState(SH.state==='full'?'half':'full');};
   head.addEventListener('pointerup',up);head.addEventListener('pointercancel',up);
-  // pulling the content down while it is scrolled to the top drags the sheet (swipe-down to close)
+  // pulling the content down while it is scrolled to the top drags the sheet (swipe-down to close).
+  // A nested scroller (the Town sheet copy) counts: only its own top edge starts the drag.
   let BS=null;
-  body.addEventListener('touchstart',e=>{if(e.touches.length!==1){BS=null;return;}BS={y0:e.touches[0].clientY,top:body.scrollTop<=0,active:false};},{passive:true});
+  const atTop=from=>{let n=from&&from.nodeType===1?from:from&&from.parentElement;while(n){if(n.scrollHeight>n.clientHeight+2){const oy=getComputedStyle(n).overflowY;if((n===body||oy==='auto'||oy==='scroll')&&n.scrollTop>0)return false;}if(n===body)break;n=n.parentElement;}return true;};
+  body.addEventListener('touchstart',e=>{if(e.touches.length!==1){BS=null;return;}BS={y0:e.touches[0].clientY,top:atTop(e.target),active:false};},{passive:true});
   body.addEventListener('touchmove',e=>{if(!BS||!BS.top) return;const y=e.touches[0].clientY,dy=y-BS.y0;
-    if(!BS.active){if(dy<-4){BS.top=false;return;} if(dy>10&&body.scrollTop<=0){BS.active=true;sheetDragStart(BS.y0+10);}}
+    if(!BS.active){if(dy<-4){BS.top=false;return;} if(dy>10&&atTop(e.target)){BS.active=true;sheetDragStart(BS.y0+10);}}
     if(BS.active){if(e.cancelable) e.preventDefault();sheetDragMove(y);}},{passive:false});
   const tend=()=>{if(BS&&BS.active) sheetDragEnd();BS=null;};
   body.addEventListener('touchend',tend);body.addEventListener('touchcancel',tend);
