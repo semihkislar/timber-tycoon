@@ -40,7 +40,12 @@ function ntBadge(el,n){let b=el.querySelector(':scope>.nt-n');if(n>1){if(!b){b=d
 function ntShow(e){
   const host=ntHost(); if(!host) return;
   const t=document.createElement('div');t.className='toast'+(e.cls?' '+e.cls:'')+(e.p>=3?' nt-hi':'');t.innerHTML=e.html;t.dataset.p=e.p;
-  t.addEventListener('click',ev=>{ev.stopPropagation();ntHide(e,true);});
+  t.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    const btn=ev.target&&ev.target.closest&&ev.target.closest('button');
+    if(btn&&e.act){ev.preventDefault(); const fn=e.act; ntHide(e,true); try{fn();}catch(_){} return;}
+    ntHide(e,true);
+  });
   const pill=$('ntPill'); if(pill&&pill.parentNode===host) host.insertBefore(t,pill); else host.appendChild(t);
   e.el=t;e.gone=false;e.shownAt=performance.now();if(e.logRef) e.logRef.seen=true;ntBadge(t,e.n);NT.vis.push(e);NT.stats.shown++;ntArm(e);
 }
@@ -59,15 +64,15 @@ function ntPump(){
   if(NT.q.length) for(const v of NT.vis){if(v.p<=NT.q[0].p&&!v.hurry){const left=v.dur-(now-v.shownAt);if(left>1200){v.hurry=1;ntArm(v,Math.max(1200-(now-v.shownAt),0)+0);}}}
   ntPill();
 }
-function ntPush(html,ms,cls){
+function ntPush(html,ms,cls,act){
   html=String(html==null?'':html); const txt=ntText(html); if(!txt&&!/<svg/i.test(html)) return null;
   ntPrune(); NT.stats.pushed++;
   const p=ntPri(html,cls,txt), key=ntKey(txt,cls);
-  const e={id:++NT.seq,html,cls:cls||'',ms,p,key,txt,n:1,t:performance.now(),dur:ntDur(ms,p)};
+  const e={id:++NT.seq,html,cls:cls||'',ms,p,key,txt,n:1,t:performance.now(),dur:ntDur(ms,p),act:typeof act==='function'?act:null};
   ntLog(e);
   // a repeat of what is on screen: update in place with a ×N badge
   const v=NT.vis.find(x=>x.key===key);
-  if(v){v.n++;v.html=html;v.txt=txt;v.el.innerHTML=html;ntBadge(v.el,v.n);v.hurry=0;v.shownAt=performance.now();ntArm(v);NT.stats.merged++;if(v.logRef) v.logRef.seen=true;ntPill();return v.el;}
+  if(v){v.n++;v.html=html;v.txt=txt;if(typeof act==='function') v.act=act;v.el.innerHTML=html;ntBadge(v.el,v.n);v.hurry=0;v.shownAt=performance.now();ntArm(v);NT.stats.merged++;if(v.logRef) v.logRef.seen=true;ntPill();return v.el;}
   const w=NT.q.find(x=>x.key===key);
   if(w){w.n++;w.html=html;w.txt=txt;w.p=Math.max(w.p,p);NT.stats.merged++;ntPill();return null;}
   if(p===1&&ntQuiet()){NT.stats.quiet++;NT.unseen++;ntPill();return null;}

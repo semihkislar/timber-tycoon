@@ -71,7 +71,7 @@ function confettiBurst(){
 }
 /* ===================== UI HELPERS ===================== */
 const $=id=>document.getElementById(id);
-function toast(html,ms,cls){return ntPush(html,ms,cls);}   // v2.43: queue, priorities, merging and the log live in js/notify.js
+function toast(html,ms,cls,act){return ntPush(html,ms,cls,act);}   // v2.43: queue, priorities, merging and the log live in js/notify.js. v2.60: optional act runs from a button inside the toast.
 function modal(title,body,buttons){
   const root=$('modalRoot');
   const bg=document.createElement('div');bg.className='modal-bg';

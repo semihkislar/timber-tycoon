@@ -6,12 +6,42 @@ function s2w(x,y){const c=scene.cam;return [c.x+(x-scene.w/2)/c.z,c.y+(y-scene.h
 function barH(){return [$('topbar').offsetHeight||50,typeof railMode==='function'&&railMode()?0:($('bottombar').offsetHeight||70)];}
 function southYardBuilt(){const B=typeof S==='object'&&S&&S.buildings;return !!(B&&((B.beamsaw&&B.beamsaw.lvl)||(B.glulam&&B.glulam.lvl)));}
 function decorYardBuilt(){const B=typeof S==='object'&&S&&S.buildings;return !!(B&&((B.panelpress&&B.panelpress.lvl)||(B.decorstudio&&B.decorstudio.lvl)));}
+/* Right-hand action buttons, in screen pixels. Null while a sheet hides them. */
+function townChromeFab(){
+  if(typeof document==='undefined'||document.body.classList.contains('sheet-on')) return null;
+  if(!$('fabs')) return null;
+  const rail=typeof railMode==='function'&&railMode();
+  const bb=rail?0:(($('bottombar')&&$('bottombar').offsetHeight)||70);
+  const jump=document.body.classList.contains('jump-on')&&!rail;
+  const sz=rail?48:52, n=3, gap=10, edge=10;
+  if(rail){const w=n*sz+(n-1)*gap, right=scene.w-edge, bottom=scene.h-edge; return {left:right-w,right,top:bottom-sz,bottom};}
+  const bottom=scene.h-bb-12-(jump?58:0), h=n*sz+(n-1)*gap, right=scene.w-edge;
+  return {left:right-sz,right,top:bottom-h,bottom};
+}
 function fitCamera(instant){
   const c=scene.cam,[tb,bb]=barH(),vw=scene.w,vh=scene.h; if(instant){c.fly=null;c.vx=c.vy=0;}
   const uh=Math.max(200,vh-tb-bb-8), uw=vw;
   const portrait=uw/uh<1;
   const hb=typeof harborOpen==='function'&&harborOpen();   // v2.5: frame the harbour once it is built
-  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62, by1=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0,(typeof townStage==='function'&&townStage()>=1)?1360:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  const bx0=portrait?-300:-480, bx1=portrait?480:(hb?900:880), by0=portrait?-66:-62;
+  const base=Math.max(portrait?1080:(hb?935:840),southYardBuilt()?1050:0,decorYardBuilt()?1190:0);   /* v2.33: Panel Press / Decor Studio sit further south */   // v2.29: phones frame the Shipping dock too (wider and a little deeper, so it sits clear of the side buttons)   // v2.28: frame the south yard once a Beam Saw / Glulam Plant stands   // v2.27: the Builders' Yard moved up into the helper strip, so the bottom edge no longer grows with it
+  // v2.60: once a cottage exists, leave air under it so it sits above the toolbar. Stage 0 is the old frame.
+  let townBy=0;
+  const span=typeof townFitSpan==='function'?townFitSpan():null;
+  if(span){
+    const tx=(bx0+bx1)/2;
+    let z=Math.min(uw/(bx1-bx0), uh/Math.max(1,base-by0));
+    for(let i=0;i<4;i++){
+      const sx0=(span.x0-tx)*z+uw/2, sx1=(span.x1-tx)*z+uw/2;
+      const fab=townChromeFab();
+      const hit=fab&&sx1>fab.left-8&&sx0<fab.right+8;
+      const margin=hit?Math.min(176,(fab.bottom-fab.top)+16):64;
+      const by=span.foot+margin/Math.max(z,.08);
+      townBy=by;
+      z=Math.min(uw/(bx1-bx0), uh/(Math.max(base,by)-by0));
+    }
+  }
+  const by1=Math.max(base, townBy);
   const z=Math.min(uw/(bx1-bx0),uh/(by1-by0));
   c.fitZ=z; c.minZ=z*.7; c.maxZ=Math.max(2.4,z*3.2);
   c.tz=z; c.tx=(bx0+bx1)/2; c.ty=(by0+by1)/2-((tb+uh/2)-vh/2)/z;

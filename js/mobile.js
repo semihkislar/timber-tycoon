@@ -27,6 +27,7 @@ const JUMPS=[
   {id:'build',ic:'🏗️',l:'Builders',pt:()=>P(BYZ.ci,BYZ.cj,22),z:1.7,lock:()=>!byVisible()},
   {id:'dock',ic:'🚚',l:'Dock',pt:()=>P(DOCK.ci,DOCK.cj,20),z:1.7},
   {id:'harbor',ic:'⚓',l:'Harbour',pt:()=>P(34.6,14.4,10),z:1.6,lock:()=>!(harborOpen()||harborAvail())},
+  {id:'town',ic:'🏘️',l:'Town',pt:()=>typeof townFocusPt==='function'?townFocusPt():P(38.35,33.6,12),z:1.9},   // v2.60: the south-gate lot is there from the first frame
 ];
 /* centre of a production column (all its lots, built or not) */
 function colMid(side){const L=Object.values(LOTS).filter(l=>l.side===side);if(!L.length) return [15.5,15.5];
@@ -40,6 +41,15 @@ function buildJumpBar(){
 }
 function jumpTo(id){
   const j=JUMPS.find(x=>x.id===id); if(!j) return false; const c=scene.cam;
+  if(j.id==='town'){
+    GI.touchedAt=camNow();
+    if(curSheet&&curSheet!=='town') closeSheet();
+    if(curSheet!=='town'&&typeof townOpen==='function') townOpen();
+    else if(typeof focusTown==='function') focusTown();
+    haptic(6);
+    document.querySelectorAll('#jumpBar .jchip').forEach(b=>b.classList.toggle('on',b.dataset.j===id));
+    scene.lastJump=id; return true;
+  }
   const [wx,wy]=j.pt(); const z=Math.min(c.maxZ,Math.max(c.minZ,c.fitZ*j.z*(scene.w<700?1:0.8)));
   if(curSheet&&curSheet!=='bld') closeSheet();
   GI.touchedAt=camNow(); flyToWorld(wx,wy,z); haptic(6);
